@@ -1,6 +1,17 @@
-This is a raw text version of an html file that had a working version of the side by side display before porting leanblueprint to lean. It it meant to serve as a style guide for the port to lean.
+This is a raw text version of an html file that had a working version of the side by side display before porting leanblueprint to lean. It is meant to serve as a style guide for the port to lean.
+
 source:
 https://e-vergo.github.io/General_Crystallographic_Restriction/blueprint/sect0004.html#a0000000011
+
+=== STYLE DEVIATIONS ===
+The following are intentional deviations from the ground truth styling:
+
+1. Lean code width: Unbounded to the right (vs. bounded/scrollable in ground truth)
+   Rationale: Better readability for long type signatures
+
+(Add new deviations here as they are decided)
+
+=== END STYLE DEVIATIONS ===
 
 -------
 <!DOCTYPE html>
