@@ -8,7 +8,7 @@ Lean Side-By-Side tulip post draft. The top level numbers indicate parts of the 
     3. Always wanted the tool
     4. Tao post
     5. Leo De Mora quotes from lean together 2026?
-    6. image!!
+    6. image showing side-by-side blueprint (totally killer hook')
     7. Showcase repos
         1. PNT project (star chasing, Alex K has sen the work so far and is very excited. See /Users/eric/GitHub/Side-By-Side-Blueprint/.refs/Alex_k_imessage_screenshot.png)
         2. GCR (full monty, blueprint and ar5iv style paper. 

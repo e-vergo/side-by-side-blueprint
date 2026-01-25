@@ -21,11 +21,4 @@ subverso/
 SBS-Test/
 General_Crystallographic_Restriction/
 dress-blueprint-action/
-
-# Keep documentation images
-!goal1.png
-!goal2.png
-
-# Temporary screenshots (not reference images)
-current.png
-Screenshot*.png
+.refs/
