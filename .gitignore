@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Build artifacts
+.lake/
+lake-packages/
+
+# Temporary files
+*.tmp
+*~
+
+# The subdirectories are separate git repositories
+# They can be added as submodules if desired:
+#   git submodule add <url> Dress
+#   git submodule add <url> Runway
+#   etc.
+Dress/
+Runway/
+LeanArchitect/
+subverso/
+SBS-Test/
+General_Crystallographic_Restriction/
+dress-blueprint-action/
+
+# Keep documentation images
+!goal1.png
+!goal2.png
+
+# Temporary screenshots (not reference images)
+current.png
+Screenshot*.png
