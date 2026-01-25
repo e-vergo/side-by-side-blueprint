@@ -221,14 +221,29 @@ structure Node where
 
 ---
 
+## Reference Documents
+
+Located in `.refs/`:
+
+| File | Purpose | Use When |
+|------|---------|----------|
+| `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML | Matching side-by-side CSS/JS/structure |
+| `dep_graph_ground_truth.txt` | Working dependency graph page | Implementing D3 graph, modals, legends |
+| `ARCHITECTURE.md` | System architecture | Understanding component relationships |
+| `GOALS.md` | Project goals and vision | Prioritizing features |
+
+**Style Deviations**: Each ground truth file has a `=== STYLE DEVIATIONS ===` section documenting intentional differences from the Python leanblueprint.
+
 ## Quality Standards
 
 - No `sorry` in tooling code
 - Follow Verso/SubVerso patterns
 - Test via SBS-Test project
-- Compare output to goal images:
+- Compare output to goal images and ground truth files:
   - goal1.png: Individual theorem rendering quality
   - goal2.png: Page structure with chapters/sections
+  - `.refs/side_by_side_blueprint_ground_truth.txt`: HTML/CSS structure
+  - `.refs/dep_graph_ground_truth.txt`: Dependency graph features
 
 ---
 

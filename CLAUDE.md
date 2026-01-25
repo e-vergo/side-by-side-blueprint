@@ -114,6 +114,18 @@ The toolchain should enforce:
 - Check `lean_diagnostic_messages` after edits
 - Test via SBS-Test and visual inspection
 
+## Reference Documents
+
+Located in `.refs/`:
+
+| File | Purpose |
+|------|---------|
+| `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML for side-by-side display |
+| `dep_graph_ground_truth.txt` | Working dependency graph page with modals and D3 rendering |
+| `ARCHITECTURE.md` | System architecture documentation |
+| `GOALS.md` | Project goals and vision |
+| `motivation1.txt` | Original motivation notes |
+
 ## Reference Images
 
 - `goal1.png`: Target quality for individual theorem rendering
