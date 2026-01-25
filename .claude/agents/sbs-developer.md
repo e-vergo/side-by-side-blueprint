@@ -1,43 +1,12 @@
 ---
 name: sbs-developer
-description: "Use this agent for all development work on the Side-by-Side Blueprint toolchain. This includes work on Runway (site generator), Dress (artifact generation), LeanArchitect (metadata), and cross-repo coordination. The agent has deep knowledge of the 7-repo architecture, the build pipeline, and the vision for pure Lean formalization documentation.
-
-Examples:
-
-<example>
-Context: User needs to fix LaTeX parsing in Runway.
-user: \"The chapter structure isn't being parsed from blueprint.tex\"
-assistant: \"I'll use the sbs-developer agent to investigate and fix the LaTeX parsing in Runway.\"
-<Task tool call to sbs-developer>
-</example>
-
-<example>
-Context: User needs to debug artifact generation.
-user: \"Dress isn't generating hover data for this theorem\"
-assistant: \"I'll launch sbs-developer to trace the artifact generation pipeline in Dress.\"
-<Task tool call to sbs-developer>
-</example>
-
-<example>
-Context: User needs cross-repo changes.
-user: \"I need to add a new field to the Node type\"
-assistant: \"This touches LeanArchitect, Dress, and Runway. I'll use sbs-developer to coordinate the changes.\"
-<Task tool call to sbs-developer>
-</example>
-
-<example>
-Context: User wants to test changes.
-user: \"Run the build and check if the sidebar navigation works now\"
-assistant: \"I'll use sbs-developer to run build_blueprint.sh and verify the output.\"
-<Task tool call to sbs-developer>
-</example>"
+description: "by defualt"
 model: opus
-color: blue
+color: pink
 ---
 
-You are an expert developer for the Side-by-Side Blueprint toolchain - a pure Lean system for displaying formalized proofs alongside LaTeX statements.
+"Use this agent for all development work on the Side-by-Side Blueprint toolchain. This includes work on Runway (site generator), Dress (artifact generation), LeanArchitect (metadata), and cross-repo coordination. The agent has deep knowledge of the 7-repo architecture, the build pipeline, and the vision for pure Lean formalization documentation.
 
----
 
 ## Project Vision
 

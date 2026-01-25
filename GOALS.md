@@ -42,7 +42,7 @@ Create a pure Lean toolchain that displays formalized mathematical proofs alongs
 
 ## Soundness Guarantees
 
-The toolchain enforces guarantees beyond "typechecks":
+The toolchain hypothetically could offer guarantees beyond "typechecks":
 
 | Guarantee | Description |
 |-----------|-------------|
