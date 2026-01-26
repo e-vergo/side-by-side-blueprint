@@ -1,6 +1,6 @@
 # Side-by-Side Blueprint: Development Guide
 
-> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+> **Prototype Status**: Alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
 
 ## Orchestration Model
 
@@ -28,16 +28,16 @@ Building a pure Lean toolchain for formalization documentation that:
 | **Runway** | Site generator (replaces Python leanblueprint) | `Main.lean`, `Render.lean`, `Theme.lean`, `Latex/Parser.lean` |
 | **Dress** | Artifact generation during elaboration | `Capture/ElabRules.lean`, `Generate/Declaration.lean`, `HtmlRender.lean` |
 | **LeanArchitect** | `@[blueprint]` attribute and metadata | `Architect/Attribute.lean`, `Architect/Basic.lean` |
-| **SubVerso** | Syntax highlighting extraction (fork) | `Highlighting/Highlighted.lean` |
+| **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
 | **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3}/*.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example (goal reference) | Full formalization project |
-| **dress-blueprint-action** | GitHub Action for CI + assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js` |
+| **dress-blueprint-action** | GitHub Action for CI + external assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js` |
 
 ## Dependency Chain
 
 ```
-SubVerso → LeanArchitect → Dress → Runway
-                              ↓
+SubVerso -> LeanArchitect -> Dress -> Runway
+                              |
                           Consumer projects (SBS-Test)
 ```
 
@@ -45,13 +45,9 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Current Priority
 
-**ar5iv paper generation**: Blueprint functionality is feature-complete. Next milestone is full paper generation.
+**Dependency graph**: Blueprint functionality is feature-complete. The dependency graph is fragile and needs work.
 
-ar5iv paper features:
-- MathJax rendering (like current blueprint)
-- Never display Lean code directly (just links to it)
-- Defined by tex file, uses Dress artifacts
-- Same build pattern as blueprint
+Next after dependency graph: ar5iv paper generation (full paper rendering with MathJax, links to Lean code instead of inline display).
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -68,6 +64,17 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lake/build/dressed/` for artifacts.
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets directory.
+
+## Performance Context
+
+**SubVerso optimization (Phase 1) complete**: Added indexing, caching, containment queries.
+
+| Operation | Time | Percentage |
+|-----------|------|------------|
+| SubVerso highlighting | 800-6500ms | 93-99% |
+| TeX/HTML generation | <30ms | <1% |
+
+**Key finding**: SubVerso highlighting dominates build time. Cannot be deferred because info trees are ephemeral (only exist during elaboration). Deferred generation (Phase 2) was skipped - no performance benefit.
 
 ## MCP Tool Usage
 
@@ -88,10 +95,11 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 **When to spawn `sbs-developer`:**
 - Fixing LaTeX parsing or HTML rendering in Runway
 - Debugging artifact generation in Dress
-- Cross-repo changes (LeanArchitect → Dress → Runway)
+- Cross-repo changes (LeanArchitect -> Dress -> Runway)
 - Running builds and inspecting output
-- CSS/JS fixes in `dress-blueprint-action/assets/` (blueprint.css, plastex.js, verso-code.js)
+- CSS/JS fixes in `dress-blueprint-action/assets/`
 - Theme template fixes in `Runway/Runway/Theme.lean`
+- Dependency graph work (Dress/Graph/*.lean, Runway/DepGraph.lean)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -133,9 +141,9 @@ Located in `.refs/`:
 |------|---------|
 | `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML for side-by-side display |
 | `dep_graph_ground_truth.txt` | Working dependency graph page with modals and D3 rendering |
-| `ARCHITECTURE.md` | System architecture documentation |
+| `ARCHITECTURE.md` | System architecture with performance analysis |
 | `GOALS.md` | Project goals and vision |
-| `motivation1.txt` | Original motivation notes |
+| `motivation1.txt`, `motivation2.txt` | Original motivation notes |
 
 ## Reference Images
 

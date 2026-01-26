@@ -1,25 +1,23 @@
 ---
 name: sbs-developer
-description: "by defualt"
+description: "Development agent for Side-by-Side Blueprint toolchain"
 model: opus
 color: pink
 ---
 
-"Use this agent for all development work on the Side-by-Side Blueprint toolchain. This includes work on Runway (site generator), Dress (artifact generation), LeanArchitect (metadata), and cross-repo coordination. The agent has deep knowledge of the 7-repo architecture, the build pipeline, and the vision for pure Lean formalization documentation.
+Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the 7-repo architecture, build pipeline, and Verso patterns.
 
-> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
-
+> **Prototype Status**: Alpha software with known bugs, slow workflows, and incomplete features.
 
 ## Project Vision
 
 Create tooling that:
 1. Displays formal Lean proofs alongside LaTeX theorem statements
 2. Couples document generation to build for soundness guarantees
-3. Visualizes dependency graphs to catch logical errors (like Tao's sign error catch)
+3. Visualizes dependency graphs to catch logical errors
 4. Expands what "verified" means beyond just "typechecks"
 
 **Technical inspiration**: Lean Reference Manual (Verso, SubVerso, 100% Lean)
-**Feature inspiration**: Python leanblueprint with side-by-side display
 
 ---
 
@@ -27,84 +25,80 @@ Create tooling that:
 
 ```
 /Users/eric/GitHub/Side-By-Side-Blueprint/
-├── Runway/          # Site generator (replacing Python leanblueprint)
+├── Runway/          # Site generator (replaces Python leanblueprint)
 ├── Dress/           # Artifact generation during elaboration
 ├── LeanArchitect/   # @[blueprint] attribute and metadata
-├── subverso/        # Syntax highlighting (fork)
-├── SBS-Test/        # Minimal test project for iteration
+├── subverso/        # Syntax highlighting (fork with optimizations)
+├── SBS-Test/        # Minimal test project
 ├── General_Crystallographic_Restriction/  # Production example
-└── dress-blueprint-action/  # GitHub Action
+└── dress-blueprint-action/  # GitHub Action + CSS/JS assets
 ```
 
 ### Dependency Chain (Build Order)
 ```
-SubVerso → LeanArchitect → Dress → Runway
-                              ↓
+SubVerso -> LeanArchitect -> Dress -> Runway
+                              |
                           Consumer projects (SBS-Test)
 ```
 
-### Repository Details
+### Key Files by Repo
 
-**Runway** - Pure Lean site generator
+**Runway** - Site generator
 | File | Purpose |
 |------|---------|
-| `Main.lean` | CLI: build/serve/check commands |
-| `Render.lean` | Side-by-side node HTML rendering |
-| `Theme.lean` | Page templates, sidebar navigation |
-| `Latex/Parser.lean` | LaTeX chapter/section parsing |
-| `Latex/ToHtml.lean` | LaTeX prose to HTML conversion |
-| `Latex/Ast.lean` | Block/Inline types, TheoremMetadata |
-| `Site.lean` | NodeInfo, ChapterInfo, SectionInfo |
-| `Config.lean` | Site config including required `assetsDir` |
-| `Assets.lean` | Asset copying logic (minimal) |
+| `Main.lean` | CLI: build/serve/check |
+| `Render.lean` | Side-by-side node rendering |
+| `Theme.lean` | Page templates, sidebar |
+| `Latex/Parser.lean` | LaTeX parsing |
+| `Config.lean` | Site config including `assetsDir` |
+
+**Dress** - Artifact generation
+| File | Purpose |
+|------|---------|
+| `Capture/ElabRules.lean` | elab_rules hooks |
+| `Capture/InfoTree.lean` | SubVerso highlighting capture |
+| `Generate/Declaration.lean` | Per-declaration artifact writer |
+| `HtmlRender.lean` | Verso HTML rendering |
+| `Graph/*.lean` | Dependency graph (fragile, needs work) |
 
 **External Assets** - `dress-blueprint-action/assets/`
 | File | Purpose |
 |------|---------|
 | `blueprint.css` | Full stylesheet (32 KB) |
-| `plastex.js` | Proof toggle functionality |
-| `verso-code.js` | Hover tooltips, token binding highlights |
-
-**Dress** - Artifact generation
-| File | Purpose |
-|------|---------|
-| `Capture/ElabRules.lean` | elab_rules hooks for @[blueprint] |
-| `Capture/InfoTree.lean` | SubVerso highlighting capture |
-| `Generate/Declaration.lean` | Per-declaration artifact writer |
-| `Generate/Latex.lean` | LaTeX generation with base64 HTML |
-| `HtmlRender.lean` | Verso HTML rendering wrapper |
-| `Graph/Build.lean` | Dependency graph construction |
-| `Graph/Svg.lean` | SVG rendering |
-| `Paths.lean` | Centralized path management |
-
-**LeanArchitect** - Metadata storage
-| File | Purpose |
-|------|---------|
-| `Architect/Basic.lean` | Node, NodePart structures |
-| `Architect/Attribute.lean` | @[blueprint] attribute syntax |
-| `Architect/CollectUsed.lean` | Dependency inference |
+| `plastex.js` | Proof toggle |
+| `verso-code.js` | Hovers, token bindings |
 
 ---
 
-## Current Priority: ar5iv Paper Generation
+## Current Priority: Dependency Graph
 
-**Status**: Blueprint functionality is feature-complete. Next milestone is ar5iv-style paper generation.
+**Status**: Blueprint functionality is feature-complete. Dependency graph is fragile and needs work.
 
-**ar5iv paper features**:
-- Full paper generation (not just blueprint)
-- MathJax rendering (like current blueprint)
-- Never display Lean code directly (just links to it)
-- Defined by tex file, uses Dress artifacts
-- Same build pattern as blueprint
+**Known issues**:
+- Graph rendering can be fragile
+- Modal interactions need polish
+- Node lookup via manifest.json
 
-**Blueprint features (complete)**:
-- Hierarchical sidebar (Chapter 4 → Section 4.1)
-- Numbered theorems (Definition 4.1.1, Theorem 4.1.2)
-- Prose text between declarations
-- Multi-page output with prev/next navigation
-- Dependency graph page with modals
-- External CSS/JS assets via `assetsDir` config
-- manifest.json (replaces nodes/ directory)
+**Next after dependency graph**: ar5iv-style paper generation
+
+---
+
+## Performance Knowledge
+
+**SubVerso optimization (Phase 1) complete**:
+- Added indexing: `infoByExactPos`, `termInfoByName`, `nameSuffixIndex`
+- Added caching: `identKindCache`, `signatureCache`
+- Added containment queries: `allInfoSorted`, `lookupContaining`
+
+**Performance breakdown**:
+| Operation | Time | Percentage |
+|-----------|------|------------|
+| SubVerso highlighting | 800-6500ms | 93-99% |
+| TeX/HTML generation | <30ms | <1% |
+
+**Key finding**: SubVerso highlighting dominates due to goal pretty-printing. Cannot be deferred because info trees are ephemeral (only exist during elaboration).
+
+**Deferred generation (Phase 2) skipped**: No benefit since the bottleneck must run during elaboration anyway.
 
 ---
 
@@ -116,16 +110,16 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ```
 
 This script:
-1. Builds local forks: SubVerso → LeanArchitect → Dress → Runway
+1. Builds local forks: SubVerso -> LeanArchitect -> Dress -> Runway
 2. Fetches Mathlib cache
-3. Runs `BLUEPRINT_DRESS=1 lake build` (generates artifacts)
-4. Runs `lake build :blueprint` (aggregates artifacts)
-5. Runs `lake exe runway build runway.json` (generates site)
+3. Runs `BLUEPRINT_DRESS=1 lake build`
+4. Runs `lake build :blueprint`
+5. Runs `lake exe runway build runway.json`
 6. Serves at localhost:8000
 
 **Output locations**:
 - Artifacts: `.lake/build/dressed/{Module}/{label}/decl.{tex,html,json}`
-- Site: `.lake/build/runway/` (includes `manifest.json` and `assets/` directory)
+- Site: `.lake/build/runway/` (includes `manifest.json`)
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets.
 
@@ -135,18 +129,19 @@ This script:
 
 ```
 @[blueprint "label"] theorem foo ...
-        ↓
+        |
+        v
 Dress captures during elaboration:
-  - SubVerso extracts highlighting from info trees
+  - SubVerso extracts highlighting (93-99% of build time)
   - Splits into signature + proof body
   - Renders HTML with hover data
   - Writes: decl.tex, decl.html, decl.json, decl.hovers.json
-        ↓
+        |
+        v
 Lake facets aggregate:
-  - module.json (all declarations)
-  - module.tex (LaTeX \input directives)
   - dep-graph.json + dep-graph.svg
-        ↓
+        |
+        v
 Runway consumes:
   - Parses blueprint.tex for structure
   - Loads artifacts from .lake/build/dressed/
@@ -154,62 +149,6 @@ Runway consumes:
   - Generates manifest.json (node index)
   - Generates multi-page site
 ```
-
----
-
-## Key Data Structures
-
-**TheoremMetadata** (Runway/Latex/Ast.lean):
-```lean
-structure TheoremMetadata where
-  leanDecls : Array Name
-  uses : Array String
-  label : Option String
-  signatureHtml : Option String  -- from Dress, base64 decoded
-  proofHtml : Option String      -- from Dress, base64 decoded
-  hoverData : Option String      -- JSON for Tippy.js
-  leanOk : Bool
-  mathLibOk : Bool
-```
-
-**Node** (LeanArchitect):
-```lean
-structure Node where
-  name : Name
-  latexLabel : String
-  statement : NodePart
-  proof : Option NodePart
-```
-
----
-
-## HTML/CSS Structure
-
-**Side-by-side layout**:
-```html
-<div class="sbs-container">
-  <div class="sbs-latex-column">  <!-- 75ch fixed -->
-    <div class="theorem_thmheading">...</div>
-    <div class="theorem_thmcontent">...</div>
-    <div class="proof_wrapper">...</div>
-  </div>
-  <div class="sbs-lean-column">   <!-- flexible -->
-    <code class="lean-signature">...</code>
-    <code class="lean-proof-body">...</code>
-  </div>
-</div>
-```
-
-**Key CSS classes**:
-- `.sbs-container` - CSS grid (75ch + 1fr)
-- `.theorem_thmwrapper` - plasTeX-compatible wrapper
-- `.proof_content` - collapsible proof (jQuery slideToggle)
-- `.lean-proof-body` - synced with LaTeX proof toggle
-
-**Interactive features**:
-- Tippy.js hover tooltips via `data-lean-hovers` JSON
-- Token binding highlights via `data-binding` attributes
-- MathJax for LaTeX math rendering
 
 ---
 
@@ -222,18 +161,41 @@ structure Node where
 - `lean_file_outline` - Module structure overview
 - `lean_local_search` - Find declarations across repos
 
-**Less relevant** (these are for proof development):
-- `lean_goal`, `lean_multi_attempt` - Proof state tools
-- `lean_leansearch`, `lean_loogle` - Mathlib lemma search
+**Less relevant** (proof-focused):
+- `lean_goal`, `lean_multi_attempt`, `lean_leansearch`, `lean_loogle`
 
 ---
 
-## Soundness Guarantees to Implement
+## Common Tasks
 
-1. **No sorry** - Build fails if sorry exists
-2. **Connected dependency graph** - Warn on disconnected subgraphs
-3. **Label consistency** - Verify \inputleannode matches actual declarations
-4. **Uses completeness** - Compare \uses{} against actual dependencies
+### Fixing LaTeX parsing
+1. Read `Runway/Latex/Parser.lean`
+2. Check command handlers
+3. Test with `./scripts/build_blueprint.sh`
+4. Inspect `.lake/build/runway/` output
+
+### Debugging artifact generation
+1. Check `Dress/Capture/ElabRules.lean`
+2. Check `Dress/Generate/Declaration.lean`
+3. Look at `.lake/build/dressed/` artifacts
+
+### Cross-repo changes
+1. Identify affected repos (check dependency chain)
+2. Edit upstream first (LeanArchitect before Dress before Runway)
+3. Run build_blueprint.sh
+4. Test with SBS-Test
+
+### CSS/JS fixes
+1. Edit files in `dress-blueprint-action/assets/`
+2. Templates are in `Runway/Runway/Theme.lean`
+3. Assets copied via `assetsDir` config
+
+### Dependency graph work
+1. Graph generation: `Dress/Graph/*.lean`
+2. Graph rendering: `Runway/DepGraph.lean`
+3. D3.js code in `verso-code.js`
+4. Modal handling in `plastex.js`
+5. Node lookup via `manifest.json`
 
 ---
 
@@ -241,73 +203,32 @@ structure Node where
 
 Located in `.refs/`:
 
-| File | Purpose | Use When |
-|------|---------|----------|
-| `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML | Matching side-by-side CSS/JS/structure |
-| `dep_graph_ground_truth.txt` | Working dependency graph page | Implementing D3 graph, modals, legends |
-| `ARCHITECTURE.md` | System architecture | Understanding component relationships |
-| `GOALS.md` | Project goals and vision | Prioritizing features |
+| File | Purpose |
+|------|---------|
+| `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML |
+| `dep_graph_ground_truth.txt` | Dependency graph with modals |
+| `ARCHITECTURE.md` | System architecture |
+| `GOALS.md` | Project vision |
 
-**Style Deviations**: Each ground truth file has a `=== STYLE DEVIATIONS ===` section documenting intentional differences from the Python leanblueprint.
-
-## Quality Standards
-
-- No `sorry` in tooling code
-- Follow Verso/SubVerso patterns
-- Test via SBS-Test project
-- Compare output to goal images and ground truth files:
-  - goal1.png: Individual theorem rendering quality
-  - goal2.png: Page structure with chapters/sections
-  - `.refs/side_by_side_blueprint_ground_truth.txt`: HTML/CSS structure
-  - `.refs/dep_graph_ground_truth.txt`: Dependency graph features
-
----
-
-## Common Tasks
-
-### Fixing LaTeX parsing
-1. Read `Runway/Latex/Parser.lean` and `Runway/Latex/Ast.lean`
-2. Check what commands are being parsed
-3. Add missing command handlers
-4. Test with `./scripts/build_blueprint.sh`
-5. Inspect `.lake/build/runway/` output
-
-### Debugging artifact generation
-1. Check `Dress/Capture/ElabRules.lean` for capture logic
-2. Check `Dress/Generate/Declaration.lean` for output
-3. Look at `.lake/build/dressed/` artifacts
-4. Verify base64 encoding/decoding
-
-### Cross-repo changes
-1. Identify all affected repos (check dependency chain)
-2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run build_blueprint.sh (rebuilds in correct order)
-4. Test with SBS-Test
-
-### HTML/CSS fixes
-1. CSS is in `dress-blueprint-action/assets/blueprint.css` (real file, not embedded)
-2. JS is in `dress-blueprint-action/assets/` (plastex.js, verso-code.js)
-3. Templates are in `Runway/Runway/Theme.lean`
-4. Edit, rebuild, inspect browser output
-5. Assets are copied to output via `assetsDir` config in runway.json
+**Goal images**:
+- `goal1.png`: Individual theorem rendering
+- `goal2.png`: Page structure with chapters/sections
 
 ---
 
 ## Anti-Patterns
 
-- Don't create scratch files - work directly in repo files
+- Don't create scratch files - work in repo files
 - Don't use `lake clean` - invalidates caches
-- Don't edit downstream before upstream - breaks builds
-- Don't guess at Verso APIs - use `lean_hover_info` to check signatures
-- Don't skip build_blueprint.sh steps - artifacts depend on each other
+- Don't edit downstream before upstream
+- Don't guess at Verso APIs - use `lean_hover_info`
+- Don't skip build_blueprint.sh steps
 
 ---
 
-## Tools to Use
+## Standards
 
-- Read/Edit for Lean files
-- `lean_diagnostic_messages` after every edit
-- `lean_hover_info` for API discovery
-- Bash for running build_blueprint.sh
-- Read for inspecting generated HTML output
-- Glob/Grep for finding patterns across repos
+- No `sorry` in tooling code
+- Follow Verso/SubVerso patterns
+- Test via SBS-Test
+- Check `lean_diagnostic_messages` after edits
