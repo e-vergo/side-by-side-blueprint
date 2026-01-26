@@ -1,5 +1,7 @@
 # Side-by-Side Blueprint: Project Goals
 
+> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+
 ## Vision
 
 Create a pure Lean toolchain that displays formalized mathematical proofs alongside their LaTeX statements, reducing the burden on mathematicians and formalization researchers to verify that formal proofs actually prove what they claim.
@@ -123,11 +125,19 @@ Side-by-Side-Blueprint/
 
 ## Success Criteria
 
+### Blueprint (Achieved)
 1. **SBS-Test builds and serves** with chapter/section structure matching `blueprint.tex`
 2. **Output matches goal images** - hierarchical navigation, numbered theorems, prose between declarations
-3. **General_Crystallographic_Restriction** deploys via GitHub Actions with pure Lean stack
-4. **dress-blueprint-action** works for external consumers without Python/texlive
-5. **Soundness checks** catch disconnected graphs and missing dependencies
+3. **dress-blueprint-action** works for external consumers without Python/texlive
+4. **External assets architecture** - CSS/JS in `dress-blueprint-action/assets/`, configured via `assetsDir`
+
+### ar5iv Paper Generation (Next)
+5. **Full paper rendering** with MathJax, no inline Lean code
+6. **Links to formalization** instead of displaying code directly
+7. **Same build workflow** - defined by tex, uses Dress artifacts
+
+### Soundness (Future)
+8. **Soundness checks** catch disconnected graphs and missing dependencies
 
 ## Non-Goals (Current Phase)
 
@@ -148,6 +158,15 @@ Side-by-Side-Blueprint/
 ## Timeline Context
 
 - **Lean Together 2026**: Leo de Moura discussed tooling like this
-- **Current**: Port ~85% complete, working on LaTeX structure parsing
-- **Next**: Feature parity with Python leanblueprint
+- **Current**: Blueprint feature-complete, ar5iv paper generation next
+- **Next**: Full paper generation with MathJax (ar5iv style)
 - **Future**: Propose as official FRO tool
+
+## Next Major Feature: ar5iv Paper Generation
+
+The next milestone is full paper generation (not just blueprint):
+- MathJax rendering (like current blueprint)
+- Never display Lean code directly (just links to it)
+- Defined by tex file, uses Dress artifacts
+- Same build pattern as blueprint
+- Target: papers rendered like ar5iv.org

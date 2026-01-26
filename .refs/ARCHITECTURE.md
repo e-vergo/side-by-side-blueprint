@@ -1,5 +1,7 @@
 # Side-by-Side Lean Code Display Architecture
 
+> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+
 This document describes the architecture for displaying Lean source code side-by-side with LaTeX theorem statements in blueprint HTML output.
 
 ## Overview
@@ -152,10 +154,11 @@ NEW STACK (100% Lean):
 +-- chapter2.html
 +-- chapter3.html
 +-- ...
-+-- runway.css                        # Combined CSS (plasTeX-compatible)
-+-- runway.js                         # Combined JS (proof toggle + hovers)
-+-- plastex.js                        # Proof toggle functionality
-+-- verso-code.js                     # Hover tooltips + binding highlight
++-- manifest.json                     # Node index (replaces nodes/ directory)
++-- assets/
+    +-- blueprint.css                 # Copied from assetsDir
+    +-- plastex.js                    # Proof toggle functionality
+    +-- verso-code.js                 # Hover tooltips + binding highlight
 ```
 
 ## Key Files
@@ -193,16 +196,26 @@ Pure Lean website generator built on Verso patterns.
 
 | File | Purpose |
 |------|---------|
-| `Runway/Config.lean` | Site configuration (title, URLs, `blueprintTexPath`) |
+| `Runway/Config.lean` | Site configuration (title, URLs, `blueprintTexPath`, `assetsDir`) |
 | `Runway/Site.lean` | `NodeInfo`, `BlueprintSite`, `ChapterInfo`, `SectionInfo` structures |
 | `Runway/Traverse.lean` | Artifact loading from Dress output |
 | `Runway/Render.lean` | Side-by-side node HTML rendering with homepage stats |
 | `Runway/Theme.lean` | plasTeX-compatible page templates with sidebar navigation |
-| `Runway/Assets.lean` | CSS/JS content (migrated from leanblueprint) |
+| `Runway/Assets.lean` | Asset copying logic (minimal - assets are external files) |
 | `Runway/DepGraph.lean` | Graph embedding in HTML |
 | `Runway/Latex/Parser.lean` | LaTeX chapter/section/node parsing |
 | `Runway/Latex/ToHtml.lean` | LaTeX prose to HTML conversion |
 | `Main.lean` | CLI entry point (`runway build/serve/check`) |
+
+### External Assets (dress-blueprint-action/assets/)
+
+CSS and JavaScript are maintained as real files, not embedded strings.
+
+| File | Purpose |
+|------|---------|
+| `blueprint.css` | Full stylesheet (plasTeX-compatible, side-by-side layout) |
+| `plastex.js` | Proof toggle functionality |
+| `verso-code.js` | Hover tooltips, token binding highlights |
 
 ### SubVerso
 
@@ -263,11 +276,15 @@ The `runway.json` config file supports:
   "githubUrl": "https://github.com/...",
   "baseUrl": "/",
   "docgen4Url": null,
-  "blueprintTexPath": "blueprint/src/blueprint.tex"
+  "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "assetsDir": "/path/to/dress-blueprint-action/assets"
 }
 ```
 
-The `blueprintTexPath` option allows specifying a custom location for the LaTeX source file that defines chapter structure.
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `blueprintTexPath` | Yes | LaTeX source file defining chapter structure |
+| `assetsDir` | Yes | Directory containing CSS/JS assets to copy |
 
 ## Verso Integration
 
@@ -298,21 +315,24 @@ structure Theme where
   jsFiles : Array (String x String x Bool)
 ```
 
-### Asset Generation
+### Asset Handling
 
-Assets are embedded as string literals and written during site generation:
+Assets are maintained as external files and copied during site generation:
 
-```lean
--- Runway/Assets.lean
-def blueprintCss : String := r#"
-  /* CSS migrated from leanblueprint/static/blueprint.css */
-  .sbs-container { display: grid; ... }
-"#
-
-def writeAssets (outputDir : FilePath) : IO Unit := do
-  IO.FS.writeFile (outputDir / "runway.css") blueprintCss
-  IO.FS.writeFile (outputDir / "runway.js") runwayJs
 ```
+dress-blueprint-action/assets/
+├── blueprint.css    (32 KB - full stylesheet)
+├── plastex.js       (1.7 KB - proof toggles)
+└── verso-code.js    (15 KB - hovers, bindings)
+           ↓
+runway.json: "assetsDir": "/path/to/dress-blueprint-action/assets"
+           ↓
+Runway copies to output/assets/ during build
+           ↓
+HTML references: <link href="assets/blueprint.css">
+```
+
+This allows standard CSS/JS tooling, syntax highlighting, and easier collaboration.
 
 ## Build Process
 
@@ -433,12 +453,13 @@ rev = "main"
 
 ```json
 {
-  "title": "Crystallographic Restriction Theorem",
-  "projectName": "Crystallographic",
-  "githubUrl": "https://github.com/eric-wieser/General_Crystallographic_Restriction",
+  "title": "Project Title",
+  "projectName": "ProjectName",
+  "githubUrl": "https://github.com/...",
   "baseUrl": "/",
   "docgen4Url": null,
-  "blueprintTexPath": "blueprint/src/blueprint.tex"
+  "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "assetsDir": "/path/to/dress-blueprint-action/assets"
 }
 ```
 
@@ -455,7 +476,7 @@ theorem myTheorem : 2 + 2 = 4 := rfl
 
 ## Roadmap
 
-### Phase 1: Core Rendering
+### Phase 1: Core Rendering (Complete)
 - [x] Load Dress artifacts (decl.html, dep-graph.json)
 - [x] plasTeX-compatible HTML structure
 - [x] Side-by-side layout CSS
@@ -465,23 +486,32 @@ theorem myTheorem : 2 + 2 = 4 := rfl
 - [x] Token binding highlights
 - [x] Sidebar navigation
 
-### Phase 2: Full Feature Parity
+### Phase 2: Blueprint Feature Parity (Complete)
 - [x] "Uses:" dependency display removed (dependencies shown only in graph)
 - [x] Proof toggle synchronization (both columns animate together)
-- [x] Code splitting (signature vs proof body with `.lean-signature` and `.lean-proof-body`)
+- [x] Code splitting (signature vs proof body)
 - [x] Multi-page chapter generation (parse `blueprint.tex`)
 - [x] Homepage statistics (progress bar, counts by type/status)
-- [x] `blueprintTexPath` config option
+- [x] `blueprintTexPath` and `assetsDir` config options
 - [x] Prev/next chapter navigation
+- [x] Dependency graph page with modals
+- [x] External CSS/JS assets
+- [x] manifest.json (replaces nodes/ directory)
+
+### Phase 3: ar5iv Paper Generation (Current Priority)
+- [ ] Full paper generation (not just blueprint)
+- [ ] MathJax rendering (like current blueprint)
+- [ ] No direct Lean code display (just links)
+- [ ] Defined by tex file, uses Dress artifacts
+- [ ] Same build pattern as blueprint
+
+### Phase 4: Polish and Extended Features
 - [ ] Tactic state expansion
 - [ ] doc-gen4 cross-linking
-
-### Phase 3: Verso Genre
 - [ ] Define `Blueprint : Genre` following reference manual patterns
-- [ ] Two-phase traverse/render pipeline
 - [ ] Document DSL for expository content (`#doc`, `{node}`)
 
-### Phase 4: Upstream
+### Phase 5: Upstream
 - [ ] Propose as official Verso genre or FRO tool
 - [ ] doc-gen4 integration (bidirectional links)
 - [ ] Archive Python leanblueprint

@@ -1,5 +1,7 @@
 # Side-by-Side Blueprint: Development Guide
 
+> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+
 ## Orchestration Model
 
 **By default, the top-level chat discusses with the user and orchestrates `sbs-developer` agents to accomplish tasks, always one at a time.** The top-level chat serves as:
@@ -29,7 +31,7 @@ Building a pure Lean toolchain for formalization documentation that:
 | **SubVerso** | Syntax highlighting extraction (fork) | `Highlighting/Highlighted.lean` |
 | **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3}/*.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example (goal reference) | Full formalization project |
-| **dress-blueprint-action** | GitHub Action for CI | Automates full pipeline |
+| **dress-blueprint-action** | GitHub Action for CI + assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js` |
 
 ## Dependency Chain
 
@@ -43,9 +45,15 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Current Priority
 
-**LaTeX structure parsing**: Runway outputs flat list instead of chapter/section hierarchy.
+**ar5iv paper generation**: Blueprint functionality is feature-complete. Next milestone is full paper generation.
 
-Goal output should match:
+ar5iv paper features:
+- MathJax rendering (like current blueprint)
+- Never display Lean code directly (just links to it)
+- Defined by tex file, uses Dress artifacts
+- Same build pattern as blueprint
+
+Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
 - `goal1.png`: Clean side-by-side rendering with proof toggle
 
@@ -57,7 +65,9 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 # Serves at localhost:8000
 ```
 
-Inspect: `.lake/build/runway/` for HTML output, `.lake/build/dressed/` for artifacts.
+Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lake/build/dressed/` for artifacts.
+
+**Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets directory.
 
 ## MCP Tool Usage
 
@@ -80,7 +90,8 @@ Inspect: `.lake/build/runway/` for HTML output, `.lake/build/dressed/` for artif
 - Debugging artifact generation in Dress
 - Cross-repo changes (LeanArchitect → Dress → Runway)
 - Running builds and inspecting output
-- CSS/JS fixes in Theme.lean or Assets.lean
+- CSS/JS fixes in `dress-blueprint-action/assets/` (blueprint.css, plastex.js, verso-code.js)
+- Theme template fixes in `Runway/Runway/Theme.lean`
 
 **How to use:**
 1. Discuss task with user, clarify requirements

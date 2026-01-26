@@ -7,6 +7,8 @@ color: pink
 
 "Use this agent for all development work on the Side-by-Side Blueprint toolchain. This includes work on Runway (site generator), Dress (artifact generation), LeanArchitect (metadata), and cross-repo coordination. The agent has deep knowledge of the 7-repo architecture, the build pipeline, and the vision for pure Lean formalization documentation.
 
+> **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+
 
 ## Project Vision
 
@@ -48,12 +50,20 @@ SubVerso → LeanArchitect → Dress → Runway
 |------|---------|
 | `Main.lean` | CLI: build/serve/check commands |
 | `Render.lean` | Side-by-side node HTML rendering |
-| `Theme.lean` | Page templates, sidebar, CSS/JS |
+| `Theme.lean` | Page templates, sidebar navigation |
 | `Latex/Parser.lean` | LaTeX chapter/section parsing |
 | `Latex/ToHtml.lean` | LaTeX prose to HTML conversion |
 | `Latex/Ast.lean` | Block/Inline types, TheoremMetadata |
 | `Site.lean` | NodeInfo, ChapterInfo, SectionInfo |
-| `Assets.lean` | Embedded CSS/JS strings |
+| `Config.lean` | Site config including required `assetsDir` |
+| `Assets.lean` | Asset copying logic (minimal) |
+
+**External Assets** - `dress-blueprint-action/assets/`
+| File | Purpose |
+|------|---------|
+| `blueprint.css` | Full stylesheet (32 KB) |
+| `plastex.js` | Proof toggle functionality |
+| `verso-code.js` | Hover tooltips, token binding highlights |
 
 **Dress** - Artifact generation
 | File | Purpose |
@@ -76,22 +86,25 @@ SubVerso → LeanArchitect → Dress → Runway
 
 ---
 
-## Current Priority: LaTeX Structure Parsing
+## Current Priority: ar5iv Paper Generation
 
-**Problem**: Runway outputs flat list instead of chapter/section structure.
+**Status**: Blueprint functionality is feature-complete. Next milestone is ar5iv-style paper generation.
 
-**Goal**: Parse `blueprint.tex` to generate:
+**ar5iv paper features**:
+- Full paper generation (not just blueprint)
+- MathJax rendering (like current blueprint)
+- Never display Lean code directly (just links to it)
+- Defined by tex file, uses Dress artifacts
+- Same build pattern as blueprint
+
+**Blueprint features (complete)**:
 - Hierarchical sidebar (Chapter 4 → Section 4.1)
 - Numbered theorems (Definition 4.1.1, Theorem 4.1.2)
 - Prose text between declarations
 - Multi-page output with prev/next navigation
-
-**Key commands to parse**:
-- `\chapter{Title}` → new HTML page
-- `\section{Title}` → section within page
-- `\inputleannode{label}` → embed specific declaration
-- `\inputleanmodule{Module.Name}` → embed all declarations from module
-- Prose text → render as HTML with MathJax
+- Dependency graph page with modals
+- External CSS/JS assets via `assetsDir` config
+- manifest.json (replaces nodes/ directory)
 
 ---
 
@@ -112,7 +125,9 @@ This script:
 
 **Output locations**:
 - Artifacts: `.lake/build/dressed/{Module}/{label}/decl.{tex,html,json}`
-- Site: `.lake/build/runway/`
+- Site: `.lake/build/runway/` (includes `manifest.json` and `assets/` directory)
+
+**Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets.
 
 ---
 
@@ -135,7 +150,8 @@ Lake facets aggregate:
 Runway consumes:
   - Parses blueprint.tex for structure
   - Loads artifacts from .lake/build/dressed/
-  - Decodes base64 HTML
+  - Copies assets from assetsDir to output/assets/
+  - Generates manifest.json (node index)
   - Generates multi-page site
 ```
 
@@ -269,10 +285,11 @@ Located in `.refs/`:
 4. Test with SBS-Test
 
 ### HTML/CSS fixes
-1. CSS is in `Runway/Assets.lean` as string literals
-2. JS is in `Runway/Assets.lean` (plastex.js, verso-code.js)
-3. Templates are in `Runway/Theme.lean`
+1. CSS is in `dress-blueprint-action/assets/blueprint.css` (real file, not embedded)
+2. JS is in `dress-blueprint-action/assets/` (plastex.js, verso-code.js)
+3. Templates are in `Runway/Runway/Theme.lean`
 4. Edit, rebuild, inspect browser output
+5. Assets are copied to output via `assetsDir` config in runway.json
 
 ---
 
