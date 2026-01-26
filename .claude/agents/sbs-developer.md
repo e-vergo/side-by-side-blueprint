@@ -59,27 +59,38 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `Capture/InfoTree.lean` | SubVerso highlighting capture |
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
-| `Graph/*.lean` | Dependency graph (fragile, needs work) |
+| `Graph/Types.lean` | Node, Edge, LayoutEdge types |
+| `Graph/Build.lean` | Graph construction from environment |
+| `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier |
+| `Graph/Render.lean` | SVG generation |
+
+**Runway** - Site generator
+| File | Purpose |
+|------|---------|
+| `DepGraph.lean` | Dependency graph page, modal wrappers |
+| `Render.lean` | Side-by-side rendering, `renderNodeModal` |
 
 **External Assets** - `dress-blueprint-action/assets/`
 | File | Purpose |
 |------|---------|
-| `blueprint.css` | Full stylesheet (32 KB) |
-| `plastex.js` | Proof toggle |
-| `verso-code.js` | Hovers, token bindings |
+| `blueprint.css` | Full stylesheet including modal and graph styles |
+| `plastex.js` | LaTeX proof toggle (expand/collapse) |
+| `verso-code.js` | Hovers, token bindings, pan/zoom, modal MathJax/Tippy init |
 
 ---
 
-## Current Priority: Dependency Graph
+## Current Status
 
-**Status**: Blueprint functionality is feature-complete. Dependency graph is fragile and needs work.
+**Blueprint + Dependency Graph**: Feature-complete through Phase 7.
 
-**Known issues**:
-- Graph rendering can be fragile
-- Modal interactions need polish
-- Node lookup via manifest.json
+**Completed**:
+- Sugiyama layout with edge routing (visibility graph + Dijkstra + Bezier)
+- Rich modals with side-by-side content (reuses `renderNode`)
+- Pan/zoom, node hover, Fit button
+- MathJax and Tippy.js in modals
+- CI/CD with GitHub Pages deployment
 
-**Next after dependency graph**: ar5iv-style paper generation
+**Next priority**: ar5iv-style paper generation (MathJax, links to Lean code, no inline display)
 
 ---
 
@@ -191,11 +202,43 @@ Runway consumes:
 3. Assets copied via `assetsDir` config
 
 ### Dependency graph work
-1. Graph generation: `Dress/Graph/*.lean`
-2. Graph rendering: `Runway/DepGraph.lean`
-3. D3.js code in `verso-code.js`
-4. Modal handling in `plastex.js`
-5. Node lookup via `manifest.json`
+
+**Layout algorithm** (`Dress/Graph/Layout.lean`):
+- Sugiyama: layer assignment, median crossing reduction, position refinement
+- Edge routing: visibility graph, Dijkstra shortest path, Bezier fitting
+- Node width calculation from label length
+
+**SVG rendering** (`Dress/Graph/Render.lean`):
+- Node shapes: ellipse (theorems), rect (definitions)
+- Edge paths: Bezier curves with arrow markers
+- 8-status color model
+
+**Page generation** (`Runway/DepGraph.lean`):
+- `wrapInModal`: Wraps sbs-container in modal structure
+- `fullPageGraph`: Complete dep_graph.html page
+
+**Modal content** (`Runway/Render.lean`):
+- `renderNodeModal`: Calls `renderNode` and wraps in modal
+- Preserves all hover data and proof toggle functionality
+
+**JavaScript** (`verso-code.js`):
+- Pan/zoom: D3-style behavior (wheel, drag, Fit button)
+- `onModalOpen()`: Initializes MathJax and Tippy.js
+- Centering: Uses SVG dimensions, not getBBox()
+
+**CSS** (`blueprint.css`):
+- Modal sizing: 90vw max width
+- sbs-container flex layout in modals
+- Lean proof toggle: CSS checkbox pattern
+
+### ID normalization gotcha
+
+Node IDs containing colons (e.g., `thm:main`) must be converted to hyphens (`thm-main`) when used in:
+- Modal element IDs
+- CSS selectors
+- JavaScript querySelector calls
+
+The colon-to-hyphen conversion happens in `DepGraph.lean` when generating modal IDs.
 
 ---
 
@@ -216,6 +259,20 @@ Located in `.refs/`:
 
 ---
 
+## CI/CD Knowledge
+
+**dress-blueprint-action** now supports Runway:
+- `use-runway: true` enables Runway instead of Python leanblueprint
+- `runway-target: "ProjectName:runway"` specifies Lake target
+- Assembles from `.lake/build/runway/` when enabled
+
+**Multi-repo CI** (SBS-Test workflow):
+- Checks out SBS-Test, Dress, Runway, dress-blueprint-action as siblings
+- Uses `runway-ci.json` with `${{ github.workspace }}` absolute paths
+- Deploys to GitHub Pages on main branch push
+
+---
+
 ## Anti-Patterns
 
 - Don't create scratch files - work in repo files
@@ -223,6 +280,7 @@ Located in `.refs/`:
 - Don't edit downstream before upstream
 - Don't guess at Verso APIs - use `lean_hover_info`
 - Don't skip build_blueprint.sh steps
+- Don't use colons in CSS selectors or element IDs - normalize to hyphens
 
 ---
 
