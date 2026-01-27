@@ -25,11 +25,11 @@ Building a pure Lean toolchain for formalization documentation that:
 
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
-| **Runway** | Site generator (replaces Python leanblueprint) | `Main.lean`, `Render.lean`, `Theme.lean`, `Latex/Parser.lean` |
-| **Dress** | Artifact generation during elaboration | `Capture/ElabRules.lean`, `Generate/Declaration.lean`, `HtmlRender.lean` |
-| **LeanArchitect** | `@[blueprint]` attribute and metadata | `Architect/Attribute.lean`, `Architect/Basic.lean` |
+| **Runway** | Site generator + dashboard | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean` |
+| **Dress** | Artifact generation + stats computation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
+| **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
-| **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3}/*.lean`, `blueprint/src/blueprint.tex` |
+| **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3,4}/*.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example (goal reference) | Full formalization project |
 | **dress-blueprint-action** | GitHub Action for CI + external assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js`, `action.yml` |
 
@@ -45,14 +45,18 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Current Status
 
-**Phase 7 Complete**: Blueprint and dependency graph are feature-complete.
+**Phase 7 + Dashboard Phases Complete**: Blueprint, dashboard, and dependency graph are feature-complete.
 
 **Completed features**:
 - Side-by-side display with proof toggles
+- Dashboard homepage with stats, key theorems, messages, project notes
+- 7 new `@[blueprint]` attribute options (keyTheorem, message, priorityItem, blocked, potentialIssue, technicalDebt, misc)
+- Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
+- Dependency graph sidebar navigation
 - Rich modals with MathJax, Tippy.js, proof toggles
 - CI/CD with GitHub Pages deployment
-- `displayName` option in `@[blueprint]` attribute
+- `displayName` propagation for cleaner labels
 
 **Next priority**: ar5iv paper generation (full paper rendering with MathJax, links to Lean code instead of inline display).
 
@@ -109,7 +113,9 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 - CSS/JS fixes in `dress-blueprint-action/assets/`
 - Theme template fixes in `Runway/Runway/Theme.lean`
 - Dependency graph work (layout in `Dress/Graph/*.lean`, page in `Runway/DepGraph.lean`)
+- Dashboard work (stats/key theorems/messages/notes in `Runway/Render.lean`)
 - Modal content generation (`Runway/Render.lean`)
+- Attribute options (LeanArchitect `Basic.lean` and `Attribute.lean`)
 - CI/CD workflow updates (`dress-blueprint-action`, `SBS-Test/.github/workflows/`)
 
 **How to use:**
@@ -173,6 +179,35 @@ Located in `.refs/`:
 **Proof toggles**:
 - LaTeX: `plastex.js` handles expand/collapse
 - Lean: Pure CSS checkbox pattern (no JS needed)
+
+**Dashboard data flow**:
+1. `Dress/Graph/Build.lean`: `computeStatusCounts` computes stats from graph
+2. `Dress/Graph/Json.lean`: Serializes stats + project metadata to manifest.json
+3. `Runway/Main.lean`: Loads manifest.json (no recomputation)
+4. `Runway/Render.lean`: `renderDashboard` displays precomputed data
+
+**`@[blueprint]` attribute options**:
+```lean
+@[blueprint (keyTheorem := true, message := "Main result")]
+theorem main_thm : ...
+
+@[blueprint (priorityItem := true, blocked := "Waiting for mathlib PR")]
+lemma helper : ...
+
+@[blueprint (displayName := "Square Non-negative")]
+theorem square_nonneg : ...
+```
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `displayName` | String | Custom node label in graph |
+| `keyTheorem` | Bool | Highlight in dashboard Key Theorems |
+| `message` | String | User notes (Messages panel) |
+| `priorityItem` | Bool | Flag for Attention column |
+| `blocked` | String | Blockage reason |
+| `potentialIssue` | String | Known concerns |
+| `technicalDebt` | String | Cleanup notes |
+| `misc` | String | Catch-all notes |
 
 **CI/CD**:
 - `dress-blueprint-action` supports `use-runway` and `runway-target` inputs

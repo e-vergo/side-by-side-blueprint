@@ -43,32 +43,30 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 ### Key Files by Repo
 
-**Runway** - Site generator
+**Runway** - Site generator + dashboard
 | File | Purpose |
 |------|---------|
-| `Main.lean` | CLI: build/serve/check |
-| `Render.lean` | Side-by-side node rendering |
+| `Main.lean` | CLI: build/serve/check, loads manifest.json |
+| `Render.lean` | Side-by-side rendering, dashboard, `renderNodeModal` |
+| `Site.lean` | NodeInfo structure with displayName |
+| `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Theme.lean` | Page templates, sidebar |
 | `Latex/Parser.lean` | LaTeX parsing |
 | `Config.lean` | Site config including `assetsDir` |
 
-**Dress** - Artifact generation
+**Dress** - Artifact generation + stats computation
 | File | Purpose |
 |------|---------|
 | `Capture/ElabRules.lean` | elab_rules hooks |
 | `Capture/InfoTree.lean` | SubVerso highlighting capture |
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
-| `Graph/Types.lean` | Node, Edge, LayoutEdge types |
-| `Graph/Build.lean` | Graph construction from environment |
+| `Graph/Types.lean` | Node, Edge, StatusCounts types |
+| `Graph/Build.lean` | Graph construction + stats computation |
+| `Graph/Json.lean` | Manifest serialization with stats/metadata |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier |
 | `Graph/Render.lean` | SVG generation |
-
-**Runway** - Site generator
-| File | Purpose |
-|------|---------|
-| `DepGraph.lean` | Dependency graph page, modal wrappers |
-| `Render.lean` | Side-by-side rendering, `renderNodeModal` |
+| `Main.lean` | Writes manifest.json with precomputed stats |
 
 **External Assets** - `dress-blueprint-action/assets/`
 | File | Purpose |
@@ -81,12 +79,17 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 ## Current Status
 
-**Blueprint + Dependency Graph**: Feature-complete through Phase 7.
+**Blueprint + Dashboard + Dependency Graph**: Feature-complete through Phase 7 + Dashboard phases.
 
 **Completed**:
+- Dashboard homepage with 2x2 grid (Stats, Key Theorems, Messages, Project Notes)
+- 7 new `@[blueprint]` attribute options for metadata
+- Stats computed upstream in Dress (soundness guarantee)
+- manifest.json with precomputed stats and project notes
 - Sugiyama layout with edge routing (visibility graph + Dijkstra + Bezier)
 - Rich modals with side-by-side content (reuses `renderNode`)
-- Pan/zoom, node hover, Fit button
+- Pan/zoom, node hover, Fit button with corrected X-axis centering
+- Sidebar navigation on dependency graph page
 - MathJax and Tippy.js in modals
 - CI/CD with GitHub Pages deployment
 
@@ -151,14 +154,17 @@ Dress captures during elaboration:
         v
 Lake facets aggregate:
   - dep-graph.json + dep-graph.svg
+  - Computes StatusCounts (stats)
+  - Extracts project metadata (keyTheorems, messages, projectNotes)
+  - Writes manifest.json (precomputed, soundness guarantee)
         |
         v
 Runway consumes:
   - Parses blueprint.tex for structure
   - Loads artifacts from .lake/build/dressed/
+  - Loads manifest.json (no stat recomputation)
   - Copies assets from assetsDir to output/assets/
-  - Generates manifest.json (node index)
-  - Generates multi-page site
+  - Generates dashboard homepage + multi-page site
 ```
 
 ---
@@ -224,12 +230,50 @@ Runway consumes:
 **JavaScript** (`verso-code.js`):
 - Pan/zoom: D3-style behavior (wheel, drag, Fit button)
 - `onModalOpen()`: Initializes MathJax and Tippy.js
-- Centering: Uses SVG dimensions, not getBBox()
+- Centering: Uses getBBox() for content bounds, centers on contentCenterX/Y
 
 **CSS** (`blueprint.css`):
 - Modal sizing: 90vw max width
 - sbs-container flex layout in modals
 - Lean proof toggle: CSS checkbox pattern
+- Dashboard grid: 2x2 layout with stats, key theorems, messages, project notes
+
+### Dashboard work
+
+**Render.lean functions**:
+- `renderDashboard`: Main 2x2 grid layout
+- `renderProgress`: Stats with Completion/Attention columns
+- `renderKeyTheorems`: Side-by-side previews with status dots
+- `renderMessages`: User notes from `message` attribute
+- `renderProjectNotes`: blocked/potentialIssues/technicalDebt/misc sections
+
+**Data flow**:
+- Stats computed in Dress (`Graph.computeStatusCounts`)
+- Manifest.json written by Dress with precomputed stats
+- Runway loads manifest, no recomputation (soundness)
+- `displayName` propagated for cleaner labels (falls back to short Lean name)
+
+### `@[blueprint]` attribute options
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `displayName` | String | Custom node label in graph |
+| `keyTheorem` | Bool | Highlight in dashboard |
+| `message` | String | User notes (Messages panel) |
+| `priorityItem` | Bool | Flag for Attention column |
+| `blocked` | String | Blockage reason |
+| `potentialIssue` | String | Known concerns |
+| `technicalDebt` | String | Cleanup notes |
+| `misc` | String | Catch-all notes |
+
+**Example**:
+```lean
+@[blueprint (keyTheorem := true, message := "Main result")]
+theorem main_thm : ...
+
+@[blueprint (priorityItem := true, blocked := "Waiting for mathlib PR")]
+lemma helper : ...
+```
 
 ### ID normalization gotcha
 

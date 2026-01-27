@@ -9,9 +9,9 @@ Seven repositories work together to produce formalization documentation:
 | Repository | Purpose |
 |------------|---------|
 | **SubVerso** | Syntax highlighting extraction from Lean info trees |
-| **LeanArchitect** | `@[blueprint]` attribute, metadata storage, `displayName` option |
-| **Dress** | Artifact generation during elaboration + dependency graph layout |
-| **Runway** | Site generator (replaces Python leanblueprint) + rich modal rendering |
+| **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options |
+| **Dress** | Artifact generation + dependency graph layout + stats computation |
+| **Runway** | Site generator with dashboard + rich modal rendering |
 | **SBS-Test** | Minimal test project for iteration |
 | **General_Crystallographic_Restriction** | Production example |
 | **dress-blueprint-action** | GitHub Action + external CSS/JS assets + Runway CI support |
@@ -36,14 +36,16 @@ DRESS (during elaboration):
 LAKE FACETS (after compilation):
   - :blueprint aggregates module artifacts
   - :depGraph generates dep-graph.json + dep-graph.svg
+  - Computes stats (StatusCounts) and extracts project metadata
+  - Writes manifest.json with precomputed stats and project notes
         |
         v
 RUNWAY (post-build):
   - Parses blueprint.tex for chapter/section structure
   - Loads artifacts from .lake/build/dressed/
+  - Loads manifest.json (precomputed stats, no recomputation)
   - Copies assets from assetsDir to output
-  - Generates manifest.json (node index)
-  - Generates multi-page static site
+  - Generates dashboard homepage + multi-page static site
 ```
 
 ## Output Directories
@@ -96,27 +98,38 @@ CSS and JavaScript are maintained as real files in `dress-blueprint-action/asset
 
 ## manifest.json System
 
-Runway generates `manifest.json` as a per-declaration index (replaces the old `nodes/` directory approach):
+**Dress** generates `manifest.json` with precomputed statistics and project metadata (soundness: stats computed at source):
 
 ```json
 {
-  "nodes": [
-    {
-      "label": "thm:main",
-      "declName": "MainTheorem",
-      "module": "Project.Main",
-      "file": "chapter1.html",
-      "type": "theorem",
-      "status": "proved"
-    }
-  ]
+  "stats": {
+    "notReady": 1, "stated": 0, "ready": 1, "hasSorry": 2,
+    "proven": 24, "fullyProven": 1, "mathlibReady": 2, "inMathlib": 1,
+    "total": 32
+  },
+  "keyTheorems": ["thm:dashboard-key", "thm:dashboard-multi"],
+  "messages": [
+    {"id": "thm:dashboard-message", "label": "SBSTest.Chapter4.dashboard_message_test",
+     "message": "Consider alternative proof approach"}
+  ],
+  "projectNotes": {
+    "priority": [{"id": "thm:dashboard-priority-high", "label": "SBSTest.Chapter4.dashboard_priority_high"}],
+    "blocked": [{"id": "thm:dashboard-blocked", "label": "...", "reason": "Waiting for upstream mathlib PR"}],
+    "potentialIssues": [{"id": "lem:dashboard-issue", "label": "...", "issue": "May not generalize"}],
+    "technicalDebt": [{"id": "def:dashboard-debt", "label": "...", "debt": "Refactor to use Finset API"}],
+    "misc": [{"id": "thm:dashboard-misc", "label": "...", "note": "See discussion in issue #42"}]
+  },
+  "nodes": {
+    "thm:main-result": "#thm:main-result",
+    ...
+  }
 }
 ```
 
 Used for:
+- Dashboard homepage (stats panel, key theorems, project notes)
 - Node lookup from dependency graph modals
 - Cross-page linking
-- Homepage statistics
 
 ## Repository Details
 
@@ -126,11 +139,34 @@ Lightweight metadata store. Only depends on `batteries`.
 
 | File | Purpose |
 |------|---------|
-| `Architect/Basic.lean` | `Node`, `NodePart`, `NodeConfig` structures |
-| `Architect/Attribute.lean` | `@[blueprint]` attribute with `displayName` option |
+| `Architect/Basic.lean` | `Node`, `NodePart`, `NodeStatus` structures with 7 metadata fields |
+| `Architect/Attribute.lean` | `@[blueprint]` attribute with all options |
 | `Architect/CollectUsed.lean` | Dependency inference |
 
-**`displayName` option**: Allows custom node labels in dependency graph. If not set, full qualified Lean name is used (e.g., `SBSTest.Chapter2.square_nonneg`).
+**Attribute options**:
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `displayName` | String | Custom node label in dependency graph |
+| `keyTheorem` | Bool | Highlight in dashboard Key Theorems section |
+| `message` | String | User notes (appears in Messages panel) |
+| `priorityItem` | Bool | Flag for Attention column in dashboard |
+| `blocked` | String | Reason for blockage (Attention column) |
+| `potentialIssue` | String | Known concerns (Attention column) |
+| `technicalDebt` | String | Cleanup notes (Attention column) |
+| `misc` | String | Catch-all notes (Attention column) |
+
+**Example usage**:
+```lean
+@[blueprint (keyTheorem := true, message := "Main result of paper")]
+theorem main_theorem : ...
+
+@[blueprint (priorityItem := true, blocked := "Waiting for upstream PR")]
+lemma helper_lemma : ...
+
+@[blueprint (displayName := "Square Non-negative")]
+theorem square_nonneg : ...
+```
 
 ### Dress
 
@@ -142,11 +178,13 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 | `Capture/InfoTree.lean` | SubVerso highlighting capture |
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
-| `Graph/Types.lean` | `Node`, `Edge`, `LayoutEdge` types |
-| `Graph/Build.lean` | Graph construction from Lean environment |
+| `Graph/Types.lean` | `Node`, `Edge`, `StatusCounts` types |
+| `Graph/Build.lean` | Graph construction + stats computation |
+| `Graph/Json.lean` | Manifest serialization with stats/metadata |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph edge routing |
 | `Graph/Render.lean` | SVG generation with Bezier curves |
 | `Paths.lean` | Centralized path management |
+| `Main.lean` | Writes manifest.json with precomputed stats |
 
 ### Runway
 
@@ -154,14 +192,22 @@ Pure Lean site generator using Verso patterns.
 
 | File | Purpose |
 |------|---------|
-| `Main.lean` | CLI entry point |
-| `Render.lean` | Side-by-side node rendering, modal content generation |
+| `Main.lean` | CLI entry point, loads manifest.json |
+| `Render.lean` | Side-by-side node rendering, dashboard, modal content |
 | `Theme.lean` | Page templates, sidebar |
-| `DepGraph.lean` | Dependency graph page with modal wrappers |
+| `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
+| `Site.lean` | `NodeInfo` structure with `displayName` field |
 | `Latex/Parser.lean` | LaTeX parsing |
 | `Latex/ToHtml.lean` | LaTeX to HTML |
 | `Config.lean` | Site config including `assetsDir` |
 | `Assets.lean` | Asset copying |
+
+**Dashboard rendering** (`Render.lean`):
+- `renderDashboard`: Main 2x2 grid layout
+- `renderProgress`: Stats panel with Completion/Attention columns
+- `renderKeyTheorems`: Key theorems with side-by-side preview
+- `renderMessages`: User notes section
+- `renderProjectNotes`: Blocked/Issues/Debt/Misc sections
 
 ### SubVerso
 
@@ -218,7 +264,9 @@ Modals display rich side-by-side content when nodes are clicked:
 D3-style behavior implemented manually (no D3 dependency):
 - **Wheel**: Zoom centered on cursor position
 - **Drag**: Pan with pointer capture
-- **Fit button**: Scales and centers graph using SVG dimensions (not bbox)
+- **Fit button**: Scales and centers graph using content bounds (getBBox) for proper X/Y centering
+
+**Fit algorithm fix**: Uses `getBBox()` to get actual content bounds, then centers on `contentCenterX/Y` rather than SVG declared dimensions. This fixes X-axis bias when SVG has asymmetric padding.
 
 ### CI/CD Integration
 
@@ -288,18 +336,26 @@ python3 -m http.server -d .lake/build/runway 8000
 
 ## Feature Status
 
-### Complete (Phase 7)
+### Complete (through Phase 7 + Dashboard Phases)
 
 **Blueprint Core**:
 - Side-by-side display with proof toggle sync
 - Hierarchical sidebar navigation
 - Numbered theorems (4.1.1 format)
 - Multi-page chapter generation
-- Homepage statistics
 - Hover tooltips with type signatures
 - Token binding highlights
 - External CSS/JS assets
-- manifest.json node index
+
+**Dashboard Homepage**:
+- 2x2 grid layout: Stats / Key Theorems / Messages / Project Notes
+- Stats panel with Completion column (proven, fullyProven, mathlibReady, inMathlib)
+- Stats panel with Attention column (notReady, stated, ready, hasSorry)
+- Key Theorems section with side-by-side preview and status dots
+- Messages panel showing user notes from `message` attribute
+- Project Notes: blocked/potentialIssues/technicalDebt/misc sections
+- All stats computed upstream in Dress (soundness guarantee)
+- `displayName` propagation for cleaner labels
 
 **Dependency Graph**:
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
@@ -310,8 +366,8 @@ python3 -m http.server -d .lake/build/runway 8000
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
 - Edge routing: Visibility graph + Dijkstra + Bezier fitting
 - Node hover border thickening
-- Combined Fit button (scale and center)
-- Graph centering fix (uses SVG dimensions)
+- Combined Fit button with corrected X-axis centering
+- **Sidebar navigation** (chapters, Blueprint Home, Dependency Graph, Paper, GitHub links)
 
 **Rich Modals (Verso Integration)**:
 - Click node to open modal with full side-by-side content
@@ -321,6 +377,13 @@ python3 -m http.server -d .lake/build/runway 8000
 - LaTeX proof toggle (plastex.js)
 - Lean proof toggle (CSS checkbox pattern)
 - "View in Blueprint" link
+
+**`@[blueprint]` Attribute Options**:
+- `displayName`: Custom graph labels
+- `keyTheorem`: Dashboard highlighting
+- `message`: User notes
+- `priorityItem`: Attention flagging (replaces Priority enum)
+- `blocked`, `potentialIssue`, `technicalDebt`, `misc`: Project notes
 
 **CI/CD**:
 - `dress-blueprint-action` supports Runway via `use-runway` input
