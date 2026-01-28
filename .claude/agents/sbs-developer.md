@@ -38,7 +38,7 @@ Create tooling that:
 ```
 SubVerso -> LeanArchitect -> Dress -> Runway
                               |
-                          Consumer projects (SBS-Test)
+                          Consumer projects (SBS-Test, GCR)
 ```
 
 ### Key Files by Repo
@@ -51,8 +51,8 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `Site.lean` | NodeInfo structure with displayName |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Theme.lean` | Page templates, sidebar |
-| `Latex/Parser.lean` | LaTeX parsing |
-| `Config.lean` | Site config including `assetsDir` |
+| `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes) |
+| `Config.lean` | Site config including `assetsDir`, `paperTexPath` |
 
 **Dress** - Artifact generation + stats computation
 | File | Purpose |
@@ -62,7 +62,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
 | `Graph/Types.lean` | Node, Edge, StatusCounts types |
-| `Graph/Build.lean` | Graph construction + stats computation |
+| `Graph/Build.lean` | Graph construction + stats + `Node.inferUses` dependency inference |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier |
 | `Graph/Render.lean` | SVG generation |
@@ -92,6 +92,10 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - Sidebar navigation on dependency graph page
 - MathJax and Tippy.js in modals
 - CI/CD with GitHub Pages deployment
+- Parser fixes for large documents (3989+ tokens)
+- Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
+- CSS fixes for non-Lean content column width
+- docs-static branch pattern for pre-generated docgen4 documentation
 
 **Next priority**: ar5iv-style paper generation (MathJax, links to Lean code, no inline display)
 
@@ -118,18 +122,28 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 ## Build Workflow
 
+### SBS-Test (development)
+
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ./scripts/build_blueprint.sh
 ```
 
-This script:
-1. Builds local forks: SubVerso -> LeanArchitect -> Dress -> Runway
-2. Fetches Mathlib cache
-3. Runs `BLUEPRINT_DRESS=1 lake build`
-4. Runs `lake build :blueprint`
-5. Runs `lake exe runway build runway.json`
-6. Serves at localhost:8000
+### GCR (production example)
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
+./scripts/build_blueprint.sh
+```
+
+Both scripts:
+1. Build local forks: SubVerso -> LeanArchitect -> Dress -> Runway
+2. Fetch Mathlib cache
+3. Run `BLUEPRINT_DRESS=1 lake build`
+4. Run `lake build :blueprint`
+5. Run `lake exe extract_blueprint graph`
+6. Run `lake exe runway build runway.json`
+7. Serve at localhost:8000
 
 **Output locations**:
 - Artifacts: `.lake/build/dressed/{Module}/{label}/decl.{tex,html,json}`
@@ -156,6 +170,7 @@ Lake facets aggregate:
   - dep-graph.json + dep-graph.svg
   - Computes StatusCounts (stats)
   - Extracts project metadata (keyTheorems, messages, projectNotes)
+  - Uses `Node.inferUses` for real Lean code dependencies
   - Writes manifest.json (precomputed, soundness guarantee)
         |
         v
@@ -187,9 +202,10 @@ Runway consumes:
 
 ### Fixing LaTeX parsing
 1. Read `Runway/Latex/Parser.lean`
-2. Check command handlers
-3. Test with `./scripts/build_blueprint.sh`
-4. Inspect `.lake/build/runway/` output
+2. Check command handlers and catch-all cases
+3. Ensure `let _ <- advance` in catch-all to prevent infinite loops
+4. Test with `./scripts/build_blueprint.sh`
+5. Inspect `.lake/build/runway/` output
 
 ### Debugging artifact generation
 1. Check `Dress/Capture/ElabRules.lean`
@@ -200,12 +216,13 @@ Runway consumes:
 1. Identify affected repos (check dependency chain)
 2. Edit upstream first (LeanArchitect before Dress before Runway)
 3. Run build_blueprint.sh
-4. Test with SBS-Test
+4. Test with SBS-Test or GCR
 
 ### CSS/JS fixes
 1. Edit files in `dress-blueprint-action/assets/`
 2. Templates are in `Runway/Runway/Theme.lean`
 3. Assets copied via `assetsDir` config
+4. Content column width: `.chapter-page > p` and `section.section > p`
 
 ### Dependency graph work
 
@@ -213,6 +230,12 @@ Runway consumes:
 - Sugiyama: layer assignment, median crossing reduction, position refinement
 - Edge routing: visibility graph, Dijkstra shortest path, Bezier fitting
 - Node width calculation from label length
+
+**Edge generation** (`Dress/Graph/Build.lean`):
+- `Node.inferUses` traces actual Lean code dependencies
+- Statement uses -> dashed edges
+- Proof uses -> solid edges
+- Edges filtered to valid node IDs only
 
 **SVG rendering** (`Dress/Graph/Render.lean`):
 - Node shapes: ellipse (theorems), rect (definitions)
@@ -286,6 +309,20 @@ The colon-to-hyphen conversion happens in `DepGraph.lean` when generating modal 
 
 ---
 
+## docs-static Branch Pattern
+
+For projects with pre-generated documentation (docgen4 ~1 hour):
+
+1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
+2. Create orphan branch: `git checkout --orphan docs-static`
+3. Add and commit docs to branch root
+4. Push to remote
+5. CI downloads from branch instead of regenerating (~4,700 files in seconds vs. ~1 hour)
+
+**GCR uses this pattern** - see `full-build-deploy.yml` for the download step.
+
+---
+
 ## Reference Documents
 
 Located in `.refs/`:
@@ -310,10 +347,14 @@ Located in `.refs/`:
 - `runway-target: "ProjectName:runway"` specifies Lake target
 - Assembles from `.lake/build/runway/` when enabled
 
-**Multi-repo CI** (SBS-Test workflow):
-- Checks out SBS-Test, Dress, Runway, dress-blueprint-action as siblings
+**Multi-repo CI** (SBS-Test and GCR workflows):
+- Checks out project and sibling repos (Dress, Runway, LeanArchitect, SubVerso, dress-blueprint-action)
 - Uses `runway-ci.json` with `${{ github.workspace }}` absolute paths
 - Deploys to GitHub Pages on main branch push
+
+**GCR consolidated workflows**:
+- `full-build-deploy.yml` - Primary workflow (builds everything, deploys)
+- `seed-mathlib-cache.yml` - Utility for cache seeding
 
 ---
 
@@ -325,6 +366,7 @@ Located in `.refs/`:
 - Don't guess at Verso APIs - use `lean_hover_info`
 - Don't skip build_blueprint.sh steps
 - Don't use colons in CSS selectors or element IDs - normalize to hyphens
+- Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
 
 ---
 
@@ -332,5 +374,5 @@ Located in `.refs/`:
 
 - No `sorry` in tooling code
 - Follow Verso/SubVerso patterns
-- Test via SBS-Test
+- Test via SBS-Test or GCR
 - Check `lean_diagnostic_messages` after edits

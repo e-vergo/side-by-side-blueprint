@@ -37,6 +37,7 @@ LAKE FACETS (after compilation):
   - :blueprint aggregates module artifacts
   - :depGraph generates dep-graph.json + dep-graph.svg
   - Computes stats (StatusCounts) and extracts project metadata
+  - Uses Node.inferUses for real Lean code dependency inference
   - Writes manifest.json with precomputed stats and project notes
         |
         v
@@ -46,6 +47,26 @@ RUNWAY (post-build):
   - Loads manifest.json (precomputed stats, no recomputation)
   - Copies assets from assetsDir to output
   - Generates dashboard homepage + multi-page static site
+```
+
+### Full Build Commands
+
+```bash
+# 1. Build dependency chain (SubVerso -> LeanArchitect -> Dress -> Runway)
+# 2. Run artifact generation with environment variable
+BLUEPRINT_DRESS=1 lake build
+
+# 3. Build blueprint facet
+lake build :blueprint
+
+# 4. Extract dependency graph from environment
+lake exe extract_blueprint graph
+
+# 5. Generate static site
+lake exe runway build runway.json
+
+# 6. (Optional) Generate ar5iv-style paper if paperTexPath configured
+lake exe runway paper runway.json
 ```
 
 ## Output Directories
@@ -71,6 +92,7 @@ RUNWAY (post-build):
 ├── index.html                # Homepage with stats
 ├── dep_graph.html            # Full dependency graph with rich modals
 ├── chapter{N}.html           # Per-chapter pages
+├── paper.html                # ar5iv-style paper (if paperTexPath configured)
 ├── manifest.json             # Node index
 └── assets/
     ├── blueprint.css         # From assetsDir
@@ -179,12 +201,14 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
 | `Graph/Types.lean` | `Node`, `Edge`, `StatusCounts` types |
-| `Graph/Build.lean` | Graph construction + stats computation |
+| `Graph/Build.lean` | Graph construction + stats computation + `Node.inferUses` for dependencies |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph edge routing |
 | `Graph/Render.lean` | SVG generation with Bezier curves |
 | `Paths.lean` | Centralized path management |
 | `Main.lean` | Writes manifest.json with precomputed stats |
+
+**Dependency inference**: `Node.inferUses` traces actual Lean code dependencies by examining the expression tree, rather than using manually-specified `\uses{}` annotations. This produces edges that reflect real proof dependencies.
 
 ### Runway
 
@@ -197,9 +221,9 @@ Pure Lean site generator using Verso patterns.
 | `Theme.lean` | Page templates, sidebar |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Site.lean` | `NodeInfo` structure with `displayName` field |
-| `Latex/Parser.lean` | LaTeX parsing |
+| `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes for large documents) |
 | `Latex/ToHtml.lean` | LaTeX to HTML |
-| `Config.lean` | Site config including `assetsDir` |
+| `Config.lean` | Site config including `assetsDir` and `paperTexPath` |
 | `Assets.lean` | Asset copying |
 
 **Dashboard rendering** (`Render.lean`):
@@ -208,6 +232,8 @@ Pure Lean site generator using Verso patterns.
 - `renderKeyTheorems`: Key theorems with side-by-side preview
 - `renderMessages`: User notes section
 - `renderProjectNotes`: Blocked/Issues/Debt/Misc sections
+
+**Parser fixes**: The LaTeX parser includes `let _ ← advance` in catch-all cases in `parseBlocks`, `parseBody`, `parseSectionBody`, and `parseItems` to prevent infinite loops when parsing large documents (e.g., GCR's 3989-token blueprint.tex).
 
 ### SubVerso
 
@@ -239,8 +265,8 @@ Sugiyama-style hierarchical layout:
 
 ### Edge Rendering
 
-- **Solid lines**: Regular dependencies
-- **Dashed lines**: Weak/optional dependencies
+- **Solid lines**: Proof dependencies (from `Node.inferUses` proofUses)
+- **Dashed lines**: Statement dependencies (from `Node.inferUses` statementUses)
 - **Bezier curves**: Control points calculated via visibility graph to route around nodes
 - **Arrow heads**: Point at target node boundary (clipped to shape)
 
@@ -275,6 +301,12 @@ D3-style behavior implemented manually (no D3 dependency):
 - `runway-target` input (string): Lake target for Runway build (e.g., `SBSTest:runway`)
 - Assembles output from `.lake/build/runway/` when Runway is enabled
 
+## CSS Layout
+
+**Content layout**: Non-declaration content (paragraphs, prose) should stay in the left column matching LaTeX width. The selectors `.chapter-page > p` and `section.section > p` target these elements.
+
+**Side-by-side container**: Uses flexbox with two 100ch columns plus gap.
+
 ## Performance Analysis
 
 **SubVerso optimization completed** (Phase 1): Indexing, caching, and containment query optimizations implemented.
@@ -302,6 +334,7 @@ D3-style behavior implemented manually (no D3 dependency):
   "baseUrl": "/",
   "docgen4Url": null,
   "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "paperTexPath": "paper/paper.tex",
   "assetsDir": "/path/to/dress-blueprint-action/assets"
 }
 ```
@@ -309,7 +342,9 @@ D3-style behavior implemented manually (no D3 dependency):
 | Field | Required | Purpose |
 |-------|----------|---------|
 | `blueprintTexPath` | Yes | LaTeX source defining structure |
+| `paperTexPath` | No | Paper TeX for ar5iv-style generation |
 | `assetsDir` | Yes | Directory with CSS/JS assets |
+| `docgen4Url` | No | Relative path to docgen4 docs (e.g., "docs/") |
 
 ### lakefile.toml
 
@@ -318,20 +353,63 @@ D3-style behavior implemented manually (no D3 dependency):
 name = "Dress"
 git = "https://github.com/e-vergo/Dress"
 rev = "main"
+
+# Optional: doc-gen4 as dev dependency
+[[require]]
+scope = "dev"
+name = "doc-gen4"
+git = "https://github.com/leanprover/doc-gen4.git"
+rev = "01e1433"  # v4.27.0 compatible
 ```
 
 ## Build Commands
 
-```bash
-# Full build via script
-./scripts/build_blueprint.sh
+### SBS-Test (development)
 
-# Manual steps
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
+./scripts/build_blueprint.sh
+```
+
+### GCR (production example)
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
+./scripts/build_blueprint.sh
+```
+
+### Manual steps
+
+```bash
 rm -rf .lake/build/dressed .lake/build/lib/YourProject
 BLUEPRINT_DRESS=1 lake build
 lake build :blueprint
+lake exe extract_blueprint graph
 lake exe runway build runway.json
 python3 -m http.server -d .lake/build/runway 8000
+```
+
+## docs-static Branch Pattern
+
+For projects with pre-generated documentation (like docgen4 output that takes ~1 hour to generate):
+
+1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
+2. Create orphan branch: `git checkout --orphan docs-static`
+3. Add and commit docs to branch root
+4. Push: `git push origin docs-static`
+5. CI downloads from branch instead of regenerating (~4,700 HTML files in seconds vs. ~1 hour)
+
+**CI usage** (GCR workflow):
+```yaml
+- name: Download pre-generated DocGen4 documentation
+  run: |
+    mkdir -p GCR/.lake/build/doc
+    cd GCR/.lake/build/doc
+    git init
+    git remote add origin https://github.com/e-vergo/General_Crystallographic_Restriction.git
+    git fetch origin docs-static --depth=1
+    git checkout FETCH_HEAD
+    rm -rf .git
 ```
 
 ## Feature Status
@@ -346,6 +424,7 @@ python3 -m http.server -d .lake/build/runway 8000
 - Hover tooltips with type signatures
 - Token binding highlights
 - External CSS/JS assets
+- Parser fixes for large documents (3989+ tokens)
 
 **Dashboard Homepage**:
 - 2x2 grid layout: Stats / Key Theorems / Messages / Project Notes
@@ -360,7 +439,7 @@ python3 -m http.server -d .lake/build/runway 8000
 **Dependency Graph**:
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
 - Node shapes: Ellipse (theorems) / Box (definitions)
-- Edge styles: Solid/dashed with Bezier curves
+- Edge styles: Solid (proof deps) / Dashed (statement deps) with Bezier curves
 - 8-status color model with appropriate text contrast
 - Static legend embedded in SVG
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
@@ -368,6 +447,7 @@ python3 -m http.server -d .lake/build/runway 8000
 - Node hover border thickening
 - Combined Fit button with corrected X-axis centering
 - **Sidebar navigation** (chapters, Blueprint Home, Dependency Graph, Paper, GitHub links)
+- **Real dependency inference** via `Node.inferUses` (traces actual Lean code)
 
 **Rich Modals (Verso Integration)**:
 - Click node to open modal with full side-by-side content
@@ -387,13 +467,17 @@ python3 -m http.server -d .lake/build/runway 8000
 
 **CI/CD**:
 - `dress-blueprint-action` supports Runway via `use-runway` input
-- Multi-repo CI workflow (SBS-Test, Dress, Runway as siblings)
+- Multi-repo CI workflow (SBS-Test, GCR use sibling repo checkout pattern)
 - GitHub Pages deployment
-- Build script auto-exits after 5 minutes (for CI/testing)
+- Build script auto-exits after 5 minutes (SBS-Test) or runs indefinitely (GCR)
+- docs-static branch pattern for pre-generated documentation
+- Consolidated workflow (GCR): `full-build-deploy.yml` as primary, `seed-mathlib-cache.yml` as utility
 
 ### Next Priority
 
 - ar5iv-style paper generation (MathJax, links to Lean code, no inline display)
+- PDF generation integration into `runway build`
+- Embedded PDF viewer page
 
 ### Future
 

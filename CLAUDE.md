@@ -25,7 +25,7 @@ Building a pure Lean toolchain for formalization documentation that:
 
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
-| **Runway** | Site generator + dashboard | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean` |
+| **Runway** | Site generator + dashboard | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Latex/Parser.lean` |
 | **Dress** | Artifact generation + stats computation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
 | **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
@@ -38,7 +38,7 @@ Building a pure Lean toolchain for formalization documentation that:
 ```
 SubVerso -> LeanArchitect -> Dress -> Runway
                               |
-                          Consumer projects (SBS-Test)
+                          Consumer projects (SBS-Test, GCR)
 ```
 
 Changes to upstream repos require rebuilding downstream. The build script handles ordering.
@@ -57,6 +57,10 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 - Rich modals with MathJax, Tippy.js, proof toggles
 - CI/CD with GitHub Pages deployment
 - `displayName` propagation for cleaner labels
+- Parser fixes for large documents (3989+ tokens)
+- Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
+- CSS fixes for non-Lean content column width
+- docs-static branch pattern for pre-generated docgen4 documentation
 
 **Next priority**: ar5iv paper generation (full paper rendering with MathJax, links to Lean code instead of inline display).
 
@@ -66,17 +70,25 @@ Reference for quality targets:
 
 ## Development Workflow
 
+### SBS-Test (fast iteration)
+
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ./scripts/build_blueprint.sh
 # Serves at localhost:8000, auto-exits after 5 minutes
 ```
 
+### GCR (production example)
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
+./scripts/build_blueprint.sh
+# Serves at localhost:8000
+```
+
 Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lake/build/dressed/` for artifacts.
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets directory.
-
-**Note**: Build script auto-terminates after 5 minutes (useful for CI/testing).
 
 ## Performance Context
 
@@ -116,7 +128,7 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 - Dashboard work (stats/key theorems/messages/notes in `Runway/Render.lean`)
 - Modal content generation (`Runway/Render.lean`)
 - Attribute options (LeanArchitect `Basic.lean` and `Attribute.lean`)
-- CI/CD workflow updates (`dress-blueprint-action`, `SBS-Test/.github/workflows/`)
+- CI/CD workflow updates (`dress-blueprint-action`, project workflows)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -132,7 +144,7 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 1. Identify affected repos via dependency chain
 2. Edit upstream first (LeanArchitect before Dress before Runway)
 3. Run `build_blueprint.sh` (handles rebuild order)
-4. Test with SBS-Test, compare to goal images
+4. Test with SBS-Test or GCR, compare to goal images
 
 ## Soundness Vision
 
@@ -148,7 +160,7 @@ The toolchain should enforce:
 - Follow Verso/SubVerso patterns
 - Work directly in repo files, not scratch files
 - Check `lean_diagnostic_messages` after edits
-- Test via SBS-Test and visual inspection
+- Test via SBS-Test or GCR and visual inspection
 
 ## Reference Documents
 
@@ -186,6 +198,19 @@ Located in `.refs/`:
 3. `Runway/Main.lean`: Loads manifest.json (no recomputation)
 4. `Runway/Render.lean`: `renderDashboard` displays precomputed data
 
+**Dependency inference**:
+- `Node.inferUses` in `Dress/Graph/Build.lean` traces actual Lean code dependencies
+- Statement uses -> dashed edges
+- Proof uses -> solid edges
+- Replaces manual `\uses{}` annotations with real dependency tracing
+
+**Parser fixes**:
+- `Runway/Latex/Parser.lean` includes `let _ <- advance` in catch-all cases
+- Prevents infinite loops when parsing large documents (3989+ tokens)
+
+**CSS layout fixes**:
+- Non-Lean content stays in left column via `.chapter-page > p` and `section.section > p` selectors
+
 **`@[blueprint]` attribute options**:
 ```lean
 @[blueprint (keyTheorem := true, message := "Main result")]
@@ -211,4 +236,26 @@ theorem square_nonneg : ...
 
 **CI/CD**:
 - `dress-blueprint-action` supports `use-runway` and `runway-target` inputs
-- SBS-Test workflow checks out 4 repos as siblings with `runway-ci.json`
+- SBS-Test and GCR workflows check out sibling repos with `runway-ci.json`
+- GCR consolidated to `full-build-deploy.yml` (primary) + `seed-mathlib-cache.yml` (utility)
+
+**docs-static branch pattern** (for pre-generated documentation):
+1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
+2. Create orphan branch: `git checkout --orphan docs-static`
+3. Commit docs to branch root
+4. CI downloads from branch instead of regenerating (~4,700 files in seconds vs. ~1 hour)
+
+**lakefile.toml configuration**:
+```toml
+[[require]]
+name = "Dress"
+git = "https://github.com/e-vergo/Dress"
+rev = "main"
+
+# Optional: doc-gen4 as dev dependency (v4.27.0 compatible)
+[[require]]
+scope = "dev"
+name = "doc-gen4"
+git = "https://github.com/leanprover/doc-gen4.git"
+rev = "01e1433"
+```
