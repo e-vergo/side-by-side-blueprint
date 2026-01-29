@@ -32,7 +32,7 @@ Building a pure Lean toolchain for formalization documentation that:
 | **SBS-Test** | Minimal test project (11 nodes, all features) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) | Terence Tao's PNT+ project |
-| **dress-blueprint-action** | GitHub Action for CI + external assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js`, `action.yml` |
+| **dress-blueprint-action** | Complete CI solution (~465 lines) + external assets | `action.yml`, `assets/blueprint.css`, `assets/verso-code.js` |
 
 ## Dependency Chain
 
@@ -54,20 +54,12 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 - 8 metadata + 5 status flag `@[blueprint]` attribute options
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
-- Dependency graph sidebar navigation
 - Rich modals with MathJax, Tippy.js, proof toggles
-- CI/CD with GitHub Pages deployment (~340-line workflows)
-- `title` propagation for cleaner labels (renamed from `displayName`)
-- Parser fixes for large documents (3989+ tokens)
 - Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
-- CSS fixes for non-Lean content column width
-- docs-static branch pattern for pre-generated docgen4 documentation
-- **PDF/Paper generation** (`\paperstatement{}`, `\paperfull{}` hooks)
-- **Declaration-specific paper links** (navigate to correct chapter pages)
-- **Multiple LaTeX compilers** (tectonic, pdflatex, xelatex, lualatex)
-- **Validation checks** (connectivity, cycle detection)
-- **PrimeNumberTheoremAnd integration** (530 annotations, 33 files, zero proof changes)
-- **O(n^3) transitive reduction skip** for large graphs (>100 nodes)
+- PDF/Paper generation (`\paperstatement{}`, `\paperfull{}` hooks)
+- Validation checks (connectivity, cycle detection)
+- PrimeNumberTheoremAnd integration (530 annotations, 33 files, zero proof changes)
+- O(n^3) transitive reduction skip for large graphs (>100 nodes)
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -75,28 +67,29 @@ Reference for quality targets:
 
 ## Development Workflow
 
-### SBS-Test (fast iteration)
+### Local Development
+
+All projects use a shared script (~245 lines) with 3-line wrappers:
 
 ```bash
+# SBS-Test (fast iteration)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ./scripts/build_blueprint.sh
-# Serves at localhost:8000
-```
 
-### GCR (production example with paper)
-
-```bash
+# GCR (production example with paper)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
 ./scripts/build_blueprint.sh
-# Serves at localhost:8000
-```
 
-### PNT (large-scale integration)
-
-```bash
+# PNT (large-scale integration)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 ./scripts/build_blueprint.sh
-# Serves at localhost:8000
+```
+
+### Warm Cache Script
+
+Pre-fetch mathlib cache for all projects:
+```bash
+./scripts/warm_cache.sh
 ```
 
 Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lake/build/dressed/` for artifacts.
@@ -106,17 +99,63 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 ## Build Script Steps
 
 ```
-Step 0:  Sync repos to GitHub (auto-commit/push changes)
-Step 0b: Update lake manifests in dependency order
-Step 1:  Build local forks (SubVerso -> LeanArchitect -> Dress -> Runway)
-Step 2:  Fetch mathlib cache
-Step 3:  Build with BLUEPRINT_DRESS=1 (or .dress file)
-Step 4:  Build :blueprint facet
-Step 5:  Generate dependency graph
-Step 6:  Generate site with Runway
-Step 7:  Generate paper (if paperTexPath configured)
-Step 8:  Serve at localhost:8000
+Step 0:  Validate project (check runway.json, auto-detect projectName)
+Step 0a: Kill existing servers on port 8000
+Step 0b: Sync all repos to GitHub (auto-commit/push with Claude co-author)
+Step 0c: Update lake manifests in dependency order
+Step 1:  Clean all build artifacts (toolchain + project) - eliminates stale caches
+Step 2:  Build toolchain (SubVerso -> LeanArchitect -> Dress -> Runway)
+Step 3:  Fetch mathlib cache (lake exe cache get)
+Step 4:  Build project with BLUEPRINT_DRESS=1
+Step 5:  Build :blueprint facet
+Step 6:  Generate dependency graph
+Step 7:  Generate site with Runway
+Step 8:  Generate paper (if paperTexPath configured)
+Step 9:  Start server and open browser (localhost:8000)
 ```
+
+## CI/CD Architecture
+
+### Design Philosophy
+
+- **Manual triggers only**: `workflow_dispatch` - user controls deployments
+- **Simplified workflows**: ~30 lines per project
+- **Centralized complexity**: `dress-blueprint-action` (~465 lines, 14 steps)
+- **No GitHub Actions mathlib cache**: relies on mathlib server (`lake exe cache get`)
+
+### Per-Project Workflow (~30 lines)
+
+```yaml
+name: Full Blueprint Build and Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: e-vergo/dress-blueprint-action@main
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
+```
+
+### Action Inputs (4)
+
+| Input | Default | Purpose |
+|-------|---------|---------|
+| `project-directory` | `.` | Directory containing lakefile.toml and runway.json |
+| `lean-version` | (auto) | Override Lean version (auto-detected from lean-toolchain) |
+| `docgen4-mode` | `skip` | DocGen4 mode: `skip`, `docs-static`, or `generate` |
+| `deploy-pages` | `true` | Upload artifact for GitHub Pages deployment |
 
 ## Performance Context
 
@@ -127,7 +166,7 @@ Step 8:  Serve at localhost:8000
 | SubVerso highlighting | 800-6500ms | 93-99% |
 | TeX/HTML generation | <30ms | <1% |
 
-**Key finding**: SubVerso highlighting dominates build time. Cannot be deferred because info trees are ephemeral (only exist during elaboration). Deferred generation (Phase 2) was skipped - no performance benefit.
+**Key finding**: SubVerso highlighting dominates build time. Cannot be deferred because info trees are ephemeral (only exist during elaboration).
 
 ## MCP Tool Usage
 
@@ -154,8 +193,6 @@ Step 8:  Serve at localhost:8000
 - Theme template fixes in `Runway/Runway/Theme.lean`
 - Dependency graph work (layout in `Dress/Graph/*.lean`, page in `Runway/DepGraph.lean`)
 - Dashboard work (stats/key theorems/messages/notes in `Runway/Render.lean`)
-- Modal content generation (`Runway/Render.lean`)
-- Attribute options (LeanArchitect `Basic.lean` and `Attribute.lean`)
 - CI/CD workflow updates (`dress-blueprint-action`, project workflows)
 - PDF/Paper generation (`Runway/Pdf.lean`, paper TeX hooks)
 - Validation checks (`Dress/Graph/Build.lean`)
@@ -173,7 +210,7 @@ Step 8:  Serve at localhost:8000
 
 1. Identify affected repos via dependency chain
 2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run `build_blueprint.sh` (handles rebuild order)
+3. Run `build_blueprint.sh` (always cleans + rebuilds toolchain)
 4. Test with SBS-Test or GCR, compare to goal images
 
 ## Soundness Vision
@@ -235,18 +272,9 @@ Located in `.refs/`:
 - Proof uses -> solid edges
 - Replaces manual `\uses{}` annotations with real dependency tracing
 
-**Declaration-specific links**:
-- `pagePath` field in `NodeInfo` tracks which chapter page each node belongs to
-- `assignPagePaths` in `Runway/Main.lean` populates during site generation
-- `fullUrl` helper generates correct URLs like `basic-definitions.html#thm-main`
-- Paper links navigate to correct chapter pages instead of just anchor links
-
 **Parser fixes**:
 - `Runway/Latex/Parser.lean` includes `let _ <- advance` in catch-all cases
 - Prevents infinite loops when parsing large documents (3989+ tokens)
-
-**CSS layout fixes**:
-- Non-Lean content stays in left column via `.chapter-page > p` and `section.section > p` selectors
 
 **`@[blueprint]` attribute options**:
 ```lean
@@ -266,8 +294,8 @@ theorem complete_with_all_deps : ...
 **Metadata Options (8)**:
 | Option | Type | Purpose |
 |--------|------|---------|
-| `title` | String | Custom node label in graph (renamed from `displayName`) |
-| `keyDeclaration` | Bool | Highlight in dashboard Key Theorems (renamed from `keyTheorem`) |
+| `title` | String | Custom node label in graph |
+| `keyDeclaration` | Bool | Highlight in dashboard Key Theorems |
 | `message` | String | User notes (Messages panel) |
 | `priorityItem` | Bool | Flag for Attention column |
 | `blocked` | String | Blockage reason |
@@ -302,45 +330,30 @@ theorem complete_with_all_deps : ...
 - Supported compilers: tectonic (preferred), pdflatex, xelatex, lualatex
 - Output: `paper.html` (MathJax), `paper.pdf`, `pdf.html` (viewer)
 - Config: `paperTexPath`, `paperTitle`, `paperAuthors`, `paperAbstract` in runway.json
+- Paper generation auto-detected in CI from runway.json
 
 **Validation checks**:
 - Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
 - Cycles: `detectCycles` finds circular dependencies
 - Results in `manifest.json` under `checkResults`
-- SBS-Test includes disconnected cycle (cycleA <-> cycleB) for validation testing
 
 **Performance fixes**:
 - O(n^3) transitive reduction in `Dress/Graph/Types.lean` skipped for graphs >100 nodes
 - PNT (530 nodes) was causing 3+ hour hangs: 530^3 = 149 million iterations
-- Trade-off: some redundant edges appear but layout still works
 
 **ToExpr bug fix**:
 - Manual `ToExpr` instance for `Node` in `LeanArchitect/Architect/Basic.lean`
 - Derived `ToExpr` for structures with default field values doesn't correctly serialize all fields
-- This was causing status flags to not persist through the environment extension
 
-**CI/CD**:
-- `dress-blueprint-action` supports `use-runway` and `runway-target` inputs
-- GCR and PNT use `full-build-deploy.yml` (~340 lines)
-- Direct elan installation (not lean-action, which failed)
-- Checks out 6 repos: SubVerso, LeanArchitect, Dress, Runway, dress-blueprint-action, project
-- `runway-ci.json` pattern with `$WORKSPACE` placeholder
-- Verification step checks for key output files
-- **Toolchain cache disabled** (was restoring stale compiled binaries, ignoring code fixes)
-- Mathlib cache still enabled (separate concern)
+**Mathlib version pinning**:
+- All repos pinned to v4.27.0 for consistency
+- Mathlib cache fetched from server (`lake exe cache get`)
 
 **docs-static branch pattern** (for pre-generated documentation):
 1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
 2. Create orphan branch: `git checkout --orphan docs-static`
 3. Commit docs to branch root
-4. CI downloads from branch instead of regenerating (~4,700 files in seconds vs. ~1 hour)
-
-**PrimeNumberTheoremAnd integration**:
-- 530 `@[blueprint]` annotations across 33 files
-- Zero changes to Lean proof code
-- Downgraded to Lean v4.27.0, pinned mathlib to v4.27.0
-- Key theorems tagged: WeakPNT, MediumPNT, WeakPNT_AP
-- No DocGen4 (simpler setup)
+4. CI uses `docgen4-mode: docs-static` to download instead of regenerating
 
 **lakefile.toml configuration**:
 ```toml
@@ -354,13 +367,6 @@ rev = "main"
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 rev = "v4.27.0"
-
-# Optional: doc-gen4 as dev dependency (v4.27.0 compatible)
-[[require]]
-scope = "dev"
-name = "doc-gen4"
-git = "https://github.com/leanprover/doc-gen4.git"
-rev = "01e1433"
 ```
 
 **runway.json configuration**:

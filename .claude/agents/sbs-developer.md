@@ -32,7 +32,7 @@ Create tooling that:
 ├── SBS-Test/        # Minimal test project (11 nodes, all features)
 ├── General_Crystallographic_Restriction/  # Production example with paper
 ├── PrimeNumberTheoremAnd/  # Large-scale integration (530 annotations)
-└── dress-blueprint-action/  # GitHub Action + CSS/JS assets
+└── dress-blueprint-action/  # Complete CI solution (~465 lines) + CSS/JS assets
 ```
 
 ### Dependency Chain (Build Order)
@@ -100,7 +100,6 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - Pan/zoom, node hover, Fit button with corrected X-axis centering
 - Sidebar navigation on dependency graph page
 - MathJax and Tippy.js in modals
-- CI/CD with GitHub Pages deployment (~340-line workflows)
 - Parser fixes for large documents (3989+ tokens)
 - Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
 - CSS fixes for non-Lean content column width
@@ -117,7 +116,6 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - `keyTheorem` -> `keyDeclaration` migration
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
-- CI toolchain cache disabled (was ignoring code fixes)
 
 ---
 
@@ -140,39 +138,47 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 ## Build Workflow
 
-### SBS-Test (development)
+### Local Development (Shared Script)
+
+All projects use a shared script with 3-line wrappers:
 
 ```bash
+# SBS-Test (fast iteration)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ./scripts/build_blueprint.sh
-```
 
-### GCR (production example with paper)
-
-```bash
+# GCR (production example with paper)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
 ./scripts/build_blueprint.sh
-```
 
-### PNT (large-scale integration)
-
-```bash
+# PNT (large-scale integration)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 ./scripts/build_blueprint.sh
 ```
 
-### Build Script Steps
+### Build Script Steps (~245 lines shared script)
 ```
-Step 0:  Sync repos to GitHub (auto-commit/push changes)
-Step 0b: Update lake manifests in dependency order
-Step 1:  Build local forks (SubVerso -> LeanArchitect -> Dress -> Runway)
-Step 2:  Fetch mathlib cache
-Step 3:  Build with BLUEPRINT_DRESS=1
-Step 4:  Build :blueprint facet
-Step 5:  Generate dependency graph
-Step 6:  Generate site with Runway
-Step 7:  Generate paper (if paperTexPath configured)
-Step 8:  Serve at localhost:8000
+Step 0:  Validate project (check runway.json exists)
+         Auto-detect projectName from runway.json
+Step 0a: Kill existing servers on port 8000
+Step 0b: Sync all repos to GitHub (auto-commit/push with Claude co-author)
+Step 0c: Update lake manifests in dependency order
+Step 1:  Clean all build artifacts (toolchain + project) - eliminates stale caches
+Step 2:  Build toolchain (SubVerso -> LeanArchitect -> Dress -> Runway)
+Step 3:  Fetch mathlib cache (lake exe cache get)
+Step 4:  Build project with BLUEPRINT_DRESS=1
+Step 5:  Build :blueprint facet
+Step 6:  Generate dependency graph (extract_blueprint graph)
+Step 7:  Generate site with Runway
+Step 8:  Generate paper (if paperTexPath configured)
+Step 9:  Start server and open browser (localhost:8000)
+```
+
+### Warm Cache Script
+
+Pre-fetch mathlib cache for all projects:
+```bash
+./scripts/warm_cache.sh
 ```
 
 **Output locations**:
@@ -181,6 +187,66 @@ Step 8:  Serve at localhost:8000
 - Paper: `.lake/build/runway/paper.html`, `paper.pdf`, `pdf.html`
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets.
+
+---
+
+## CI/CD Architecture
+
+### Design Philosophy
+
+- **Manual triggers only**: `workflow_dispatch` - user controls deployments
+- **Simplified workflows**: ~30 lines per project
+- **Centralized complexity**: `dress-blueprint-action` (~465 lines, 14 steps)
+- **No GitHub Actions mathlib cache**: relies on mathlib server (`lake exe cache get`)
+
+### Per-Project Workflow (~30 lines)
+
+```yaml
+name: Full Blueprint Build and Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: e-vergo/dress-blueprint-action@main
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+```
+
+### Action Inputs (4)
+
+| Input | Default | Purpose |
+|-------|---------|---------|
+| `project-directory` | `.` | Directory containing lakefile.toml and runway.json |
+| `lean-version` | (auto) | Override Lean version (auto-detected from lean-toolchain) |
+| `docgen4-mode` | `skip` | DocGen4 mode: `skip`, `docs-static`, or `generate` |
+| `deploy-pages` | `true` | Upload artifact for GitHub Pages deployment |
+
+### DocGen4 Modes
+
+| Mode | Behavior |
+|------|----------|
+| `skip` | No DocGen4 (fastest, default) |
+| `docs-static` | Download from `docs-static` branch (~4,700 files in seconds) |
+| `generate` | Run `lake -R -Kenv=dev build +:docs` (slow, ~1 hour) |
 
 ---
 
@@ -248,7 +314,7 @@ Runway consumes:
 ### Cross-repo changes
 1. Identify affected repos (check dependency chain)
 2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run build_blueprint.sh
+3. Run build_blueprint.sh (always cleans + rebuilds toolchain)
 4. Test with SBS-Test or GCR
 
 ### CSS/JS fixes
@@ -419,70 +485,6 @@ The colon-to-hyphen conversion happens in `DepGraph.lean` when generating modal 
 
 ---
 
-## CI/CD Knowledge
-
-### Workflow structure (~340 lines)
-
-GCR and PNT use `full-build-deploy.yml`:
-
-```yaml
-jobs:
-  build:
-    steps:
-      # SETUP: Free disk space, checkout 6 repos
-      - Checkout project, SubVerso, LeanArchitect, Dress, Runway, dress-blueprint-action
-
-      # TOOLCHAIN: Direct elan installation (not lean-action)
-      - Install elan, Lean toolchain, LaTeX
-
-      # CACHE: Restore/save toolchain and mathlib caches
-
-      # BUILD: Toolchain in dependency order
-      - Build SubVerso -> LeanArchitect -> Dress -> Runway
-
-      # BUILD: Project with dressed artifacts
-      - Create .dress file, lake build, lake build :blueprint
-      - Generate dependency graph with extract_blueprint
-
-      # DOCGEN4: Download pre-built docs (docs-static branch pattern)
-
-      # SITE: Generate with Runway
-      - Create runway-ci.json with absolute paths
-      - lake exe runway build + paper
-
-      # VERIFY: Check key files exist
-      - index.html, dep_graph.html, paper.html, paper.pdf, pdf.html
-
-  deploy:
-    - Deploy to GitHub Pages
-```
-
-### Key patterns
-
-**Direct elan installation**: lean-action failed in CI; direct elan-init.sh works reliably.
-
-**runway-ci.json**: CI-specific config with `$WORKSPACE` placeholder:
-```json
-{
-  "blueprintTexPath": "$WORKSPACE/GCR/blueprint/src/blueprint.tex",
-  "assetsDir": "$WORKSPACE/dress-blueprint-action/assets",
-  "paperTexPath": "$WORKSPACE/GCR/blueprint/src/paper.tex"
-}
-```
-Then: `sed -i "s|\$WORKSPACE|${{ github.workspace }}|g" runway-ci.json`
-
-**docs-static branch pattern**: Pre-generated DocGen4 stored in orphan branch, downloaded in CI.
-
-### CI differences by project
-
-| Feature | GCR | PNT | SBS-Test |
-|---------|-----|-----|----------|
-| DocGen4 | Yes (docs-static) | No | No |
-| Paper generation | Yes | No | Optional |
-| Mathlib | Yes | Yes | Minimal |
-
----
-
 ## docs-static Branch Pattern
 
 For projects with pre-generated documentation (docgen4 ~1 hour):
@@ -491,9 +493,9 @@ For projects with pre-generated documentation (docgen4 ~1 hour):
 2. Create orphan branch: `git checkout --orphan docs-static`
 3. Add and commit docs to branch root
 4. Push to remote
-5. CI downloads from branch instead of regenerating (~4,700 files in seconds vs. ~1 hour)
+5. CI uses `docgen4-mode: docs-static` to download (~4,700 files in seconds vs. ~1 hour)
 
-**GCR uses this pattern** - see `full-build-deploy.yml` for the download step.
+**GCR uses this pattern**.
 
 ---
 
@@ -563,7 +565,6 @@ Located in `.refs/`:
 - Don't use colons in CSS selectors or element IDs - normalize to hyphens
 - Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
 - Don't use derived `ToExpr` for structures with default fields - use manual instance
-- Don't enable toolchain cache in CI - causes stale code issues
 
 ---
 

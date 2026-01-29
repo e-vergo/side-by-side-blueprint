@@ -15,7 +15,7 @@ Eight repositories work together to produce formalization documentation:
 | **SBS-Test** | Minimal test project for iteration (11 nodes, all features) |
 | **General_Crystallographic_Restriction** | Production example with full paper generation |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) |
-| **dress-blueprint-action** | GitHub Action + external CSS/JS assets + Runway CI support |
+| **dress-blueprint-action** | Complete CI solution (~465 lines) + external CSS/JS assets |
 
 **Dependency chain**: SubVerso -> LeanArchitect -> Dress -> Runway -> Consumer projects
 
@@ -50,27 +50,6 @@ RUNWAY (post-build):
   - Copies assets from assetsDir to output
   - Generates dashboard homepage + multi-page static site
   - Optionally: paper.html + paper.pdf + pdf.html (viewer)
-```
-
-### Full Build Commands
-
-```bash
-# 1. Build dependency chain (SubVerso -> LeanArchitect -> Dress -> Runway)
-# 2. Run artifact generation with environment variable or .dress file
-BLUEPRINT_DRESS=1 lake build
-# Or: echo "1" > .lake/build/.dress && lake build
-
-# 3. Build blueprint facet
-lake build :blueprint
-
-# 4. Extract dependency graph from environment
-lake exe extract_blueprint graph
-
-# 5. Generate static site
-lake exe runway build runway.json
-
-# 6. (Optional) Generate paper if paperTexPath configured
-lake exe runway paper runway.json
 ```
 
 ## Output Directories
@@ -263,7 +242,7 @@ Pure Lean site generator using Verso patterns.
 **Dashboard rendering** (`Render.lean`):
 - `renderDashboard`: Main 2x2 grid layout
 - `renderProgress`: Stats panel with Completion/Attention columns
-- `renderKeyTheorems`: Key theorems with side-by-side preview
+- `renderKeyTheorems`: Key theorems with side-by-side preview and status dots
 - `renderMessages`: User notes section
 - `renderProjectNotes`: Blocked/Issues/Debt/Misc sections
 
@@ -424,77 +403,210 @@ Results are stored in `CheckResults` structure and serialized to `manifest.json`
 
 ## CI/CD Architecture
 
-### Workflow Structure (~340 lines for full workflow)
+### Design Philosophy
 
-GCR and PNT use similar `full-build-deploy.yml` workflows:
+The CI system is designed for **user control**:
+- Workflows only trigger on `workflow_dispatch` (manual) - no automatic deploys
+- Users decide when to deploy
+- Simplified per-project workflows (~30 lines) that call the reusable action
+- All complexity centralized in `dress-blueprint-action` (~465 lines, 14 steps)
+
+### Per-Project Workflow (~30 lines)
+
+SBS-Test, GCR, and PNT all use minimal workflows:
 
 ```yaml
+name: Full Blueprint Build and Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    runs-on: ubuntu-latest
     steps:
-      # SETUP: Free disk space, checkout 6 repos
-      - Checkout project, SubVerso, LeanArchitect, Dress, Runway, dress-blueprint-action
-
-      # TOOLCHAIN: Direct elan installation (not lean-action)
-      - Install elan, Lean toolchain, LaTeX
-
-      # CACHE: Restore/save toolchain and mathlib caches
-      - Toolchain cache (subverso, LeanArchitect, Dress, Runway .lake dirs)
-      - Mathlib cache (from server or GitHub Actions cache)
-
-      # BUILD: Toolchain in dependency order
-      - Build SubVerso -> LeanArchitect -> Dress -> Runway
-
-      # BUILD: Project with dressed artifacts
-      - Create .dress file, lake build, lake build :blueprint
-      - Generate dependency graph with extract_blueprint
-
-      # DOCGEN4: Download pre-built docs (docs-static branch pattern)
-      - git fetch docs-static branch (~4,700 files in seconds vs ~1 hour)
-
-      # SITE: Generate with Runway
-      - Create runway-ci.json with absolute paths
-      - lake exe runway build + paper (if configured)
-
-      # VERIFY: Check key files exist
-      - index.html, dep_graph.html, paper.html, paper.pdf, pdf.html
-
-      # CACHE: Save for future builds
-      # UPLOAD: Pages artifact
+      - uses: actions/checkout@v4
+      - uses: e-vergo/dress-blueprint-action@main
 
   deploy:
-    - Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
 ```
+
+### dress-blueprint-action (~465 lines, 14 steps)
+
+Complete CI solution that handles everything:
+
+```
+Step 1:  Free disk space
+Step 2:  Checkout toolchain repos to _sbs_toolchain/
+Step 3:  Install elan
+Step 4:  Install Lean toolchain (from lean-toolchain or override)
+Step 5:  Install LaTeX
+Step 6:  Fetch mathlib cache from server (lake exe cache get)
+Step 7:  Build SubVerso
+Step 8:  Build LeanArchitect
+Step 9:  Build Dress
+Step 10: Build Runway
+Step 11: Build project with Dress artifacts (.dress file)
+Step 12: Build :blueprint facet
+Step 13: Generate dependency graph (extract_blueprint graph)
+Step 14: Generate site with Runway
+Step 15: Generate paper (if paperTexPath configured)
+Step 16: Handle DocGen4 (based on mode: skip, docs-static, generate)
+Step 17: Verify site structure
+Step 18: Upload Pages artifact
+```
+
+### Action Inputs (4)
+
+| Input | Default | Purpose |
+|-------|---------|---------|
+| `project-directory` | `.` | Directory containing lakefile.toml and runway.json |
+| `lean-version` | (auto) | Override Lean version (auto-detected from lean-toolchain) |
+| `docgen4-mode` | `skip` | DocGen4 mode: `skip`, `docs-static`, or `generate` |
+| `deploy-pages` | `true` | Upload artifact for GitHub Pages deployment |
+
+### Mathlib Cache Strategy
+
+**No GitHub Actions cache layer** - relies solely on mathlib server:
+- `lake exe cache get` fetches pre-compiled oleans from mathlib's servers
+- This is faster and more reliable than GitHub Actions cache for mathlib
+- Oleans are already highly compressed and served efficiently
+
+### DocGen4 Modes
+
+| Mode | Behavior |
+|------|----------|
+| `skip` | No DocGen4 (fastest, default) |
+| `docs-static` | Download from `docs-static` branch (~4,700 files in seconds) |
+| `generate` | Run `lake -R -Kenv=dev build +:docs` (slow, ~1 hour) |
+
+### Paper Generation
+
+Auto-detected from `runway.json`:
+- If `paperTexPath` field exists (and is not null), paper generation runs
+- Produces `paper.html`, `paper.pdf`, `pdf.html`
 
 ### Key Patterns
 
 **Direct elan installation**: lean-action failed in CI; direct elan-init.sh works reliably.
 
-**Toolchain cache disabled**: CI workflows in PNT, SBS-Test, and GCR have toolchain caching disabled. The cache was restoring old compiled binaries and ignoring code fixes, causing CI to use stale code. Mathlib cache is still enabled (separate concern).
-
-**runway-ci.json**: CI-specific config with `$WORKSPACE` placeholder replaced by `${{ github.workspace }}`:
-
-```json
-{
-  "blueprintTexPath": "$WORKSPACE/GCR/blueprint/src/blueprint.tex",
-  "assetsDir": "$WORKSPACE/dress-blueprint-action/assets",
-  "paperTexPath": "$WORKSPACE/GCR/blueprint/src/paper.tex"
-}
-```
+**runway-ci.json**: CI creates a modified config with absolute paths:
+- Replaces relative `assetsDir` with absolute `$WORKSPACE/_sbs_toolchain/dress-blueprint-action/assets`
+- Converts relative TeX paths to absolute
 
 **docs-static branch pattern**: Pre-generated DocGen4 documentation stored in orphan branch, downloaded in CI instead of regenerating.
 
-**Verification step**: Checks for expected output files before deployment.
+**Verification step**: Checks for expected output files (index.html, dep_graph.html) before deployment.
 
-### CI Differences by Project
+## Local Build Scripts
 
-| Feature | GCR | PNT | SBS-Test |
-|---------|-----|-----|----------|
-| DocGen4 | Yes (docs-static) | No | No |
-| Paper generation | Yes | No | Optional |
-| PDF output | Yes | No | Optional |
-| Mathlib | Yes | Yes | Minimal |
-| Toolchain | v4.27.0 | v4.27.0 | v4.27.0 |
+### Shared Script Architecture
+
+A single shared script at `/Users/eric/GitHub/Side-By-Side-Blueprint/scripts/build_blueprint.sh` (~245 lines) handles all local builds:
+
+**Each project has a 3-line wrapper**:
+```bash
+#!/bin/bash
+# Wrapper for shared build_blueprint.sh
+exec /Users/eric/GitHub/Side-By-Side-Blueprint/scripts/build_blueprint.sh "$(dirname "$0")/.."
+```
+
+### Build Script Steps
+
+```
+Step 0:  Validate project (check runway.json exists)
+         Auto-detect projectName from runway.json
+Step 0a: Kill existing servers on port 8000
+Step 0b: Sync all repos to GitHub (auto-commit/push with Claude co-author)
+Step 0c: Update lake manifests in dependency order
+Step 1:  Clean all build artifacts (toolchain + project)
+Step 2:  Build toolchain (SubVerso -> LeanArchitect -> Dress -> Runway)
+Step 3:  Fetch mathlib cache (lake exe cache get)
+Step 4:  Build project with BLUEPRINT_DRESS=1
+Step 5:  Build :blueprint facet
+Step 6:  Generate dependency graph (extract_blueprint graph)
+Step 7:  Generate site with Runway
+Step 8:  Generate paper (if paperTexPath configured)
+Step 9:  Start server and open browser (localhost:8000)
+```
+
+### Clean Build Strategy
+
+**Always cleans** all toolchain and project build artifacts to eliminate stale caches:
+
+```bash
+# Toolchain repos (all build artifacts)
+rm -rf "$SUBVERSO_PATH/.lake/build"
+rm -rf "$LEAN_ARCHITECT_PATH/.lake/build"
+rm -rf "$DRESS_PATH/.lake/build"
+rm -rf "$RUNWAY_PATH/.lake/build"
+
+# Project (module-specific + dressed artifacts)
+rm -rf "$PROJECT_ROOT/.lake/build/lib/$MODULE_NAME"
+rm -rf "$PROJECT_ROOT/.lake/build/ir/$MODULE_NAME"
+rm -rf "$PROJECT_ROOT/.lake/build/dressed"
+rm -rf "$PROJECT_ROOT/.lake/build/runway"
+```
+
+This eliminates the common issue of stale compiled binaries ignoring code fixes.
+
+### Usage Examples
+
+```bash
+# Fast iteration with test project
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
+./scripts/build_blueprint.sh
+
+# Production example with paper
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
+./scripts/build_blueprint.sh
+
+# Large-scale integration
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
+./scripts/build_blueprint.sh
+```
+
+### Warm Cache Script
+
+Pre-fetch mathlib cache for all projects:
+
+```bash
+./scripts/warm_cache.sh
+```
+
+This fetches pre-compiled mathlib oleans (v4.27.0) for SBS-Test, GCR, and PNT, avoiding long compile times on first build.
+
+## Mathlib Version Pinning
+
+**All repos pinned to v4.27.0** for consistency:
+
+| Repo | Has mathlib? | Version |
+|------|--------------|---------|
+| SubVerso | No | N/A |
+| LeanArchitect | No | N/A |
+| Dress | Yes | v4.27.0 |
+| Runway | No | N/A |
+| SBS-Test | Yes | v4.27.0 |
+| GCR | Yes | v4.27.0 |
+| PNT | Yes | v4.27.0 |
 
 ## PrimeNumberTheoremAnd Integration
 
@@ -510,35 +622,14 @@ Successfully integrated the PNT project as a large-scale test case:
 ### Key Theorems Tagged
 
 ```lean
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem WeakPNT : ...
 
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem MediumPNT : ...
 
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem WeakPNT_AP : ...
-```
-
-### lakefile.toml
-
-```toml
-name = "PrimeNumberTheoremAnd"
-version = "0.1.0"
-defaultTargets = ["PrimeNumberTheoremAnd"]
-
-[[lean_lib]]
-name = "PrimeNumberTheoremAnd"
-
-[[require]]
-name = "Dress"
-git = "https://github.com/e-vergo/Dress"
-rev = "main"
-
-[[require]]
-name = "mathlib"
-git = "https://github.com/leanprover-community/mathlib4.git"
-rev = "v4.27.0"
 ```
 
 ## CSS Layout
@@ -586,12 +677,13 @@ rev = "v4.27.0"
 
 | Field | Required | Purpose |
 |-------|----------|---------|
+| `projectName` | Yes | Module name for Lean (auto-detected by build script) |
 | `blueprintTexPath` | Yes | LaTeX source defining structure |
-| `paperTexPath` | No | Paper TeX for paper generation |
+| `assetsDir` | Yes | Directory with CSS/JS assets |
+| `paperTexPath` | No | Paper TeX for paper generation (auto-detected by CI) |
 | `paperTitle` | No | Title for paper.html |
 | `paperAuthors` | No | Author list for paper.html |
 | `paperAbstract` | No | Abstract for paper.html |
-| `assetsDir` | Yes | Directory with CSS/JS assets |
 | `docgen4Url` | No | Relative path to docgen4 docs (e.g., "docs/") |
 
 ### lakefile.toml
@@ -602,57 +694,18 @@ name = "Dress"
 git = "https://github.com/e-vergo/Dress"
 rev = "main"
 
+# Optional: mathlib (pin to v4.27.0)
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.27.0"
+
 # Optional: doc-gen4 as dev dependency
 [[require]]
 scope = "dev"
 name = "doc-gen4"
 git = "https://github.com/leanprover/doc-gen4.git"
 rev = "01e1433"  # v4.27.0 compatible
-```
-
-## Build Scripts
-
-### build_blueprint.sh Pattern
-
-Local development scripts in `scripts/build_blueprint.sh`:
-
-```
-Step 0:  Sync repos to GitHub (auto-commit/push changes)
-Step 0b: Update lake manifests in dependency order
-Step 1:  Build local forks (SubVerso -> LeanArchitect -> Dress -> Runway)
-Step 2:  Fetch mathlib cache
-Step 3:  Build with BLUEPRINT_DRESS=1
-Step 4:  Build :blueprint facet
-Step 5:  Generate dependency graph
-Step 6:  Generate site with Runway
-Step 7:  Generate paper (if paperTexPath configured)
-Step 8:  Serve at localhost:8000
-```
-
-### SBS-Test (development)
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-./scripts/build_blueprint.sh
-```
-
-### GCR (production example)
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
-./scripts/build_blueprint.sh
-```
-
-### Manual steps
-
-```bash
-rm -rf .lake/build/dressed .lake/build/lib/YourProject
-BLUEPRINT_DRESS=1 lake build
-lake build :blueprint
-lake exe extract_blueprint graph
-lake exe runway build runway.json
-lake exe runway paper runway.json  # if paperTexPath configured
-python3 -m http.server -d .lake/build/runway 8000
 ```
 
 ## docs-static Branch Pattern
@@ -665,17 +718,11 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 4. Push: `git push origin docs-static`
 5. CI downloads from branch instead of regenerating (~4,700 HTML files in seconds vs. ~1 hour)
 
-**CI usage** (GCR workflow):
+**CI usage** (dress-blueprint-action with `docgen4-mode: docs-static`):
 ```yaml
-- name: Download pre-generated DocGen4 documentation
-  run: |
-    mkdir -p GCR/.lake/build/doc
-    cd GCR/.lake/build/doc
-    git init
-    git remote add origin https://github.com/e-vergo/General_Crystallographic_Restriction.git
-    git fetch origin docs-static --depth=1
-    git checkout FETCH_HEAD
-    rm -rf .git
+- uses: e-vergo/dress-blueprint-action@main
+  with:
+    docgen4-mode: docs-static
 ```
 
 ## Feature Status
@@ -707,7 +754,7 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
 - Node shapes: Ellipse (theorems) / Box (definitions)
 - Edge styles: Solid (proof deps) / Dashed (statement deps) with Bezier curves
-- 8-status color model with appropriate text contrast (see Node Status Types)
+- 8-status color model with appropriate text contrast
 - Static legend embedded in SVG
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
 - Edge routing: Visibility graph + Dijkstra + Bezier fitting
@@ -734,18 +781,6 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - `blocked`, `potentialIssue`, `technicalDebt`, `misc`: Project notes
 - `notReady`, `ready`, `fullyProven`, `mathlibReady`, `mathlib`: Manual status overrides
 
-**Node Status Types (8 total)**:
-| Status | Color | Source |
-|--------|-------|--------|
-| notReady | Red/Gray | Manual: `(notReady := true)` |
-| stated | Light Blue | Default (no Lean code) |
-| ready | Orange | Manual: `(ready := true)` |
-| sorry | Yellow | Derived: proof contains sorry |
-| proven | Light Green | Derived: complete proof |
-| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
-| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
-| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
-
 **Validation Checks**:
 - Connectivity check: warns about disconnected components
 - Cycle detection: finds circular dependencies
@@ -755,32 +790,39 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 **PDF/Paper Generation**:
 - `\paperstatement{label}` and `\paperfull{label}` hooks
 - MathJax-rendered paper.html with links to Lean code
-- Declaration-specific links navigate to correct chapter pages (e.g., `basic-definitions.html#thm-main`)
+- Declaration-specific links navigate to correct chapter pages
 - Multiple LaTeX compilers: tectonic, pdflatex, xelatex, lualatex
 - Embedded PDF viewer (pdf.html)
 - Auto-detection of available compiler
 
 **CI/CD**:
-- `dress-blueprint-action` supports Runway via `use-runway` input
-- Multi-repo CI workflow (checks out 6 repos)
-- Direct elan installation (lean-action unreliable)
-- Toolchain cache disabled (was causing stale code issues)
-- Mathlib cache enabled separately
+- `dress-blueprint-action` is complete CI solution (~465 lines)
+- Per-project workflows reduced to ~30 lines
+- Manual trigger only (`workflow_dispatch`) - user controls deployments
+- 4 inputs: `project-directory`, `lean-version`, `docgen4-mode`, `deploy-pages`
+- Paper generation auto-detected from runway.json
+- DocGen4 modes: skip, docs-static, generate
+- Mathlib cache from server (no GitHub Actions cache layer)
 - GitHub Pages deployment
-- Build script auto-exits after 5 minutes (SBS-Test) or runs indefinitely (GCR)
-- docs-static branch pattern for pre-generated documentation
-- Consolidated workflow: `full-build-deploy.yml`
+
+**Local Build Scripts**:
+- Single shared script (~245 lines) at `scripts/build_blueprint.sh`
+- Per-project 3-line wrappers
+- Auto-detects projectName from runway.json
+- Always cleans toolchain build artifacts (eliminates stale cache issues)
+- Consistent commit message format with Claude co-author
+- Syncs all repos to GitHub before building
+- `scripts/warm_cache.sh` to pre-fetch mathlib cache
 
 **Large-Scale Integration**:
 - PrimeNumberTheoremAnd: 530 annotations, 33 files, zero proof code changes
 - GCR: Full production example with paper generation
 
-**Bug Fixes (This Session)**:
+**Bug Fixes**:
 - `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - O(n^3) transitive reduction skip for graphs >100 nodes (PNT 3+ hour hang fix)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
-- CI toolchain cache disabled (was ignoring code fixes)
 
 ### Future
 
