@@ -25,12 +25,13 @@ Building a pure Lean toolchain for formalization documentation that:
 
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
-| **Runway** | Site generator + dashboard | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Latex/Parser.lean` |
-| **Dress** | Artifact generation + stats computation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
+| **Runway** | Site generator + dashboard + paper/PDF | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Latex/Parser.lean` |
+| **Dress** | Artifact generation + stats + validation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
 | **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
 | **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3,4}/*.lean`, `blueprint/src/blueprint.tex` |
-| **General_Crystallographic_Restriction** | Production example (goal reference) | Full formalization project |
+| **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
+| **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) | Terence Tao's PNT+ project |
 | **dress-blueprint-action** | GitHub Action for CI + external assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js`, `action.yml` |
 
 ## Dependency Chain
@@ -38,31 +39,33 @@ Building a pure Lean toolchain for formalization documentation that:
 ```
 SubVerso -> LeanArchitect -> Dress -> Runway
                               |
-                          Consumer projects (SBS-Test, GCR)
+                          Consumer projects (SBS-Test, GCR, PNT)
 ```
 
 Changes to upstream repos require rebuilding downstream. The build script handles ordering.
 
 ## Current Status
 
-**Phase 7 + Dashboard Phases Complete**: Blueprint, dashboard, and dependency graph are feature-complete.
+**Phase 7 + Dashboard + Paper Phases Complete**: Blueprint, dashboard, dependency graph, and paper generation are feature-complete.
 
 **Completed features**:
 - Side-by-side display with proof toggles
 - Dashboard homepage with stats, key theorems, messages, project notes
-- 7 new `@[blueprint]` attribute options (keyTheorem, message, priorityItem, blocked, potentialIssue, technicalDebt, misc)
+- 7 `@[blueprint]` attribute options (displayName, keyTheorem, message, priorityItem, blocked, potentialIssue, technicalDebt, misc)
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
 - Dependency graph sidebar navigation
 - Rich modals with MathJax, Tippy.js, proof toggles
-- CI/CD with GitHub Pages deployment
+- CI/CD with GitHub Pages deployment (~340-line workflows)
 - `displayName` propagation for cleaner labels
 - Parser fixes for large documents (3989+ tokens)
 - Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
 - CSS fixes for non-Lean content column width
 - docs-static branch pattern for pre-generated docgen4 documentation
-
-**Next priority**: ar5iv paper generation (full paper rendering with MathJax, links to Lean code instead of inline display).
+- **PDF/Paper generation** (`\paperstatement{}`, `\paperfull{}` hooks)
+- **Multiple LaTeX compilers** (tectonic, pdflatex, xelatex, lualatex)
+- **Validation checks** (connectivity, cycle detection)
+- **PrimeNumberTheoremAnd integration** (530 annotations, 33 files, zero proof changes)
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -75,10 +78,10 @@ Reference for quality targets:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 ./scripts/build_blueprint.sh
-# Serves at localhost:8000, auto-exits after 5 minutes
+# Serves at localhost:8000
 ```
 
-### GCR (production example)
+### GCR (production example with paper)
 
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
@@ -86,9 +89,32 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restrictio
 # Serves at localhost:8000
 ```
 
+### PNT (large-scale integration)
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
+./scripts/build_blueprint.sh
+# Serves at localhost:8000
+```
+
 Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lake/build/dressed/` for artifacts.
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets directory.
+
+## Build Script Steps
+
+```
+Step 0:  Sync repos to GitHub (auto-commit/push changes)
+Step 0b: Update lake manifests in dependency order
+Step 1:  Build local forks (SubVerso -> LeanArchitect -> Dress -> Runway)
+Step 2:  Fetch mathlib cache
+Step 3:  Build with BLUEPRINT_DRESS=1 (or .dress file)
+Step 4:  Build :blueprint facet
+Step 5:  Generate dependency graph
+Step 6:  Generate site with Runway
+Step 7:  Generate paper (if paperTexPath configured)
+Step 8:  Serve at localhost:8000
+```
 
 ## Performance Context
 
@@ -129,6 +155,8 @@ Inspect: `.lake/build/runway/` for HTML output (includes `manifest.json`), `.lak
 - Modal content generation (`Runway/Render.lean`)
 - Attribute options (LeanArchitect `Basic.lean` and `Attribute.lean`)
 - CI/CD workflow updates (`dress-blueprint-action`, project workflows)
+- PDF/Paper generation (`Runway/Pdf.lean`, paper TeX hooks)
+- Validation checks (`Dress/Graph/Build.lean`)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -194,9 +222,10 @@ Located in `.refs/`:
 
 **Dashboard data flow**:
 1. `Dress/Graph/Build.lean`: `computeStatusCounts` computes stats from graph
-2. `Dress/Graph/Json.lean`: Serializes stats + project metadata to manifest.json
-3. `Runway/Main.lean`: Loads manifest.json (no recomputation)
-4. `Runway/Render.lean`: `renderDashboard` displays precomputed data
+2. `Dress/Graph/Build.lean`: `findComponents`, `detectCycles` validate graph
+3. `Dress/Graph/Json.lean`: Serializes stats + validation + project metadata to manifest.json
+4. `Runway/Main.lean`: Loads manifest.json (no recomputation)
+5. `Runway/Render.lean`: `renderDashboard` displays precomputed data
 
 **Dependency inference**:
 - `Node.inferUses` in `Dress/Graph/Build.lean` traces actual Lean code dependencies
@@ -234,16 +263,38 @@ theorem square_nonneg : ...
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
+**PDF/Paper generation**:
+- `\paperstatement{label}`: Insert LaTeX statement with link to Lean code
+- `\paperfull{label}`: Insert full side-by-side display
+- Supported compilers: tectonic (preferred), pdflatex, xelatex, lualatex
+- Output: `paper.html` (MathJax), `paper.pdf`, `pdf.html` (viewer)
+- Config: `paperTexPath`, `paperTitle`, `paperAuthors`, `paperAbstract` in runway.json
+
+**Validation checks**:
+- Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
+- Cycles: `detectCycles` finds circular dependencies
+- Results in `manifest.json` under `checkResults`
+
 **CI/CD**:
 - `dress-blueprint-action` supports `use-runway` and `runway-target` inputs
-- SBS-Test and GCR workflows check out sibling repos with `runway-ci.json`
-- GCR consolidated to `full-build-deploy.yml` (primary) + `seed-mathlib-cache.yml` (utility)
+- GCR and PNT use `full-build-deploy.yml` (~340 lines)
+- Direct elan installation (not lean-action, which failed)
+- Checks out 6 repos: SubVerso, LeanArchitect, Dress, Runway, dress-blueprint-action, project
+- `runway-ci.json` pattern with `$WORKSPACE` placeholder
+- Verification step checks for key output files
 
 **docs-static branch pattern** (for pre-generated documentation):
 1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
 2. Create orphan branch: `git checkout --orphan docs-static`
 3. Commit docs to branch root
 4. CI downloads from branch instead of regenerating (~4,700 files in seconds vs. ~1 hour)
+
+**PrimeNumberTheoremAnd integration**:
+- 530 `@[blueprint]` annotations across 33 files
+- Zero changes to Lean proof code
+- Downgraded to Lean v4.27.0, pinned mathlib to v4.27.0
+- Key theorems tagged: WeakPNT, MediumPNT, WeakPNT_AP
+- No DocGen4 (simpler setup)
 
 **lakefile.toml configuration**:
 ```toml
@@ -252,10 +303,33 @@ name = "Dress"
 git = "https://github.com/e-vergo/Dress"
 rev = "main"
 
+# For mathlib projects, pin to matching version
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.27.0"
+
 # Optional: doc-gen4 as dev dependency (v4.27.0 compatible)
 [[require]]
 scope = "dev"
 name = "doc-gen4"
 git = "https://github.com/leanprover/doc-gen4.git"
 rev = "01e1433"
+```
+
+**runway.json configuration**:
+```json
+{
+  "title": "Project Title",
+  "projectName": "ProjectName",
+  "githubUrl": "https://github.com/...",
+  "baseUrl": "/",
+  "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "assetsDir": "../dress-blueprint-action/assets",
+  "paperTexPath": "blueprint/src/paper.tex",
+  "paperTitle": "Paper Title",
+  "paperAuthors": ["Author One", "Author Two"],
+  "paperAbstract": "Abstract text...",
+  "docgen4Url": "docs/"
+}
 ```
