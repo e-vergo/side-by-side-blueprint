@@ -24,27 +24,3 @@ Text dump from https://leanprover.zulipchat.com/#narrow/channel/423402-PrimeNumb
 
 **Pietro Monticone**:
 > Cool! Thanks @Terence Tao and @Eric Vergo.
-
-## The Core Problem
-
-A proof can typecheck while proving something entirely different from what was intended:
-- The trivial factorization n! = 1 x 2 x ... x n satisfies "at least" but not "at most"
-- AI-generated proofs found this trivial solution
-- The proof typechecked successfully
-- Only the **disconnected dependency graph** revealed the problem
-
-## What This Motivates
-
-1. **Side-by-side display**: Mathematicians can verify formal statements match their intent
-2. **Dependency visualization**: Disconnected nodes signal logical errors
-3. **Expanded definition of "verified"**: Beyond just typechecking
-
-## Current Implementation Status
-
-The Side-by-Side Blueprint toolchain now includes:
-- Dependency graph generation via `Node.inferUses` (traces actual Lean code)
-- Graph connectivity detection (`findComponents` in `Dress/Graph/Build.lean`)
-- Artificial edges added between disconnected components (with warnings)
-- Visual distinction between real dependencies (solid) and artificial connections (dashed)
-
-The Tao-style error would now be caught automatically by the toolchain.
