@@ -25,8 +25,8 @@ Create tooling that:
 
 ```
 /Users/eric/GitHub/Side-By-Side-Blueprint/
-├── Runway/          # Site generator + PDF/paper generation
-├── Dress/           # Artifact generation + validation checks
+├── Runway/          # Site generator + PDF/paper generation + module reference support
+├── Dress/           # Artifact generation + validation checks + two-pass edge processing
 ├── LeanArchitect/   # @[blueprint] attribute and metadata
 ├── subverso/        # Syntax highlighting (fork with optimizations)
 ├── SBS-Test/        # Minimal test project (11 nodes, all features)
@@ -44,14 +44,14 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 ### Key Files by Repo
 
-**Runway** - Site generator + dashboard + paper
+**Runway** - Site generator + dashboard + paper + module references
 | File | Purpose |
 |------|---------|
 | `Main.lean` | CLI: build/paper/pdf commands, loads manifest.json, `assignPagePaths` for links |
 | `Render.lean` | Side-by-side rendering, dashboard, `renderNodeModal` |
-| `Site.lean` | NodeInfo structure with `title` and `pagePath` fields, `fullUrl` helper |
+| `Site.lean` | NodeInfo structure with `title`, `pagePath`, `moduleName` fields, `fullUrl` helper |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
-| `Theme.lean` | Page templates, sidebar |
+| `Theme.lean` | Page templates, sidebar, `buildModuleLookup`, `replaceModulePlaceholders` |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
 | `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes) |
 | `Config.lean` | Site config including `assetsDir`, `paperTexPath`, paper metadata |
@@ -64,9 +64,9 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
 | `Graph/Types.lean` | Node, Edge, StatusCounts, CheckResults; `transitiveReduction` with O(n^3) skip |
-| `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` |
+| `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` + two-pass edge processing |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata/validation |
-| `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier |
+| `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier (simplified for large graphs) |
 | `Graph/Render.lean` | SVG generation |
 | `Main.lean` | Writes manifest.json with precomputed stats |
 
@@ -80,15 +80,16 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 **External Assets** - `dress-blueprint-action/assets/`
 | File | Purpose |
 |------|---------|
+| `common.css` | Theme toggle (dark/light mode), base styles |
 | `blueprint.css` | Full stylesheet including modal and graph styles |
 | `plastex.js` | LaTeX proof toggle (expand/collapse) |
-| `verso-code.js` | Hovers, token bindings, pan/zoom, modal MathJax/Tippy init |
+| `verso-code.js` | Hovers, token bindings, pan/zoom, modal MathJax/Tippy init, fit algorithm |
 
 ---
 
 ## Current Status
 
-**Blueprint + Dashboard + Dependency Graph + Paper Generation**: Feature-complete.
+**Blueprint + Dashboard + Dependency Graph + Paper + Module Reference**: Feature-complete.
 
 **Completed**:
 - Dashboard homepage with 2x2 grid (Stats, Key Theorems, Messages, Project Notes)
@@ -97,7 +98,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - manifest.json with precomputed stats, validation results, project notes
 - Sugiyama layout with edge routing (visibility graph + Dijkstra + Bezier)
 - Rich modals with side-by-side content (reuses `renderNode`)
-- Pan/zoom, node hover, Fit button with corrected X-axis centering
+- Pan/zoom, node hover, Fit button with corrected X/Y centering (uses getBBox)
 - Sidebar navigation on dependency graph page
 - MathJax and Tippy.js in modals
 - Parser fixes for large documents (3989+ tokens)
@@ -110,12 +111,19 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - **Validation checks** (connectivity, cycle detection)
 - **PrimeNumberTheoremAnd integration** (530 annotations, 33 files)
 - **O(n^3) transitive reduction skip** for large graphs (>100 nodes)
+- **Two-pass edge processing** for proper back-edge handling
+- **Edge deduplication** (keeps first occurrence of each from/to pair)
+- **Dependency graph fit/centering** fixed (proper getBBox handling)
+- **Module reference support** (`\inputleanmodule{}` expansion)
+- **Static tile heights** (320px for stats and checks boxes)
+- **Checks panel** renamed from "Graph Checks", includes placeholder future checks
 
-**Recent Bug Fixes**:
+**Recent Work**:
 - `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
 - `keyTheorem` -> `keyDeclaration` migration
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
+- Module name mismatch fix (registers full module names like `PrimeNumberTheoremAnd.Wiener`)
 
 ---
 
@@ -133,6 +141,11 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | TeX/HTML generation | <30ms | <1% |
 
 **Key finding**: SubVerso highlighting dominates due to goal pretty-printing. Cannot be deferred because info trees are ephemeral (only exist during elaboration).
+
+**Large graph optimizations**:
+- O(n^3) transitive reduction skipped for graphs >100 nodes
+- Simplified edge routing for large graphs in Layout.lean
+- Edge deduplication in Build.lean
 
 ---
 
@@ -269,6 +282,8 @@ Lake facets aggregate:
   - Validates graph (connectivity, cycles)
   - Extracts project metadata (keyTheorems, messages, projectNotes)
   - Uses `Node.inferUses` for real Lean code dependencies
+  - Two-pass edge processing (PASS 1: register labels, PASS 2: add edges)
+  - Edge deduplication
   - Writes manifest.json (precomputed, soundness guarantee)
         |
         v
@@ -276,6 +291,7 @@ Runway consumes:
   - Parses blueprint.tex for structure
   - Loads artifacts from .lake/build/dressed/
   - Loads manifest.json (no stat recomputation)
+  - Expands `\inputleanmodule{}` placeholders via buildModuleLookup
   - Copies assets from assetsDir to output/assets/
   - Generates dashboard homepage + multi-page site
   - Optionally: paper.html + paper.pdf + pdf.html
@@ -329,12 +345,15 @@ Runway consumes:
 - Sugiyama: layer assignment, median crossing reduction, position refinement
 - Edge routing: visibility graph, Dijkstra shortest path, Bezier fitting
 - Node width calculation from label length
+- Simplified routing for large graphs (>100 nodes)
 
 **Edge generation** (`Dress/Graph/Build.lean`):
+- Two-pass processing: PASS 1 registers labels, PASS 2 adds edges
 - `Node.inferUses` traces actual Lean code dependencies
 - Statement uses -> dashed edges
 - Proof uses -> solid edges
 - Edges filtered to valid node IDs only
+- Edge deduplication (first occurrence kept)
 
 **SVG rendering** (`Dress/Graph/Render.lean`):
 - Node shapes: ellipse (theorems), rect (definitions)
@@ -352,7 +371,7 @@ Runway consumes:
 **JavaScript** (`verso-code.js`):
 - Pan/zoom: D3-style behavior (wheel, drag, Fit button)
 - `onModalOpen()`: Initializes MathJax and Tippy.js
-- Centering: Uses getBBox() for content bounds, centers on contentCenterX/Y
+- Fit algorithm: Uses getBBox() for content bounds, centers on contentCenterX/Y
 
 **CSS** (`blueprint.css`):
 - Modal sizing: 90vw max width
@@ -375,6 +394,24 @@ Runway consumes:
 - Manifest.json written by Dress with precomputed stats + validation
 - Runway loads manifest, no recomputation (soundness)
 - `title` propagated for cleaner labels (falls back to short Lean name)
+
+**Layout updates**:
+- Static tile heights (320px for stats and checks boxes)
+- Project Notes aligned with Key Declarations column
+- Checks panel renamed from "Graph Checks"
+- Placeholder checks: Kernel Verification, Soundness Checks
+
+### Module reference support
+
+**Theme.lean functions**:
+- `buildModuleLookup`: Creates map from module name to nodes
+- `replaceModulePlaceholders`: Finds placeholder divs, replaces with rendered nodes
+
+**Data flow**:
+- `moduleName` field on Dress nodes tracks source module
+- Full module names registered (e.g., `PrimeNumberTheoremAnd.Wiener`)
+- `\inputleanmodule{ModuleName}` in LaTeX becomes placeholder div
+- Placeholder replaced with all rendered nodes from that module
 
 ### PDF/Paper generation
 
@@ -507,6 +544,7 @@ Large-scale integration test case:
 - **Zero changes to Lean proof code** - annotations added non-invasively
 - **Toolchain downgrade**: v4.28.0-rc1 -> v4.27.0
 - **Mathlib pinned**: to v4.27.0
+- **Module reference support**: `\inputleanmodule{PrimeNumberTheoremAnd.Wiener}` expands to all nodes
 
 **Key theorems tagged**:
 ```lean

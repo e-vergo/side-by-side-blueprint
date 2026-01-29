@@ -25,8 +25,8 @@ Building a pure Lean toolchain for formalization documentation that:
 
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
-| **Runway** | Site generator + dashboard + paper/PDF | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Latex/Parser.lean` |
-| **Dress** | Artifact generation + stats + validation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
+| **Runway** | Site generator + dashboard + paper/PDF + module references | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Latex/Parser.lean` |
+| **Dress** | Artifact generation + stats + validation + two-pass edge processing | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean`, `Graph/Layout.lean` |
 | **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 5 status options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
 | **SBS-Test** | Minimal test project (11 nodes, all features) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
@@ -46,7 +46,7 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Current Status
 
-**Phase 7 + Dashboard + Paper Phases Complete**: Blueprint, dashboard, dependency graph, and paper generation are feature-complete.
+**Phase 7 + Dashboard + Paper + Module Reference Phases Complete**: Blueprint, dashboard, dependency graph, paper generation, and module reference support are feature-complete.
 
 **Completed features**:
 - Side-by-side display with proof toggles
@@ -60,6 +60,13 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 - Validation checks (connectivity, cycle detection)
 - PrimeNumberTheoremAnd integration (530 annotations, 33 files, zero proof changes)
 - O(n^3) transitive reduction skip for large graphs (>100 nodes)
+- Two-pass edge processing for proper back-edge handling
+- Edge deduplication (keeps first occurrence of each from/to pair)
+- Dependency graph fit/centering fixed (proper getBBox handling)
+- Module reference support (`\inputleanmodule{}` expansion)
+- Static tile heights (320px for stats and checks boxes)
+- Project Notes aligned with Key Declarations column
+- Checks panel with placeholder future checks (Kernel Verification, Soundness Checks)
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -168,6 +175,11 @@ jobs:
 
 **Key finding**: SubVerso highlighting dominates build time. Cannot be deferred because info trees are ephemeral (only exist during elaboration).
 
+**Large graph optimizations**:
+- O(n^3) transitive reduction skipped for graphs >100 nodes
+- Simplified edge routing for large graphs in Layout.lean
+- Edge deduplication in Build.lean
+
 ## MCP Tool Usage
 
 **For Lean software development (not proofs):**
@@ -196,6 +208,7 @@ jobs:
 - CI/CD workflow updates (`dress-blueprint-action`, project workflows)
 - PDF/Paper generation (`Runway/Pdf.lean`, paper TeX hooks)
 - Validation checks (`Dress/Graph/Build.lean`)
+- Module reference support (`Theme.lean`: `buildModuleLookup`, `replaceModulePlaceholders`)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -272,6 +285,23 @@ Located in `.refs/`:
 - Proof uses -> solid edges
 - Replaces manual `\uses{}` annotations with real dependency tracing
 
+**Two-pass edge processing** (`Graph/Build.lean`):
+- PASS 1: Register all labels and create nodes (so all labels exist)
+- PASS 2: Add all edges (now back-edges work because targets are registered)
+- Edge deduplication: keeps first occurrence of each from/to pair
+
+**Dependency graph fit/centering** (`verso-code.js`):
+- Uses `getBBox()` to get actual SVG content bounds
+- Calculates `contentCenterX/Y` from bbox
+- Translates to center content in viewport
+- Fixes X-axis bias when SVG has asymmetric padding
+
+**Module reference support** (`Theme.lean`):
+- `buildModuleLookup`: Creates map from module name to nodes
+- `replaceModulePlaceholders`: Finds `<div class="lean-module-placeholder" data-module="X">` and replaces with rendered nodes
+- Registers full module names (e.g., `PrimeNumberTheoremAnd.Wiener`)
+- `\inputleanmodule{ModuleName}` in LaTeX expands to all nodes from that module
+
 **Parser fixes**:
 - `Runway/Latex/Parser.lean` includes `let _ <- advance` in catch-all cases
 - Prevents infinite loops when parsing large documents (3989+ tokens)
@@ -336,10 +366,13 @@ theorem complete_with_all_deps : ...
 - Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
 - Cycles: `detectCycles` finds circular dependencies
 - Results in `manifest.json` under `checkResults`
+- Dashboard shows Checks panel with connectivity/cycle info + placeholder future checks
 
 **Performance fixes**:
 - O(n^3) transitive reduction in `Dress/Graph/Types.lean` skipped for graphs >100 nodes
 - PNT (530 nodes) was causing 3+ hour hangs: 530^3 = 149 million iterations
+- Simplified edge routing for large graphs in Layout.lean
+- Edge deduplication in Build.lean
 
 **ToExpr bug fix**:
 - Manual `ToExpr` instance for `Node` in `LeanArchitect/Architect/Basic.lean`

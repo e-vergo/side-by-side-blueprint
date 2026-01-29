@@ -11,7 +11,7 @@ Eight repositories work together to produce formalization documentation:
 | **SubVerso** | Syntax highlighting extraction from Lean info trees |
 | **LeanArchitect** | `@[blueprint]` attribute with 8 metadata options + 5 status flags |
 | **Dress** | Artifact generation + dependency graph layout + stats computation + validation checks |
-| **Runway** | Site generator with dashboard + PDF/paper generation |
+| **Runway** | Site generator with dashboard + PDF/paper generation + module reference support |
 | **SBS-Test** | Minimal test project for iteration (11 nodes, all features) |
 | **General_Crystallographic_Restriction** | Production example with full paper generation |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) |
@@ -40,6 +40,7 @@ LAKE FACETS (after compilation):
   - Computes stats (StatusCounts) and extracts project metadata
   - Uses Node.inferUses for real Lean code dependency inference
   - Validates graph: connectivity check, cycle detection
+  - Two-pass edge processing for proper back-edge handling
   - Writes manifest.json with precomputed stats and validation results
         |
         v
@@ -47,6 +48,7 @@ RUNWAY (post-build):
   - Parses blueprint.tex for chapter/section structure
   - Loads artifacts from .lake/build/dressed/
   - Loads manifest.json (precomputed stats, no recomputation)
+  - Expands `\inputleanmodule{ModuleName}` placeholders
   - Copies assets from assetsDir to output
   - Generates dashboard homepage + multi-page static site
   - Optionally: paper.html + paper.pdf + pdf.html (viewer)
@@ -81,7 +83,8 @@ RUNWAY (post-build):
 ├── pdf.html                  # Embedded PDF viewer page
 ├── manifest.json             # Node index
 └── assets/
-    ├── blueprint.css         # From assetsDir
+    ├── common.css            # Theme toggle, base styles
+    ├── blueprint.css         # Full stylesheet including modal and graph styles
     ├── plastex.js            # LaTeX proof toggle
     └── verso-code.js         # Hovers, bindings, pan/zoom, modal init
 ```
@@ -92,6 +95,7 @@ CSS and JavaScript are maintained as real files in `dress-blueprint-action/asset
 
 | File | Size | Purpose |
 |------|------|---------|
+| `common.css` | ~3 KB | Theme toggle (dark/light mode), base styles |
 | `blueprint.css` | ~35 KB | Full stylesheet including modal and graph styles |
 | `plastex.js` | ~2 KB | LaTeX proof toggle (expand/collapse) |
 | `verso-code.js` | ~20 KB | Hover tooltips, token binding, pan/zoom, modal MathJax/Tippy init |
@@ -204,16 +208,26 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
 | `Graph/Types.lean` | `Node`, `Edge`, `StatusCounts`, `CheckResults` types; `transitiveReduction` with O(n^3) skip |
-| `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` |
+| `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` + two-pass edge processing |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata/validation |
-| `Graph/Layout.lean` | Sugiyama algorithm, visibility graph edge routing |
+| `Graph/Layout.lean` | Sugiyama algorithm, visibility graph edge routing (simplified for >100 nodes) |
 | `Graph/Render.lean` | SVG generation with Bezier curves |
 | `Paths.lean` | Centralized path management |
 | `Main.lean` | Writes manifest.json with precomputed stats |
 
 **Dependency inference**: `Node.inferUses` traces actual Lean code dependencies by examining the expression tree, rather than using manually-specified `\uses{}` annotations. This produces edges that reflect real proof dependencies.
 
+**Two-pass edge processing** (`Graph/Build.lean`):
+- PASS 1: Register all labels and create nodes (so all labels exist in the builder state)
+- PASS 2: Add all edges (now back-edges work because targets are registered)
+- Edge deduplication: keeps first occurrence of each from/to pair
+
 **Transitive reduction performance**: `Graph.transitiveReduction` in `Graph/Types.lean` uses Floyd-Warshall algorithm which is O(n^3). For large graphs like PNT (530 nodes), this would be 530^3 = 149 million iterations causing multi-hour hangs. **Fix**: Skip transitive reduction for graphs with >100 nodes. Trade-off: some redundant edges appear but layout still works.
+
+**Layout performance** (`Graph/Layout.lean`):
+- Simplified edge routing for large graphs (>100 nodes)
+- Visibility graph computation optimized
+- Bezier curve fitting uses direct paths when routing fails
 
 **Validation checks** (`Graph/Build.lean`):
 - `findComponents`: Detects disconnected subgraphs (warns about unreachable nodes)
@@ -228,14 +242,20 @@ Pure Lean site generator using Verso patterns.
 |------|---------|
 | `Main.lean` | CLI entry point with `build`, `paper`, `pdf` commands; `assignPagePaths` for declaration-specific links |
 | `Render.lean` | Side-by-side node rendering, dashboard, modal content |
-| `Theme.lean` | Page templates, sidebar |
+| `Theme.lean` | Page templates, sidebar, `buildModuleLookup`, `replaceModulePlaceholders` |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
-| `Site.lean` | `NodeInfo` structure with `title` and `pagePath` fields; `fullUrl` helper |
+| `Site.lean` | `NodeInfo` structure with `title`, `pagePath`, `moduleName` fields; `fullUrl` helper |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
 | `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes for large documents) |
 | `Latex/ToHtml.lean` | LaTeX to HTML |
 | `Config.lean` | Site config including `assetsDir`, `paperTexPath`, paper metadata |
 | `Assets.lean` | Asset copying |
+
+**Module reference support** (`Theme.lean`):
+- `buildModuleLookup`: Creates map from module name to nodes in that module
+- `replaceModulePlaceholders`: Finds `<div class="lean-module-placeholder" data-module="X">` and replaces with rendered nodes from module X
+- Registers nodes under full module name (e.g., `PrimeNumberTheoremAnd.Wiener`)
+- Allows `\inputleanmodule{ModuleName}` in LaTeX to expand to all nodes from that module
 
 **Declaration-specific links**: The `pagePath` field in `NodeInfo` tracks which chapter page each node belongs to. The `assignPagePaths` function in `Main.lean` populates this during site generation. Paper links use `fullUrl` to generate correct URLs like `basic-definitions.html#thm-main` instead of just `#thm-main`.
 
@@ -245,6 +265,8 @@ Pure Lean site generator using Verso patterns.
 - `renderKeyTheorems`: Key theorems with side-by-side preview and status dots
 - `renderMessages`: User notes section
 - `renderProjectNotes`: Blocked/Issues/Debt/Misc sections
+- Static tile heights (320px for stats and checks boxes)
+- Project Notes aligned with Key Declarations column
 
 **Parser fixes**: The LaTeX parser includes `let _ <- advance` in catch-all cases in `parseBlocks`, `parseBody`, `parseSectionBody`, and `parseItems` to prevent infinite loops when parsing large documents (e.g., GCR's 3989-token blueprint.tex).
 
@@ -323,7 +345,7 @@ Sugiyama-style hierarchical layout:
 1. **Layer assignment**: Top-to-bottom, respecting edge directions
 2. **Crossing reduction**: Median heuristic for node ordering within layers
 3. **Position refinement**: Iterative adjustment for better spacing
-4. **Edge routing**: Visibility graph + Dijkstra shortest path + Bezier fitting
+4. **Edge routing**: Visibility graph + Dijkstra shortest path + Bezier fitting (simplified for large graphs)
 
 ### Node Rendering
 
@@ -353,6 +375,7 @@ Dark backgrounds use white text.
 - **Dashed lines**: Statement dependencies (from `Node.inferUses` statementUses)
 - **Bezier curves**: Control points calculated via visibility graph to route around nodes
 - **Arrow heads**: Point at target node boundary (clipped to shape)
+- **Deduplication**: First occurrence of each from/to pair kept; duplicates removed
 
 ### Modal System
 
@@ -372,11 +395,11 @@ Modals display rich side-by-side content when nodes are clicked:
 ### Pan/Zoom (verso-code.js)
 
 D3-style behavior implemented manually (no D3 dependency):
-- **Wheel**: Zoom centered on cursor position
+- **Wheel**: Zoom centered on cursor position (4x reduced sensitivity)
 - **Drag**: Pan with pointer capture
 - **Fit button**: Scales and centers graph using content bounds (getBBox) for proper X/Y centering
 
-**Fit algorithm fix**: Uses `getBBox()` to get actual content bounds, then centers on `contentCenterX/Y` rather than SVG declared dimensions. This fixes X-axis bias when SVG has asymmetric padding.
+**Fit algorithm**: Uses `getBBox()` to get actual SVG content bounds, calculates `contentCenterX/Y` from bbox, then translates to center content in viewport. This fixes X-axis bias when SVG has asymmetric padding.
 
 ## Validation Checks
 
@@ -396,6 +419,14 @@ Graph integrity validation is implemented in `Dress/Graph/Build.lean`:
 `detectCycles` uses DFS with gray/black node coloring to find back-edges. Returns array of cycles.
 
 **Purpose**: Prevent circular dependencies that indicate logical errors.
+
+### Dashboard Display
+
+Checks panel on dashboard shows:
+- Connectivity status with component count
+- Cycle warnings if any detected
+- Placeholder checks: Kernel Verification, Soundness Checks (future features)
+- Static tile height (320px) for consistent layout
 
 ### Integration
 
@@ -618,6 +649,7 @@ Successfully integrated the PNT project as a large-scale test case:
 - **Zero changes to Lean proof code** - annotations added non-invasively
 - **Toolchain downgrade**: v4.28.0-rc1 -> v4.27.0 (to match toolchain)
 - **Mathlib pinned**: to v4.27.0
+- **Module reference support**: `\inputleanmodule{PrimeNumberTheoremAnd.Wiener}` expands to all nodes from that module
 
 ### Key Theorems Tagged
 
@@ -638,7 +670,7 @@ theorem WeakPNT_AP : ...
 
 **Side-by-side container**: Uses flexbox with two 100ch columns plus gap.
 
-**Dashboard grid**: 2x2 layout with Stats, Key Theorems, Messages, Project Notes panels.
+**Dashboard grid**: 2x2 layout with Stats, Key Theorems, Messages, Project Notes panels. Static tile heights (320px) for stats and checks boxes. Project Notes aligned with Key Declarations column.
 
 ## Performance Analysis
 
@@ -654,6 +686,11 @@ theorem WeakPNT_AP : ...
 **Key finding**: SubVerso highlighting dominates build time due to goal pretty-printing in info trees. This cannot be deferred because info trees are ephemeral (only exist during elaboration).
 
 **Deferred generation (Phase 2) skipped**: Analysis showed no benefit since the bottleneck (SubVerso) must run during elaboration anyway.
+
+**Large graph optimizations**:
+- O(n^3) transitive reduction skipped for graphs >100 nodes
+- Simplified edge routing for large graphs in Layout.lean
+- Edge deduplication in Build.lean
 
 ## Configuration
 
@@ -727,7 +764,7 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 
 ## Feature Status
 
-### Complete (through Phase 7 + Dashboard + Paper Phases)
+### Complete (through Phase 7 + Dashboard + Paper + Module Reference Phases)
 
 **Blueprint Core**:
 - Side-by-side display with proof toggle sync
@@ -739,16 +776,20 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - External CSS/JS assets
 - Parser fixes for large documents (3989+ tokens)
 - Declaration-specific links (paper links navigate to correct chapter pages)
+- Module reference support (`\inputleanmodule{}` expansion)
 
 **Dashboard Homepage**:
 - 2x2 grid layout: Stats / Key Theorems / Messages / Project Notes
 - Stats panel with Completion column (proven, fullyProven, mathlibReady, inMathlib)
 - Stats panel with Attention column (notReady, stated, ready, hasSorry)
+- Checks panel with connectivity/cycle info + placeholder future checks
 - Key Theorems section with side-by-side preview and status dots
 - Messages panel showing user notes from `message` attribute
 - Project Notes: blocked/potentialIssues/technicalDebt/misc sections
 - All stats computed upstream in Dress (soundness guarantee)
 - `title` propagation for cleaner labels (renamed from `displayName`)
+- Static tile heights (320px for stats and checks boxes)
+- Project Notes aligned with Key Declarations column
 
 **Dependency Graph**:
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
@@ -759,10 +800,13 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
 - Edge routing: Visibility graph + Dijkstra + Bezier fitting
 - Node hover border thickening
-- Combined Fit button with corrected X-axis centering
+- Combined Fit button with corrected X-axis centering (uses getBBox)
 - **Sidebar navigation** (chapters, Blueprint Home, Dependency Graph, Paper, GitHub links)
 - **Real dependency inference** via `Node.inferUses` (traces actual Lean code)
+- **Two-pass edge processing** for proper back-edge handling
+- **Edge deduplication** (keeps first occurrence of each from/to pair)
 - **O(n^3) transitive reduction skip** for graphs >100 nodes (PNT fix)
+- **Simplified edge routing** for large graphs
 
 **Rich Modals (Verso Integration)**:
 - Click node to open modal with full side-by-side content
@@ -795,6 +839,13 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Embedded PDF viewer (pdf.html)
 - Auto-detection of available compiler
 
+**Module Reference Support**:
+- `\inputleanmodule{ModuleName}` LaTeX command
+- `moduleName` field added to Dress nodes for proper module tracking
+- `buildModuleLookup` creates map from module name to nodes
+- `replaceModulePlaceholders` expands placeholder divs to rendered nodes
+- Full module name registration (e.g., `PrimeNumberTheoremAnd.Wiener`)
+
 **CI/CD**:
 - `dress-blueprint-action` is complete CI solution (~465 lines)
 - Per-project workflows reduced to ~30 lines
@@ -823,9 +874,13 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - O(n^3) transitive reduction skip for graphs >100 nodes (PNT 3+ hour hang fix)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
+- Dependency graph fit/centering fixed (proper getBBox handling for X/Y centering)
+- Edge deduplication and two-pass processing in Build.lean
+- Module name mismatch fix (registers full module names)
 
 ### Future
 
 - Tactic state expansion
 - doc-gen4 cross-linking improvements
 - Additional soundness checks (no sorry enforcement in CI)
+- Kernel Verification, Soundness Checks (placeholder in dashboard)
