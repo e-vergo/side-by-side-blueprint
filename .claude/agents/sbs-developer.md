@@ -5,7 +5,7 @@ model: opus
 color: pink
 ---
 
-Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the 7-repo architecture, build pipeline, and Verso patterns.
+Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the 8-repo architecture, build pipeline, and Verso patterns.
 
 > **Prototype Status**: Alpha software with known bugs, slow workflows, and incomplete features.
 
@@ -29,7 +29,7 @@ Create tooling that:
 ├── Dress/           # Artifact generation + validation checks
 ├── LeanArchitect/   # @[blueprint] attribute and metadata
 ├── subverso/        # Syntax highlighting (fork with optimizations)
-├── SBS-Test/        # Minimal test project
+├── SBS-Test/        # Minimal test project (11 nodes, all features)
 ├── General_Crystallographic_Restriction/  # Production example with paper
 ├── PrimeNumberTheoremAnd/  # Large-scale integration (530 annotations)
 └── dress-blueprint-action/  # GitHub Action + CSS/JS assets
@@ -47,9 +47,9 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 **Runway** - Site generator + dashboard + paper
 | File | Purpose |
 |------|---------|
-| `Main.lean` | CLI: build/paper/pdf commands, loads manifest.json |
+| `Main.lean` | CLI: build/paper/pdf commands, loads manifest.json, `assignPagePaths` for links |
 | `Render.lean` | Side-by-side rendering, dashboard, `renderNodeModal` |
-| `Site.lean` | NodeInfo structure with displayName |
+| `Site.lean` | NodeInfo structure with `title` and `pagePath` fields, `fullUrl` helper |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Theme.lean` | Page templates, sidebar |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
@@ -63,12 +63,19 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `Capture/InfoTree.lean` | SubVerso highlighting capture |
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
-| `Graph/Types.lean` | Node, Edge, StatusCounts, CheckResults types |
+| `Graph/Types.lean` | Node, Edge, StatusCounts, CheckResults; `transitiveReduction` with O(n^3) skip |
 | `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata/validation |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph, Dijkstra, Bezier |
 | `Graph/Render.lean` | SVG generation |
 | `Main.lean` | Writes manifest.json with precomputed stats |
+
+**LeanArchitect** - `@[blueprint]` attribute
+| File | Purpose |
+|------|---------|
+| `Architect/Basic.lean` | `Node`, `NodePart`, `NodeStatus` with manual `ToExpr` instance |
+| `Architect/Attribute.lean` | `@[blueprint]` attribute with all options |
+| `Architect/CollectUsed.lean` | Dependency inference |
 
 **External Assets** - `dress-blueprint-action/assets/`
 | File | Purpose |
@@ -85,7 +92,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 **Completed**:
 - Dashboard homepage with 2x2 grid (Stats, Key Theorems, Messages, Project Notes)
-- 7 new `@[blueprint]` attribute options for metadata
+- 8 metadata + 5 status flag `@[blueprint]` attribute options
 - Stats computed upstream in Dress (soundness guarantee)
 - manifest.json with precomputed stats, validation results, project notes
 - Sugiyama layout with edge routing (visibility graph + Dijkstra + Bezier)
@@ -99,9 +106,18 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - CSS fixes for non-Lean content column width
 - docs-static branch pattern for pre-generated docgen4 documentation
 - **PDF/Paper generation pipeline** (`\paperstatement{}`, `\paperfull{}` hooks)
+- **Declaration-specific paper links** (navigate to correct chapter pages)
 - **Multiple LaTeX compilers** (tectonic, pdflatex, xelatex, lualatex)
 - **Validation checks** (connectivity, cycle detection)
 - **PrimeNumberTheoremAnd integration** (530 annotations, 33 files)
+- **O(n^3) transitive reduction skip** for large graphs (>100 nodes)
+
+**Recent Bug Fixes**:
+- `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
+- `keyTheorem` -> `keyDeclaration` migration
+- Manual `ToExpr` instance for `Node` (status persistence through environment extension)
+- Paper links 404 fix (files at root level, not `chapters/` subdirectory)
+- CI toolchain cache disabled (was ignoring code fixes)
 
 ---
 
@@ -292,7 +308,7 @@ Runway consumes:
 - Validation in Dress (`findComponents`, `detectCycles`)
 - Manifest.json written by Dress with precomputed stats + validation
 - Runway loads manifest, no recomputation (soundness)
-- `displayName` propagated for cleaner labels (falls back to short Lean name)
+- `title` propagated for cleaner labels (falls back to short Lean name)
 
 ### PDF/Paper generation
 
@@ -347,10 +363,11 @@ Runway consumes:
 
 ### `@[blueprint]` attribute options
 
+**Metadata Options (8)**:
 | Option | Type | Purpose |
 |--------|------|---------|
-| `displayName` | String | Custom node label in graph |
-| `keyTheorem` | Bool | Highlight in dashboard |
+| `title` | String | Custom node label in graph (renamed from `displayName`) |
+| `keyDeclaration` | Bool | Highlight in dashboard (renamed from `keyTheorem`) |
 | `message` | String | User notes (Messages panel) |
 | `priorityItem` | Bool | Flag for Attention column |
 | `blocked` | String | Blockage reason |
@@ -358,13 +375,37 @@ Runway consumes:
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
+**Status Flags (5)**:
+| Option | Type | Purpose |
+|--------|------|---------|
+| `notReady` | Bool | Status: not ready (red/gray) |
+| `ready` | Bool | Status: ready to formalize (orange) |
+| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
+| `mathlib` | Bool | Status: already in mathlib (dark blue) |
+
+**Node Status Types (8 total)**:
+| Status | Color | Source |
+|--------|-------|--------|
+| notReady | Red/Gray | Manual: `(notReady := true)` |
+| stated | Light Blue | Default (no Lean code) |
+| ready | Orange | Manual: `(ready := true)` |
+| sorry | Yellow | Derived: proof contains sorry |
+| proven | Light Green | Derived: complete proof |
+| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
+| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
+| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
+
 **Example**:
 ```lean
-@[blueprint (keyTheorem := true, message := "Main result")]
+@[blueprint (keyDeclaration := true, message := "Main result")]
 theorem main_thm : ...
 
 @[blueprint (priorityItem := true, blocked := "Waiting for mathlib PR")]
 lemma helper : ...
+
+@[blueprint (fullyProven := true)]
+theorem complete_with_all_deps : ...
 ```
 
 ### ID normalization gotcha
@@ -467,13 +508,13 @@ Large-scale integration test case:
 
 **Key theorems tagged**:
 ```lean
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem WeakPNT : ...
 
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem MediumPNT : ...
 
-@[blueprint (keyTheorem := true)]
+@[blueprint (keyDeclaration := true)]
 theorem WeakPNT_AP : ...
 ```
 
@@ -521,6 +562,8 @@ Located in `.refs/`:
 - Don't skip build_blueprint.sh steps
 - Don't use colons in CSS selectors or element IDs - normalize to hyphens
 - Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
+- Don't use derived `ToExpr` for structures with default fields - use manual instance
+- Don't enable toolchain cache in CI - causes stale code issues
 
 ---
 

@@ -4,15 +4,15 @@
 
 ## Overview
 
-Seven repositories work together to produce formalization documentation:
+Eight repositories work together to produce formalization documentation:
 
 | Repository | Purpose |
 |------------|---------|
 | **SubVerso** | Syntax highlighting extraction from Lean info trees |
-| **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options |
+| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata options + 5 status flags |
 | **Dress** | Artifact generation + dependency graph layout + stats computation + validation checks |
 | **Runway** | Site generator with dashboard + PDF/paper generation |
-| **SBS-Test** | Minimal test project for iteration |
+| **SBS-Test** | Minimal test project for iteration (11 nodes, all features) |
 | **General_Crystallographic_Restriction** | Production example with full paper generation |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) |
 | **dress-blueprint-action** | GitHub Action + external CSS/JS assets + Runway CI support |
@@ -175,33 +175,43 @@ Lightweight metadata store. Only depends on `batteries`.
 
 | File | Purpose |
 |------|---------|
-| `Architect/Basic.lean` | `Node`, `NodePart`, `NodeStatus` structures with 7 metadata fields |
+| `Architect/Basic.lean` | `Node`, `NodePart`, `NodeStatus` structures with manual `ToExpr` instance |
 | `Architect/Attribute.lean` | `@[blueprint]` attribute with all options |
 | `Architect/CollectUsed.lean` | Dependency inference |
 
-**Attribute options**:
+**Manual ToExpr instance**: The `Node` structure uses a manual `ToExpr` instance instead of derived one. This is required because Lean's derived `ToExpr` for structures with default field values doesn't correctly serialize all fields - causing status flags to not persist through the environment extension.
+
+**Attribute options (8 metadata + 5 status flags)**:
 
 | Option | Type | Purpose |
 |--------|------|---------|
-| `displayName` | String | Custom node label in dependency graph |
-| `keyTheorem` | Bool | Highlight in dashboard Key Theorems section |
+| `title` | String | Custom node label in dependency graph (renamed from `displayName`) |
+| `keyDeclaration` | Bool | Highlight in dashboard Key Theorems section (renamed from `keyTheorem`) |
 | `message` | String | User notes (appears in Messages panel) |
 | `priorityItem` | Bool | Flag for Attention column in dashboard |
 | `blocked` | String | Reason for blockage (Attention column) |
 | `potentialIssue` | String | Known concerns (Attention column) |
 | `technicalDebt` | String | Cleanup notes (Attention column) |
 | `misc` | String | Catch-all notes (Attention column) |
+| `notReady` | Bool | Status: not ready (red/gray) |
+| `ready` | Bool | Status: ready to formalize (orange) |
+| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
+| `mathlib` | Bool | Status: already in mathlib (dark blue) |
 
 **Example usage**:
 ```lean
-@[blueprint (keyTheorem := true, message := "Main result of paper")]
+@[blueprint (keyDeclaration := true, message := "Main result of paper")]
 theorem main_theorem : ...
 
 @[blueprint (priorityItem := true, blocked := "Waiting for upstream PR")]
 lemma helper_lemma : ...
 
-@[blueprint (displayName := "Square Non-negative")]
+@[blueprint (title := "Square Non-negative")]
 theorem square_nonneg : ...
+
+@[blueprint (fullyProven := true)]
+theorem complete_with_all_deps : ...
 ```
 
 ### Dress
@@ -214,7 +224,7 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 | `Capture/InfoTree.lean` | SubVerso highlighting capture |
 | `Generate/Declaration.lean` | Per-declaration artifact writer |
 | `HtmlRender.lean` | Verso HTML rendering |
-| `Graph/Types.lean` | `Node`, `Edge`, `StatusCounts`, `CheckResults` types |
+| `Graph/Types.lean` | `Node`, `Edge`, `StatusCounts`, `CheckResults` types; `transitiveReduction` with O(n^3) skip |
 | `Graph/Build.lean` | Graph construction + stats + validation + `Node.inferUses` |
 | `Graph/Json.lean` | Manifest serialization with stats/metadata/validation |
 | `Graph/Layout.lean` | Sugiyama algorithm, visibility graph edge routing |
@@ -223,6 +233,8 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 | `Main.lean` | Writes manifest.json with precomputed stats |
 
 **Dependency inference**: `Node.inferUses` traces actual Lean code dependencies by examining the expression tree, rather than using manually-specified `\uses{}` annotations. This produces edges that reflect real proof dependencies.
+
+**Transitive reduction performance**: `Graph.transitiveReduction` in `Graph/Types.lean` uses Floyd-Warshall algorithm which is O(n^3). For large graphs like PNT (530 nodes), this would be 530^3 = 149 million iterations causing multi-hour hangs. **Fix**: Skip transitive reduction for graphs with >100 nodes. Trade-off: some redundant edges appear but layout still works.
 
 **Validation checks** (`Graph/Build.lean`):
 - `findComponents`: Detects disconnected subgraphs (warns about unreachable nodes)
@@ -235,16 +247,18 @@ Pure Lean site generator using Verso patterns.
 
 | File | Purpose |
 |------|---------|
-| `Main.lean` | CLI entry point with `build`, `paper`, `pdf` commands |
+| `Main.lean` | CLI entry point with `build`, `paper`, `pdf` commands; `assignPagePaths` for declaration-specific links |
 | `Render.lean` | Side-by-side node rendering, dashboard, modal content |
 | `Theme.lean` | Page templates, sidebar |
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
-| `Site.lean` | `NodeInfo` structure with `displayName` field |
+| `Site.lean` | `NodeInfo` structure with `title` and `pagePath` fields; `fullUrl` helper |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
 | `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes for large documents) |
 | `Latex/ToHtml.lean` | LaTeX to HTML |
 | `Config.lean` | Site config including `assetsDir`, `paperTexPath`, paper metadata |
 | `Assets.lean` | Asset copying |
+
+**Declaration-specific links**: The `pagePath` field in `NodeInfo` tracks which chapter page each node belongs to. The `assignPagePaths` function in `Main.lean` populates this during site generation. Paper links use `fullUrl` to generate correct URLs like `basic-definitions.html#thm-main` instead of just `#thm-main`.
 
 **Dashboard rendering** (`Render.lean`):
 - `renderDashboard`: Main 2x2 grid layout
@@ -339,7 +353,20 @@ Sugiyama-style hierarchical layout:
 | Ellipse | Theorems, lemmas, propositions |
 | Box (rect) | Definitions |
 
-**8-status color model**: stated, ready, wip, proved, proved_incomplete, sorry, axiom, sorry_axiom. Dark backgrounds use white text.
+**8-status color model**:
+
+| Status | Color | Source |
+|--------|-------|--------|
+| notReady | Red/Gray | Manual: `(notReady := true)` |
+| stated | Light Blue | Default (LaTeX statement exists, no Lean code) |
+| ready | Orange | Manual: `(ready := true)` |
+| sorry | Yellow | Derived: proof contains sorry |
+| proven | Light Green | Derived: complete proof exists |
+| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
+| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
+| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
+
+Dark backgrounds use white text.
 
 ### Edge Rendering
 
@@ -442,6 +469,8 @@ jobs:
 ### Key Patterns
 
 **Direct elan installation**: lean-action failed in CI; direct elan-init.sh works reliably.
+
+**Toolchain cache disabled**: CI workflows in PNT, SBS-Test, and GCR have toolchain caching disabled. The cache was restoring old compiled binaries and ignoring code fixes, causing CI to use stale code. Mathlib cache is still enabled (separate concern).
 
 **runway-ci.json**: CI-specific config with `$WORKSPACE` placeholder replaced by `${{ github.workspace }}`:
 
@@ -662,6 +691,7 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Token binding highlights
 - External CSS/JS assets
 - Parser fixes for large documents (3989+ tokens)
+- Declaration-specific links (paper links navigate to correct chapter pages)
 
 **Dashboard Homepage**:
 - 2x2 grid layout: Stats / Key Theorems / Messages / Project Notes
@@ -671,13 +701,13 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Messages panel showing user notes from `message` attribute
 - Project Notes: blocked/potentialIssues/technicalDebt/misc sections
 - All stats computed upstream in Dress (soundness guarantee)
-- `displayName` propagation for cleaner labels
+- `title` propagation for cleaner labels (renamed from `displayName`)
 
 **Dependency Graph**:
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
 - Node shapes: Ellipse (theorems) / Box (definitions)
 - Edge styles: Solid (proof deps) / Dashed (statement deps) with Bezier curves
-- 8-status color model with appropriate text contrast
+- 8-status color model with appropriate text contrast (see Node Status Types)
 - Static legend embedded in SVG
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
 - Edge routing: Visibility graph + Dijkstra + Bezier fitting
@@ -685,6 +715,7 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Combined Fit button with corrected X-axis centering
 - **Sidebar navigation** (chapters, Blueprint Home, Dependency Graph, Paper, GitHub links)
 - **Real dependency inference** via `Node.inferUses` (traces actual Lean code)
+- **O(n^3) transitive reduction skip** for graphs >100 nodes (PNT fix)
 
 **Rich Modals (Verso Integration)**:
 - Click node to open modal with full side-by-side content
@@ -695,21 +726,36 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Lean proof toggle (CSS checkbox pattern)
 - "View in Blueprint" link
 
-**`@[blueprint]` Attribute Options**:
-- `displayName`: Custom graph labels
-- `keyTheorem`: Dashboard highlighting
+**`@[blueprint]` Attribute Options** (8 metadata + 5 status flags):
+- `title`: Custom graph labels (renamed from `displayName`)
+- `keyDeclaration`: Dashboard highlighting (renamed from `keyTheorem`)
 - `message`: User notes
 - `priorityItem`: Attention flagging
 - `blocked`, `potentialIssue`, `technicalDebt`, `misc`: Project notes
+- `notReady`, `ready`, `fullyProven`, `mathlibReady`, `mathlib`: Manual status overrides
+
+**Node Status Types (8 total)**:
+| Status | Color | Source |
+|--------|-------|--------|
+| notReady | Red/Gray | Manual: `(notReady := true)` |
+| stated | Light Blue | Default (no Lean code) |
+| ready | Orange | Manual: `(ready := true)` |
+| sorry | Yellow | Derived: proof contains sorry |
+| proven | Light Green | Derived: complete proof |
+| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
+| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
+| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
 
 **Validation Checks**:
 - Connectivity check: warns about disconnected components
 - Cycle detection: finds circular dependencies
 - Results in manifest.json for CI integration
+- SBS-Test includes disconnected cycle (cycleA <-> cycleB) for testing
 
 **PDF/Paper Generation**:
 - `\paperstatement{label}` and `\paperfull{label}` hooks
 - MathJax-rendered paper.html with links to Lean code
+- Declaration-specific links navigate to correct chapter pages (e.g., `basic-definitions.html#thm-main`)
 - Multiple LaTeX compilers: tectonic, pdflatex, xelatex, lualatex
 - Embedded PDF viewer (pdf.html)
 - Auto-detection of available compiler
@@ -718,6 +764,8 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - `dress-blueprint-action` supports Runway via `use-runway` input
 - Multi-repo CI workflow (checks out 6 repos)
 - Direct elan installation (lean-action unreliable)
+- Toolchain cache disabled (was causing stale code issues)
+- Mathlib cache enabled separately
 - GitHub Pages deployment
 - Build script auto-exits after 5 minutes (SBS-Test) or runs indefinitely (GCR)
 - docs-static branch pattern for pre-generated documentation
@@ -726,6 +774,13 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 **Large-Scale Integration**:
 - PrimeNumberTheoremAnd: 530 annotations, 33 files, zero proof code changes
 - GCR: Full production example with paper generation
+
+**Bug Fixes (This Session)**:
+- `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
+- Manual `ToExpr` instance for `Node` (status persistence through environment extension)
+- O(n^3) transitive reduction skip for graphs >100 nodes (PNT 3+ hour hang fix)
+- Paper links 404 fix (files at root level, not `chapters/` subdirectory)
+- CI toolchain cache disabled (was ignoring code fixes)
 
 ### Future
 

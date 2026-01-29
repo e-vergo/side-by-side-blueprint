@@ -27,9 +27,9 @@ Building a pure Lean toolchain for formalization documentation that:
 |------|---------|-----------|
 | **Runway** | Site generator + dashboard + paper/PDF | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Latex/Parser.lean` |
 | **Dress** | Artifact generation + stats + validation | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean` |
-| **LeanArchitect** | `@[blueprint]` attribute with 7 metadata options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
+| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 5 status options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
-| **SBS-Test** | Minimal test project for fast iteration | `SBSTest/Chapter{1,2,3,4}/*.lean`, `blueprint/src/blueprint.tex` |
+| **SBS-Test** | Minimal test project (11 nodes, all features) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) | Terence Tao's PNT+ project |
 | **dress-blueprint-action** | GitHub Action for CI + external assets | `assets/blueprint.css`, `assets/plastex.js`, `assets/verso-code.js`, `action.yml` |
@@ -51,21 +51,23 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 **Completed features**:
 - Side-by-side display with proof toggles
 - Dashboard homepage with stats, key theorems, messages, project notes
-- 7 `@[blueprint]` attribute options (displayName, keyTheorem, message, priorityItem, blocked, potentialIssue, technicalDebt, misc)
+- 8 metadata + 5 status flag `@[blueprint]` attribute options
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
 - Dependency graph sidebar navigation
 - Rich modals with MathJax, Tippy.js, proof toggles
 - CI/CD with GitHub Pages deployment (~340-line workflows)
-- `displayName` propagation for cleaner labels
+- `title` propagation for cleaner labels (renamed from `displayName`)
 - Parser fixes for large documents (3989+ tokens)
 - Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
 - CSS fixes for non-Lean content column width
 - docs-static branch pattern for pre-generated docgen4 documentation
 - **PDF/Paper generation** (`\paperstatement{}`, `\paperfull{}` hooks)
+- **Declaration-specific paper links** (navigate to correct chapter pages)
 - **Multiple LaTeX compilers** (tectonic, pdflatex, xelatex, lualatex)
 - **Validation checks** (connectivity, cycle detection)
 - **PrimeNumberTheoremAnd integration** (530 annotations, 33 files, zero proof changes)
+- **O(n^3) transitive reduction skip** for large graphs (>100 nodes)
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -224,7 +226,7 @@ Located in `.refs/`:
 1. `Dress/Graph/Build.lean`: `computeStatusCounts` computes stats from graph
 2. `Dress/Graph/Build.lean`: `findComponents`, `detectCycles` validate graph
 3. `Dress/Graph/Json.lean`: Serializes stats + validation + project metadata to manifest.json
-4. `Runway/Main.lean`: Loads manifest.json (no recomputation)
+4. `Runway/Main.lean`: Loads manifest.json (no recomputation), `assignPagePaths` tracks node locations
 5. `Runway/Render.lean`: `renderDashboard` displays precomputed data
 
 **Dependency inference**:
@@ -232,6 +234,12 @@ Located in `.refs/`:
 - Statement uses -> dashed edges
 - Proof uses -> solid edges
 - Replaces manual `\uses{}` annotations with real dependency tracing
+
+**Declaration-specific links**:
+- `pagePath` field in `NodeInfo` tracks which chapter page each node belongs to
+- `assignPagePaths` in `Runway/Main.lean` populates during site generation
+- `fullUrl` helper generates correct URLs like `basic-definitions.html#thm-main`
+- Paper links navigate to correct chapter pages instead of just anchor links
 
 **Parser fixes**:
 - `Runway/Latex/Parser.lean` includes `let _ <- advance` in catch-all cases
@@ -242,26 +250,51 @@ Located in `.refs/`:
 
 **`@[blueprint]` attribute options**:
 ```lean
-@[blueprint (keyTheorem := true, message := "Main result")]
+@[blueprint (keyDeclaration := true, message := "Main result")]
 theorem main_thm : ...
 
 @[blueprint (priorityItem := true, blocked := "Waiting for mathlib PR")]
 lemma helper : ...
 
-@[blueprint (displayName := "Square Non-negative")]
+@[blueprint (title := "Square Non-negative")]
 theorem square_nonneg : ...
+
+@[blueprint (fullyProven := true)]
+theorem complete_with_all_deps : ...
 ```
 
+**Metadata Options (8)**:
 | Option | Type | Purpose |
 |--------|------|---------|
-| `displayName` | String | Custom node label in graph |
-| `keyTheorem` | Bool | Highlight in dashboard Key Theorems |
+| `title` | String | Custom node label in graph (renamed from `displayName`) |
+| `keyDeclaration` | Bool | Highlight in dashboard Key Theorems (renamed from `keyTheorem`) |
 | `message` | String | User notes (Messages panel) |
 | `priorityItem` | Bool | Flag for Attention column |
 | `blocked` | String | Blockage reason |
 | `potentialIssue` | String | Known concerns |
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
+
+**Status Flags (5)**:
+| Option | Type | Purpose |
+|--------|------|---------|
+| `notReady` | Bool | Status: not ready (red/gray) |
+| `ready` | Bool | Status: ready to formalize (orange) |
+| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
+| `mathlib` | Bool | Status: already in mathlib (dark blue) |
+
+**Node Status Types (8 total)**:
+| Status | Color | Source |
+|--------|-------|--------|
+| notReady | Red/Gray | Manual: `(notReady := true)` |
+| stated | Light Blue | Default (no Lean code) |
+| ready | Orange | Manual: `(ready := true)` |
+| sorry | Yellow | Derived: proof contains sorry |
+| proven | Light Green | Derived: complete proof |
+| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
+| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
+| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
 
 **PDF/Paper generation**:
 - `\paperstatement{label}`: Insert LaTeX statement with link to Lean code
@@ -274,6 +307,17 @@ theorem square_nonneg : ...
 - Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
 - Cycles: `detectCycles` finds circular dependencies
 - Results in `manifest.json` under `checkResults`
+- SBS-Test includes disconnected cycle (cycleA <-> cycleB) for validation testing
+
+**Performance fixes**:
+- O(n^3) transitive reduction in `Dress/Graph/Types.lean` skipped for graphs >100 nodes
+- PNT (530 nodes) was causing 3+ hour hangs: 530^3 = 149 million iterations
+- Trade-off: some redundant edges appear but layout still works
+
+**ToExpr bug fix**:
+- Manual `ToExpr` instance for `Node` in `LeanArchitect/Architect/Basic.lean`
+- Derived `ToExpr` for structures with default field values doesn't correctly serialize all fields
+- This was causing status flags to not persist through the environment extension
 
 **CI/CD**:
 - `dress-blueprint-action` supports `use-runway` and `runway-target` inputs
@@ -282,6 +326,8 @@ theorem square_nonneg : ...
 - Checks out 6 repos: SubVerso, LeanArchitect, Dress, Runway, dress-blueprint-action, project
 - `runway-ci.json` pattern with `$WORKSPACE` placeholder
 - Verification step checks for key output files
+- **Toolchain cache disabled** (was restoring stale compiled binaries, ignoring code fixes)
+- Mathlib cache still enabled (separate concern)
 
 **docs-static branch pattern** (for pre-generated documentation):
 1. Generate docs locally: `lake -R -Kenv=dev build Module:docs`
