@@ -52,6 +52,7 @@ RUNWAY (post-build):
   - Copies assets from assetsDir to output
   - Generates dashboard homepage + multi-page static site
   - Optionally: paper.html + paper.pdf + pdf.html (viewer)
+    - Paper metadata (title, authors, abstract) extracted from paper.tex
 ```
 
 ## Output Directories
@@ -79,7 +80,7 @@ RUNWAY (post-build):
 ├── dep_graph.html            # Full dependency graph with rich modals
 ├── chapter{N}.html           # Per-chapter pages
 ├── paper.html                # Paper with MathJax + Lean links (if configured)
-├── paper.pdf                 # Compiled PDF (if LaTeX compiler available)
+├── paper.pdf                 # Compiled PDF (requires LaTeX compiler)
 ├── pdf.html                  # Embedded PDF viewer page
 ├── manifest.json             # Node index
 └── assets/
@@ -246,9 +247,11 @@ Pure Lean site generator using Verso patterns.
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Site.lean` | `NodeInfo` structure with `title`, `pagePath`, `moduleName` fields; `fullUrl` helper |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
+| `Paper.lean` | Paper rendering + `PaperMetadata` extraction from paper.tex |
 | `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes for large documents) |
+| `Latex/Ast.lean` | AST types including `Preamble` with `abstract` field |
 | `Latex/ToHtml.lean` | LaTeX to HTML |
-| `Config.lean` | Site config including `assetsDir`, `paperTexPath`, paper metadata |
+| `Config.lean` | Site config including `assetsDir`, `paperTexPath` |
 | `Assets.lean` | Asset copying |
 
 **Module reference support** (`Theme.lean`):
@@ -269,6 +272,14 @@ Pure Lean site generator using Verso patterns.
 - Project Notes aligned with Key Declarations column
 
 **Parser fixes**: The LaTeX parser includes `let _ <- advance` in catch-all cases in `parseBlocks`, `parseBody`, `parseSectionBody`, and `parseItems` to prevent infinite loops when parsing large documents (e.g., GCR's 3989-token blueprint.tex).
+
+**Paper metadata extraction** (`Paper.lean`):
+- `PaperMetadata` struct holds title, authors array, and optional abstract
+- `extractMetadata` function pulls data from parsed document's `Preamble`
+- `\title{...}` → paper title (fallback to config.title)
+- `\author{...}` → split on `\and` to get authors array (`Preamble.authors`)
+- `\begin{abstract}...\end{abstract}` → abstract text
+- No need for `paperTitle`, `paperAuthors`, `paperAbstract` in runway.json
 
 ### SubVerso
 
@@ -295,7 +306,13 @@ Paper documents use custom hooks to reference Lean formalizations:
 
 ```latex
 \documentclass{article}
+\title{The Crystallographic Restriction Theorem}
+\author{J. Kuzmanovich \and A. Pavlichenkov \and E. Vergo}
 \begin{document}
+
+\begin{abstract}
+We present a complete formalization of the crystallographic restriction theorem...
+\end{abstract}
 
 \section{Main Result}
 The crystallographic restriction theorem states:
@@ -309,14 +326,18 @@ The crystallographic restriction theorem states:
 
 ### Configuration
 
+Paper metadata is extracted automatically from `paper.tex`:
+
 ```json
 {
-  "paperTexPath": "blueprint/src/paper.tex",
-  "paperTitle": "The Crystallographic Restriction Theorem",
-  "paperAuthors": ["J. Kuzmanovich", "A. Pavlichenkov", "E. Vergo"],
-  "paperAbstract": "We present a complete formalization..."
+  "paperTexPath": "blueprint/src/paper.tex"
 }
 ```
+
+The following are extracted from `paper.tex` (no longer in runway.json):
+- `\title{...}` → paper title
+- `\author{...}` split on `\and` → authors array
+- `\begin{abstract}...\end{abstract}` → abstract
 
 ### Supported LaTeX Compilers
 
@@ -533,6 +554,7 @@ Step 18: Upload Pages artifact
 
 Auto-detected from `runway.json`:
 - If `paperTexPath` field exists (and is not null), paper generation runs
+- Paper metadata (title, authors, abstract) extracted from paper.tex
 - Produces `paper.html`, `paper.pdf`, `pdf.html`
 
 ### Key Patterns
@@ -705,9 +727,6 @@ theorem WeakPNT_AP : ...
   "docgen4Url": null,
   "blueprintTexPath": "blueprint/src/blueprint.tex",
   "paperTexPath": "paper/paper.tex",
-  "paperTitle": "Paper Title",
-  "paperAuthors": ["Author One", "Author Two"],
-  "paperAbstract": "Abstract text...",
   "assetsDir": "/path/to/dress-blueprint-action/assets"
 }
 ```
@@ -718,10 +737,12 @@ theorem WeakPNT_AP : ...
 | `blueprintTexPath` | Yes | LaTeX source defining structure |
 | `assetsDir` | Yes | Directory with CSS/JS assets |
 | `paperTexPath` | No | Paper TeX for paper generation (auto-detected by CI) |
-| `paperTitle` | No | Title for paper.html |
-| `paperAuthors` | No | Author list for paper.html |
-| `paperAbstract` | No | Abstract for paper.html |
 | `docgen4Url` | No | Relative path to docgen4 docs (e.g., "docs/") |
+
+**Note**: Paper metadata (`paperTitle`, `paperAuthors`, `paperAbstract`) is no longer configured in runway.json. These values are automatically extracted from `paper.tex`:
+- `\title{...}` → paper title
+- `\author{...}` split on `\and` → authors array
+- `\begin{abstract}...\end{abstract}` → abstract
 
 ### lakefile.toml
 
@@ -838,6 +859,8 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Multiple LaTeX compilers: tectonic, pdflatex, xelatex, lualatex
 - Embedded PDF viewer (pdf.html)
 - Auto-detection of available compiler
+- **Paper metadata extracted from paper.tex** (title, authors, abstract)
+- No longer requires `paperTitle`/`paperAuthors`/`paperAbstract` in runway.json
 
 **Module Reference Support**:
 - `\inputleanmodule{ModuleName}` LaTeX command
@@ -877,6 +900,7 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Dependency graph fit/centering fixed (proper getBBox handling for X/Y centering)
 - Edge deduplication and two-pass processing in Build.lean
 - Module name mismatch fix (registers full module names)
+- Paper metadata extraction from paper.tex (removes config redundancy)
 
 ### Future
 

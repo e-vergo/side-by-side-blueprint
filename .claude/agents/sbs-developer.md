@@ -53,8 +53,10 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | `DepGraph.lean` | Dependency graph page with sidebar + modal wrappers |
 | `Theme.lean` | Page templates, sidebar, `buildModuleLookup`, `replaceModulePlaceholders` |
 | `Pdf.lean` | PDF compilation with multiple LaTeX compilers |
+| `Paper.lean` | Paper rendering + `PaperMetadata` extraction from paper.tex |
 | `Latex/Parser.lean` | LaTeX parsing (with infinite loop fixes) |
-| `Config.lean` | Site config including `assetsDir`, `paperTexPath`, paper metadata |
+| `Latex/Ast.lean` | AST types including `Preamble` with `abstract` field |
+| `Config.lean` | Site config including `assetsDir`, `paperTexPath` |
 
 **Dress** - Artifact generation + stats + validation
 | File | Purpose |
@@ -108,6 +110,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - **PDF/Paper generation pipeline** (`\paperstatement{}`, `\paperfull{}` hooks)
 - **Declaration-specific paper links** (navigate to correct chapter pages)
 - **Multiple LaTeX compilers** (tectonic, pdflatex, xelatex, lualatex)
+- **Paper metadata extracted from paper.tex** (title, authors, abstract)
 - **Validation checks** (connectivity, cycle detection)
 - **PrimeNumberTheoremAnd integration** (530 annotations, 33 files)
 - **O(n^3) transitive reduction skip** for large graphs (>100 nodes)
@@ -124,6 +127,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
 - Module name mismatch fix (registers full module names like `PrimeNumberTheoremAnd.Wiener`)
+- Paper metadata extraction from paper.tex (removes redundant runway.json config)
 
 ---
 
@@ -295,6 +299,7 @@ Runway consumes:
   - Copies assets from assetsDir to output/assets/
   - Generates dashboard homepage + multi-page site
   - Optionally: paper.html + paper.pdf + pdf.html
+    - Paper metadata (title, authors, abstract) extracted from paper.tex
 ```
 
 ---
@@ -426,15 +431,21 @@ Runway consumes:
 \paperfull{thm:main}       % Insert full side-by-side display
 ```
 
+**Paper metadata extraction** (`Paper.lean`):
+- `PaperMetadata` struct holds title, authors, abstract
+- `extractMetadata` pulls from parsed document's `Preamble`
+- `\title{...}` -> paper title (fallback to config.title)
+- `\author{...}` split on `\and` -> authors array
+- `\begin{abstract}...\end{abstract}` -> abstract
+
 **Configuration** (`runway.json`):
 ```json
 {
-  "paperTexPath": "blueprint/src/paper.tex",
-  "paperTitle": "Title",
-  "paperAuthors": ["Author One", "Author Two"],
-  "paperAbstract": "Abstract text..."
+  "paperTexPath": "blueprint/src/paper.tex"
 }
 ```
+
+Note: `paperTitle`, `paperAuthors`, `paperAbstract` are no longer used in runway.json. These values are automatically extracted from paper.tex.
 
 **LaTeX compilers** (auto-detected):
 1. tectonic (preferred, self-contained)
@@ -603,6 +614,7 @@ Located in `.refs/`:
 - Don't use colons in CSS selectors or element IDs - normalize to hyphens
 - Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
 - Don't use derived `ToExpr` for structures with default fields - use manual instance
+- Don't configure `paperTitle`/`paperAuthors`/`paperAbstract` in runway.json - extract from paper.tex
 
 ---
 

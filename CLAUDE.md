@@ -25,9 +25,9 @@ Building a pure Lean toolchain for formalization documentation that:
 
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
-| **Runway** | Site generator + dashboard + paper/PDF + module references | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Latex/Parser.lean` |
+| **Runway** | Site generator + dashboard + paper/PDF + module references | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Paper.lean`, `Latex/Parser.lean`, `Latex/Ast.lean` |
 | **Dress** | Artifact generation + stats + validation + two-pass edge processing | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean`, `Graph/Layout.lean` |
-| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 5 status options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
+| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 status options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
 | **SBS-Test** | Minimal test project (11 nodes, all features) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
@@ -51,7 +51,7 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 **Completed features**:
 - Side-by-side display with proof toggles
 - Dashboard homepage with stats, key theorems, messages, project notes
-- 8 metadata + 5 status flag `@[blueprint]` attribute options
+- 8 metadata + 3 status flag `@[blueprint]` attribute options
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
 - Rich modals with MathJax, Tippy.js, proof toggles
@@ -67,6 +67,7 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 - Static tile heights (320px for stats and checks boxes)
 - Project Notes aligned with Key Declarations column
 - Checks panel with placeholder future checks (Kernel Verification, Soundness Checks)
+- Paper metadata extraction from paper.tex (title, authors, abstract)
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -206,8 +207,9 @@ jobs:
 - Dependency graph work (layout in `Dress/Graph/*.lean`, page in `Runway/DepGraph.lean`)
 - Dashboard work (stats/key theorems/messages/notes in `Runway/Render.lean`)
 - CI/CD workflow updates (`dress-blueprint-action`, project workflows)
-- PDF/Paper generation (`Runway/Pdf.lean`, paper TeX hooks)
+- PDF/Paper generation (`Runway/Pdf.lean`, `Runway/Paper.lean`, paper TeX hooks)
 - Validation checks (`Dress/Graph/Build.lean`)
+- Paper metadata extraction (`Runway/Paper.lean`: `PaperMetadata`, `extractMetadata`)
 - Module reference support (`Theme.lean`: `buildModuleLookup`, `replaceModulePlaceholders`)
 
 **How to use:**
@@ -317,8 +319,8 @@ lemma helper : ...
 @[blueprint (title := "Square Non-negative")]
 theorem square_nonneg : ...
 
-@[blueprint (fullyProven := true)]
-theorem complete_with_all_deps : ...
+@[blueprint (mathlibReady := true)]
+theorem ready_for_mathlib : ...
 ```
 
 **Metadata Options (8)**:
@@ -333,34 +335,38 @@ theorem complete_with_all_deps : ...
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
-**Status Flags (5)**:
+**Status Flags (3)**:
 | Option | Type | Purpose |
 |--------|------|---------|
-| `notReady` | Bool | Status: not ready (red/gray) |
-| `ready` | Bool | Status: ready to formalize (orange) |
-| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
-| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
-| `mathlib` | Bool | Status: already in mathlib (dark blue) |
+| `notReady` | Bool | Status: not ready (sandy brown) |
+| `ready` | Bool | Status: ready to formalize (light sea green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (light blue) |
 
-**Node Status Types (8 total)**:
-| Status | Color | Source |
-|--------|-------|--------|
-| notReady | Red/Gray | Manual: `(notReady := true)` |
-| stated | Light Blue | Default (no Lean code) |
-| ready | Orange | Manual: `(ready := true)` |
-| sorry | Yellow | Derived: proof contains sorry |
-| proven | Light Green | Derived: complete proof |
-| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
-| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
-| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
+**Node Status Types (6 total)**:
+| Status | Color | Hex | Source |
+|--------|-------|-----|--------|
+| notReady | Sandy Brown | #F4A460 | Default + Manual: `(notReady := true)` |
+| ready | Light Sea Green | #20B2AA | Manual: `(ready := true)` |
+| sorry | Dark Red | #8B0000 | Auto: proof contains sorryAx |
+| proven | Light Green | #90EE90 | Auto: complete proof |
+| fullyProven | Forest Green | #228B22 | Auto-computed: proven + all ancestors proven/fullyProven |
+| mathlibReady | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
 
 **PDF/Paper generation**:
 - `\paperstatement{label}`: Insert LaTeX statement with link to Lean code
 - `\paperfull{label}`: Insert full side-by-side display
 - Supported compilers: tectonic (preferred), pdflatex, xelatex, lualatex
 - Output: `paper.html` (MathJax), `paper.pdf`, `pdf.html` (viewer)
-- Config: `paperTexPath`, `paperTitle`, `paperAuthors`, `paperAbstract` in runway.json
+- Config: only `paperTexPath` needed in runway.json
 - Paper generation auto-detected in CI from runway.json
+
+**Paper metadata extraction** (`Paper.lean`):
+- `PaperMetadata` struct: holds title, authors array, abstract
+- `extractMetadata`: pulls data from parsed document's `Preamble`
+- `\title{...}` -> paper title (fallback to config.title)
+- `\author{...}` split on `\and` -> authors array (`Preamble.authors` in `Ast.lean`)
+- `\begin{abstract}...\end{abstract}` -> abstract text
+- Eliminates redundant `paperTitle`/`paperAuthors`/`paperAbstract` config fields
 
 **Validation checks**:
 - Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
@@ -412,9 +418,8 @@ rev = "v4.27.0"
   "blueprintTexPath": "blueprint/src/blueprint.tex",
   "assetsDir": "../dress-blueprint-action/assets",
   "paperTexPath": "blueprint/src/paper.tex",
-  "paperTitle": "Paper Title",
-  "paperAuthors": ["Author One", "Author Two"],
-  "paperAbstract": "Abstract text...",
   "docgen4Url": "docs/"
 }
 ```
+
+Paper metadata (title, authors, abstract) is extracted from `paper.tex` using `\title{}`, `\author{}` (split on `\and`), and `\begin{abstract}...\end{abstract}`.
