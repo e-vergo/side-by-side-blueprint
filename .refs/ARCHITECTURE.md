@@ -9,10 +9,10 @@ Eight repositories work together to produce formalization documentation:
 | Repository | Purpose |
 |------------|---------|
 | **SubVerso** | Syntax highlighting extraction from Lean info trees |
-| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata options + 5 status flags |
+| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata options + 3 manual status flags |
 | **Dress** | Artifact generation + dependency graph layout + stats computation + validation checks |
 | **Runway** | Site generator with dashboard + PDF/paper generation + module reference support |
-| **SBS-Test** | Minimal test project for iteration (11 nodes, all features) |
+| **SBS-Test** | Minimal test project for iteration (16 nodes, all 6 status colors) |
 | **General_Crystallographic_Restriction** | Production example with full paper generation |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) |
 | **dress-blueprint-action** | Complete CI solution (~465 lines) + external CSS/JS assets |
@@ -116,8 +116,8 @@ CSS and JavaScript are maintained as real files in `dress-blueprint-action/asset
 ```json
 {
   "stats": {
-    "notReady": 1, "stated": 0, "ready": 1, "hasSorry": 2,
-    "proven": 24, "fullyProven": 1, "mathlibReady": 2, "inMathlib": 1,
+    "notReady": 1, "ready": 1, "hasSorry": 2,
+    "proven": 24, "fullyProven": 1, "mathlibReady": 2,
     "total": 32
   },
   "checkResults": {
@@ -165,7 +165,7 @@ Lightweight metadata store. Only depends on `batteries`.
 
 **Manual ToExpr instance**: The `Node` structure uses a manual `ToExpr` instance instead of derived one. This is required because Lean's derived `ToExpr` for structures with default field values doesn't correctly serialize all fields - causing status flags to not persist through the environment extension.
 
-**Attribute options (8 metadata + 5 status flags)**:
+**Attribute options (8 metadata + 3 manual status flags)**:
 
 | Option | Type | Purpose |
 |--------|------|---------|
@@ -177,11 +177,13 @@ Lightweight metadata store. Only depends on `batteries`.
 | `potentialIssue` | String | Known concerns (Attention column) |
 | `technicalDebt` | String | Cleanup notes (Attention column) |
 | `misc` | String | Catch-all notes (Attention column) |
-| `notReady` | Bool | Status: not ready (red/gray) |
-| `ready` | Bool | Status: ready to formalize (orange) |
-| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
-| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
-| `mathlib` | Bool | Status: already in mathlib (dark blue) |
+| `notReady` | Bool | Status: not ready (sandy brown) |
+| `ready` | Bool | Status: ready to formalize (light sea green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (light blue) |
+
+**Removed flags** (previously 5, now 3):
+- `fullyProven` - now auto-computed via graph traversal
+- `mathlib` - redundant with `mathlibReady`
 
 **Example usage**:
 ```lean
@@ -194,8 +196,8 @@ lemma helper_lemma : ...
 @[blueprint (title := "Square Non-negative")]
 theorem square_nonneg : ...
 
-@[blueprint (fullyProven := true)]
-theorem complete_with_all_deps : ...
+@[blueprint (mathlibReady := true)]
+theorem ready_for_mathlib : ...
 ```
 
 ### Dress
@@ -235,6 +237,12 @@ Two-phase: per-declaration during elaboration, library-level via Lake facets.
 - `detectCycles`: Finds circular dependencies via DFS (errors on cycles)
 - Results stored in `CheckResults` and written to manifest.json
 
+**`computeFullyProven` algorithm** (`Graph/Build.lean`):
+- O(V+E) complexity with memoization
+- A node is `fullyProven` if: it is `proven` AND all ancestors are `proven` or `fullyProven`
+- Automatically upgrades `proven` nodes whose entire dependency chain is complete
+- Runs as post-processing step in `buildGraph` after initial status assignment
+
 ### Runway
 
 Pure Lean site generator using Verso patterns.
@@ -270,6 +278,25 @@ Pure Lean site generator using Verso patterns.
 - `renderProjectNotes`: Blocked/Issues/Debt/Misc sections
 - Static tile heights (320px for stats and checks boxes)
 - Project Notes aligned with Key Declarations column
+
+**Status indicator dots** appear throughout the UI:
+| Location | File | Description |
+|----------|------|-------------|
+| Dashboard Key Declarations | `Render.lean` | Dots next to each key declaration |
+| Dashboard Project Notes | `Render.lean` | Dots in all note sections |
+| Blueprint Theorem Headers | `Dress/Render/SideBySide.lean` | Dot in thm_header_extras |
+| Blueprint Index/TOC | `Render.lean` | Dots in sidebar node list |
+| Dependency Graph Modals | `DepGraph.lean` | Dot in modal header bar |
+| Paper Theorem Headers | `Dress/Render/SideBySide.lean` | Dot + status text in verification badge |
+
+**CSS consolidation** - Status dot styles are in `common.css` (not scattered):
+- Base `.status-dot` (8px)
+- `.header-status-dot` (10px for blueprint headers)
+- `.paper-status-dot` (10px for paper headers)
+- `.modal-status-dot` (12px for dependency graph modals)
+- `.node-list-item` (sidebar/TOC)
+- `.note-item-with-dot` (dashboard notes)
+- `.dep-modal-header-bar` (modal layout)
 
 **Parser fixes**: The LaTeX parser includes `let _ <- advance` in catch-all cases in `parseBlocks`, `parseBody`, `parseSectionBody`, and `parseItems` to prevent infinite loops when parsing large documents (e.g., GCR's 3989-token blueprint.tex).
 
@@ -375,18 +402,29 @@ Sugiyama-style hierarchical layout:
 | Ellipse | Theorems, lemmas, propositions |
 | Box (rect) | Definitions |
 
-**8-status color model**:
+**6-status color model** (reduced from 8):
 
-| Status | Color | Source |
-|--------|-------|--------|
-| notReady | Red/Gray | Manual: `(notReady := true)` |
-| stated | Light Blue | Default (LaTeX statement exists, no Lean code) |
-| ready | Orange | Manual: `(ready := true)` |
-| sorry | Yellow | Derived: proof contains sorry |
-| proven | Light Green | Derived: complete proof exists |
-| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
-| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
-| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
+| Status | Color | Hex | Source |
+|--------|-------|-----|--------|
+| notReady | Sandy Brown | #F4A460 | Default + Manual: `(notReady := true)` |
+| ready | Light Sea Green | #20B2AA | Manual: `(ready := true)` |
+| sorry | Dark Red | #8B0000 | Auto: proof contains sorryAx |
+| proven | Light Green | #90EE90 | Auto: complete proof |
+| fullyProven | Forest Green | #228B22 | Auto-computed: proven + all ancestors proven/fullyProven |
+| mathlibReady | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
+
+**Removed statuses**:
+- `stated` (Gold #FFD700) - consolidated into `notReady`
+- `inMathlib` (Midnight Blue #191970) - redundant with `mathlibReady`
+
+**Priority order** (manual always wins):
+1. `mathlibReady` (manual) - highest
+2. `ready` (manual)
+3. `notReady` (manual, if explicitly set)
+4. `fullyProven` (auto-computed from graph)
+5. `sorry` (auto-detected via sorryAx)
+6. `proven` (auto-detected, has Lean without sorry)
+7. `notReady` (default, no Lean code)
 
 Dark backgrounds use white text.
 
@@ -801,8 +839,8 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 
 **Dashboard Homepage**:
 - 2x2 grid layout: Stats / Key Theorems / Messages / Project Notes
-- Stats panel with Completion column (proven, fullyProven, mathlibReady, inMathlib)
-- Stats panel with Attention column (notReady, stated, ready, hasSorry)
+- Stats panel with Completion column (proven, fullyProven, mathlibReady)
+- Stats panel with Attention column (notReady, ready, hasSorry)
 - Checks panel with connectivity/cycle info + placeholder future checks
 - Key Theorems section with side-by-side preview and status dots
 - Messages panel showing user notes from `message` attribute
@@ -816,8 +854,8 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Sugiyama layout algorithm (top-to-bottom, median heuristic)
 - Node shapes: Ellipse (theorems) / Box (definitions)
 - Edge styles: Solid (proof deps) / Dashed (statement deps) with Bezier curves
-- 8-status color model with appropriate text contrast
-- Static legend embedded in SVG
+- 6-status color model (reduced from 8) with appropriate text contrast
+- Static legend embedded in SVG (6 items instead of 8)
 - D3-style pan/zoom (cursor-centered, no D3 dependency)
 - Edge routing: Visibility graph + Dijkstra + Bezier fitting
 - Node hover border thickening
@@ -838,13 +876,14 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 - Lean proof toggle (CSS checkbox pattern)
 - "View in Blueprint" link
 
-**`@[blueprint]` Attribute Options** (8 metadata + 5 status flags):
+**`@[blueprint]` Attribute Options** (8 metadata + 3 manual status flags):
 - `title`: Custom graph labels (renamed from `displayName`)
 - `keyDeclaration`: Dashboard highlighting (renamed from `keyTheorem`)
 - `message`: User notes
 - `priorityItem`: Attention flagging
 - `blocked`, `potentialIssue`, `technicalDebt`, `misc`: Project notes
-- `notReady`, `ready`, `fullyProven`, `mathlibReady`, `mathlib`: Manual status overrides
+- `notReady`, `ready`, `mathlibReady`: Manual status overrides
+- Removed: `fullyProven` (now auto-computed), `mathlib` (use `mathlibReady`)
 
 **Validation Checks**:
 - Connectivity check: warns about disconnected components
@@ -891,11 +930,29 @@ For projects with pre-generated documentation (like docgen4 output that takes ~1
 **Large-Scale Integration**:
 - PrimeNumberTheoremAnd: 530 annotations, 33 files, zero proof code changes
 - GCR: Full production example with paper generation
+- SBS-Test: 16 nodes demonstrating all 6 status colors
+
+**SBS-Test node inventory** (16 nodes):
+- `foundation` (notReady, manual flag)
+- `ready_to_prove`, `another_ready` (ready)
+- `has_sorry`, `also_sorry` (sorry)
+- `proven_leaf`, `proven_mid`, `proven_chain` (proven)
+- `fully_chain_1`, `fully_chain_2`, `fully_chain_3` (fullyProven, auto-computed)
+- `mathlib_theorem` (mathlibReady)
+- `cycle_a`, `cycle_b` (disconnected cycle for validation testing)
+- `mod:first`, `mod:second` (module reference tests)
 
 **Bug Fixes**:
 - `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - O(n^3) transitive reduction skip for graphs >100 nodes (PNT 3+ hour hang fix)
+- 6-status model refactoring (removed `stated`, `inMathlib`; `fullyProven` auto-computed)
+- Status indicator dots throughout UI (dashboard, blueprint headers, TOC, modals)
+- CSS consolidation of status dot styles in `common.css`
+
+**Backwards compatibility** for JSON parsing:
+- `"stated"` maps to `.notReady`
+- `"inMathlib"` maps to `.mathlibReady`
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
 - Dependency graph fit/centering fixed (proper getBBox handling for X/Y centering)
 - Edge deduplication and two-pass processing in Build.lean

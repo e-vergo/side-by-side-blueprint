@@ -29,7 +29,7 @@ Create tooling that:
 ├── Dress/           # Artifact generation + validation checks + two-pass edge processing
 ├── LeanArchitect/   # @[blueprint] attribute and metadata
 ├── subverso/        # Syntax highlighting (fork with optimizations)
-├── SBS-Test/        # Minimal test project (11 nodes, all features)
+├── SBS-Test/        # Minimal test project (16 nodes, all 6 status colors)
 ├── General_Crystallographic_Restriction/  # Production example with paper
 ├── PrimeNumberTheoremAnd/  # Large-scale integration (530 annotations)
 └── dress-blueprint-action/  # Complete CI solution (~465 lines) + CSS/JS assets
@@ -95,7 +95,10 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 **Completed**:
 - Dashboard homepage with 2x2 grid (Stats, Key Theorems, Messages, Project Notes)
-- 8 metadata + 5 status flag `@[blueprint]` attribute options
+- 8 metadata + 3 manual status flag `@[blueprint]` attribute options
+- 6-status color model (removed `stated` and `inMathlib`)
+- Auto-computed `fullyProven` status via graph traversal
+- Status indicator dots throughout UI (dashboard, blueprint headers, TOC, modals)
 - Stats computed upstream in Dress (soundness guarantee)
 - manifest.json with precomputed stats, validation results, project notes
 - Sugiyama layout with edge routing (visibility graph + Dijkstra + Bezier)
@@ -122,12 +125,17 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 - **Checks panel** renamed from "Graph Checks", includes placeholder future checks
 
 **Recent Work**:
+- 6-status model refactoring (removed `stated`, `inMathlib`; `fullyProven` auto-computed)
+- `computeFullyProven` algorithm with O(V+E) memoization
+- Status indicator dots added throughout UI
+- CSS consolidation of status dot styles in `common.css`
 - `displayName` -> `title` migration (aligned with PNT's hanwenzhu/LeanArchitect usage)
 - `keyTheorem` -> `keyDeclaration` migration
 - Manual `ToExpr` instance for `Node` (status persistence through environment extension)
 - Paper links 404 fix (files at root level, not `chapters/` subdirectory)
 - Module name mismatch fix (registers full module names like `PrimeNumberTheoremAnd.Wiener`)
 - Paper metadata extraction from paper.tex (removes redundant runway.json config)
+- Backwards compatibility for JSON parsing (`"stated"` -> `.notReady`, `"inMathlib"` -> `.mathlibReady`)
 
 ---
 
@@ -363,7 +371,7 @@ Runway consumes:
 **SVG rendering** (`Dress/Graph/Render.lean`):
 - Node shapes: ellipse (theorems), rect (definitions)
 - Edge paths: Bezier curves with arrow markers
-- 8-status color model
+- 6-status color model (removed `stated` and `inMathlib`)
 
 **Page generation** (`Runway/DepGraph.lean`):
 - `wrapInModal`: Wraps sbs-container in modal structure
@@ -395,6 +403,7 @@ Runway consumes:
 
 **Data flow**:
 - Stats computed in Dress (`Graph.computeStatusCounts`)
+- `computeFullyProven` upgrades `proven` nodes via graph traversal (O(V+E))
 - Validation in Dress (`findComponents`, `detectCycles`)
 - Manifest.json written by Dress with precomputed stats + validation
 - Runway loads manifest, no recomputation (soundness)
@@ -489,26 +498,39 @@ Note: `paperTitle`, `paperAuthors`, `paperAbstract` are no longer used in runway
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
-**Status Flags (5)**:
+**Manual Status Flags (3)**:
 | Option | Type | Purpose |
 |--------|------|---------|
-| `notReady` | Bool | Status: not ready (red/gray) |
-| `ready` | Bool | Status: ready to formalize (orange) |
-| `fullyProven` | Bool | Status: fully proven with all deps (dark green) |
-| `mathlibReady` | Bool | Status: ready for mathlib (purple) |
-| `mathlib` | Bool | Status: already in mathlib (dark blue) |
+| `notReady` | Bool | Status: not ready (sandy brown) |
+| `ready` | Bool | Status: ready to formalize (light sea green) |
+| `mathlibReady` | Bool | Status: ready for mathlib (light blue) |
 
-**Node Status Types (8 total)**:
-| Status | Color | Source |
-|--------|-------|--------|
-| notReady | Red/Gray | Manual: `(notReady := true)` |
-| stated | Light Blue | Default (no Lean code) |
-| ready | Orange | Manual: `(ready := true)` |
-| sorry | Yellow | Derived: proof contains sorry |
-| proven | Light Green | Derived: complete proof |
-| fullyProven | Dark Green | Manual: `(fullyProven := true)` |
-| mathlibReady | Purple | Manual: `(mathlibReady := true)` |
-| inMathlib | Dark Blue | Manual: `(mathlib := true)` |
+**Removed flags** (previously 5, now 3):
+- `fullyProven` - now auto-computed via graph traversal
+- `mathlib` - redundant with `mathlibReady`
+
+**Node Status Types (6 total)**:
+| Status | Color | Hex | Source |
+|--------|-------|-----|--------|
+| notReady | Sandy Brown | #F4A460 | Default + Manual: `(notReady := true)` |
+| ready | Light Sea Green | #20B2AA | Manual: `(ready := true)` |
+| sorry | Dark Red | #8B0000 | Auto: proof contains sorryAx |
+| proven | Light Green | #90EE90 | Auto: complete proof |
+| fullyProven | Forest Green | #228B22 | Auto-computed: proven + all ancestors proven/fullyProven |
+| mathlibReady | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
+
+**Removed statuses** (previously 8, now 6):
+- `stated` (Gold #FFD700) - consolidated into `notReady`
+- `inMathlib` (Midnight Blue #191970) - redundant with `mathlibReady`
+
+**Priority order** (manual always wins):
+1. `mathlibReady` (manual) - highest
+2. `ready` (manual)
+3. `notReady` (manual, if explicitly set)
+4. `fullyProven` (auto-computed from graph)
+5. `sorry` (auto-detected via sorryAx)
+6. `proven` (auto-detected, has Lean without sorry)
+7. `notReady` (default, no Lean code)
 
 **Example**:
 ```lean
@@ -518,9 +540,37 @@ theorem main_thm : ...
 @[blueprint (priorityItem := true, blocked := "Waiting for mathlib PR")]
 lemma helper : ...
 
-@[blueprint (fullyProven := true)]
-theorem complete_with_all_deps : ...
+@[blueprint (mathlibReady := true)]
+theorem ready_for_mathlib : ...
 ```
+
+**`computeFullyProven` algorithm** (`Dress/Graph/Build.lean`):
+- O(V+E) complexity with memoization
+- A node is `fullyProven` if: it is `proven` AND all ancestors are `proven` or `fullyProven`
+- Automatically upgrades `proven` nodes whose entire dependency chain is complete
+
+**Status indicator dots** appear throughout the UI:
+| Location | File | Description |
+|----------|------|-------------|
+| Dashboard Key Declarations | `Runway/Render.lean` | Dots next to each key declaration |
+| Dashboard Project Notes | `Runway/Render.lean` | Dots in all note sections |
+| Blueprint Theorem Headers | `Dress/Render/SideBySide.lean` | Dot in thm_header_extras |
+| Blueprint Index/TOC | `Runway/Render.lean` | Dots in sidebar node list |
+| Dependency Graph Modals | `Runway/DepGraph.lean` | Dot in modal header bar |
+| Paper Theorem Headers | `Dress/Render/SideBySide.lean` | Dot + status text in verification badge |
+
+**CSS consolidation** - Status dot styles are in `common.css`:
+- Base `.status-dot` (8px)
+- `.header-status-dot` (10px for blueprint headers)
+- `.paper-status-dot` (10px for paper headers)
+- `.modal-status-dot` (12px for dependency graph modals)
+- `.node-list-item` (sidebar/TOC)
+- `.note-item-with-dot` (dashboard notes)
+- `.dep-modal-header-bar` (modal layout)
+
+**Backwards compatibility** for JSON parsing:
+- `"stated"` maps to `.notReady`
+- `"inMathlib"` maps to `.mathlibReady`
 
 ### ID normalization gotcha
 

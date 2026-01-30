@@ -27,9 +27,9 @@ Building a pure Lean toolchain for formalization documentation that:
 |------|---------|-----------|
 | **Runway** | Site generator + dashboard + paper/PDF + module references | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Paper.lean`, `Latex/Parser.lean`, `Latex/Ast.lean` |
 | **Dress** | Artifact generation + stats + validation + two-pass edge processing | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean`, `Graph/Layout.lean` |
-| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 status options | `Architect/Attribute.lean`, `Architect/Basic.lean` |
+| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 manual status flags | `Architect/Attribute.lean`, `Architect/Basic.lean` |
 | **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
-| **SBS-Test** | Minimal test project (11 nodes, all features) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
+| **SBS-Test** | Minimal test project (16 nodes, all 6 status colors) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) | Terence Tao's PNT+ project |
 | **dress-blueprint-action** | Complete CI solution (~465 lines) + external assets | `action.yml`, `assets/blueprint.css`, `assets/verso-code.js` |
@@ -51,7 +51,10 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 **Completed features**:
 - Side-by-side display with proof toggles
 - Dashboard homepage with stats, key theorems, messages, project notes
-- 8 metadata + 3 status flag `@[blueprint]` attribute options
+- 8 metadata + 3 manual status flag `@[blueprint]` attribute options
+- 6-status color model (down from 8: removed `stated` and `inMathlib`)
+- Auto-computed `fullyProven` status via graph traversal
+- Status indicator dots throughout UI (dashboard, blueprint headers, TOC, modals)
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
 - Rich modals with MathJax, Tippy.js, proof toggles
@@ -276,10 +279,11 @@ Located in `.refs/`:
 
 **Dashboard data flow**:
 1. `Dress/Graph/Build.lean`: `computeStatusCounts` computes stats from graph
-2. `Dress/Graph/Build.lean`: `findComponents`, `detectCycles` validate graph
-3. `Dress/Graph/Json.lean`: Serializes stats + validation + project metadata to manifest.json
-4. `Runway/Main.lean`: Loads manifest.json (no recomputation), `assignPagePaths` tracks node locations
-5. `Runway/Render.lean`: `renderDashboard` displays precomputed data
+2. `Dress/Graph/Build.lean`: `computeFullyProven` upgrades `proven` nodes to `fullyProven` via graph traversal
+3. `Dress/Graph/Build.lean`: `findComponents`, `detectCycles` validate graph
+4. `Dress/Graph/Json.lean`: Serializes stats + validation + project metadata to manifest.json
+5. `Runway/Main.lean`: Loads manifest.json (no recomputation), `assignPagePaths` tracks node locations
+6. `Runway/Render.lean`: `renderDashboard` displays precomputed data
 
 **Dependency inference**:
 - `Node.inferUses` in `Dress/Graph/Build.lean` traces actual Lean code dependencies
@@ -335,12 +339,16 @@ theorem ready_for_mathlib : ...
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
-**Status Flags (3)**:
+**Manual Status Flags (3)**:
 | Option | Type | Purpose |
 |--------|------|---------|
 | `notReady` | Bool | Status: not ready (sandy brown) |
 | `ready` | Bool | Status: ready to formalize (light sea green) |
 | `mathlibReady` | Bool | Status: ready for mathlib (light blue) |
+
+**Removed flags** (previously 5 flags, now 3):
+- `fullyProven` - now auto-computed via graph traversal (not manual)
+- `mathlib` - redundant with `mathlibReady`
 
 **Node Status Types (6 total)**:
 | Status | Color | Hex | Source |
@@ -351,6 +359,19 @@ theorem ready_for_mathlib : ...
 | proven | Light Green | #90EE90 | Auto: complete proof |
 | fullyProven | Forest Green | #228B22 | Auto-computed: proven + all ancestors proven/fullyProven |
 | mathlibReady | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
+
+**Removed statuses** (previously 8 statuses, now 6):
+- `stated` (Gold #FFD700) - consolidated into `notReady`
+- `inMathlib` (Midnight Blue #191970) - redundant with `mathlibReady`
+
+**Priority order** (manual always wins):
+1. `mathlibReady` (manual) - highest
+2. `ready` (manual)
+3. `notReady` (manual, if explicitly set)
+4. `fullyProven` (auto-computed from graph)
+5. `sorry` (auto-detected via sorryAx)
+6. `proven` (auto-detected, has Lean without sorry)
+7. `notReady` (default, no Lean code)
 
 **PDF/Paper generation**:
 - `\paperstatement{label}`: Insert LaTeX statement with link to Lean code
@@ -374,6 +395,35 @@ theorem ready_for_mathlib : ...
 - Results in `manifest.json` under `checkResults`
 - Dashboard shows Checks panel with connectivity/cycle info + placeholder future checks
 
+**`computeFullyProven` algorithm** (`Dress/Graph/Build.lean`):
+- O(V+E) complexity with memoization
+- A node is `fullyProven` if: it is `proven` AND all ancestors are `proven` or `fullyProven`
+- Automatically upgrades `proven` nodes whose entire dependency chain is complete
+- Runs as post-processing step after initial status assignment
+
+**Status indicator dots** appear throughout the UI:
+| Location | File | Description |
+|----------|------|-------------|
+| Dashboard Key Declarations | `Runway/Render.lean` | Dots next to each key declaration |
+| Dashboard Project Notes | `Runway/Render.lean` | Dots in all note sections |
+| Blueprint Theorem Headers | `Dress/Render/SideBySide.lean` | Dot in thm_header_extras |
+| Blueprint Index/TOC | `Runway/Render.lean` | Dots in sidebar node list |
+| Dependency Graph Modals | `Runway/DepGraph.lean` | Dot in modal header bar |
+| Paper Theorem Headers | `Dress/Render/SideBySide.lean` | Dot + status text in verification badge |
+
+**CSS consolidation** - Status dot styles are in `common.css`:
+- Base `.status-dot` (8px)
+- `.header-status-dot` (10px for blueprint headers)
+- `.paper-status-dot` (10px for paper headers)
+- `.modal-status-dot` (12px for dependency graph modals)
+- `.node-list-item` (sidebar/TOC)
+- `.note-item-with-dot` (dashboard notes)
+- `.dep-modal-header-bar` (modal layout)
+
+**Backwards compatibility** for JSON parsing:
+- `"stated"` maps to `.notReady`
+- `"inMathlib"` maps to `.mathlibReady`
+
 **Performance fixes**:
 - O(n^3) transitive reduction in `Dress/Graph/Types.lean` skipped for graphs >100 nodes
 - PNT (530 nodes) was causing 3+ hour hangs: 530^3 = 149 million iterations
@@ -383,6 +433,16 @@ theorem ready_for_mathlib : ...
 **ToExpr bug fix**:
 - Manual `ToExpr` instance for `Node` in `LeanArchitect/Architect/Basic.lean`
 - Derived `ToExpr` for structures with default field values doesn't correctly serialize all fields
+
+**SBS-Test node inventory** (16 nodes demonstrating all 6 status colors):
+- `foundation` (notReady, manual flag)
+- `ready_to_prove`, `another_ready` (ready)
+- `has_sorry`, `also_sorry` (sorry)
+- `proven_leaf`, `proven_mid`, `proven_chain` (proven)
+- `fully_chain_1`, `fully_chain_2`, `fully_chain_3` (fullyProven, auto-computed)
+- `mathlib_theorem` (mathlibReady)
+- `cycle_a`, `cycle_b` (disconnected cycle for validation testing)
+- `mod:first`, `mod:second` (module reference tests)
 
 **Mathlib version pinning**:
 - All repos pinned to v4.27.0 for consistency
