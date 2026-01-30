@@ -26,13 +26,13 @@ Building a pure Lean toolchain for formalization documentation that:
 | Repo | Purpose | Key Files |
 |------|---------|-----------|
 | **Runway** | Site generator + dashboard + paper/PDF + module references | `Main.lean`, `Render.lean`, `Site.lean`, `DepGraph.lean`, `Theme.lean`, `Pdf.lean`, `Paper.lean`, `Latex/Parser.lean`, `Latex/Ast.lean` |
-| **Dress** | Artifact generation + stats + validation + two-pass edge processing | `Capture/ElabRules.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean`, `Graph/Layout.lean` |
+| **Dress** | Artifact generation + rainbow brackets + stats + validation + two-pass edge processing | `Capture/ElabRules.lean`, `HtmlRender.lean`, `Graph/Types.lean`, `Graph/Build.lean`, `Graph/Json.lean`, `Graph/Layout.lean` |
 | **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 manual status flags | `Architect/Attribute.lean`, `Architect/Basic.lean` |
-| **subverso** | Syntax highlighting extraction (fork with optimizations) | `Highlighting/Highlighted.lean`, `Highlighting/Code.lean` |
+| **subverso** | Syntax highlighting extraction (fork with O(1) indexed lookups) | `Highlighting/Code.lean`, `Highlighting/Highlighted.lean` |
 | **SBS-Test** | Minimal test project (16 nodes, all 6 status colors) | `SBSTest/StatusDemo.lean`, `blueprint/src/blueprint.tex` |
 | **General_Crystallographic_Restriction** | Production example with paper generation | Full formalization project |
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 annotations, 33 files) | Terence Tao's PNT+ project |
-| **dress-blueprint-action** | Complete CI solution (~465 lines) + external assets | `action.yml`, `assets/blueprint.css`, `assets/verso-code.js` |
+| **dress-blueprint-action** | Complete CI solution (~465 lines) + external assets | `action.yml`, `assets/common.css`, `assets/verso-code.js` |
 
 ## Dependency Chain
 
@@ -46,31 +46,33 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Current Status
 
-**Phase 7 + Dashboard + Paper + Module Reference Phases Complete**: Blueprint, dashboard, dependency graph, paper generation, and module reference support are feature-complete.
+**Blueprint, dashboard, dependency graph, paper generation, and module reference support are feature-complete.**
 
-**Completed features**:
+**Key Features**:
 - Side-by-side display with proof toggles
 - Dashboard homepage with stats, key theorems, messages, project notes
 - 8 metadata + 3 manual status flag `@[blueprint]` attribute options
-- 6-status color model (down from 8: removed `stated` and `inMathlib`)
+- 6-status color model (notReady, ready, sorry, proven, fullyProven, mathlibReady)
 - Auto-computed `fullyProven` status via graph traversal
-- Status indicator dots throughout UI (dashboard, blueprint headers, TOC, modals)
+- Status indicator dots throughout UI (dashboard, blueprint headers, TOC, modals, paper)
+- Rainbow bracket highlighting (`wrapBracketsWithDepth` in HtmlRender.lean)
 - Stats computed upstream in Dress (soundness guarantee via manifest.json)
 - Dependency graph with Sugiyama layout, edge routing, pan/zoom
-- Rich modals with MathJax, Tippy.js, proof toggles
+- Rich modals with MathJax, Tippy.js, proof toggles, [blueprint] link inline with header
 - Real dependency inference via `Node.inferUses` (traces Lean code, not manual `\uses{}`)
 - PDF/Paper generation (`\paperstatement{}`, `\paperfull{}` hooks)
+- Paper metadata extraction from paper.tex (title, authors, abstract)
 - Validation checks (connectivity, cycle detection)
 - PrimeNumberTheoremAnd integration (530 annotations, 33 files, zero proof changes)
-- O(n^3) transitive reduction skip for large graphs (>100 nodes)
+- O(n^3) transitive reduction skipped for large graphs (>100 nodes)
 - Two-pass edge processing for proper back-edge handling
 - Edge deduplication (keeps first occurrence of each from/to pair)
-- Dependency graph fit/centering fixed (proper getBBox handling)
+- Dependency graph fit/centering (proper getBBox handling)
 - Module reference support (`\inputleanmodule{}` expansion)
-- Static tile heights (320px for stats and checks boxes)
-- Project Notes aligned with Key Declarations column
-- Checks panel with placeholder future checks (Kernel Verification, Soundness Checks)
-- Paper metadata extraction from paper.tex (title, authors, abstract)
+- O(n) string concatenation in Parser.lean (Array-based)
+- SubVerso O(1) indexed lookups via InfoTable
+- SubVerso graceful error handling (uses `throw <| IO.userError` instead of panics)
+- CSS consolidation in common.css
 
 Reference for quality targets:
 - `goal2.png`: Hierarchical sidebar, numbered theorems (4.1.1), prose between declarations
@@ -170,7 +172,7 @@ jobs:
 
 ## Performance Context
 
-**SubVerso optimization (Phase 1) complete**: Added indexing, caching, containment queries.
+**SubVerso optimization complete**: O(1) indexed lookups via InfoTable (HashMap for positions, names, suffixes; sorted array for containment queries).
 
 | Operation | Time | Percentage |
 |-----------|------|------------|
@@ -214,6 +216,7 @@ jobs:
 - Validation checks (`Dress/Graph/Build.lean`)
 - Paper metadata extraction (`Runway/Paper.lean`: `PaperMetadata`, `extractMetadata`)
 - Module reference support (`Theme.lean`: `buildModuleLookup`, `replaceModulePlaceholders`)
+- Rainbow bracket highlighting (`Dress/HtmlRender.lean`: `wrapBracketsWithDepth`)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -266,12 +269,12 @@ Located in `.refs/`:
 
 ## Key Implementation Details
 
-**ID normalization**: Node IDs with colons (`thm:main`) must be converted to hyphens (`thm-main`) for modal element IDs and CSS selectors.
+**ID normalization**: Node IDs with colons (`thm:main`) are converted to hyphens (`thm-main`) for modal element IDs and CSS selectors.
 
 **Modal generation flow**:
 1. `Render.lean`: `renderNodeModal` wraps `renderNode` output in modal
-2. `DepGraph.lean`: `wrapInModal` creates container structure
-3. `verso-code.js`: `onModalOpen()` initializes MathJax + Tippy.js
+2. `DepGraph.lean`: `wrapInModal` creates container structure with [blueprint] link
+3. `verso-code.js`: `onModalOpen()` moves [blueprint] link inline with theorem header, initializes MathJax + Tippy.js
 
 **Proof toggles**:
 - LaTeX: `plastex.js` handles expand/collapse
@@ -300,7 +303,6 @@ Located in `.refs/`:
 - Uses `getBBox()` to get actual SVG content bounds
 - Calculates `contentCenterX/Y` from bbox
 - Translates to center content in viewport
-- Fixes X-axis bias when SVG has asymmetric padding
 
 **Module reference support** (`Theme.lean`):
 - `buildModuleLookup`: Creates map from module name to nodes
@@ -308,9 +310,16 @@ Located in `.refs/`:
 - Registers full module names (e.g., `PrimeNumberTheoremAnd.Wiener`)
 - `\inputleanmodule{ModuleName}` in LaTeX expands to all nodes from that module
 
-**Parser fixes**:
-- `Runway/Latex/Parser.lean` includes `let _ <- advance` in catch-all cases
-- Prevents infinite loops when parsing large documents (3989+ tokens)
+**Rainbow bracket highlighting** (`Dress/HtmlRender.lean`):
+- `wrapBracketsWithDepth`: Wraps `(`, `)`, `[`, `]`, `{`, `}` with depth-colored spans
+- Cycles through 6 colors (`lean-bracket-1` through `lean-bracket-6`)
+- Skips brackets inside HTML tags to avoid breaking structure
+- CSS in `common.css` with light and dark mode variants
+
+**Parser implementation** (`Runway/Latex/Parser.lean`):
+- Uses Array-based string building for O(n) concatenation (not O(n^2) repeated `++`)
+- Includes `let _ <- advance` in catch-all cases to prevent infinite loops
+- Handles large documents (3989+ tokens) without issues
 
 **`@[blueprint]` attribute options**:
 ```lean
@@ -346,10 +355,6 @@ theorem ready_for_mathlib : ...
 | `ready` | Bool | Status: ready to formalize (light sea green) |
 | `mathlibReady` | Bool | Status: ready for mathlib (light blue) |
 
-**Removed flags** (previously 5 flags, now 3):
-- `fullyProven` - now auto-computed via graph traversal (not manual)
-- `mathlib` - redundant with `mathlibReady`
-
 **Node Status Types (6 total)**:
 | Status | Color | Hex | Source |
 |--------|-------|-----|--------|
@@ -359,10 +364,6 @@ theorem ready_for_mathlib : ...
 | proven | Light Green | #90EE90 | Auto: complete proof |
 | fullyProven | Forest Green | #228B22 | Auto-computed: proven + all ancestors proven/fullyProven |
 | mathlibReady | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
-
-**Removed statuses** (previously 8 statuses, now 6):
-- `stated` (Gold #FFD700) - consolidated into `notReady`
-- `inMathlib` (Midnight Blue #191970) - redundant with `mathlibReady`
 
 **Priority order** (manual always wins):
 1. `mathlibReady` (manual) - highest
@@ -387,7 +388,6 @@ theorem ready_for_mathlib : ...
 - `\title{...}` -> paper title (fallback to config.title)
 - `\author{...}` split on `\and` -> authors array (`Preamble.authors` in `Ast.lean`)
 - `\begin{abstract}...\end{abstract}` -> abstract text
-- Eliminates redundant `paperTitle`/`paperAuthors`/`paperAbstract` config fields
 
 **Validation checks**:
 - Connectivity: `findComponents` detects disconnected subgraphs (Tao-style errors)
@@ -411,7 +411,7 @@ theorem ready_for_mathlib : ...
 | Dependency Graph Modals | `Runway/DepGraph.lean` | Dot in modal header bar |
 | Paper Theorem Headers | `Dress/Render/SideBySide.lean` | Dot + status text in verification badge |
 
-**CSS consolidation** - Status dot styles are in `common.css`:
+**CSS consolidation** - Status dot and rainbow bracket styles are in `common.css`:
 - Base `.status-dot` (8px)
 - `.header-status-dot` (10px for blueprint headers)
 - `.paper-status-dot` (10px for paper headers)
@@ -419,18 +419,28 @@ theorem ready_for_mathlib : ...
 - `.node-list-item` (sidebar/TOC)
 - `.note-item-with-dot` (dashboard notes)
 - `.dep-modal-header-bar` (modal layout)
+- `.lean-bracket-1` through `.lean-bracket-6` (rainbow brackets)
 
 **Backwards compatibility** for JSON parsing:
 - `"stated"` maps to `.notReady`
 - `"inMathlib"` maps to `.mathlibReady`
 
-**Performance fixes**:
+**SubVerso InfoTable optimizations** (O(1) lookups):
+- `infoByExactPos`: HashMap for exact position lookups
+- `termInfoByName`: HashMap for const/fvar lookups
+- `nameSuffixIndex`: HashMap for suffix-based lookups
+- `allInfoSorted`: Sorted array for containment queries with early exit
+
+**SubVerso error handling**:
+- Uses `throw <| IO.userError` for graceful error handling instead of panics
+- Errors propagate properly without crashing the build
+
+**Performance optimizations**:
 - O(n^3) transitive reduction in `Dress/Graph/Types.lean` skipped for graphs >100 nodes
-- PNT (530 nodes) was causing 3+ hour hangs: 530^3 = 149 million iterations
 - Simplified edge routing for large graphs in Layout.lean
 - Edge deduplication in Build.lean
 
-**ToExpr bug fix**:
+**Manual `ToExpr` instance**:
 - Manual `ToExpr` instance for `Node` in `LeanArchitect/Architect/Basic.lean`
 - Derived `ToExpr` for structures with default field values doesn't correctly serialize all fields
 

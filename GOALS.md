@@ -1,6 +1,19 @@
 # Side-by-Side Blueprint: Project Goals
 
+![Lean](https://img.shields.io/badge/Lean-v4.27.0-blue)
+![License](https://img.shields.io/badge/License-Apache%202.0-green)
+
 > **Prototype Status**: This is alpha software with known bugs, slow workflows, and incomplete features. Not yet production-ready.
+
+## Table of Contents
+
+- [Vision](#vision)
+- [The Problem This Solves](#the-problem-this-solves)
+- [What We're Building](#what-were-building)
+- [Target Audience](#target-audience)
+- [Relationship to Existing Tools](#relationship-to-existing-tools)
+- [Technical Design](#technical-design)
+- [Quality Targets](#quality-targets)
 
 ## Vision
 
@@ -170,3 +183,8 @@ The next milestone is full paper generation (not just blueprint):
 - Defined by tex file, uses Dress artifacts
 - Same build pattern as blueprint
 - Target: papers rendered like ar5iv.org
+
+## Related Documents
+
+- [README.md](README.md) - Project overview and getting started
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
