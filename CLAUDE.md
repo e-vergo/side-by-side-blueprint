@@ -155,7 +155,17 @@ python3 -m sbs capture --project SBSTest
 python3 -m sbs capture --url http://localhost:8000
 ```
 
-Captures include: dashboard, all chapter pages, dependency graph, paper (if configured).
+Captures 8 pages:
+- `dashboard` - Dashboard homepage
+- `dep_graph` - Dependency graph
+- `paper_tex` - Paper [TeX]
+- `pdf_tex` - PDF [TeX]
+- `paper_verso` - Paper [Verso]
+- `pdf_verso` - PDF [Verso]
+- `blueprint_verso` - Blueprint [Verso]
+- `chapter` - First chapter page (auto-detected)
+
+Pages that return HTTP 404 are skipped without error.
 
 ### Visual Comparison
 
@@ -405,6 +415,8 @@ Automates documentation updates at plan completion. Invoke manually via `/finali
 
 **Priority order:** mathlibReady > ready > notReady (manual) > fullyProven > sorry > proven > notReady (default)
 
+**Color source of truth:** Lean code (`Dress/Graph/Svg.lean`) defines canonical hex values. CSS variables in `common.css` must match exactly.
+
 ### `@[blueprint]` Attribute Options
 
 **Metadata Options (8):**
@@ -495,6 +507,18 @@ Automates documentation updates at plan completion. Invoke manually via `/finali
 JSON parsing handles legacy status values:
 - `"stated"` maps to `.notReady`
 - `"inMathlib"` maps to `.mathlibReady`
+
+---
+
+## Known Limitations
+
+### Verso LaTeX Export
+
+Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+
+### Dashboard Layout
+
+The dashboard displays a single-column layout without the chapter panel sidebar. This is intentional - controlled by `isBlueprintPage` in `Theme.lean` returning `false` when `currentSlug == none`.
 
 ---
 

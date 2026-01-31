@@ -104,7 +104,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | `Graph/Build.lean` | Graph construction, validation, `Node.inferUses`, `computeFullyProven` |
 | `Graph/Layout.lean` | Sugiyama algorithm (~1500 lines), edge routing |
 | `Graph/Json.lean` | Manifest serialization |
-| `Graph/Svg.lean` | SVG generation |
+| `Graph/Svg.lean` | SVG generation, **canonical status colors** |
 | `Main.lean` | CLI: `extract_blueprint graph` |
 
 ### Runway - Site Generator
@@ -115,7 +115,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | `Render.lean` | Dashboard, side-by-side rendering |
 | `Site.lean` | NodeInfo, ChapterInfo, BlueprintSite types |
 | `DepGraph.lean` | Dependency graph page with modals |
-| `Theme.lean` | Page templates, sidebar, `buildModuleLookup` |
+| `Theme.lean` | Page templates, sidebar, `buildModuleLookup`, `isBlueprintPage` |
 | `Paper.lean` | Paper rendering, `PaperMetadata` extraction |
 | `Pdf.lean` | PDF compilation with multiple compilers |
 | `Latex/Parser.lean` | LaTeX parsing with O(n) string concatenation |
@@ -187,6 +187,8 @@ Runway generates:
 - Paper/PDF (if `paperTexPath` configured)
 - Verso documents (if Blueprint.lean/Paper.lean exist)
 
+**Note:** The dashboard does NOT show the chapter panel sidebar. This is controlled by `isBlueprintPage` in `Theme.lean` returning `false` for the dashboard (`currentSlug == none`).
+
 ---
 
 ## Local Development Workflow
@@ -257,6 +259,18 @@ python3 -m sbs capture --project SBSTest
 python3 -m sbs capture --url http://localhost:8000
 ```
 
+Captures 8 pages:
+1. `dashboard` - Dashboard homepage
+2. `dep_graph` - Dependency graph
+3. `paper_tex` - Paper [TeX]
+4. `pdf_tex` - PDF [TeX]
+5. `paper_verso` - Paper [Verso]
+6. `pdf_verso` - PDF [Verso]
+7. `blueprint_verso` - Blueprint [Verso]
+8. `chapter` - First chapter page (auto-detected)
+
+Pages that return HTTP 404 are skipped without error.
+
 ### Visual Comparison
 
 ```bash
@@ -303,6 +317,8 @@ images/
 | `mathlibReady` | Light Blue | #87CEEB | Manual |
 
 **Priority**: mathlibReady > ready > notReady (manual) > fullyProven > sorry > proven > notReady (default)
+
+**Color source of truth**: Lean code in `Dress/Graph/Svg.lean` defines canonical hex values. CSS variables in `common.css` must match exactly.
 
 **`fullyProven` computation**: O(V+E) with memoization. Node is fullyProven if proven AND all ancestors are proven/fullyProven.
 
@@ -393,6 +409,13 @@ Edit files in `dress-blueprint-action/assets/`:
 - `plastex.js`: proof toggle, theme toggle
 
 Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
+
+### Status Color Synchronization
+
+**Lean is the source of truth.** If status colors don't match between graph nodes and CSS:
+1. Check `Dress/Graph/Svg.lean` for canonical hex values
+2. Update `common.css` variables to match exactly
+3. Never introduce new color definitions in CSS
 
 ### Sidebar Architecture
 
@@ -506,7 +529,7 @@ The 100-node threshold balances layout quality against computation time. PNT (59
 
 **SVG** (`Dress/Graph/Svg.lean`):
 - Ellipse for theorems, rect for definitions
-- 6-status color model
+- 6-status color model (source of truth for hex values)
 
 **Modals** (`Runway/DepGraph.lean`):
 - `wrapInModal` creates container
@@ -531,6 +554,8 @@ The 100-node threshold balances layout quality against computation time. PNT (59
 - Validation in Dress (`findComponents`, `detectCycles`)
 - Manifest.json written by Dress
 - Runway loads manifest (no recomputation)
+
+**Dashboard does NOT show chapter sidebar**: `isBlueprintPage` in `Theme.lean` returns `false` when `currentSlug == none` (dashboard).
 
 ### Rainbow Bracket Highlighting
 
@@ -557,6 +582,8 @@ lake exe runway pdf runway.json    # Just PDF
 ```
 
 **Metadata** (`Paper.lean`): extracts `\title{}`, `\author{}`, `\begin{abstract}` from paper.tex
+
+**Note**: Verso LaTeX export is not implemented. `pdf_verso` is disabled. Use `paper_tex` and `pdf_tex` for paper generation.
 
 ### Module Reference Support
 
@@ -694,6 +721,7 @@ rev = "main"
 - Don't use derived `ToExpr` for structures with default fields - use manual instance
 - Don't configure paper metadata in runway.json - extract from paper.tex
 - Don't use negative margins for full-width highlights - use `::before` pseudo-elements
+- Don't define status colors in CSS - Lean is the source of truth
 
 ---
 
@@ -702,6 +730,18 @@ rev = "main"
 JSON parsing handles legacy status values:
 - `"stated"` maps to `.notReady`
 - `"inMathlib"` maps to `.mathlibReady`
+
+---
+
+## Known Limitations
+
+### Verso LaTeX Export
+
+Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly.
+
+### Dashboard Layout
+
+The dashboard displays a single-column layout without the chapter panel sidebar. This is intentional - controlled by `isBlueprintPage` returning `false` for dashboard.
 
 ---
 
