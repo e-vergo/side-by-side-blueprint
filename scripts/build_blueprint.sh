@@ -213,15 +213,30 @@ OUTPUT_DIR="$PROJECT_ROOT/.lake/build/runway"
 
 echo ""
 echo "=== Step 8: Generating paper (if configured) ==="
-# Check if paperTexPath is configured in runway.json
+# Check if paper.tex exists (either via runwayDir convention or explicit paperTexPath)
+PAPER_EXISTS=false
+
+# Check for runwayDir convention: runway/src/paper.tex
+if grep -q '"runwayDir"' "$PROJECT_ROOT/runway.json"; then
+    RUNWAY_DIR=$(grep -o '"runwayDir"[[:space:]]*:[[:space:]]*"[^"]*"' "$PROJECT_ROOT/runway.json" | sed 's/.*"\([^"]*\)".*/\1/')
+    if [[ -f "$PROJECT_ROOT/$RUNWAY_DIR/src/paper.tex" ]]; then
+        PAPER_EXISTS=true
+    fi
+fi
+
+# Check for legacy paperTexPath
 if grep -q '"paperTexPath"' "$PROJECT_ROOT/runway.json" && ! grep -q '"paperTexPath": null' "$PROJECT_ROOT/runway.json"; then
+    PAPER_EXISTS=true
+fi
+
+if [[ "$PAPER_EXISTS" == "true" ]]; then
     (cd "$RUNWAY_PATH" && lake exe runway \
         --build-dir "$PROJECT_ROOT/.lake/build" \
         --output "$OUTPUT_DIR" \
         paper \
         "$PROJECT_ROOT/runway.json")
 else
-    echo "No paperTexPath configured, skipping paper generation"
+    echo "No paper.tex configured, skipping paper generation"
 fi
 
 echo ""
