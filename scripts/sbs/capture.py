@@ -56,9 +56,6 @@ def find_chapter_page(page, base_url: str) -> Optional[str]:
         Relative path to chapter page, or None if not found
     """
     try:
-        # Navigate to dashboard first
-        page.goto(f"{base_url}/index.html", wait_until="networkidle")
-
         # Exclusion patterns for non-chapter pages
         exclude_patterns = [
             "index", "dep_graph", "paper", "pdf", "verso",
@@ -66,22 +63,43 @@ def find_chapter_page(page, base_url: str) -> Optional[str]:
             "introduction",
         ]
 
-        # Collect candidate pages
+        # Try multiple starting points to find chapter links
+        starting_pages = [
+            "index.html",           # Dashboard
+            "blueprint_verso.html", # Blueprint Verso (has sidebar with chapters)
+        ]
+
         candidates = []
-        all_links = page.query_selector_all("a[href$='.html']")
-        for link in all_links:
-            href = link.get_attribute("href")
-            if href and not any(x in href.lower() for x in exclude_patterns):
-                if not href.startswith("http"):
-                    href = href.lstrip("./")
-                if href not in candidates:
-                    candidates.append(href)
+
+        for start_page in starting_pages:
+            try:
+                page.goto(f"{base_url}/{start_page}", wait_until="networkidle", timeout=10000)
+
+                # Look for chapter links in sidebar (.sidebar-chapter-panel) or any links
+                all_links = page.query_selector_all(".sidebar-chapter-panel a[href$='.html'], a[href$='.html']")
+                for link in all_links:
+                    href = link.get_attribute("href")
+                    if href and not any(x in href.lower() for x in exclude_patterns):
+                        if not href.startswith("http"):
+                            href = href.lstrip("./")
+                        if href not in candidates:
+                            candidates.append(href)
+
+                if candidates:
+                    break  # Found some candidates, no need to try other starting pages
+
+            except Exception:
+                continue
 
         # Try each candidate and pick one with theorem/proof content
         for candidate in candidates:
             try:
                 page.goto(f"{base_url}/{candidate}", wait_until="networkidle", timeout=10000)
-                has_content = page.query_selector(".theorem-statement, .side-by-side, .lean-code, .blueprint-theorem")
+                # Look for theorem content indicators
+                has_content = page.query_selector(
+                    ".theorem-statement, .side-by-side, .lean-code, "
+                    ".blueprint-theorem, .theorem_thmwrapper, .sbs-container"
+                )
                 if has_content:
                     return candidate
             except Exception:

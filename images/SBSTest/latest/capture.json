@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-01-31T15:32:36.528999",
+  "timestamp": "2026-01-31T17:09:09.595638",
   "project": "SBSTest",
-  "commit": "d9bb5a023a98",
+  "commit": "dc1abc544b0c",
   "base_url": "http://localhost:8000",
   "viewport": {
     "width": 1920,
@@ -49,6 +49,12 @@
       "name": "blueprint_verso",
       "path": "blueprint_verso.png",
       "url": "http://localhost:8000/blueprint_verso.html",
+      "status": "success"
+    },
+    {
+      "name": "chapter",
+      "path": "chapter.png",
+      "url": "http://localhost:8000/main-graph-status-types.html",
       "status": "success"
     }
   ],
@@ -140,6 +146,30 @@
       "type": "click",
       "status": "success",
       "path": "blueprint_verso_theme_toggle.png"
+    },
+    {
+      "page": "chapter",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "chapter_theme_toggle.png"
+    },
+    {
+      "page": "chapter",
+      "interaction": "proof_toggle",
+      "selector": ".proof_heading, .expand-proof",
+      "type": "click",
+      "status": "success",
+      "path": "chapter_proof_toggle.png"
+    },
+    {
+      "page": "chapter",
+      "interaction": "hover_token",
+      "selector": ".hl.lean .token",
+      "type": "hover",
+      "status": "success",
+      "path": "chapter_hover_token.png"
     }
   ]
 }
