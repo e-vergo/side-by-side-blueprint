@@ -456,7 +456,7 @@ python3 -m sbs compliance --project SBSTest --interactive
 **Key files:**
 - `scripts/sbs/criteria.py` - Compliance criteria per page
 - `scripts/sbs/ledger.py` - Ledger management
-- `scripts/sbs/mapping.py` - Repo→page change detection
+- `scripts/sbs/mapping.py` - Repo->page change detection
 - `scripts/sbs/validate.py` - Validation orchestration
 - `scripts/compliance_ledger.json` - Persistent status
 - `scripts/COMPLIANCE_STATUS.md` - Human-readable report
@@ -562,6 +562,7 @@ python3 -m sbs compliance --project SBSTest --interactive
 ### `computeFullyProven` Algorithm
 
 - O(V+E) complexity with memoization
+- Uses iterative worklist algorithm (not recursion)
 - A node is `fullyProven` if: it is `proven` AND all ancestors are `proven` or `fullyProven`
 - Runs as post-processing after initial status assignment
 

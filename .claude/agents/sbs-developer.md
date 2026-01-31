@@ -72,6 +72,11 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 - `nameSuffixIndex`: HashMap for suffix-based lookups
 - `allInfoSorted`: Sorted array for containment queries
 
+**HighlightState caches**:
+- `identKindCache`: Memoizes identifier classification by (position, name)
+- `signatureCache`: Memoizes pretty-printed type signatures by constant name
+- `hasTacticCache` / `childHasTacticCache`: Memoizes tactic info searches
+
 ### Verso (Fork) - Document Framework
 
 | File | Purpose |
@@ -343,7 +348,7 @@ scripts/
 
 **Color source of truth**: Lean code in `Dress/Graph/Svg.lean` defines canonical hex values. CSS variables in `common.css` must match exactly.
 
-**`fullyProven` computation**: O(V+E) with memoization. Node is fullyProven if proven AND all ancestors are proven/fullyProven.
+**`fullyProven` computation**: O(V+E) with memoization using iterative worklist algorithm. Node is fullyProven if proven AND all ancestors are proven/fullyProven.
 
 ---
 
@@ -406,7 +411,7 @@ theorem ready_for_mathlib : ...
 2. Check command handlers and catch-all cases
 3. Ensure `let _ <- advance` in catch-all to prevent infinite loops
 4. Uses Array-based string building (O(n))
-5. Test with `./scripts/build_blueprint.sh`
+5. Test with `python ../scripts/build.py`
 
 ### Debugging Artifact Generation
 
@@ -505,9 +510,9 @@ def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO 
 
 #### Graph Layout Algorithm (Sugiyama)
 
-The layout algorithm implements Sugiyama-style layered graph drawing:
+The layout algorithm implements Sugiyama-style layered graph drawing (~1500 lines):
 
-1. **`layout`**: Main entry point, orchestrates all phases
+1. **Acyclic transformation**: DFS identifies back-edges, reverses them one at a time
 2. **`assignLayers`**: Assigns nodes to horizontal layers (topological ordering)
 3. **`orderLayers`**: Reduces edge crossings via barycenter heuristic
 4. **`assignXCoordinates`**: Positions nodes horizontally within layers
@@ -562,6 +567,8 @@ The 100-node threshold balances layout quality against computation time. PNT (59
 **Pan/zoom** (`verso-code.js`):
 - Uses getBBox() for content bounds
 - `fitToWindow()` centers graph
+- Pointer events for drag (captures pointer for reliable tracking)
+- Scale clamped to 0.1-5x range
 
 ### Dashboard Work
 
@@ -588,6 +595,7 @@ The 100-node threshold balances layout quality against computation time. PNT (59
 - Single global depth counter shared across all bracket types
 - Cycles through 6 colors (`lean-bracket-1` through `lean-bracket-6`)
 - Opening brackets increment depth, closing brackets decrement
+- Brackets inside string literals and doc comments not colored
 
 **CSS** (`common.css`): light and dark mode variants
 
@@ -618,9 +626,9 @@ lake exe runway pdf runway.json    # Just PDF
 
 ### Validation Checks
 
-**Connectivity** (`findComponents`): BFS detects disconnected subgraphs
+**Connectivity** (`findComponents`): BFS detects disconnected subgraphs (O(V+E))
 
-**Cycles** (`detectCycles`): DFS with gray/black coloring
+**Cycles** (`detectCycles`): DFS with gray/black coloring (O(V+E))
 
 Results in `manifest.json` under `checkResults`.
 
@@ -739,7 +747,7 @@ rev = "main"
 - Don't create scratch files - work in repo files
 - Don't edit downstream before upstream
 - Don't guess at Verso APIs - use `lean_hover_info`
-- Don't skip build_blueprint.sh steps
+- Don't skip build.py steps
 - Don't use colons in CSS selectors - normalize to hyphens
 - Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
 - Don't use derived `ToExpr` for structures with default fields - use manual instance
@@ -775,4 +783,4 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 - Follow Verso/SubVerso patterns
 - Test via SBS-Test or GCR
 - Check `lean_diagnostic_messages` after edits
-- Use `sbs capture` + `sbs compare` for any visual changes
+- Use `sbs capture` + `sbs compliance` for any visual changes
