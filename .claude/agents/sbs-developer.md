@@ -285,6 +285,54 @@ Edit files in `dress-blueprint-action/assets/`:
 
 Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
 
+### Full-Width Highlight Pattern (Pseudo-Elements)
+
+**Problem**: Sidebar active item highlights don't extend edge-to-edge because `nav.toc` has `overflow-x: hidden`.
+
+**Solution**: CSS `::before` pseudo-elements with absolute positioning.
+
+```css
+/* Parent needs relative positioning */
+.sidebar-item {
+  position: relative;
+}
+
+/* Pseudo-element creates full-width background */
+.sidebar-item.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -0.8rem;   /* Extend past left padding */
+  right: -1rem;    /* Extend past right padding */
+  background-color: var(--active-bg);
+  z-index: -1;     /* Behind text content */
+}
+```
+
+**Key selectors** (`blueprint.css`):
+- `.sidebar-item.active::before` - Chapter items (left: -0.8rem, right: -1rem)
+- `.chapter-list a.active::before` - Section links (left: -1.5rem, right: -1rem)
+
+**Why this works**: `overflow-x: hidden` clips regular element overflow, but pseudo-elements with negative positioning extend into the clipped area visually while remaining within the element's box model.
+
+### Runway Path Resolution
+
+**Problem**: `detectVersoDocuments` used relative paths, but Runway runs from project root.
+
+**Solution**: Resolve paths relative to the config file's directory, not CWD.
+
+```lean
+-- In Theme.lean
+def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO ... := do
+  let paperPath := projectRoot / "blueprint" / "src" / "paper_verso.html"
+  if ← paperPath.pathExists then ...
+```
+
+**Pattern**: Functions that check file existence must receive `projectRoot` (the directory containing `runway.json`) and resolve all paths relative to it.
+
+**Filename convention**: Verso paper output is `paper_verso.html` (not `verso_paper.html`) to match sidebar link expectations.
+
 ### Dependency Graph Work
 
 **Layout** (`Dress/Graph/Layout.lean`):

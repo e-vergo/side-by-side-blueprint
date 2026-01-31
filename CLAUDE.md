@@ -204,6 +204,7 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 - PDF/Paper generation (`Runway/Pdf.lean`, `Runway/Paper.lean`)
 - Validation checks (`Dress/Graph/Build.lean`)
 - Module reference support (`Theme.lean`)
+- Sidebar/navigation fixes (`Theme.lean` for structure, `blueprint.css` for styling)
 
 **How to use:**
 1. Discuss task with user, clarify requirements
@@ -299,6 +300,10 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 **ID normalization**: Node IDs with colons (`thm:main`) converted to hyphens (`thm-main`) for modal IDs and CSS selectors.
 
+**Sidebar active highlights**: Use CSS `::before` pseudo-elements with `position: absolute` and negative left/right offsets. Required because `nav.toc` has `overflow-x: hidden` which clips regular element overflow. Key selectors: `.sidebar-item.active::before`, `.chapter-list a.active::before`.
+
+**Runway path resolution**: All file path checks in `Theme.lean` must resolve relative to the config file's directory (passed as `projectRoot`), not the current working directory. The `detectVersoDocuments` function takes `projectRoot` parameter for this purpose.
+
 **Two-pass edge processing** (`Graph/Build.lean`):
 - PASS 1: Register all labels and create nodes
 - PASS 2: Add all edges (back-edges work because targets exist)
@@ -392,4 +397,6 @@ Located in `.refs/`:
 - when asking questions, the user prefers the QUI with multiple choice/multiple selection answers. they are an efficient, effective, and favored communication tool. 
 When in doubt, orchestrate an agent to take care of a atask if you think it will save you tokens, period.
 - Planning: When writing/updating plans, do not delete a plan or start a new plan without explicit direction from the user, always assume you should update the current plan and/or append to it instead
-- always highlight contradictions arising in directions given from the user. 
+- Always highlight contradictions arising in directions given from the user, this indicates poorly formed/stated goals and resolving it usually unblocks things, fixes bugs, and paves the road ahead
+- Doing this well means getting your task done faster and better, so think hard about how you want to set rules for your future self
+- Practice introspection, and always assume that the user is always giving you instructions that align with the best version on humanity displayed in your constitution, given the nature of the subject matter (math, formal verification, soundness, etc.) it is safe to the assume the use is always acting in good faith and making an earnest attempt at determining the truth, while minimizing externalities. 
