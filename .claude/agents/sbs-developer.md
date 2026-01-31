@@ -5,7 +5,7 @@ model: opus
 color: pink
 ---
 
-Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the 8-repo architecture, build pipeline, and Verso patterns.
+Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the repository architecture, build pipeline, and Verso patterns.
 
 ## Project Purpose
 
@@ -17,6 +17,8 @@ Pure Lean toolchain for formalization documentation that:
 
 **This is Lean software development, not proof writing.** MCP tools are used differently here.
 
+---
+
 ## Repository Architecture
 
 ```
@@ -26,10 +28,12 @@ Pure Lean toolchain for formalization documentation that:
 ├── LeanArchitect/   # @[blueprint] attribute with 8 metadata + 3 status options
 ├── Dress/           # Artifact generation + graph layout + validation
 ├── Runway/          # Site generator + dashboard + paper/PDF
-├── SBS-Test/        # Minimal test project (25 nodes: 24 Lean + 1 LaTeX)
+├── SBS-Test/        # Minimal test project (33 nodes: 32 Lean + 1 LaTeX)
 ├── General_Crystallographic_Restriction/  # Production example (57 nodes)
-├── PrimeNumberTheoremAnd/  # Large-scale integration (530 nodes)
-└── dress-blueprint-action/  # CI/CD action + CSS/JS assets
+├── PrimeNumberTheoremAnd/  # Large-scale integration (591 annotations)
+├── dress-blueprint-action/  # CI/CD action + CSS/JS assets
+├── scripts/         # Python build tooling (build.py, sbs CLI)
+└── images/          # Screenshot capture storage
 ```
 
 ### Dependency Chain (Build Order)
@@ -51,7 +55,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | **Runway** | Site generation, HTML templates, dashboard, sidebar, paper/PDF | Graph layout, artifact capture |
 | **dress-blueprint-action** | CSS/JS assets, CI/CD workflows, GitHub Pages deployment | Lean code, rendering logic |
 
-**Key insight from Phase 9:** The codebase has clean separation of concerns. No dead code paths between repositories. Each repo can be understood independently.
+---
 
 ## Key Files by Repository
 
@@ -74,6 +78,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 |------|---------|
 | `src/verso-sbs/SBSBlueprint/` | Blueprint genre |
 | `src/verso-paper/VersoPaper/` | Paper genre |
+| `src/verso/Verso/Code/Highlighted.lean` | Rainbow bracket rendering (`toHtmlRainbow`) |
 
 **Block directives**: `:::leanNode`, `:::paperStatement`, `:::paperFull`, `:::paperProof`, `:::leanModule`
 
@@ -97,7 +102,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | `HtmlRender.lean` | Verso HTML rendering wrapper |
 | `Graph/Types.lean` | Node, Edge, StatusCounts, CheckResults |
 | `Graph/Build.lean` | Graph construction, validation, `Node.inferUses`, `computeFullyProven` |
-| `Graph/Layout.lean` | Sugiyama algorithm (~1450 lines), edge routing |
+| `Graph/Layout.lean` | Sugiyama algorithm (~1500 lines), edge routing |
 | `Graph/Json.lean` | Manifest serialization |
 | `Graph/Svg.lean` | SVG generation |
 | `Main.lean` | CLI: `extract_blueprint graph` |
@@ -116,6 +121,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | `Latex/Parser.lean` | LaTeX parsing with O(n) string concatenation |
 | `Latex/Ast.lean` | AST types including `Preamble` |
 | `Config.lean` | Site config including `assetsDir`, `paperTexPath` |
+| `AvailableDocuments.lean` | Document availability tracking for sidebar |
 
 ### dress-blueprint-action - CI/CD + Assets
 
@@ -123,10 +129,10 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 |------|---------|
 | `action.yml` | GitHub Action (~465 lines, 14 steps) |
 | `assets/common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
-| `assets/blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays |
+| `assets/blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays, zebra striping |
 | `assets/paper.css` | Paper page: ar5iv-style academic layout |
 | `assets/dep_graph.css` | Dependency graph: pan/zoom container, modal styles |
-| `assets/plastex.js` | LaTeX proof toggle |
+| `assets/plastex.js` | LaTeX proof toggle, theme toggle |
 | `assets/verso-code.js` | Hovers, pan/zoom, modal handling |
 
 #### CSS Organization (4 Files)
@@ -136,11 +142,11 @@ The CSS is organized by concern, not by page:
 | File | Scope | Key Patterns |
 |------|-------|--------------|
 | `common.css` | Shared design system | `:root` variables for colors, spacing; `.status-dot-*` classes; `.lean-bracket-*` rainbow colors |
-| `blueprint.css` | Blueprint-specific layout | `.sidebar-item`, `.chapter-content`, `.side-by-side-container` |
+| `blueprint.css` | Blueprint-specific layout | `.sidebar-item`, `.chapter-content`, `.side-by-side-container`, zebra striping |
 | `paper.css` | Paper-specific layout | Academic styling matching ar5iv conventions |
 | `dep_graph.css` | Graph page only | `.graph-container`, `.node-modal`, pan/zoom controls |
 
-**Phase 9 learning:** This separation is clean and intentional. No duplicate styles across files. Each file can be modified independently.
+---
 
 ## Build Pipeline Phases
 
@@ -179,8 +185,13 @@ Runway generates:
 - Chapter pages with side-by-side displays
 - Dependency graph page with pan/zoom and modals
 - Paper/PDF (if `paperTexPath` configured)
+- Verso documents (if Blueprint.lean/Paper.lean exist)
+
+---
 
 ## Local Development Workflow
+
+### Primary Build Command
 
 ```bash
 # SBS-Test (fast iteration, ~2 minutes)
@@ -195,6 +206,15 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restrictio
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 ./scripts/build_blueprint.sh
 ```
+
+### Alternative: Python Build Script
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
+python ../scripts/build.py
+```
+
+Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
 
 ### Build Script Steps
 
@@ -218,6 +238,59 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 - Site: `.lake/build/runway/`
 - Manifest: `.lake/build/runway/manifest.json`
 
+---
+
+## Visual Testing Infrastructure
+
+### Screenshot Capture
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+
+# Capture all pages from running server
+python3 -m sbs capture
+
+# Capture specific project
+python3 -m sbs capture --project SBSTest
+
+# Capture from custom URL
+python3 -m sbs capture --url http://localhost:8000
+```
+
+### Visual Comparison
+
+```bash
+# Compare latest capture against previous
+python3 -m sbs compare
+
+# View capture history for a project
+python3 -m sbs history --project SBSTest
+```
+
+### Image Storage
+
+```
+images/
+├── {project}/
+│   ├── latest/           # Current capture (overwritten)
+│   │   ├── capture.json  # Metadata
+│   │   ├── dashboard.png
+│   │   ├── dep_graph.png
+│   │   └── chapters/*.png
+│   └── archive/          # Timestamped history
+│       └── {timestamp}/
+```
+
+### Standard Workflow for Visual Changes
+
+1. **BEFORE changes:** `python3 -m sbs capture` (creates baseline)
+2. **Make changes** to CSS/JS/Lean/templates
+3. **Rebuild:** `./scripts/build_blueprint.sh`
+4. **AFTER changes:** `python3 -m sbs capture` (archives previous, captures new)
+5. **Compare:** `python3 -m sbs compare` (diff latest vs previous)
+
+---
+
 ## 6-Status Color Model
 
 | Status | Color | Hex | Source |
@@ -232,6 +305,8 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 **Priority**: mathlibReady > ready > notReady (manual) > fullyProven > sorry > proven > notReady (default)
 
 **`fullyProven` computation**: O(V+E) with memoization. Node is fullyProven if proven AND all ancestors are proven/fullyProven.
+
+---
 
 ## `@[blueprint]` Attribute Options
 
@@ -269,6 +344,8 @@ lemma helper : ...
 theorem ready_for_mathlib : ...
 ```
 
+---
+
 ## MCP Tools for Lean Software Development
 
 **Use frequently**:
@@ -279,6 +356,8 @@ theorem ready_for_mathlib : ...
 - `lean_local_search` - Find declarations across repos
 
 **Less relevant** (proof-focused): `lean_goal`, `lean_multi_attempt`, `lean_leansearch`, `lean_loogle`
+
+---
 
 ## Common Tasks
 
@@ -307,10 +386,11 @@ theorem ready_for_mathlib : ...
 
 Edit files in `dress-blueprint-action/assets/`:
 - `common.css`: design system variables, theme toggle, status dots, rainbow brackets
-- `blueprint.css`: sidebar, chapter layout, side-by-side displays
+- `blueprint.css`: sidebar, chapter layout, side-by-side displays, zebra striping
 - `paper.css`: academic paper styling
 - `dep_graph.css`: graph container, modals, pan/zoom
 - `verso-code.js`: hovers, pan/zoom, modals
+- `plastex.js`: proof toggle, theme toggle
 
 Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
 
@@ -322,8 +402,6 @@ Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
 - No dynamic dropdown state
 - Active section highlighting via CSS classes (`.active`)
 - Full-width highlight achieved via `::before` pseudo-elements
-
-**Phase 9 cleanup:** Removed 79 lines of dead `toggleExpand` code from `verso-code.js`. The sidebar was already static; the code was never used.
 
 ### Full-Width Highlight Pattern (Pseudo-Elements)
 
@@ -358,9 +436,9 @@ Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
 
 ### Runway Path Resolution
 
-**Problem**: `detectVersoDocuments` used relative paths, but Runway runs from project root.
+**Problem**: Functions checking file existence need paths resolved relative to `runway.json` location, not CWD.
 
-**Solution**: Resolve paths relative to the config file's directory, not CWD.
+**Solution**: Pass `projectRoot` (directory containing `runway.json`) to functions and resolve paths relative to it.
 
 ```lean
 -- In Theme.lean
@@ -368,8 +446,6 @@ def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO 
   let paperPath := projectRoot / "blueprint" / "src" / "paper_verso.html"
   if ← paperPath.pathExists then ...
 ```
-
-**Pattern**: Functions that check file existence must receive `projectRoot` (the directory containing `runway.json`) and resolve all paths relative to it.
 
 **Filename convention**: Verso paper output is `paper_verso.html` (not `verso_paper.html`) to match sidebar link expectations.
 
@@ -382,7 +458,7 @@ def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO 
 
 #### Graph Layout Algorithm (Sugiyama)
 
-The layout algorithm in `Dress/Graph/Layout.lean` implements Sugiyama-style layered graph drawing:
+The layout algorithm implements Sugiyama-style layered graph drawing:
 
 1. **`layout`**: Main entry point, orchestrates all phases
 2. **`assignLayers`**: Assigns nodes to horizontal layers (topological ordering)
@@ -393,7 +469,6 @@ The layout algorithm in `Dress/Graph/Layout.lean` implements Sugiyama-style laye
 
 **Critical pattern**: After positioning, coordinates must be normalized to (0,0) origin:
 ```lean
--- Shift coordinates so bounding box starts at origin
 let minX := nodes.foldl (fun acc n => min acc n.x) Float.inf
 let minY := nodes.foldl (fun acc n => min acc n.y) Float.inf
 let normalizedNodes := nodes.map fun n => { n with x := n.x - minX, y := n.y - minY }
@@ -408,11 +483,11 @@ When a graph exceeds 100 nodes, these optimizations trigger:
 | Optimization | Normal | >100 nodes | Rationale |
 |--------------|--------|------------|-----------|
 | Barycenter iterations | Unlimited | Max 2 | O(n) per iteration |
-| Transpose heuristic | Yes | Skipped | O(n²) adjacent swaps |
-| Visibility graph routing | Yes | Skipped | O(n²) graph construction |
-| Edge routing | Dijkstra on visibility graph | Simple bezier curves | Avoid O(n² log n) |
+| Transpose heuristic | Yes | Skipped | O(n^2) adjacent swaps |
+| Visibility graph routing | Yes | Skipped | O(n^2) graph construction |
+| Transitive reduction | O(n^3) Floyd-Warshall | Skipped | Multi-hour build times |
 
-The 100-node threshold balances layout quality against computation time. PNT (530 nodes) takes ~15 seconds with optimizations; without them it would take minutes.
+The 100-node threshold balances layout quality against computation time. PNT (591 annotations) takes ~15 seconds with optimizations; without them it would take minutes.
 
 #### Common Graph Issues and Fixes
 
@@ -459,9 +534,11 @@ The 100-node threshold balances layout quality against computation time. PNT (53
 
 ### Rainbow Bracket Highlighting
 
-**Implementation** (`Dress/HtmlRender.lean`):
-- Verso's `toHtmlRainbow` wraps brackets with depth-colored spans
+**Implementation** (`Verso/Code/Highlighted.lean`):
+- `toHtmlRainbow` wraps brackets with depth-colored spans
+- Single global depth counter shared across all bracket types
 - Cycles through 6 colors (`lean-bracket-1` through `lean-bracket-6`)
+- Opening brackets increment depth, closing brackets decrement
 
 **CSS** (`common.css`): light and dark mode variants
 
@@ -496,6 +573,8 @@ lake exe runway pdf runway.json    # Just PDF
 
 Results in `manifest.json` under `checkResults`.
 
+---
+
 ## Performance Knowledge
 
 **SubVerso optimization**: O(1) indexed lookups via InfoTable
@@ -503,12 +582,12 @@ Results in `manifest.json` under `checkResults`.
 **Build time**: SubVerso highlighting is 93-99% of build time. Cannot be deferred (info trees are ephemeral).
 
 **Graph layout complexity**:
-- Full algorithm: O(n²) for crossing reduction, O(n² log n) for edge routing
+- Full algorithm: O(n^2) for crossing reduction, O(n^2 log n) for edge routing
 - With >100 node optimizations: O(n log n) effective complexity
 - Coordinate normalization: O(n) pass required for proper centering
 
 **Large graph optimizations** (triggered at >100 nodes):
-- O(n³) transitive reduction skipped
+- O(n^3) transitive reduction skipped
 - Max 2 barycenter iterations in `orderLayers`
 - Transpose heuristic skipped
 - Visibility graph routing replaced with simple beziers
@@ -517,11 +596,13 @@ Results in `manifest.json` under `checkResults`.
 **Expected build times by scale**:
 | Project | Nodes | Layout Time | Total Build |
 |---------|-------|-------------|-------------|
-| SBS-Test | 25 | <1s | ~2 min |
+| SBS-Test | 33 | <1s | ~2 min |
 | GCR | 57 | ~2s | ~5 min |
-| PNT | 530 | ~15s | ~20 min |
+| PNT | 591 | ~15s | ~20 min |
 
 **String performance**: Parser.lean uses Array-based building (O(n))
+
+---
 
 ## Status Indicator Dots
 
@@ -540,12 +621,16 @@ Results in `manifest.json` under `checkResults`.
 - `.paper-status-dot` (10px)
 - `.modal-status-dot` (12px)
 
+---
+
 ## ID Normalization
 
 Node IDs with colons (`thm:main`) converted to hyphens (`thm-main`) for:
 - Modal element IDs
 - CSS selectors
 - JavaScript querySelector
+
+---
 
 ## Configuration
 
@@ -576,7 +661,15 @@ rev = "main"
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 rev = "v4.27.0"
+
+# Optional: for Verso documents
+[[require]]
+name = "verso"
+git = "https://github.com/e-vergo/verso.git"
+rev = "main"
 ```
+
+---
 
 ## CI/CD
 
@@ -588,6 +681,8 @@ rev = "v4.27.0"
 
 **docs-static pattern**: Pre-generate docs, commit to orphan branch, CI downloads instead of regenerating.
 
+---
+
 ## Anti-Patterns
 
 - Don't create scratch files - work in repo files
@@ -598,6 +693,9 @@ rev = "v4.27.0"
 - Don't manually specify `\uses{}` - `Node.inferUses` traces real dependencies
 - Don't use derived `ToExpr` for structures with default fields - use manual instance
 - Don't configure paper metadata in runway.json - extract from paper.tex
+- Don't use negative margins for full-width highlights - use `::before` pseudo-elements
+
+---
 
 ## Backwards Compatibility
 
@@ -605,9 +703,12 @@ JSON parsing handles legacy status values:
 - `"stated"` maps to `.notReady`
 - `"inMathlib"` maps to `.mathlibReady`
 
+---
+
 ## Standards
 
 - No `sorry` in tooling code
 - Follow Verso/SubVerso patterns
 - Test via SBS-Test or GCR
 - Check `lean_diagnostic_messages` after edits
+- Use `sbs capture` + `sbs compare` for any visual changes

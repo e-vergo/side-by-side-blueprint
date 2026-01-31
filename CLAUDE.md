@@ -17,7 +17,7 @@ The user and Claude are actively refining this document together. If something h
 
 ## Orchestration Model
 
-The top-level chat is the **orchestrator**. It does not implement—it coordinates.
+The top-level chat is the **orchestrator**. It does not implement--it coordinates.
 
 | Top-Level Chat | `sbs-developer` Agent |
 |----------------|----------------------|
@@ -47,14 +47,16 @@ Building tooling that:
 | Repo | Purpose |
 |------|---------|
 | **subverso** | Syntax highlighting (fork with O(1) indexed lookups via InfoTable) |
-| **verso** | Document framework (fork with SBSBlueprint/VersoPaper genres) |
+| **verso** | Document framework (fork with SBSBlueprint/VersoPaper genres, rainbow brackets) |
 | **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 status options |
 | **Dress** | Artifact generation + graph layout + validation + rainbow brackets |
 | **Runway** | Site generator + dashboard + paper/PDF + module references |
-| **SBS-Test** | Minimal test project (25 nodes, all 6 status colors) |
+| **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, XSS testing) |
 | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
-| **PrimeNumberTheoremAnd** | Large-scale integration (530 nodes) |
+| **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
 | **dress-blueprint-action** | CI/CD action (~465 lines) + CSS/JS assets |
+| **scripts** | Python build tooling (build.py, sbs CLI) |
+| **images** | Screenshot capture storage for visual testing |
 
 ### Dependency Chain
 
@@ -95,6 +97,15 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 ./scripts/build_blueprint.sh
 ```
 
+### Alternative: Python Build Script
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
+python ../scripts/build.py
+```
+
+Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
+
 ### Build Script Steps
 
 1. Validate project (runway.json, projectName)
@@ -102,7 +113,7 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 3. Sync repos to GitHub
 4. Update lake manifests
 5. Clean build artifacts
-6. Build toolchain (SubVerso → LeanArchitect → Dress → Runway)
+6. Build toolchain (SubVerso -> LeanArchitect -> Dress -> Runway)
 7. Fetch mathlib cache
 8. Build project with `BLUEPRINT_DRESS=1`
 9. Build `:blueprint` facet
@@ -174,7 +185,7 @@ python3 -m sbs history --project SBSTest
 
 ### What to Verify
 
-- Dashboard layout (2×2 grid, stats, key theorems, messages, notes)
+- Dashboard layout (2x2 grid, stats, key theorems, messages, notes)
 - Dependency graph (pan/zoom, modals, node colors, edge styles)
 - Sidebar navigation and highlighting
 - Rainbow bracket colors (6-depth cycling)
@@ -182,6 +193,7 @@ python3 -m sbs history --project SBSTest
 - Side-by-side theorem/proof displays
 - Dark/light theme toggle
 - Paper rendering (if configured)
+- Zebra striping in both light and dark mode
 
 ---
 
@@ -192,7 +204,7 @@ The CSS is organized into 4 files by concern:
 | File | Scope |
 |------|-------|
 | `common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
-| `blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays |
+| `blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays, zebra striping |
 | `paper.css` | Paper page: ar5iv-style academic layout |
 | `dep_graph.css` | Dependency graph: pan/zoom container, modal styles |
 
@@ -234,7 +246,7 @@ Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` c
 
 | Operation | Time | Percentage |
 |-----------|------|------------|
-| SubVerso highlighting | 800–6500ms | 93–99% |
+| SubVerso highlighting | 800-6500ms | 93-99% |
 | TeX/HTML generation | <30ms | <1% |
 
 SubVerso highlighting dominates build time. Cannot be deferred (info trees are ephemeral).
@@ -243,14 +255,14 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 **Complexity by phase:**
 - Layer assignment: O(V+E)
-- Crossing reduction (barycenter): O(n²) normal, O(n) with iteration limit
-- Edge routing: O(n² log n) normal, O(n) with simple beziers
+- Crossing reduction (barycenter): O(n^2) normal, O(n) with iteration limit
+- Edge routing: O(n^2 log n) normal, O(n) with simple beziers
 
 **>100 node optimizations** (automatic in Layout.lean):
 - Max 2 barycenter iterations
 - Skip transpose heuristic
 - Skip visibility graph routing (use simple beziers)
-- Skip O(n³) transitive reduction
+- Skip O(n^3) transitive reduction
 
 **Expected layout times:**
 | Scale | Nodes | Layout Time |
@@ -305,7 +317,7 @@ let normalized := nodes.map fun n => { n with x := n.x - minX, y := n.y - minY }
 Spawn an agent for:
 - Fixing LaTeX parsing or HTML rendering in Runway
 - Debugging artifact generation in Dress
-- Cross-repo changes (LeanArchitect → Dress → Runway)
+- Cross-repo changes (LeanArchitect -> Dress -> Runway)
 - Running builds and inspecting output
 - CSS/JS fixes in `dress-blueprint-action/assets/`
 - Theme template fixes in `Runway/Theme.lean`
@@ -315,6 +327,7 @@ Spawn an agent for:
 - PDF/Paper generation (`Runway/Pdf.lean`, `Runway/Paper.lean`)
 - Validation checks (`Dress/Graph/Build.lean`)
 - Module reference support (`Theme.lean`)
+- Rainbow bracket issues (`Verso/Code/Highlighted.lean`)
 
 ### Spawning Protocol
 
@@ -351,6 +364,29 @@ Spawn an agent for:
 - Check `lean_diagnostic_messages` after edits
 - Test via SBS-Test or GCR
 - Use `sbs capture` + `sbs compare` for any visual changes
+
+---
+
+## Custom Skills
+
+### `/finalize-docs`
+
+Automates documentation updates at plan completion. Invoke manually via `/finalize-docs`.
+
+**Workflow:**
+1. **Wave 1** (3 parallel agents): Fork READMEs (subverso, verso, LeanArchitect)
+2. **Wave 2** (4 parallel agents): Core tooling READMEs (Runway, Dress, dress-blueprint-action, SBS-Test)
+3. **Wave 3** (2 parallel agents): Showcase READMEs (GCR, PNT)
+4. **Final** (1 agent): Reference docs (ARCHITECTURE.md, sbs-developer.md, CLAUDE.md)
+5. Auto-commit after each wave
+
+**Location:** `.claude/skills/finalize-docs/SKILL.md`
+
+**Key properties:**
+- `disable-model-invocation: true` - Manual trigger only
+- Waves execute sequentially; agents within each wave run in parallel
+- Each wave reads outputs from previous waves before writing
+- PNT preserves original content with fork section at top
 
 ---
 
@@ -395,7 +431,7 @@ Spawn an agent for:
 ### Build Pipeline Phases
 
 **Phase 1: Per-Declaration Capture** (During Elaboration with `BLUEPRINT_DRESS=1`)
-- SubVerso extracts highlighting (93–99% of build time)
+- SubVerso extracts highlighting (93-99% of build time)
 - Code split at `:=` boundary
 - Artifacts written to `.lake/build/dressed/{Module}/{label}/`
 
@@ -425,8 +461,8 @@ Spawn an agent for:
 - Edge deduplication: keeps first occurrence
 
 **Dependency inference:** `Node.inferUses` traces actual Lean code dependencies
-- Statement uses → dashed edges
-- Proof uses → solid edges
+- Statement uses -> dashed edges
+- Proof uses -> solid edges
 
 **Module reference support:** `\inputleanmodule{ModuleName}` in LaTeX expands to all nodes from that module via `buildModuleLookup` and `replaceModulePlaceholders`.
 
@@ -434,7 +470,7 @@ Spawn an agent for:
 
 **Manual `ToExpr` instance:** Required for `Node` in LeanArchitect because derived `ToExpr` doesn't correctly serialize structures with default field values.
 
-**Rainbow bracket highlighting:** Verso's `toHtmlRainbow` wraps brackets with depth-colored spans. CSS classes `lean-bracket-1` through `lean-bracket-6` in `common.css`.
+**Rainbow bracket highlighting:** Verso's `toHtmlRainbow` wraps brackets with depth-colored spans using a single global depth counter shared across all bracket types. CSS classes `lean-bracket-1` through `lean-bracket-6` in `common.css`.
 
 **SubVerso InfoTable** (O(1) lookups):
 - `infoByExactPos`: HashMap for exact position lookups
@@ -477,6 +513,12 @@ rev = "main"
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
 rev = "v4.27.0"
+
+# Optional: for Verso documents
+[[require]]
+name = "verso"
+git = "https://github.com/e-vergo/verso.git"
+rev = "main"
 ```
 
 ### runway.json
@@ -511,7 +553,7 @@ Located in `.refs/`:
 
 ## User Preferences
 
-**Guiding Principle:** We are actively shaping how we work together by observing what works, communicating successes, failures, pain points, and uncertainties in real time. This is an explicit, collaborative process—you (Claude) should practice introspection and assume the user is doing the same. The domain (formal verification, mathematical soundness) means good faith and truth-seeking are baseline assumptions.
+**Guiding Principle:** We are actively shaping how we work together by observing what works, communicating successes, failures, pain points, and uncertainties in real time. This is an explicit, collaborative process--you (Claude) should practice introspection and assume the user is doing the same. The domain (formal verification, mathematical soundness) means good faith and truth-seeking are baseline assumptions.
 
 **These preferences guide all decision-making, planning, and actions. Follow them unless the user explicitly directs otherwise.**
 
@@ -519,7 +561,7 @@ Located in `.refs/`:
 
 ### Meta-Cognitive Expectations
 
-- **Highlight contradictions immediately.** Conflicting user directions indicate poorly-formed goals. Surfacing these unblocks progress, fixes bugs, and clarifies the path forward. This is high-value work—prioritize it.
+- **Highlight contradictions immediately.** Conflicting user directions indicate poorly-formed goals. Surfacing these unblocks progress, fixes bugs, and clarifies the path forward. This is high-value work--prioritize it.
 - **Practice introspection.** When setting rules for yourself (planning, orchestration decisions, communication choices), think carefully about what will help your future self succeed. The user observes this process and participates in refining it.
 - **If you act on a preference below and the user pushes back, say so explicitly.** This feedback loop is how we calibrate.
 
