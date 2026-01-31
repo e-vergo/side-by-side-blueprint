@@ -30,7 +30,9 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -52,6 +54,13 @@ except ImportError:
         import toml as tomllib  # type: ignore
     except ImportError:
         tomllib = None  # type: ignore
+
+# Import ledger types for metrics
+try:
+    from sbs.ledger import BuildMetrics, UnifiedLedger, get_or_create_unified_ledger
+    HAS_LEDGER = True
+except ImportError:
+    HAS_LEDGER = False
 
 
 # =============================================================================
@@ -674,6 +683,120 @@ class BuildOrchestrator:
         self.repos: dict[str, Repo] = {}
         log.verbose = config.verbose
 
+        # Timing tracking
+        self._phase_start: Optional[float] = None
+        self._phase_timings: dict[str, float] = {}
+        self._build_start: Optional[float] = None
+        self._run_id: str = ""
+        self._commits_before: dict[str, str] = {}
+        self._commits_after: dict[str, str] = {}
+        self._build_success: bool = False
+        self._error_message: Optional[str] = None
+
+    def _generate_run_id(self) -> str:
+        """Generate run_id as ISO timestamp + short hash."""
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+        short_hash = uuid.uuid4().hex[:6]
+        return f"{timestamp}_{short_hash}"
+
+    def _start_phase(self, name: str) -> None:
+        """Mark start of a phase."""
+        self._phase_start = time.time()
+
+    def _end_phase(self, name: str) -> None:
+        """Record phase duration."""
+        if self._phase_start is not None:
+            duration = time.time() - self._phase_start
+            self._phase_timings[name] = round(duration, 3)
+            self._phase_start = None
+
+    def _collect_commits_before(self) -> None:
+        """Collect git commits from all repos before build."""
+        for name, repo in self.repos.items():
+            if repo.exists():
+                result = run_cmd(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=repo.path,
+                    capture=True,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    self._commits_before[name] = result.stdout.strip()[:12]
+
+    def _collect_commits_after(self) -> None:
+        """Collect git commits from all repos after build."""
+        for name, repo in self.repos.items():
+            if repo.exists():
+                result = run_cmd(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=repo.path,
+                    capture=True,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    self._commits_after[name] = result.stdout.strip()[:12]
+
+    def _save_metrics(self) -> None:
+        """Save build metrics to unified ledger."""
+        if not HAS_LEDGER:
+            log.debug("Ledger module not available, skipping metrics save")
+            return
+
+        try:
+            # Calculate total duration
+            duration = 0.0
+            if self._build_start is not None:
+                duration = time.time() - self._build_start
+
+            # Get current commit
+            commit = ""
+            result = run_cmd(
+                ["git", "rev-parse", "HEAD"],
+                cwd=self.config.project_root,
+                capture=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                commit = result.stdout.strip()[:12]
+
+            # Determine which repos changed
+            repos_changed = []
+            for name in self._commits_before:
+                before = self._commits_before.get(name, "")
+                after = self._commits_after.get(name, "")
+                if before and after and before != after:
+                    repos_changed.append(name)
+
+            # Create metrics
+            metrics = BuildMetrics(
+                run_id=self._run_id,
+                project=self.config.project_name,
+                commit=commit,
+                started_at=datetime.fromtimestamp(self._build_start).isoformat() if self._build_start else "",
+                completed_at=datetime.now().isoformat(),
+                duration_seconds=round(duration, 2),
+                phase_timings=self._phase_timings,
+                repos_changed=repos_changed,
+                commits_before=self._commits_before,
+                commits_after=self._commits_after,
+                success=self._build_success,
+                error_message=self._error_message,
+            )
+
+            # Save to unified ledger
+            stats_dir = SCRIPT_DIR / "stats"
+            stats_dir.mkdir(parents=True, exist_ok=True)
+
+            ledger = get_or_create_unified_ledger(stats_dir, self.config.project_name)
+            ledger.add_build(metrics)
+            ledger.save(stats_dir / "unified_ledger.json")
+
+            log.success(f"Build metrics saved (run_id: {self._run_id})")
+            log.info(f"  Duration: {duration:.1f}s across {len(self._phase_timings)} phases")
+
+        except Exception as e:
+            log.warning(f"Failed to save metrics: {e}")
+
     def discover_repos(self) -> None:
         """Discover all repos in the SBS workspace."""
         for name in REPO_NAMES:
@@ -890,10 +1013,18 @@ class BuildOrchestrator:
                 )
 
     def build_project(self) -> None:
-        """Build the project with dressed artifacts."""
+        """Build the project with dressed artifacts (legacy method for compatibility)."""
         log.step("Fetching mathlib cache")
         fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
 
+        self._build_project_internal()
+
+        log.step("Building blueprint facet")
+        lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
+        log.success("Blueprint facet built")
+
+    def _build_project_internal(self) -> None:
+        """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
         log.step("Building Lean project with dressed artifacts")
 
         if self.config.dry_run:
@@ -909,10 +1040,6 @@ class BuildOrchestrator:
             )
 
         log.success("Project built with dressed artifacts")
-
-        log.step("Building blueprint facet")
-        lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
-        log.success("Blueprint facet built")
 
     def generate_dep_graph(self) -> None:
         """Generate the dependency graph."""
@@ -1062,49 +1189,114 @@ class BuildOrchestrator:
 
     def run(self) -> None:
         """Run the full build process."""
+        # Initialize timing
+        self._build_start = time.time()
+        self._run_id = self._generate_run_id()
+
         log.step(f"{self.config.project_name} Blueprint Builder")
+        log.info(f"Run ID: {self._run_id}")
 
-        # Discover repos
-        self.discover_repos()
+        try:
+            # Discover repos
+            self.discover_repos()
 
-        # Chrome cleanup (before build to prevent interference)
-        mcp_window = get_mcp_chrome_window_id()
-        cleanup_chrome_windows(mcp_window, self.config.dry_run)
+            # Collect commits before build
+            self._collect_commits_before()
 
-        # Git sync (mandatory - ensures reproducible builds)
-        self.sync_repos()
-        self.update_manifests()
+            # Chrome cleanup (before build to prevent interference)
+            mcp_window = get_mcp_chrome_window_id()
+            cleanup_chrome_windows(mcp_window, self.config.dry_run)
 
-        # Compliance checks
-        self.run_compliance_checks()
+            # Git sync (mandatory - ensures reproducible builds)
+            self._start_phase("sync_repos")
+            self.sync_repos()
+            self._end_phase("sync_repos")
 
-        # Clean artifacts
-        self.clean_artifacts()
+            self._start_phase("update_manifests")
+            self.update_manifests()
+            self._end_phase("update_manifests")
 
-        # Build toolchain (mandatory - ensures consistency)
-        self.build_toolchain()
+            # Compliance checks
+            self._start_phase("compliance_checks")
+            self.run_compliance_checks()
+            self._end_phase("compliance_checks")
 
-        # Build project
-        self.build_project()
+            # Clean artifacts
+            self._start_phase("clean_build")
+            self.clean_artifacts()
+            self._end_phase("clean_build")
 
-        # Generate outputs
-        self.generate_dep_graph()
-        self.generate_site()
+            # Build toolchain (mandatory - ensures consistency)
+            self._start_phase("build_toolchain")
+            self.build_toolchain()
+            self._end_phase("build_toolchain")
 
-        # Final git sync (mandatory)
-        if git_commit_and_push(self.config.project_root, self.config.dry_run):
-            log.success("Final changes committed and pushed")
+            # Fetch mathlib cache (extracted from build_project for granular timing)
+            self._start_phase("fetch_mathlib_cache")
+            fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
+            self._end_phase("fetch_mathlib_cache")
 
-        # Start server
-        self.start_server()
+            # Build project
+            self._start_phase("build_project")
+            self._build_project_internal()
+            self._end_phase("build_project")
 
-        # Capture screenshots if requested
-        if self.config.capture:
-            self.run_capture()
+            # Build blueprint facet
+            self._start_phase("build_blueprint")
+            lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
+            self._end_phase("build_blueprint")
 
-        log.step("BUILD COMPLETE")
-        log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
-        log.info("Web: http://localhost:8000")
+            # Generate outputs
+            self._start_phase("build_dep_graph")
+            self.generate_dep_graph()
+            self._end_phase("build_dep_graph")
+
+            self._start_phase("generate_site")
+            self.generate_site()
+            self._end_phase("generate_site")
+
+            # Final git sync (mandatory)
+            self._start_phase("final_sync")
+            if git_commit_and_push(self.config.project_root, self.config.dry_run):
+                log.success("Final changes committed and pushed")
+            self._end_phase("final_sync")
+
+            # Collect commits after build
+            self._collect_commits_after()
+
+            # Start server
+            self._start_phase("start_server")
+            self.start_server()
+            self._end_phase("start_server")
+
+            # Capture screenshots if requested
+            if self.config.capture:
+                self._start_phase("capture")
+                self.run_capture()
+                self._end_phase("capture")
+
+            # Mark build as successful
+            self._build_success = True
+
+            log.step("BUILD COMPLETE")
+            log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
+            log.info("Web: http://localhost:8000")
+
+            # Print timing summary
+            total = time.time() - self._build_start
+            log.info(f"Total time: {total:.1f}s")
+            if self.config.verbose:
+                for phase, duration in self._phase_timings.items():
+                    log.debug(f"  {phase}: {duration:.1f}s")
+
+        except Exception as e:
+            self._build_success = False
+            self._error_message = str(e)
+            raise
+
+        finally:
+            # Always save metrics (best-effort)
+            self._save_metrics()
 
 
 # =============================================================================

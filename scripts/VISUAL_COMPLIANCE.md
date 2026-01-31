@@ -203,6 +203,53 @@ Return JSON:
 | `validate.py` | Validation orchestration |
 | `capture.py` | Screenshot and interactive capture |
 
+## Validator Plugin Integration
+
+The visual compliance system is now available as a validator plugin in the pluggable architecture.
+
+### Using the Visual Validator
+
+```python
+from sbs.validators import discover_validators, registry, ValidationContext
+from pathlib import Path
+
+# Discover validators
+discover_validators()
+
+# Get the visual compliance validator
+validator = registry.get('visual-compliance')
+
+# Create context
+context = ValidationContext(
+    project='SBSTest',
+    project_root=Path('/Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test'),
+    commit='abc123',
+    screenshots_dir=Path('/Users/eric/GitHub/Side-By-Side-Blueprint/images/SBSTest/latest'),
+    extra={
+        'pages': ['dashboard', 'dep_graph'],  # Optional: filter pages
+        'include_interactive': True
+    }
+)
+
+# Generate validation prompts (for AI vision analysis)
+result = validator.validate(context)
+
+# Prompts are in result.details['prompts']
+```
+
+### Unified Ledger
+
+Visual compliance results are now stored in the unified ledger at `scripts/stats/unified_ledger.json` alongside build metrics and other validators.
+
+### Other Validators
+
+The plugin system includes additional validators:
+- `timing` - Build phase timing metrics
+- `git-metrics` - Commit/diff tracking
+- `code-stats` - LOC and file counts
+
+See `scripts/sbs/validators/` for the full plugin architecture.
+
 ## Exit Codes
 
 | Code | Meaning |

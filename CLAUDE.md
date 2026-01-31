@@ -415,24 +415,32 @@ Spawn an agent for:
 
 ## Custom Skills
 
-### `/finalize-docs`
+### `/execute`
 
-Automates documentation updates at plan completion. Invoke manually via `/finalize-docs`.
+General-purpose agentic task execution with validation. Invoke manually via `/execute`.
 
 **Workflow:**
-1. **Wave 1** (3 parallel agents): Fork READMEs (subverso, verso, LeanArchitect)
-2. **Wave 2** (4 parallel agents): Core tooling READMEs (Runway, Dress, dress-blueprint-action, SBS-Test)
-3. **Wave 3** (2 parallel agents): Showcase READMEs (GCR, PNT)
-4. **Final** (1 agent): Reference docs (ARCHITECTURE.md, sbs-developer.md, CLAUDE.md)
-5. Auto-commit after each wave
+1. **Alignment (Q&A)** - Claude asks clarifying questions until user signals "ready to plan"
+2. **Planning** - User enters plan mode, Claude presents task breakdown with validators
+3. **Execution** - Fully autonomous with validation gates:
+   - Agents spawned sequentially for code changes
+   - Documentation-only waves can run in parallel
+   - Validation after each agent/wave
+   - Retry on failure, pause for re-approval if retry fails
+4. **Finalization** - Full validation suite, update unified ledger, generate summary
 
-**Location:** `.claude/skills/finalize-docs/SKILL.md`
+**Validators:**
+- `visual-compliance` - AI vision validation of screenshots
+- `timing` - Build phase timing metrics
+- `git-metrics` - Commit/diff tracking
+- `code-stats` - LOC and file counts
+
+**Location:** `.claude/skills/execute/SKILL.md`
 
 **Key properties:**
 - `disable-model-invocation: true` - Manual trigger only
-- Waves execute sequentially; agents within each wave run in parallel
-- Each wave reads outputs from previous waves before writing
-- PNT preserves original content with fork section at top
+- All builds through `python build.py` (no bypass)
+- Unified ledger at `scripts/stats/unified_ledger.json`
 
 ### Visual Compliance (CLI)
 

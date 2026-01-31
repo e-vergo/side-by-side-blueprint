@@ -294,6 +294,71 @@ The compliance system:
 
 See `scripts/VISUAL_COMPLIANCE.md` for full documentation.
 
+### Validator Plugin Architecture
+
+The `scripts/sbs/validators/` directory contains a pluggable validator system.
+
+#### Core Components
+
+| File | Purpose |
+|------|---------|
+| `base.py` | Protocol definitions (Validator, ValidatorResult, ValidationContext) |
+| `registry.py` | Plugin registration and discovery |
+| `visual.py` | AI vision validation (wraps existing compliance) |
+| `timing.py` | Build phase timing metrics |
+| `git_metrics.py` | Commit/diff tracking |
+| `code_stats.py` | LOC and file counts |
+
+#### Usage
+
+```python
+from sbs.validators import discover_validators, registry, ValidationContext
+
+# Discover all validators
+discover_validators()
+
+# Get a specific validator
+validator = registry.get('visual-compliance')
+
+# Create context
+context = ValidationContext(
+    project='SBSTest',
+    project_root=Path('/path/to/project'),
+    commit='abc123',
+    screenshots_dir=Path('/path/to/images/SBSTest/latest')
+)
+
+# Run validation
+result = validator.validate(context)
+```
+
+#### Creating New Validators
+
+1. Create a new file in `scripts/sbs/validators/`
+2. Extend `BaseValidator` or implement the `Validator` protocol
+3. Use `@register_validator` decorator
+
+```python
+from .base import BaseValidator
+from .registry import register_validator
+
+@register_validator
+class MyValidator(BaseValidator):
+    name = "my-validator"
+    category = "code"  # visual, timing, code, or git
+
+    def validate(self, context):
+        # ... validation logic
+        return self._make_pass(
+            findings=["Found X"],
+            metrics={"count": 42}
+        )
+```
+
+#### Unified Ledger
+
+All metrics are stored in `scripts/stats/unified_ledger.json` via the `UnifiedLedger` class in `scripts/sbs/ledger.py`.
+
 ### Visual Comparison
 
 ```bash
