@@ -28,6 +28,9 @@ LEAN_ARCHITECT_PATH="$SBS_ROOT/LeanArchitect"
 DRESS_PATH="$SBS_ROOT/Dress"
 RUNWAY_PATH="$SBS_ROOT/Runway"
 DRESS_BLUEPRINT_ACTION_PATH="$SBS_ROOT/dress-blueprint-action"
+VERSO_PATH="$SBS_ROOT/verso"
+GCR_PATH="$SBS_ROOT/General_Crystallographic_Restriction"
+PNT_PATH="$SBS_ROOT/PrimeNumberTheoremAnd"
 
 # Auto-detect project name from runway.json
 if [[ ! -f "$PROJECT_ROOT/runway.json" ]]; then
@@ -58,11 +61,18 @@ check_dependency() {
 
 check_dependency "lake" "Please install Lean 4 and Lake."
 
-# Verify local paths exist
-for path in "$SUBVERSO_PATH" "$LEAN_ARCHITECT_PATH" "$DRESS_PATH" "$RUNWAY_PATH" "$DRESS_BLUEPRINT_ACTION_PATH"; do
+# Verify required local paths exist
+for path in "$SUBVERSO_PATH" "$LEAN_ARCHITECT_PATH" "$DRESS_PATH" "$RUNWAY_PATH" "$VERSO_PATH" "$DRESS_BLUEPRINT_ACTION_PATH"; do
     if [[ ! -d "$path" ]]; then
-        echo "ERROR: Dependency not found at $path"
+        echo "ERROR: Required dependency not found at $path"
         exit 1
+    fi
+done
+
+# Warn about optional paths
+for path in "$GCR_PATH" "$PNT_PATH"; do
+    if [[ ! -d "$path" ]]; then
+        echo "Warning: Showcase project not found at $path (skipping)"
     fi
 done
 
@@ -77,6 +87,12 @@ echo "=== Step 0: Syncing local repos to GitHub ==="
 commit_and_push() {
     local repo_path="$1"
     local repo_name="$(basename "$repo_path")"
+
+    # Skip if path doesn't exist
+    if [[ ! -d "$repo_path" ]]; then
+        echo "  $repo_name: Skipped (not found)"
+        return 0
+    fi
 
     cd "$repo_path"
 
@@ -97,13 +113,58 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
     cd "$PROJECT_ROOT"
 }
 
-# Sync all repos
+# Sync toolchain repos
 commit_and_push "$SUBVERSO_PATH"
 commit_and_push "$LEAN_ARCHITECT_PATH"
 commit_and_push "$DRESS_PATH"
 commit_and_push "$RUNWAY_PATH"
+
+# Sync Verso fork
+commit_and_push "$VERSO_PATH"
+
+# Sync CI action
 commit_and_push "$DRESS_BLUEPRINT_ACTION_PATH"
+
+# Sync showcase projects
+commit_and_push "$GCR_PATH"
+commit_and_push "$PNT_PATH"
+
+# Sync parent monorepo (SBS root)
+commit_and_push "$SBS_ROOT"
+
+# Sync current project
 commit_and_push "$PROJECT_ROOT"
+
+echo ""
+echo "=== Step 0a: Pulling latest from GitHub ==="
+
+pull_latest() {
+    local repo_path="$1"
+    local repo_name="$(basename "$repo_path")"
+
+    # Skip if path doesn't exist
+    if [[ ! -d "$repo_path" ]]; then
+        echo "  $repo_name: Skipped (not found)"
+        return 0
+    fi
+
+    cd "$repo_path"
+    echo "  $repo_name: Pulling latest..."
+    git pull --rebase || git pull
+    cd "$PROJECT_ROOT"
+}
+
+# Pull all repos
+pull_latest "$SUBVERSO_PATH"
+pull_latest "$LEAN_ARCHITECT_PATH"
+pull_latest "$DRESS_PATH"
+pull_latest "$RUNWAY_PATH"
+pull_latest "$VERSO_PATH"
+pull_latest "$DRESS_BLUEPRINT_ACTION_PATH"
+pull_latest "$GCR_PATH"
+pull_latest "$PNT_PATH"
+pull_latest "$SBS_ROOT"
+pull_latest "$PROJECT_ROOT"
 
 echo ""
 echo "=== Step 0b: Updating lake manifests ==="
@@ -118,11 +179,28 @@ echo "Updating Dress dependencies..."
 echo "Updating Runway dependencies..."
 (cd "$RUNWAY_PATH" && lake update Dress 2>/dev/null || true)
 
+echo "Updating Verso dependencies..."
+(cd "$VERSO_PATH" && lake update 2>/dev/null || true)
+
+echo "Updating GCR dependencies..."
+if [[ -d "$GCR_PATH" ]]; then
+    (cd "$GCR_PATH" && lake update Dress 2>/dev/null || true)
+fi
+
+echo "Updating PNT dependencies..."
+if [[ -d "$PNT_PATH" ]]; then
+    (cd "$PNT_PATH" && lake update Dress 2>/dev/null || true)
+fi
+
 echo "Updating project dependencies..."
 (cd "$PROJECT_ROOT" && lake update Dress 2>/dev/null || true)
 
 # Commit and push any manifest changes
-for repo_path in "$LEAN_ARCHITECT_PATH" "$DRESS_PATH" "$RUNWAY_PATH"; do
+for repo_path in "$LEAN_ARCHITECT_PATH" "$DRESS_PATH" "$RUNWAY_PATH" "$VERSO_PATH" "$GCR_PATH" "$PNT_PATH"; do
+    # Skip if path doesn't exist
+    if [[ ! -d "$repo_path" ]]; then
+        continue
+    fi
     repo_name=$(basename "$repo_path")
     cd "$repo_path"
     if [[ -n $(git status --porcelain lake-manifest.json 2>/dev/null) ]]; then
@@ -239,8 +317,19 @@ fi
 echo ""
 echo "=== Step 5d: Generating Verso PDF ==="
 if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
-    # Check if lualatex is available
+    # Detect available TeX compiler (try in order of preference)
+    VERSO_TEX_CMD=""
     if command -v lualatex &> /dev/null; then
+        VERSO_TEX_CMD="lualatex"
+    elif command -v pdflatex &> /dev/null; then
+        VERSO_TEX_CMD="pdflatex"
+    elif command -v xelatex &> /dev/null; then
+        VERSO_TEX_CMD="xelatex"
+    fi
+
+    if [[ -z "$VERSO_TEX_CMD" ]]; then
+        echo "Warning: No LaTeX compiler found (tried lualatex, pdflatex, xelatex), skipping Verso PDF generation"
+    else
         # Try to generate TeX output
         if lake exe generate-paper-verso --help &>/dev/null 2>&1 || lake exe generate-paper-verso &>/dev/null 2>&1; then
             echo "Generating Verso paper TeX..."
@@ -248,18 +337,18 @@ if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
             lake exe generate-paper-verso --with-tex --tex-output "$VERSO_OUTPUT_DIR/tex" || echo "Warning: Verso TeX generation failed"
 
             if [[ -f "$VERSO_OUTPUT_DIR/tex/paper_verso.tex" ]]; then
-                echo "Compiling Verso PDF with lualatex..."
+                echo "Compiling Verso PDF with $VERSO_TEX_CMD..."
                 pushd "$VERSO_OUTPUT_DIR/tex" > /dev/null
-                lualatex -interaction=nonstopmode paper_verso.tex || true
-                lualatex -interaction=nonstopmode paper_verso.tex || true
-                lualatex -interaction=nonstopmode paper_verso.tex || true
+                $VERSO_TEX_CMD -interaction=nonstopmode paper_verso.tex || true
+                $VERSO_TEX_CMD -interaction=nonstopmode paper_verso.tex || true
+                $VERSO_TEX_CMD -interaction=nonstopmode paper_verso.tex || true
                 popd > /dev/null
 
                 if [[ -f "$VERSO_OUTPUT_DIR/tex/paper_verso.pdf" ]]; then
                     mv "$VERSO_OUTPUT_DIR/tex/paper_verso.pdf" "$VERSO_OUTPUT_DIR/"
                     echo "Verso PDF generated: $VERSO_OUTPUT_DIR/paper_verso.pdf"
                 else
-                    echo "Warning: lualatex did not produce a PDF"
+                    echo "Warning: $VERSO_TEX_CMD did not produce a PDF"
                 fi
             else
                 echo "No paper_verso.tex generated, skipping PDF compilation"
@@ -267,8 +356,6 @@ if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
         else
             echo "No generate-paper-verso executable found, skipping Verso PDF"
         fi
-    else
-        echo "lualatex not installed, skipping Verso PDF generation"
     fi
 else
     echo "No Paper.lean found, skipping Verso PDF"
@@ -318,6 +405,10 @@ if [[ "$PAPER_EXISTS" == "true" ]]; then
 else
     echo "No paper.tex configured, skipping paper generation"
 fi
+
+echo ""
+echo "=== Final: Syncing any remaining changes ==="
+commit_and_push "$PROJECT_ROOT"
 
 echo ""
 echo "=== Blueprint ready ==="
