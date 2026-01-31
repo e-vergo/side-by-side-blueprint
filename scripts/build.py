@@ -17,8 +17,6 @@ Usage:
     python build.py                  # Build current project
     python build.py --help           # Show help
     python build.py --dry-run        # Show what would be done
-    python build.py --skip-sync      # Skip git sync
-    python build.py --skip-toolchain # Skip toolchain build
 """
 
 from __future__ import annotations
@@ -112,8 +110,6 @@ class BuildConfig:
     module_name: str
     sbs_root: Path = field(default_factory=lambda: SBS_ROOT)
     cache_dir: Path = field(default_factory=lambda: CACHE_DIR)
-    skip_sync: bool = False
-    skip_toolchain: bool = False
     skip_cache: bool = False
     dry_run: bool = False
     verbose: bool = False
@@ -1075,10 +1071,9 @@ class BuildOrchestrator:
         mcp_window = get_mcp_chrome_window_id()
         cleanup_chrome_windows(mcp_window, self.config.dry_run)
 
-        # Git sync
-        if not self.config.skip_sync:
-            self.sync_repos()
-            self.update_manifests()
+        # Git sync (mandatory - ensures reproducible builds)
+        self.sync_repos()
+        self.update_manifests()
 
         # Compliance checks
         self.run_compliance_checks()
@@ -1086,9 +1081,8 @@ class BuildOrchestrator:
         # Clean artifacts
         self.clean_artifacts()
 
-        # Build toolchain
-        if not self.config.skip_toolchain:
-            self.build_toolchain()
+        # Build toolchain (mandatory - ensures consistency)
+        self.build_toolchain()
 
         # Build project
         self.build_project()
@@ -1097,10 +1091,9 @@ class BuildOrchestrator:
         self.generate_dep_graph()
         self.generate_site()
 
-        # Final git sync
-        if not self.config.skip_sync:
-            if git_commit_and_push(self.config.project_root, self.config.dry_run):
-                log.success("Final changes committed and pushed")
+        # Final git sync (mandatory)
+        if git_commit_and_push(self.config.project_root, self.config.dry_run):
+            log.success("Final changes committed and pushed")
 
         # Start server
         self.start_server()
@@ -1128,8 +1121,6 @@ def parse_args() -> argparse.Namespace:
 Examples:
     python build.py                  # Build current project
     python build.py --dry-run        # Show what would be done
-    python build.py --skip-sync      # Skip git sync
-    python build.py --skip-toolchain # Skip toolchain build
     python build.py --verbose        # Enable debug output
         """,
     )
@@ -1145,18 +1136,6 @@ Examples:
         "--dry-run",
         action="store_true",
         help="Show what would be done without executing",
-    )
-
-    parser.add_argument(
-        "--skip-sync",
-        action="store_true",
-        help="Skip git commit/push/pull operations",
-    )
-
-    parser.add_argument(
-        "--skip-toolchain",
-        action="store_true",
-        help="Skip toolchain build (assumes already built)",
     )
 
     parser.add_argument(
@@ -1202,8 +1181,6 @@ def main() -> int:
             project_root=project_root,
             project_name=project_name,
             module_name=module_name,
-            skip_sync=args.skip_sync,
-            skip_toolchain=args.skip_toolchain,
             skip_cache=args.skip_cache,
             dry_run=args.dry_run,
             verbose=args.verbose,
