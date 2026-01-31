@@ -205,10 +205,48 @@ python3 -m sbs history --project SBSTest
 
 SubVerso highlighting dominates build time. Cannot be deferred (info trees are ephemeral).
 
-**Large graph optimizations:**
-- O(n³) transitive reduction skipped for >100 nodes
-- Simplified edge routing for large graphs
-- Edge deduplication
+### Graph Layout Performance
+
+**Complexity by phase:**
+- Layer assignment: O(V+E)
+- Crossing reduction (barycenter): O(n²) normal, O(n) with iteration limit
+- Edge routing: O(n² log n) normal, O(n) with simple beziers
+
+**>100 node optimizations** (automatic in Layout.lean):
+- Max 2 barycenter iterations
+- Skip transpose heuristic
+- Skip visibility graph routing (use simple beziers)
+- Skip O(n³) transitive reduction
+
+**Expected layout times:**
+| Scale | Nodes | Layout Time |
+|-------|-------|-------------|
+| Small | <50 | <1s |
+| Medium | 50-100 | 1-3s |
+| Large | >100 | 5-20s |
+
+### Graph Debugging Tips
+
+**viewBox centering issues:**
+- Symptom: Graph appears off-center or cropped
+- Cause: viewBox origin not at (0,0)
+- Fix: Verify coordinate normalization in `Layout.lean` shifts min coordinates to origin
+
+**Coordinate normalization pattern:**
+```lean
+let minX := nodes.foldl (fun acc n => min acc n.x) Float.inf
+let minY := nodes.foldl (fun acc n => min acc n.y) Float.inf
+let normalized := nodes.map fun n => { n with x := n.x - minX, y := n.y - minY }
+```
+
+**Checking SVG output:**
+1. Inspect `.lake/build/runway/dep_graph.svg`
+2. Check viewBox starts at `0 0 ...`
+3. Verify node coordinates are non-negative
+
+**JavaScript pan/zoom:**
+- `fitToWindow()` in `verso-code.js` uses `getBBox()` for content bounds
+- Requires viewBox origin at (0,0) for correct centering calculations
 
 ---
 

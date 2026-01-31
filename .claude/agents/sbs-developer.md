@@ -340,6 +340,49 @@ def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO 
 - Edge routing: visibility graph, Dijkstra, Bezier
 - Simplified for >100 nodes
 
+#### Graph Layout Algorithm (Sugiyama)
+
+The layout algorithm in `Dress/Graph/Layout.lean` implements Sugiyama-style layered graph drawing:
+
+1. **`layout`**: Main entry point, orchestrates all phases
+2. **`assignLayers`**: Assigns nodes to horizontal layers (topological ordering)
+3. **`orderLayers`**: Reduces edge crossings via barycenter heuristic
+4. **`assignXCoordinates`**: Positions nodes horizontally within layers
+5. **`createLayoutEdges`**: Generates edge paths with routing
+6. **Coordinate normalization**: Shifts all coordinates so bounding box starts at (0,0)
+
+**Critical pattern**: After positioning, coordinates must be normalized to (0,0) origin:
+```lean
+-- Shift coordinates so bounding box starts at origin
+let minX := nodes.foldl (fun acc n => min acc n.x) Float.inf
+let minY := nodes.foldl (fun acc n => min acc n.y) Float.inf
+let normalizedNodes := nodes.map fun n => { n with x := n.x - minX, y := n.y - minY }
+```
+
+This normalization is required for proper SVG centering because `fitToWindow()` in JavaScript calculates content bounds using `getBBox()`, which expects the viewBox origin to be (0,0).
+
+#### Performance Thresholds (>100 nodes)
+
+When a graph exceeds 100 nodes, these optimizations trigger:
+
+| Optimization | Normal | >100 nodes | Rationale |
+|--------------|--------|------------|-----------|
+| Barycenter iterations | Unlimited | Max 2 | O(n) per iteration |
+| Transpose heuristic | Yes | Skipped | O(n²) adjacent swaps |
+| Visibility graph routing | Yes | Skipped | O(n²) graph construction |
+| Edge routing | Dijkstra on visibility graph | Simple bezier curves | Avoid O(n² log n) |
+
+The 100-node threshold balances layout quality against computation time. PNT (530 nodes) takes ~15 seconds with optimizations; without them it would take minutes.
+
+#### Common Graph Issues and Fixes
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Graph appears off-center | viewBox origin not (0,0) | Ensure coordinate normalization applied |
+| Graph doesn't fit window | `fitToWindow()` miscalculating bounds | Check `getBBox()` is called on correct element |
+| Edges overlap nodes | Visibility graph too coarse | Increase obstacle margin in routing |
+| Layout asymmetric | Barycenter converging early | Increase iteration count (for smaller graphs) |
+
 **Edge generation** (`Dress/Graph/Build.lean`):
 - Two-pass: PASS 1 registers labels, PASS 2 adds edges
 - `Node.inferUses` traces actual Lean code
@@ -419,10 +462,24 @@ Results in `manifest.json` under `checkResults`.
 
 **Build time**: SubVerso highlighting is 93-99% of build time. Cannot be deferred (info trees are ephemeral).
 
-**Large graph optimizations**:
-- O(n^3) transitive reduction skipped for >100 nodes
-- Simplified edge routing for large graphs
+**Graph layout complexity**:
+- Full algorithm: O(n²) for crossing reduction, O(n² log n) for edge routing
+- With >100 node optimizations: O(n log n) effective complexity
+- Coordinate normalization: O(n) pass required for proper centering
+
+**Large graph optimizations** (triggered at >100 nodes):
+- O(n³) transitive reduction skipped
+- Max 2 barycenter iterations in `orderLayers`
+- Transpose heuristic skipped
+- Visibility graph routing replaced with simple beziers
 - Edge deduplication
+
+**Expected build times by scale**:
+| Project | Nodes | Layout Time | Total Build |
+|---------|-------|-------------|-------------|
+| SBS-Test | 25 | <1s | ~2 min |
+| GCR | 57 | ~2s | ~5 min |
+| PNT | 530 | ~15s | ~20 min |
 
 **String performance**: Parser.lean uses Array-based building (O(n))
 
