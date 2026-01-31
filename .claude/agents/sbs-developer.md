@@ -40,6 +40,19 @@ SubVerso -> LeanArchitect -> Dress -> Runway
               +-> Verso (genres use SubVerso for highlighting)
 ```
 
+### Repository Boundaries
+
+Each repository has clear responsibilities. Cross-cutting concerns are minimized.
+
+| Repository | Responsibility | Does NOT Handle |
+|------------|---------------|-----------------|
+| **LeanArchitect** | Core types (`Node`, `NodeStatus`), `@[blueprint]` attribute, `CollectUsed` dependency inference | Rendering, layout, site generation |
+| **Dress** | Artifact capture, graph construction, Sugiyama layout, validation, HTML rendering of code blocks | Site structure, navigation, templates |
+| **Runway** | Site generation, HTML templates, dashboard, sidebar, paper/PDF | Graph layout, artifact capture |
+| **dress-blueprint-action** | CSS/JS assets, CI/CD workflows, GitHub Pages deployment | Lean code, rendering logic |
+
+**Key insight from Phase 9:** The codebase has clean separation of concerns. No dead code paths between repositories. Each repo can be understood independently.
+
 ## Key Files by Repository
 
 ### SubVerso (Fork) - Syntax Highlighting
@@ -109,11 +122,25 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | File | Purpose |
 |------|---------|
 | `action.yml` | GitHub Action (~465 lines, 14 steps) |
-| `assets/common.css` | Theme toggle, status dots, rainbow brackets |
-| `assets/blueprint.css` | Full blueprint stylesheet |
-| `assets/paper.css` | Paper/ar5iv stylesheet |
+| `assets/common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
+| `assets/blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays |
+| `assets/paper.css` | Paper page: ar5iv-style academic layout |
+| `assets/dep_graph.css` | Dependency graph: pan/zoom container, modal styles |
 | `assets/plastex.js` | LaTeX proof toggle |
 | `assets/verso-code.js` | Hovers, pan/zoom, modal handling |
+
+#### CSS Organization (4 Files)
+
+The CSS is organized by concern, not by page:
+
+| File | Scope | Key Patterns |
+|------|-------|--------------|
+| `common.css` | Shared design system | `:root` variables for colors, spacing; `.status-dot-*` classes; `.lean-bracket-*` rainbow colors |
+| `blueprint.css` | Blueprint-specific layout | `.sidebar-item`, `.chapter-content`, `.side-by-side-container` |
+| `paper.css` | Paper-specific layout | Academic styling matching ar5iv conventions |
+| `dep_graph.css` | Graph page only | `.graph-container`, `.node-modal`, pan/zoom controls |
+
+**Phase 9 learning:** This separation is clean and intentional. No duplicate styles across files. Each file can be modified independently.
 
 ## Build Pipeline Phases
 
@@ -279,11 +306,24 @@ theorem ready_for_mathlib : ...
 ### CSS/JS Fixes
 
 Edit files in `dress-blueprint-action/assets/`:
-- `common.css`: theme toggle, status dots, rainbow brackets
-- `blueprint.css`: full blueprint styles
+- `common.css`: design system variables, theme toggle, status dots, rainbow brackets
+- `blueprint.css`: sidebar, chapter layout, side-by-side displays
+- `paper.css`: academic paper styling
+- `dep_graph.css`: graph container, modals, pan/zoom
 - `verso-code.js`: hovers, pan/zoom, modals
 
 Templates in `Runway/Theme.lean`. Assets copied via `assetsDir` config.
+
+### Sidebar Architecture
+
+**The sidebar is fully static.** All chapters and sections are rendered as plain HTML links at build time. There is no JavaScript-driven expand/collapse functionality.
+
+- No `toggleExpand` or similar JS functions
+- No dynamic dropdown state
+- Active section highlighting via CSS classes (`.active`)
+- Full-width highlight achieved via `::before` pseudo-elements
+
+**Phase 9 cleanup:** Removed 79 lines of dead `toggleExpand` code from `verso-code.js`. The sidebar was already static; the code was never used.
 
 ### Full-Width Highlight Pattern (Pseudo-Elements)
 

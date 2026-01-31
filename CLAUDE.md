@@ -66,6 +66,15 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 Changes to upstream repos require rebuilding downstream. The build script handles ordering.
 
+### Repository Boundaries
+
+| Repository | Responsibility | Does NOT Handle |
+|------------|---------------|-----------------|
+| **LeanArchitect** | Core types, `@[blueprint]` attribute, dependency inference | Rendering, layout, site generation |
+| **Dress** | Artifact capture, graph layout, validation, code HTML rendering | Site structure, navigation, templates |
+| **Runway** | Site generation, templates, dashboard, sidebar, paper/PDF | Graph layout, artifact capture |
+| **dress-blueprint-action** | CSS/JS assets, CI/CD workflows | Lean code, rendering logic |
+
 ---
 
 ## Local Development
@@ -173,6 +182,31 @@ python3 -m sbs history --project SBSTest
 - Side-by-side theorem/proof displays
 - Dark/light theme toggle
 - Paper rendering (if configured)
+
+---
+
+## CSS Organization
+
+The CSS is organized into 4 files by concern:
+
+| File | Scope |
+|------|-------|
+| `common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
+| `blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays |
+| `paper.css` | Paper page: ar5iv-style academic layout |
+| `dep_graph.css` | Dependency graph: pan/zoom container, modal styles |
+
+Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` config.
+
+---
+
+## Sidebar Architecture
+
+**The sidebar is fully static.** All chapters and sections are rendered as plain HTML links at build time.
+
+- No JavaScript-driven expand/collapse
+- Active section highlighting via CSS classes (`.active`)
+- Full-width highlight achieved via `::before` pseudo-elements
 
 ---
 
