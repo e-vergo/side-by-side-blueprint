@@ -9,6 +9,10 @@ lake-packages/
 *.tmp
 *~
 
+# Python virtual environments
+.venv/
+scripts/.venv/
+
 # The subdirectories are separate git repositories
 # They can be added as submodules if desired:
 #   git submodule add <url> Dress
