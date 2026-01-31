@@ -117,6 +117,8 @@ class BuildConfig:
     skip_cache: bool = False
     dry_run: bool = False
     verbose: bool = False
+    capture: bool = False
+    capture_url: str = "http://localhost:8000"
 
 
 # =============================================================================
@@ -1029,6 +1031,39 @@ class BuildOrchestrator:
 
         return proc.pid
 
+    def run_capture(self) -> None:
+        """Run screenshot capture using the sbs CLI."""
+        log.step("Capturing screenshots")
+
+        if self.config.dry_run:
+            log.dry_run("Would capture screenshots")
+            return
+
+        # Wait a bit for server to be ready
+        time.sleep(2)
+
+        try:
+            # Run the sbs capture command
+            cmd = [
+                sys.executable, "-m", "sbs", "capture",
+                "--url", self.config.capture_url,
+                "--project", self.config.project_name,
+            ]
+
+            result = subprocess.run(
+                cmd,
+                cwd=SCRIPT_DIR,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                log.success("Screenshots captured")
+            else:
+                log.warning("Screenshot capture failed (non-blocking)")
+
+        except Exception as e:
+            log.warning(f"Screenshot capture error: {e}")
+
     def run(self) -> None:
         """Run the full build process."""
         log.step(f"{self.config.project_name} Blueprint Builder")
@@ -1069,6 +1104,10 @@ class BuildOrchestrator:
 
         # Start server
         self.start_server()
+
+        # Capture screenshots if requested
+        if self.config.capture:
+            self.run_capture()
 
         log.step("BUILD COMPLETE")
         log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
@@ -1132,6 +1171,18 @@ Examples:
         help="Enable verbose debug output",
     )
 
+    parser.add_argument(
+        "--capture",
+        action="store_true",
+        help="Capture screenshots after successful build",
+    )
+
+    parser.add_argument(
+        "--capture-url",
+        default="http://localhost:8000",
+        help="URL to capture from (default: http://localhost:8000)",
+    )
+
     return parser.parse_args()
 
 
@@ -1156,6 +1207,8 @@ def main() -> int:
             skip_cache=args.skip_cache,
             dry_run=args.dry_run,
             verbose=args.verbose,
+            capture=args.capture,
+            capture_url=args.capture_url,
         )
 
         # Run build
