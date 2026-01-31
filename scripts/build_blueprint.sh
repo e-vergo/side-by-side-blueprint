@@ -195,6 +195,21 @@ echo "=== Step 5: Building blueprint facet ==="
 lake build :blueprint
 
 echo ""
+echo "=== Step 5b: Building Verso documents ==="
+if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Blueprint.lean" ]]; then
+    echo "Building $MODULE_NAME.Blueprint..."
+    lake build "$MODULE_NAME.Blueprint"
+else
+    echo "No Blueprint.lean found, skipping"
+fi
+if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
+    echo "Building $MODULE_NAME.Paper..."
+    lake build "$MODULE_NAME.Paper"
+else
+    echo "No Paper.lean found, skipping"
+fi
+
+echo ""
 echo "=== Step 6: Generating dependency graph ==="
 # Run extract_blueprint graph command from local Dress
 lake env "$DRESS_PATH/.lake/build/bin/extract_blueprint" graph \
