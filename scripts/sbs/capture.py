@@ -27,9 +27,15 @@ DEFAULT_URL = "http://localhost:8000"
 DEFAULT_VIEWPORT = {"width": 1920, "height": 1080}
 
 # Pages to capture (relative to base URL)
+# Some pages may not exist in all projects (e.g., Verso docs require extra setup)
 DEFAULT_PAGES = [
     {"name": "dashboard", "path": "index.html", "description": "Dashboard homepage"},
     {"name": "dep_graph", "path": "dep_graph.html", "description": "Dependency graph"},
+    {"name": "paper_tex", "path": "paper_tex.html", "description": "Paper [TeX]"},
+    {"name": "pdf_tex", "path": "pdf_tex.html", "description": "PDF [TeX]"},
+    {"name": "paper_verso", "path": "paper_verso.html", "description": "Paper [Verso]"},
+    {"name": "pdf_verso", "path": "pdf_verso.html", "description": "PDF [Verso]"},
+    {"name": "blueprint_verso", "path": "blueprint_verso.html", "description": "Blueprint [Verso]"},
     {"name": "chapter", "path": None, "description": "First chapter page"},
 ]
 
@@ -174,11 +180,26 @@ def capture_page(
     """Capture a single page screenshot.
 
     Returns metadata dict for this capture.
+    Status will be:
+    - "success": Page loaded and captured
+    - "skipped": Page doesn't exist (404) - not an error, just not available
+    - "error": Actual error during capture
     """
     log.info(f"Capturing {name}...")
 
     try:
-        page.goto(url, wait_until="networkidle", timeout=30000)
+        response = page.goto(url, wait_until="networkidle", timeout=30000)
+
+        # Check for 404 or other client/server errors
+        if response and response.status >= 400:
+            log.warning(f"Skipping {name}: page not found (HTTP {response.status})")
+            return {
+                "name": name,
+                "path": None,
+                "url": url,
+                "status": "skipped",
+                "reason": f"HTTP {response.status}",
+            }
 
         if wait_for_load:
             page.wait_for_timeout(1000)
@@ -337,11 +358,18 @@ def cmd_capture(args) -> int:
         print()
 
         successful = [p for p in metadata["pages"] if p["status"] == "success"]
+        skipped = [p for p in metadata["pages"] if p["status"] == "skipped"]
         failed = [p for p in metadata["pages"] if p["status"] == "error"]
 
         log.info(f"Captured {len(successful)} pages:")
         for p in successful:
             log.info(f"  - {p['name']}: {p['path']}")
+
+        if skipped:
+            print()
+            log.warning(f"Skipped {len(skipped)} pages (not available in this project):")
+            for p in skipped:
+                log.warning(f"  - {p['name']}: {p.get('reason', 'not found')}")
 
         if failed:
             print()
