@@ -1,0 +1,519 @@
+{
+  "version": "1.0",
+  "extracted_from": [
+    "dapper-wondering-riddle.md",
+    "eager-soaring-cupcake.md",
+    "mighty-exploring-sunrise.md",
+    "parsed-conjuring-torvalds.md",
+    "wise-mapping-tarjan.md"
+  ],
+  "extracted_at": "2026-01-31",
+  "categories": {
+    "global": {
+      "description": "Site-wide requirements that apply to all pages",
+      "criteria": [
+        {
+          "id": "global.theme_toggle_visible",
+          "category": "interaction",
+          "description": "Theme toggle button visible in header",
+          "source": "eager-soaring-cupcake.md",
+          "selector": "#theme-toggle, .theme-toggle",
+          "verification": "visual"
+        },
+        {
+          "id": "global.theme_toggle_functional",
+          "category": "interaction",
+          "description": "Theme toggle switches between light and dark modes",
+          "source": "eager-soaring-cupcake.md",
+          "selector": "#theme-toggle, .theme-toggle",
+          "verification": "interactive"
+        },
+        {
+          "id": "global.no_console_errors",
+          "category": "functional",
+          "description": "No JavaScript console errors on page load",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "automated"
+        },
+        {
+          "id": "global.responsive_layout",
+          "category": "layout",
+          "description": "No horizontal overflow on viewport",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "global.6_status_colors",
+          "category": "color",
+          "description": "All 6 status colors render correctly site-wide",
+          "source": "mighty-exploring-sunrise.md",
+          "colors": {
+            "notReady": "#F4A460",
+            "ready": "#20B2AA",
+            "sorry": "#8B0000",
+            "proven": "#90EE90",
+            "fullyProven": "#228B22",
+            "mathlibReady": "#87CEEB"
+          },
+          "verification": "visual"
+        }
+      ]
+    },
+    "dashboard": {
+      "description": "Dashboard homepage requirements",
+      "criteria": [
+        {
+          "id": "dashboard.no_chapter_panel",
+          "category": "layout",
+          "description": "Dashboard has NO secondary sidebar (chapter panel)",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dashboard.stats_panel_visible",
+          "category": "content",
+          "description": "Stats panel shows node counts by status",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dashboard.stats_6_colors",
+          "category": "color",
+          "description": "Stats panel displays all 6 status colors",
+          "source": "mighty-exploring-sunrise.md",
+          "colors": {
+            "notReady": "#F4A460",
+            "ready": "#20B2AA",
+            "sorry": "#8B0000",
+            "proven": "#90EE90",
+            "fullyProven": "#228B22",
+            "mathlibReady": "#87CEEB"
+          },
+          "verification": "visual"
+        },
+        {
+          "id": "dashboard.key_theorems_populated",
+          "category": "content",
+          "description": "Key theorems panel populated with declarations marked keyDeclaration",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dashboard.messages_panel",
+          "category": "content",
+          "description": "Messages panel shows @[blueprint message] content",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        }
+      ]
+    },
+    "dep_graph": {
+      "description": "Dependency graph page requirements",
+      "criteria": [
+        {
+          "id": "dep_graph.legend_6_colors",
+          "category": "color",
+          "description": "Legend shows all 6 status colors with labels",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.notReady_color",
+          "category": "color",
+          "description": "notReady nodes: Sandy Brown #F4A460",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#F4A460",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.ready_color",
+          "category": "color",
+          "description": "ready nodes: Light Sea Green #20B2AA",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#20B2AA",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.sorry_color",
+          "category": "color",
+          "description": "sorry nodes: Dark Red #8B0000",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#8B0000",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.proven_color",
+          "category": "color",
+          "description": "proven nodes: Light Green #90EE90",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#90EE90",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.fullyProven_color",
+          "category": "color",
+          "description": "fullyProven nodes: Forest Green #228B22",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#228B22",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.mathlibReady_color",
+          "category": "color",
+          "description": "mathlibReady nodes: Light Blue #87CEEB",
+          "source": "eager-soaring-cupcake.md",
+          "hex": "#87CEEB",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.nodes_clickable",
+          "category": "interaction",
+          "description": "Clicking a node opens modal with details",
+          "source": "eager-soaring-cupcake.md",
+          "selector": ".node",
+          "verification": "interactive"
+        },
+        {
+          "id": "dep_graph.modal_content",
+          "category": "content",
+          "description": "Modal shows label, status, statement, and proof",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.pan_controls",
+          "category": "interaction",
+          "description": "Pan controls visible and functional",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "interactive"
+        },
+        {
+          "id": "dep_graph.zoom_controls",
+          "category": "interaction",
+          "description": "Zoom in/out/fit controls visible and functional",
+          "source": "eager-soaring-cupcake.md",
+          "selector": "#graph-zoom-in, #graph-zoom-out, #graph-fit",
+          "verification": "interactive"
+        },
+        {
+          "id": "dep_graph.graph_centered",
+          "category": "layout",
+          "description": "Graph centered in viewport on initial load",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.edges_connecting",
+          "category": "layout",
+          "description": "Edges connect source nodes to target nodes",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        },
+        {
+          "id": "dep_graph.viewBox_origin",
+          "category": "technical",
+          "description": "SVG viewBox starts at (0, 0)",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "automated"
+        }
+      ]
+    },
+    "sidebar": {
+      "description": "Navigation sidebar requirements",
+      "criteria": [
+        {
+          "id": "sidebar.consistent_all_pages",
+          "category": "layout",
+          "description": "Sidebar identical across all blueprint pages",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "sidebar.active_highlighted",
+          "category": "visual",
+          "description": "Active page/section is highlighted",
+          "source": "eager-soaring-cupcake.md",
+          "selector": ".active, .sidebar-active",
+          "verification": "visual"
+        },
+        {
+          "id": "sidebar.highlight_full_width",
+          "category": "layout",
+          "description": "Active highlight extends to viewport edge",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        },
+        {
+          "id": "sidebar.disabled_greyed",
+          "category": "visual",
+          "description": "Disabled items are greyed out correctly",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "sidebar.chapters_listed",
+          "category": "content",
+          "description": "All chapters listed in sidebar",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        },
+        {
+          "id": "sidebar.verso_docs_appear",
+          "category": "content",
+          "description": "Verso documents appear in sidebar when present",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        }
+      ]
+    },
+    "chapter": {
+      "description": "Chapter/blueprint page requirements",
+      "criteria": [
+        {
+          "id": "chapter.side_by_side_aligned",
+          "category": "layout",
+          "description": "Informal/formal displays horizontally aligned",
+          "source": "eager-soaring-cupcake.md",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.proof_collapse_state",
+          "category": "interaction",
+          "description": "Proof bodies match collapse toggle state",
+          "source": "eager-soaring-cupcake.md",
+          "selector": ".proof_heading, .expand-proof",
+          "verification": "interactive"
+        },
+        {
+          "id": "chapter.rainbow_brackets_6",
+          "category": "color",
+          "description": "Rainbow brackets cycle through 6 colors",
+          "source": "eager-soaring-cupcake.md",
+          "css_classes": ["lean-bracket-1", "lean-bracket-2", "lean-bracket-3", "lean-bracket-4", "lean-bracket-5", "lean-bracket-6"],
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_0_consistent",
+          "category": "color",
+          "description": "Level 0 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-1",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_1_consistent",
+          "category": "color",
+          "description": "Level 1 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-2",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_2_consistent",
+          "category": "color",
+          "description": "Level 2 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-3",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_3_consistent",
+          "category": "color",
+          "description": "Level 3 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-4",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_4_consistent",
+          "category": "color",
+          "description": "Level 4 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-5",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.bracket_level_5_consistent",
+          "category": "color",
+          "description": "Level 5 brackets same color across ALL code blocks",
+          "source": "mighty-exploring-sunrise.md",
+          "css_class": "lean-bracket-6",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.hover_tooltips",
+          "category": "interaction",
+          "description": "Hover tooltips functional on Lean code tokens",
+          "source": "eager-soaring-cupcake.md",
+          "selector": ".hl.lean .token",
+          "verification": "interactive"
+        },
+        {
+          "id": "chapter.tactic_state_toggle",
+          "category": "interaction",
+          "description": "Tactic state toggles work",
+          "source": "eager-soaring-cupcake.md",
+          "selector": "input.tactic-toggle",
+          "verification": "interactive"
+        },
+        {
+          "id": "chapter.zebra_striping_light",
+          "category": "visual",
+          "description": "Zebra striping visible in light mode",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        },
+        {
+          "id": "chapter.zebra_striping_dark",
+          "category": "visual",
+          "description": "Zebra striping visible in dark mode",
+          "source": "mighty-exploring-sunrise.md",
+          "verification": "visual"
+        }
+      ]
+    },
+    "code_display": {
+      "description": "Code display and syntax highlighting requirements",
+      "criteria": [
+        {
+          "id": "code.syntax_highlighted",
+          "category": "visual",
+          "description": "Lean code has syntax highlighting applied",
+          "source": "wise-mapping-tarjan.md",
+          "verification": "visual"
+        },
+        {
+          "id": "code.line_comments_styled",
+          "category": "visual",
+          "description": "Line comments: #6A9955, italic",
+          "source": "wise-mapping-tarjan.md",
+          "hex": "#6A9955",
+          "css": "font-style: italic",
+          "verification": "visual"
+        },
+        {
+          "id": "code.line_comment_class",
+          "category": "technical",
+          "description": "Line comments have class 'line-comment'",
+          "source": "wise-mapping-tarjan.md",
+          "css_class": "line-comment",
+          "verification": "automated"
+        },
+        {
+          "id": "code.bracket_class_format",
+          "category": "technical",
+          "description": "Brackets have class 'lean-bracket-N' (N=1-6)",
+          "source": "wise-mapping-tarjan.md",
+          "css_classes": ["lean-bracket-1", "lean-bracket-2", "lean-bracket-3", "lean-bracket-4", "lean-bracket-5", "lean-bracket-6"],
+          "verification": "automated"
+        }
+      ]
+    },
+    "paper": {
+      "description": "Paper and PDF page requirements",
+      "criteria": [
+        {
+          "id": "paper.tex_renders",
+          "category": "functional",
+          "description": "paper.html generated from paper.tex",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "automated"
+        },
+        {
+          "id": "paper.verso_renders",
+          "category": "functional",
+          "description": "paper_verso.html generated from Paper.lean (when configured)",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "automated"
+        },
+        {
+          "id": "paper.pdf_generated",
+          "category": "functional",
+          "description": "PDF compiled from TeX source",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "automated"
+        },
+        {
+          "id": "paper.leanStatement_renders",
+          "category": "content",
+          "description": ":::leanStatement hook renders formal statement",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        },
+        {
+          "id": "paper.leanProof_renders",
+          "category": "content",
+          "description": ":::leanProof hook renders formal proof",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        },
+        {
+          "id": "paper.sideBySide_renders",
+          "category": "layout",
+          "description": ":::sideBySide hook renders side-by-side display",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        }
+      ]
+    },
+    "blueprint_verso": {
+      "description": "Blueprint Verso document requirements",
+      "criteria": [
+        {
+          "id": "blueprint_verso.leanNode_renders",
+          "category": "content",
+          "description": ":::leanNode hook renders full side-by-side display",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        },
+        {
+          "id": "blueprint_verso.leanModule_renders",
+          "category": "content",
+          "description": ":::leanModule renders all nodes from module",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "visual"
+        },
+        {
+          "id": "blueprint_verso.nodeRef_links",
+          "category": "interaction",
+          "description": "Node references link to correct node",
+          "source": "dapper-wondering-riddle.md",
+          "verification": "interactive"
+        },
+        {
+          "id": "blueprint_verso.statusDot_colors",
+          "category": "color",
+          "description": "Status dots show correct colors per status",
+          "source": "dapper-wondering-riddle.md",
+          "colors": {
+            "notReady": "#F4A460",
+            "ready": "#20B2AA",
+            "sorry": "#8B0000",
+            "proven": "#90EE90",
+            "fullyProven": "#228B22",
+            "mathlibReady": "#87CEEB"
+          },
+          "verification": "visual"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_criteria": 52,
+    "by_category": {
+      "global": 5,
+      "dashboard": 5,
+      "dep_graph": 14,
+      "sidebar": 6,
+      "chapter": 13,
+      "code_display": 4,
+      "paper": 6,
+      "blueprint_verso": 4
+    },
+    "by_verification_type": {
+      "visual": 36,
+      "interactive": 9,
+      "automated": 7
+    }
+  }
+}

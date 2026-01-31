@@ -33,6 +33,8 @@ verso/
 /images
 
 # Compliance runtime artifacts (generated during validation)
+# Per-project compliance data lives in images/{project}/ (already gitignored above)
 scripts/compliance_ledger.json
 scripts/COMPLIANCE_STATUS.md
 scripts/manifests/
+scripts/stats/

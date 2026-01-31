@@ -57,10 +57,78 @@ class LedgerSummary:
 
 
 @dataclass
+class RunStatistics:
+    """Statistics for a single compliance run.
+
+    Tracks the meta-level data about our tooling testing itself.
+    """
+
+    run_id: str = ""  # ISO timestamp
+    project: str = ""
+    commit: str = ""
+
+    # Criteria stats
+    total_criteria: int = 0
+    criteria_by_category: dict[str, int] = field(default_factory=dict)
+
+    # Validation stats
+    pages_checked: int = 0
+    pages_passed: int = 0
+    pages_failed: int = 0
+    pages_skipped: int = 0
+
+    # Interactive stats
+    interactive_states_checked: int = 0
+    interactive_states_passed: int = 0
+
+    # Screenshot stats
+    screenshots_captured: int = 0
+    interactive_screenshots: int = 0
+
+    # Iteration stats (for compliance loops)
+    iteration_number: int = 1
+    iterations_to_compliance: int = 0  # 0 = not yet compliant
+
+    # Agent stats (when validation agents are used)
+    validation_agents_spawned: int = 0
+
+    # Outcome
+    final_compliance_percent: float = 0.0
+    achieved_100_percent: bool = False
+
+
+@dataclass
+class HistoricalStats:
+    """Aggregate statistics across all runs.
+
+    The "Hall of Fame" for our strange loops.
+    """
+
+    total_runs: int = 0
+    total_pages_validated: int = 0
+    total_screenshots_captured: int = 0
+    total_agents_spawned: int = 0
+
+    # Records
+    best_first_run_compliance: float = 0.0  # Best % on first iteration
+    fastest_to_100_percent: int = 0  # Fewest iterations to 100%
+    most_iterations_needed: int = 0
+
+    # Streaks
+    consecutive_100_percent_runs: int = 0
+    current_streak: int = 0
+
+    # Dates
+    first_run_date: str = ""
+    last_run_date: str = ""
+    last_100_percent_date: str = ""
+
+
+@dataclass
 class ComplianceLedger:
     """The complete compliance ledger."""
 
-    version: str = "1.0"
+    version: str = "1.1"  # Bumped for stats tracking
     last_run: Optional[str] = None
     project: str = ""
     commit: str = ""
@@ -69,20 +137,57 @@ class ComplianceLedger:
     summary: LedgerSummary = field(default_factory=LedgerSummary)
     history: list[dict] = field(default_factory=list)
 
+    # Statistics tracking (the strange loop meta-data)
+    current_run: RunStatistics = field(default_factory=RunStatistics)
+    run_history: list[RunStatistics] = field(default_factory=list)  # Last 20 runs
+    lifetime_stats: HistoricalStats = field(default_factory=HistoricalStats)
+
 
 # =============================================================================
 # Paths
 # =============================================================================
 
+# Per-project compliance data lives alongside screenshots in images/{project}/
+# Lifetime stats live in scripts/stats/ for cross-project aggregation
 
-def get_ledger_path() -> Path:
-    """Get path to compliance ledger JSON."""
+
+def get_images_dir() -> Path:
+    """Get path to images directory."""
+    return get_sbs_root() / "images"
+
+
+def get_project_dir(project: str) -> Path:
+    """Get path to project's image/compliance directory."""
+    return get_images_dir() / project
+
+
+def get_ledger_path(project: str = "") -> Path:
+    """Get path to compliance ledger JSON.
+
+    If project specified, returns per-project path: images/{project}/latest/compliance.json
+    Otherwise returns legacy path for backwards compatibility.
+    """
+    if project:
+        return get_project_dir(project) / "latest" / "compliance.json"
     return get_sbs_root() / "scripts" / "compliance_ledger.json"
 
 
-def get_status_md_path() -> Path:
-    """Get path to compliance status markdown."""
+def get_status_md_path(project: str = "") -> Path:
+    """Get path to compliance status markdown.
+
+    If project specified, returns per-project path: images/{project}/latest/COMPLIANCE.md
+    Otherwise returns legacy path for backwards compatibility.
+    """
+    if project:
+        return get_project_dir(project) / "latest" / "COMPLIANCE.md"
     return get_sbs_root() / "scripts" / "COMPLIANCE_STATUS.md"
+
+
+def get_lifetime_stats_path() -> Path:
+    """Get path to lifetime statistics (cross-project)."""
+    stats_dir = get_sbs_root() / "scripts" / "stats"
+    stats_dir.mkdir(parents=True, exist_ok=True)
+    return stats_dir / "lifetime_stats.json"
 
 
 def get_manifests_dir() -> Path:
@@ -97,6 +202,30 @@ def get_manifests_dir() -> Path:
 # =============================================================================
 
 
+def _serialize_run_stats(stats: RunStatistics) -> dict:
+    """Convert RunStatistics to JSON-serializable dict."""
+    return {
+        "run_id": stats.run_id,
+        "project": stats.project,
+        "commit": stats.commit,
+        "total_criteria": stats.total_criteria,
+        "criteria_by_category": stats.criteria_by_category,
+        "pages_checked": stats.pages_checked,
+        "pages_passed": stats.pages_passed,
+        "pages_failed": stats.pages_failed,
+        "pages_skipped": stats.pages_skipped,
+        "interactive_states_checked": stats.interactive_states_checked,
+        "interactive_states_passed": stats.interactive_states_passed,
+        "screenshots_captured": stats.screenshots_captured,
+        "interactive_screenshots": stats.interactive_screenshots,
+        "iteration_number": stats.iteration_number,
+        "iterations_to_compliance": stats.iterations_to_compliance,
+        "validation_agents_spawned": stats.validation_agents_spawned,
+        "final_compliance_percent": stats.final_compliance_percent,
+        "achieved_100_percent": stats.achieved_100_percent,
+    }
+
+
 def _serialize_ledger(ledger: ComplianceLedger) -> dict:
     """Convert ledger to JSON-serializable dict."""
     data = {
@@ -108,6 +237,10 @@ def _serialize_ledger(ledger: ComplianceLedger) -> dict:
         "pages": {},
         "summary": asdict(ledger.summary),
         "history": ledger.history[-10:],  # Keep last 10 entries
+        # Statistics
+        "current_run": _serialize_run_stats(ledger.current_run),
+        "run_history": [_serialize_run_stats(r) for r in ledger.run_history[-20:]],
+        "lifetime_stats": asdict(ledger.lifetime_stats),
     }
 
     for page_name, page_result in ledger.pages.items():
@@ -133,6 +266,48 @@ def _serialize_ledger(ledger: ComplianceLedger) -> dict:
         data["pages"][page_name] = page_data
 
     return data
+
+
+def _deserialize_run_stats(data: dict) -> RunStatistics:
+    """Convert JSON dict to RunStatistics."""
+    return RunStatistics(
+        run_id=data.get("run_id", ""),
+        project=data.get("project", ""),
+        commit=data.get("commit", ""),
+        total_criteria=data.get("total_criteria", 0),
+        criteria_by_category=data.get("criteria_by_category", {}),
+        pages_checked=data.get("pages_checked", 0),
+        pages_passed=data.get("pages_passed", 0),
+        pages_failed=data.get("pages_failed", 0),
+        pages_skipped=data.get("pages_skipped", 0),
+        interactive_states_checked=data.get("interactive_states_checked", 0),
+        interactive_states_passed=data.get("interactive_states_passed", 0),
+        screenshots_captured=data.get("screenshots_captured", 0),
+        interactive_screenshots=data.get("interactive_screenshots", 0),
+        iteration_number=data.get("iteration_number", 1),
+        iterations_to_compliance=data.get("iterations_to_compliance", 0),
+        validation_agents_spawned=data.get("validation_agents_spawned", 0),
+        final_compliance_percent=data.get("final_compliance_percent", 0.0),
+        achieved_100_percent=data.get("achieved_100_percent", False),
+    )
+
+
+def _deserialize_historical_stats(data: dict) -> HistoricalStats:
+    """Convert JSON dict to HistoricalStats."""
+    return HistoricalStats(
+        total_runs=data.get("total_runs", 0),
+        total_pages_validated=data.get("total_pages_validated", 0),
+        total_screenshots_captured=data.get("total_screenshots_captured", 0),
+        total_agents_spawned=data.get("total_agents_spawned", 0),
+        best_first_run_compliance=data.get("best_first_run_compliance", 0.0),
+        fastest_to_100_percent=data.get("fastest_to_100_percent", 0),
+        most_iterations_needed=data.get("most_iterations_needed", 0),
+        consecutive_100_percent_runs=data.get("consecutive_100_percent_runs", 0),
+        current_streak=data.get("current_streak", 0),
+        first_run_date=data.get("first_run_date", ""),
+        last_run_date=data.get("last_run_date", ""),
+        last_100_percent_date=data.get("last_100_percent_date", ""),
+    )
 
 
 def _deserialize_ledger(data: dict) -> ComplianceLedger:
@@ -179,6 +354,18 @@ def _deserialize_ledger(data: dict) -> ComplianceLedger:
 
         ledger.pages[page_name] = page_result
 
+    # Parse statistics
+    current_run_data = data.get("current_run", {})
+    if current_run_data:
+        ledger.current_run = _deserialize_run_stats(current_run_data)
+
+    run_history_data = data.get("run_history", [])
+    ledger.run_history = [_deserialize_run_stats(r) for r in run_history_data]
+
+    lifetime_data = data.get("lifetime_stats", {})
+    if lifetime_data:
+        ledger.lifetime_stats = _deserialize_historical_stats(lifetime_data)
+
     return ledger
 
 
@@ -187,33 +374,90 @@ def _deserialize_ledger(data: dict) -> ComplianceLedger:
 # =============================================================================
 
 
-def load_ledger() -> ComplianceLedger:
-    """Load ledger from disk, or create empty one if not exists."""
-    path = get_ledger_path()
+def load_ledger(project: str = "") -> ComplianceLedger:
+    """Load ledger from disk, or create empty one if not exists.
+
+    Args:
+        project: If specified, loads from images/{project}/latest/compliance.json
+                 Otherwise loads from legacy scripts/compliance_ledger.json
+    """
+    path = get_ledger_path(project)
 
     if path.exists():
         try:
             data = json.loads(path.read_text())
-            return _deserialize_ledger(data)
+            ledger = _deserialize_ledger(data)
+
+            # Also load lifetime stats if they exist
+            lifetime_path = get_lifetime_stats_path()
+            if lifetime_path.exists():
+                try:
+                    lifetime_data = json.loads(lifetime_path.read_text())
+                    ledger.lifetime_stats = _deserialize_historical_stats(lifetime_data)
+                except Exception:
+                    pass  # Keep defaults if lifetime stats can't be loaded
+
+            return ledger
         except Exception as e:
             log.warning(f"Failed to load ledger: {e}")
             return ComplianceLedger()
 
-    return ComplianceLedger()
+    # Try loading just lifetime stats for new project
+    ledger = ComplianceLedger()
+    lifetime_path = get_lifetime_stats_path()
+    if lifetime_path.exists():
+        try:
+            lifetime_data = json.loads(lifetime_path.read_text())
+            ledger.lifetime_stats = _deserialize_historical_stats(lifetime_data)
+        except Exception:
+            pass
+
+    return ledger
 
 
-def save_ledger(ledger: ComplianceLedger) -> None:
-    """Save ledger to disk (both JSON and Markdown)."""
+def save_ledger(ledger: ComplianceLedger, project: str = "") -> None:
+    """Save ledger to disk (both JSON and Markdown).
+
+    Saves to:
+    - images/{project}/latest/compliance.json (if project specified)
+    - images/{project}/latest/COMPLIANCE.md
+    - scripts/stats/lifetime_stats.json (always, for cross-project stats)
+    """
     # Update timestamp
     ledger.last_run = datetime.now().isoformat()
 
+    # Ensure directory exists
+    json_path = get_ledger_path(project)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Save JSON
-    json_path = get_ledger_path()
     json_path.write_text(json.dumps(_serialize_ledger(ledger), indent=2))
 
     # Save Markdown
-    md_path = get_status_md_path()
+    md_path = get_status_md_path(project)
     md_path.write_text(_generate_markdown(ledger))
+
+    # Save lifetime stats separately (cross-project)
+    save_lifetime_stats(ledger.lifetime_stats)
+
+
+def save_lifetime_stats(stats: HistoricalStats) -> None:
+    """Save lifetime stats to scripts/stats/lifetime_stats.json."""
+    path = get_lifetime_stats_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(asdict(stats), indent=2))
+
+
+def load_lifetime_stats() -> HistoricalStats:
+    """Load lifetime stats from scripts/stats/lifetime_stats.json."""
+    path = get_lifetime_stats_path()
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+            return _deserialize_historical_stats(data)
+        except Exception:
+            pass
+    return HistoricalStats()
 
 
 def _generate_markdown(ledger: ComplianceLedger) -> str:
@@ -272,6 +516,9 @@ def _generate_markdown(ledger: ComplianceLedger) -> str:
 
             lines.append("")
 
+    # Statistics section (the strange loop meta-data)
+    lines.extend(_generate_stats_markdown(ledger))
+
     # History section
     if ledger.history:
         lines.append("## Recent Changes")
@@ -281,6 +528,80 @@ def _generate_markdown(ledger: ComplianceLedger) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
+
+def _generate_stats_markdown(ledger: ComplianceLedger) -> list[str]:
+    """Generate the statistics section of the markdown report."""
+    lines = []
+    stats = ledger.lifetime_stats
+    current = ledger.current_run
+
+    # Only show if we have run data
+    if stats.total_runs == 0 and not current.run_id:
+        return lines
+
+    lines.append("---")
+    lines.append("")
+    lines.append("## Compliance Statistics")
+    lines.append("")
+    lines.append("*Tracking the strange loop: our tooling testing itself.*")
+    lines.append("")
+
+    # Current run stats
+    if current.run_id:
+        lines.append("### Current Run")
+        lines.append("")
+        lines.append(f"| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Run ID | `{current.run_id[:19]}` |")
+        lines.append(f"| Iteration | {current.iteration_number} |")
+        lines.append(f"| Pages Checked | {current.pages_checked} |")
+        lines.append(f"| Screenshots Captured | {current.screenshots_captured} |")
+        lines.append(f"| Compliance | {current.final_compliance_percent:.1f}% |")
+        if current.achieved_100_percent:
+            lines.append(f"| Status | **100% Achieved** |")
+        lines.append("")
+
+    # Lifetime stats
+    if stats.total_runs > 0:
+        lines.append("### Lifetime Statistics")
+        lines.append("")
+        lines.append(f"| Metric | Value |")
+        lines.append("|--------|-------|")
+        lines.append(f"| Total Runs | {stats.total_runs} |")
+        lines.append(f"| Total Pages Validated | {stats.total_pages_validated} |")
+        lines.append(f"| Total Screenshots | {stats.total_screenshots_captured} |")
+        lines.append(f"| Validation Agents Spawned | {stats.total_agents_spawned} |")
+        lines.append("")
+
+        # Records
+        lines.append("### Records")
+        lines.append("")
+        lines.append(f"| Record | Value |")
+        lines.append("|--------|-------|")
+        if stats.best_first_run_compliance > 0:
+            lines.append(f"| Best First-Run Compliance | {stats.best_first_run_compliance:.1f}% |")
+        if stats.fastest_to_100_percent > 0:
+            lines.append(f"| Fastest to 100% | {stats.fastest_to_100_percent} iteration(s) |")
+        if stats.most_iterations_needed > 0:
+            lines.append(f"| Most Iterations Needed | {stats.most_iterations_needed} |")
+        if stats.consecutive_100_percent_runs > 0:
+            lines.append(f"| Best 100% Streak | {stats.consecutive_100_percent_runs} runs |")
+        if stats.current_streak > 0:
+            lines.append(f"| Current Streak | {stats.current_streak} runs |")
+        lines.append("")
+
+        # Dates
+        if stats.first_run_date:
+            lines.append("### Timeline")
+            lines.append("")
+            lines.append(f"- **First Run:** {stats.first_run_date}")
+            lines.append(f"- **Last Run:** {stats.last_run_date}")
+            if stats.last_100_percent_date:
+                lines.append(f"- **Last 100%:** {stats.last_100_percent_date}")
+            lines.append("")
+
+    return lines
 
 
 def _status_icon(status: str) -> str:
@@ -510,3 +831,118 @@ def initialize_ledger(project: str, pages: list[str], project_root: Path) -> Com
     })
 
     return ledger
+
+
+# =============================================================================
+# Statistics Tracking
+# =============================================================================
+
+
+def start_run(ledger: ComplianceLedger, project: str, commit: str) -> None:
+    """Start a new compliance run, initializing run statistics."""
+    now = datetime.now()
+
+    ledger.current_run = RunStatistics(
+        run_id=now.isoformat(),
+        project=project,
+        commit=commit,
+        iteration_number=1,
+    )
+
+    # Update lifetime stats
+    if not ledger.lifetime_stats.first_run_date:
+        ledger.lifetime_stats.first_run_date = now.strftime("%Y-%m-%d")
+    ledger.lifetime_stats.last_run_date = now.strftime("%Y-%m-%d")
+
+
+def record_iteration(ledger: ComplianceLedger) -> None:
+    """Record completion of a validation iteration."""
+    ledger.current_run.iteration_number += 1
+
+
+def record_screenshots(ledger: ComplianceLedger, static: int, interactive: int) -> None:
+    """Record screenshot capture counts."""
+    ledger.current_run.screenshots_captured = static + interactive
+    ledger.current_run.interactive_screenshots = interactive
+
+
+def record_validation_agent(ledger: ComplianceLedger, count: int = 1) -> None:
+    """Record spawning of validation agent(s)."""
+    ledger.current_run.validation_agents_spawned += count
+
+
+def record_criteria_stats(ledger: ComplianceLedger, total: int, by_category: dict[str, int]) -> None:
+    """Record criteria statistics."""
+    ledger.current_run.total_criteria = total
+    ledger.current_run.criteria_by_category = by_category
+
+
+def finalize_run(ledger: ComplianceLedger) -> None:
+    """Finalize the current run and update lifetime statistics."""
+    run = ledger.current_run
+    stats = ledger.lifetime_stats
+    now = datetime.now()
+
+    # Calculate final stats from ledger state
+    run.pages_checked = len(ledger.pages)
+    run.pages_passed = sum(1 for p in ledger.pages.values() if p.status == "pass")
+    run.pages_failed = sum(1 for p in ledger.pages.values() if p.status == "fail")
+    run.pages_skipped = sum(1 for p in ledger.pages.values() if p.status == "skipped")
+
+    run.interactive_states_checked = sum(
+        len(p.interactions) for p in ledger.pages.values()
+    )
+    run.interactive_states_passed = sum(
+        sum(1 for i in p.interactions.values() if i.status == "pass")
+        for p in ledger.pages.values()
+    )
+
+    run.final_compliance_percent = ledger.summary.compliance_percent
+    run.achieved_100_percent = is_fully_compliant(ledger)
+
+    if run.achieved_100_percent:
+        run.iterations_to_compliance = run.iteration_number
+
+    # Update lifetime stats
+    stats.total_runs += 1
+    stats.total_pages_validated += run.pages_checked
+    stats.total_screenshots_captured += run.screenshots_captured
+    stats.total_agents_spawned += run.validation_agents_spawned
+
+    # Update records
+    if run.iteration_number == 1 and run.final_compliance_percent > stats.best_first_run_compliance:
+        stats.best_first_run_compliance = run.final_compliance_percent
+
+    if run.achieved_100_percent:
+        stats.last_100_percent_date = now.strftime("%Y-%m-%d")
+        stats.current_streak += 1
+
+        if stats.fastest_to_100_percent == 0 or run.iteration_number < stats.fastest_to_100_percent:
+            stats.fastest_to_100_percent = run.iteration_number
+
+        if stats.current_streak > stats.consecutive_100_percent_runs:
+            stats.consecutive_100_percent_runs = stats.current_streak
+    else:
+        stats.current_streak = 0
+
+    if run.iteration_number > stats.most_iterations_needed:
+        stats.most_iterations_needed = run.iteration_number
+
+    # Add to run history (keep last 20)
+    ledger.run_history.append(run)
+    if len(ledger.run_history) > 20:
+        ledger.run_history = ledger.run_history[-20:]
+
+
+def get_run_summary(ledger: ComplianceLedger) -> str:
+    """Get a one-line summary of the current run for logging."""
+    run = ledger.current_run
+    if not run.run_id:
+        return "No run in progress"
+
+    status = "100%" if run.achieved_100_percent else f"{run.final_compliance_percent:.1f}%"
+    return (
+        f"Run {run.run_id[:10]}: {status} compliance, "
+        f"{run.pages_checked} pages, {run.screenshots_captured} screenshots, "
+        f"iteration {run.iteration_number}"
+    )
