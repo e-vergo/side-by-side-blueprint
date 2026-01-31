@@ -8,69 +8,276 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 ## Screenshots
 
 ![Dashboard](SBS-Test/images/Dashboard.png)
-*Dashboard with project stats and key theorems*
+*Dashboard with project stats, key theorems, and project notes*
 
 ![Blueprint](SBS-Test/images/blueprint.png)
-*Side-by-side LaTeX and Lean display*
+*Side-by-side LaTeX and Lean display with proof toggles*
 
 ![Dependency Graph](SBS-Test/images/dep_graph.png)
-*Interactive dependency visualization*
+*Interactive dependency visualization with Sugiyama layout*
 
 ![Paper](SBS-Test/images/paper_web.png)
-*Generated paper with proof links*
+*Generated paper with verification badges*
 
 ## Features
 
-- Side-by-side display of LaTeX statements and Lean proofs
-- Interactive dependency graph with Sugiyama layout
-- Dashboard with stats, key theorems, validation checks
-- PDF/Paper generation with `\paperstatement{}` and `\paperfull{}` hooks
-- 6-status color model for proof completion tracking
-- Module reference support (`\inputleanmodule{}`)
-- Rainbow bracket highlighting for nested expressions
+- **Side-by-side display** of LaTeX statements and Lean proofs with toggleable proof sections
+- **Interactive dependency graph** with Sugiyama hierarchical layout, pan/zoom, and rich modals
+- **Dashboard homepage** with stats, key theorems, messages, and project notes
+- **PDF/Paper generation** with `\paperstatement{}` and `\paperfull{}` hooks
+- **6-status color model** for tracking formalization progress (notReady, ready, sorry, proven, fullyProven, mathlibReady)
+- **Module reference support** via `\inputleanmodule{ModuleName}`
+- **Rainbow bracket highlighting** for nested expressions
+- **Validation checks** detecting disconnected subgraphs and cycles
+- **Auto-computed `fullyProven` status** via dependency graph traversal
 
 ## Repository Structure
 
-| Repository | Purpose |
-|------------|---------|
-| [Runway](https://github.com/e-vergo/Runway) | Site generator + dashboard + paper/PDF |
-| [Dress](https://github.com/e-vergo/Dress) | Artifact generation + graph layout + validation |
-| [LeanArchitect](https://github.com/e-vergo/LeanArchitect) | `@[blueprint]` attribute and metadata |
-| [subverso](https://github.com/e-vergo/subverso) | Syntax highlighting (fork with O(1) lookups) |
-| [dress-blueprint-action](https://github.com/e-vergo/dress-blueprint-action) | GitHub Action for CI/CD |
-| [SBS-Test](https://github.com/e-vergo/SBS-Test) | Minimal test project |
-| [General_Crystallographic_Restriction](https://github.com/e-vergo/General_Crystallographic_Restriction) | Production example |
-| [PrimeNumberTheoremAnd](https://github.com/e-vergo/PrimeNumberTheoremAnd) | Large-scale integration (530 annotations) |
+This monorepo contains the complete toolchain and example projects:
+
+### Toolchain Components
+
+| Repository | Purpose | Documentation |
+|------------|---------|---------------|
+| [SubVerso](subverso/) | Syntax highlighting extraction with O(1) indexed lookups | [README](subverso/README.md) |
+| [Verso](verso/) | Document framework with SBSBlueprint and VersoPaper genres | [README](verso/README.md) |
+| [LeanArchitect](LeanArchitect/) | `@[blueprint]` attribute with 8 metadata + 3 status options | [README](LeanArchitect/README.md) |
+| [Dress](Dress/) | Artifact generation, graph layout, validation | [README](Dress/README.md) |
+| [Runway](Runway/) | Site generator, dashboard, paper/PDF generation | [README](Runway/README.md) |
+| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action for CI/CD + CSS/JS assets | [README](dress-blueprint-action/README.md) |
+
+### Example Projects
+
+| Project | Scale | Purpose | Documentation |
+|---------|-------|---------|---------------|
+| [SBS-Test](SBS-Test/) | 25 nodes | Minimal test project (all 6 status colors) | [README](SBS-Test/README.md) |
+| [General_Crystallographic_Restriction](General_Crystallographic_Restriction/) | 57 nodes | Production example with paper generation | [README](General_Crystallographic_Restriction/README.md) |
+| [PrimeNumberTheoremAnd](PrimeNumberTheoremAnd/) | 530 nodes | Large-scale integration (Tao's PNT project) | [README](PrimeNumberTheoremAnd/README.md) |
+
+### Dependency Chain
+
+```
+SubVerso -> LeanArchitect -> Dress -> Runway
+              |
+              +-> Verso (genres use SubVerso for highlighting)
+```
 
 ## Getting Started
 
-1. Add Dress as a dependency in your `lakefile.toml`:
-   ```toml
-   [[require]]
-   name = "Dress"
-   git = "https://github.com/e-vergo/Dress"
-   rev = "main"
-   ```
+### 1. Add Dress as a Dependency
 
-2. Add `@[blueprint]` annotations to theorems:
-   ```lean
-   @[blueprint "thm:main"]
-   theorem main_result : ... := by
-     ...
-   ```
+In your `lakefile.toml`:
 
-3. Create `blueprint/src/blueprint.tex` with LaTeX structure
+```toml
+[[require]]
+name = "Dress"
+git = "https://github.com/e-vergo/Dress"
+rev = "main"
+```
 
-4. Configure `runway.json` with site settings
+### 2. Add `@[blueprint]` Annotations
 
-5. For CI/CD, use [dress-blueprint-action](https://github.com/e-vergo/dress-blueprint-action)
+```lean
+import Dress
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed build pipeline documentation.
+@[blueprint "thm:main"]
+theorem main_result : 2 + 2 = 4 := rfl
+
+@[blueprint "thm:key" (keyDeclaration := true, message := "Central result")]
+theorem key_theorem : P := by
+  sorry
+```
+
+### 3. Create Blueprint Structure
+
+Create `blueprint/src/blueprint.tex` with your LaTeX document structure:
+
+```latex
+\documentclass{article}
+\usepackage{blueprint}
+
+\begin{document}
+\chapter{Introduction}
+
+\begin{theorem}[Main Result]\label{thm:main}
+  The statement of your theorem.
+\end{theorem}
+
+\inputleannode{thm:main}
+
+\end{document}
+```
+
+### 4. Configure `runway.json`
+
+```json
+{
+  "title": "My Blueprint",
+  "projectName": "MyProject",
+  "githubUrl": "https://github.com/user/MyProject",
+  "baseUrl": "/",
+  "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "assetsDir": "../dress-blueprint-action/assets"
+}
+```
+
+### 5. Build
+
+```bash
+# Fetch mathlib cache (if using mathlib)
+lake exe cache get
+
+# Build with artifact generation
+BLUEPRINT_DRESS=1 lake build
+
+# Generate Lake facets
+lake build :blueprint
+
+# Generate dependency graph and manifest
+lake exe extract_blueprint graph MyProject
+
+# Generate site
+lake exe runway build runway.json
+```
+
+Output is written to `.lake/build/runway/`.
+
+### 6. CI/CD
+
+Use [dress-blueprint-action](https://github.com/e-vergo/dress-blueprint-action) for GitHub Actions:
+
+```yaml
+name: Blueprint
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: e-vergo/dress-blueprint-action@main
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/deploy-pages@v4
+```
+
+## `@[blueprint]` Attribute Options
+
+### Metadata Options (8)
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `title` | String | Custom node label in dependency graph |
+| `keyDeclaration` | Bool | Highlight in dashboard Key Theorems section |
+| `message` | String | User notes displayed in Messages panel |
+| `priorityItem` | Bool | Flag for dashboard Attention column |
+| `blocked` | String | Reason the node is blocked |
+| `potentialIssue` | String | Known concerns or issues |
+| `technicalDebt` | String | Technical debt / cleanup notes |
+| `misc` | String | Catch-all miscellaneous notes |
+
+### Manual Status Flags (3)
+
+| Option | Sets Status To | Color |
+|--------|----------------|-------|
+| `notReady` | notReady | Sandy Brown (#F4A460) |
+| `ready` | ready | Light Sea Green (#20B2AA) |
+| `mathlibReady` | mathlibReady | Light Blue (#87CEEB) |
+
+### Auto-Detected Statuses
+
+| Status | Color | Source |
+|--------|-------|--------|
+| `sorry` | Dark Red (#8B0000) | Proof contains `sorryAx` |
+| `proven` | Light Green (#90EE90) | Complete proof without sorry |
+| `fullyProven` | Forest Green (#228B22) | Proven and all ancestors are proven/fullyProven |
+
+### Example
+
+```lean
+@[blueprint "thm:main"
+  (keyDeclaration := true)
+  (message := "Main theorem of the formalization")]
+theorem mainTheorem : ... := ...
+
+@[blueprint "lem:helper"
+  (priorityItem := true)
+  (blocked := "Waiting for mathlib PR #12345")]
+lemma helperLemma : ... := sorry
+
+@[blueprint "thm:upstream" (mathlibReady := true)]
+theorem readyForMathlib : ... := ...
+```
+
+## Paper Generation
+
+To generate an academic paper with links to Lean formalizations:
+
+1. Add `paperTexPath` to `runway.json`:
+
+```json
+{
+  "paperTexPath": "blueprint/src/paper.tex"
+}
+```
+
+2. Use paper hooks in your LaTeX:
+
+```latex
+% Insert LaTeX statement with link to Lean code
+\paperstatement{thm:main}
+
+% Insert full side-by-side display
+\paperfull{thm:main}
+```
+
+3. Paper metadata is automatically extracted from:
+   - `\title{...}` - Paper title
+   - `\author{...}` (split on `\and`) - Authors
+   - `\begin{abstract}...\end{abstract}` - Abstract
+
+## Module References
+
+Include all declarations from a Lean module in your blueprint:
+
+```latex
+\chapter{Wiener's Theorem}
+\inputleanmodule{PrimeNumberTheoremAnd.Wiener}
+```
+
+This expands to all `@[blueprint]`-annotated declarations from that module.
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
-- [GOALS.md](GOALS.md) - Project vision and design goals
+| Document | Purpose |
+|----------|---------|
+| [ARCHITECTURE.md](.refs/ARCHITECTURE.md) | System architecture, data flow, performance analysis |
+| [Individual READMEs](#repository-structure) | Per-component documentation |
+
+## Live Examples
+
+- [SBS-Test](https://e-vergo.github.io/SBS-Test/) - Minimal feature demonstration
+- [General Crystallographic Restriction](https://e-vergo.github.io/General_Crystallographic_Restriction/) - Production example with paper
+
+## Attribution
+
+- **leanblueprint**: This project is a pure-Lean port of [leanblueprint](https://github.com/PatrickMassot/leanblueprint) by Patrick Massot
+- **LeanArchitect**: Fork of [hanwenzhu/LeanArchitect](https://github.com/hanwenzhu/LeanArchitect)
+- **SubVerso**: Fork of [leanprover/subverso](https://github.com/leanprover/subverso) by David Thrane Christiansen
+- **Verso**: Fork of [leanprover/verso](https://github.com/leanprover/verso) by the Lean team
 
 ## License
 
