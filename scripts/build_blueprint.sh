@@ -210,6 +210,71 @@ else
 fi
 
 echo ""
+echo "=== Step 5c: Generating Verso HTML ==="
+VERSO_OUTPUT_DIR="$PROJECT_ROOT/.lake/build/runway"
+mkdir -p "$VERSO_OUTPUT_DIR"
+
+if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Blueprint.lean" ]]; then
+    if lake exe generate-blueprint-verso --help &>/dev/null 2>&1 || lake exe generate-blueprint-verso &>/dev/null 2>&1; then
+        echo "Generating Verso blueprint HTML..."
+        lake exe generate-blueprint-verso || echo "Warning: Verso blueprint generation failed (feature may not be implemented yet)"
+    else
+        echo "No generate-blueprint-verso executable found, skipping"
+    fi
+else
+    echo "No Blueprint.lean found, skipping Verso blueprint HTML"
+fi
+
+if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
+    if lake exe generate-paper-verso --help &>/dev/null 2>&1 || lake exe generate-paper-verso &>/dev/null 2>&1; then
+        echo "Generating Verso paper HTML..."
+        lake exe generate-paper-verso || echo "Warning: Verso paper generation failed (feature may not be implemented yet)"
+    else
+        echo "No generate-paper-verso executable found, skipping"
+    fi
+else
+    echo "No Paper.lean found, skipping Verso paper HTML"
+fi
+
+echo ""
+echo "=== Step 5d: Generating Verso PDF ==="
+if [[ -f "$PROJECT_ROOT/$MODULE_NAME/Paper.lean" ]]; then
+    # Check if lualatex is available
+    if command -v lualatex &> /dev/null; then
+        # Try to generate TeX output
+        if lake exe generate-paper-verso --help &>/dev/null 2>&1 || lake exe generate-paper-verso &>/dev/null 2>&1; then
+            echo "Generating Verso paper TeX..."
+            mkdir -p "$VERSO_OUTPUT_DIR/tex"
+            lake exe generate-paper-verso --with-tex --tex-output "$VERSO_OUTPUT_DIR/tex" || echo "Warning: Verso TeX generation failed"
+
+            if [[ -f "$VERSO_OUTPUT_DIR/tex/paper_verso.tex" ]]; then
+                echo "Compiling Verso PDF with lualatex..."
+                pushd "$VERSO_OUTPUT_DIR/tex" > /dev/null
+                lualatex -interaction=nonstopmode paper_verso.tex || true
+                lualatex -interaction=nonstopmode paper_verso.tex || true
+                lualatex -interaction=nonstopmode paper_verso.tex || true
+                popd > /dev/null
+
+                if [[ -f "$VERSO_OUTPUT_DIR/tex/paper_verso.pdf" ]]; then
+                    mv "$VERSO_OUTPUT_DIR/tex/paper_verso.pdf" "$VERSO_OUTPUT_DIR/"
+                    echo "Verso PDF generated: $VERSO_OUTPUT_DIR/paper_verso.pdf"
+                else
+                    echo "Warning: lualatex did not produce a PDF"
+                fi
+            else
+                echo "No paper_verso.tex generated, skipping PDF compilation"
+            fi
+        else
+            echo "No generate-paper-verso executable found, skipping Verso PDF"
+        fi
+    else
+        echo "lualatex not installed, skipping Verso PDF generation"
+    fi
+else
+    echo "No Paper.lean found, skipping Verso PDF"
+fi
+
+echo ""
 echo "=== Step 6: Generating dependency graph ==="
 # Run extract_blueprint graph command from local Dress
 lake env "$DRESS_PATH/.lake/build/bin/extract_blueprint" graph \
