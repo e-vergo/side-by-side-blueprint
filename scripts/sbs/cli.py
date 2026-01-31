@@ -39,6 +39,7 @@ Commands:
   history     List capture history for a project
   inspect     Show build state, artifact locations, manifest contents
   validate    Run validation checks on generated site
+  compliance  Visual compliance validation loop
   status      Show git status across all repos
   diff        Show changes across all repos
   sync        Ensure all repos are synced (commit + push)
@@ -47,6 +48,7 @@ Commands:
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
   sbs compare                    # Compare latest to most recent archive
+  sbs compliance                 # Run visual compliance check
   sbs status                     # Show git status for all repos
   sbs inspect                    # Show build artifacts and manifest
   sbs sync -m "Fix bug"          # Commit and push all changes
@@ -104,6 +106,16 @@ Examples:
         default="1920x1080",
         help="Viewport size as WxH (default: 1920x1080)",
     )
+    capture_parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Include interactive state capture (clicks, hovers, modals)",
+    )
+    capture_parser.add_argument(
+        "--rediscover",
+        action="store_true",
+        help="Rediscover interactive elements (ignore saved manifests)",
+    )
 
     # --- compare ---
     compare_parser = subparsers.add_parser(
@@ -160,6 +172,45 @@ Examples:
         "validate",
         help="Run validation checks on generated site",
         description="Check the generated site for missing files, broken links, etc.",
+    )
+
+    # --- compliance ---
+    compliance_parser = subparsers.add_parser(
+        "compliance",
+        help="Visual compliance validation loop",
+        description="Run visual compliance checks using AI vision analysis.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  sbs compliance                    # Check compliance with smart reset
+  sbs compliance --full             # Force full re-validation
+  sbs compliance --page dashboard   # Validate specific page
+  sbs compliance --interactive      # Include interactive state capture
+        """,
+    )
+    compliance_parser.add_argument(
+        "--project",
+        help="Project name (default: detect from runway.json)",
+    )
+    compliance_parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Force full re-validation (ignore ledger)",
+    )
+    compliance_parser.add_argument(
+        "--page",
+        help="Validate specific page only",
+    )
+    compliance_parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Include interactive state capture and validation",
+    )
+    compliance_parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=10,
+        help="Maximum validation iterations (default: 10)",
     )
 
     # --- status ---
@@ -287,6 +338,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "validate":
             from .inspect_cmd import cmd_validate
             return cmd_validate(args)
+
+        elif args.command == "compliance":
+            from .validate import cmd_compliance
+            return cmd_compliance(args)
 
         elif args.command == "status":
             from .git_ops import cmd_status

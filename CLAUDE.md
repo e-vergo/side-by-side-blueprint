@@ -138,21 +138,33 @@ Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--ver
 
 **Screenshot capture is the FIRST reflex for any visual/CSS/layout issue.**
 
-The `sbs` tooling provides automated screenshot capture, comparison, and history tracking.
+The `sbs` tooling provides automated screenshot capture, comparison, compliance validation, and history tracking.
+
+### Build Requirement
+
+**Always use the Python build script. Never skip commits or pushes.**
+
+```bash
+# Standard build workflow
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
+python ../scripts/build.py                    # Full build with git sync
+```
+
+Do NOT use `--skip-sync`. The build script ensures:
+- All repos are committed and pushed
+- Reproducible builds tied to specific commits
+- Compliance ledger tracks actual deployed state
 
 ### Screenshot Capture
 
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
 
-# Capture all pages from running server
-python3 -m sbs capture
-
-# Capture specific project
+# Capture static pages
 python3 -m sbs capture --project SBSTest
 
-# Capture from custom URL
-python3 -m sbs capture --url http://localhost:8000
+# Capture with interactive states (recommended)
+python3 -m sbs capture --project SBSTest --interactive
 ```
 
 Captures 8 pages:
@@ -166,6 +178,27 @@ Captures 8 pages:
 - `chapter` - First chapter page (auto-detected)
 
 Pages that return HTTP 404 are skipped without error.
+
+### Visual Compliance Validation
+
+```bash
+# Run compliance check (uses AI vision analysis)
+python3 -m sbs compliance --project SBSTest
+
+# Force full re-validation
+python3 -m sbs compliance --project SBSTest --full
+
+# Include interactive state validation
+python3 -m sbs compliance --project SBSTest --interactive
+```
+
+The compliance system:
+- Tracks pass/fail status per page in a persistent ledger
+- Detects repo changes and revalidates affected pages
+- Generates `compliance_ledger.json` and `COMPLIANCE_STATUS.md`
+- Loops until 100% compliance achieved
+
+See `scripts/VISUAL_COMPLIANCE.md` for full documentation.
 
 ### Visual Comparison
 
@@ -187,11 +220,12 @@ python3 -m sbs history --project SBSTest
 
 ### Standard Workflow for Visual Changes
 
-1. **BEFORE changes:** `python3 -m sbs capture` (creates baseline)
-2. **Make changes** to CSS/JS/Lean/templates
-3. **Rebuild:** `./scripts/build_blueprint.sh`
-4. **AFTER changes:** `python3 -m sbs capture` (archives previous, captures new)
-5. **Compare:** `python3 -m sbs compare` (diff latest vs previous)
+1. **Build:** `python ../scripts/build.py` (commits, pushes, builds)
+2. **Capture:** `python3 -m sbs capture --interactive` (creates baseline)
+3. **Make changes** to CSS/JS/Lean/templates
+4. **Rebuild:** `python ../scripts/build.py`
+5. **Capture:** `python3 -m sbs capture --interactive` (archives previous)
+6. **Validate:** `python3 -m sbs compliance` (AI vision analysis)
 
 ### What to Verify
 
@@ -361,8 +395,9 @@ Spawn an agent for:
 
 1. Identify affected repos via dependency chain
 2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run `build_blueprint.sh` (always cleans + rebuilds toolchain)
+3. Run `python ../scripts/build.py` (commits, pushes, rebuilds toolchain)
 4. Test with SBS-Test or GCR
+5. Run `sbs compliance` to verify visual correctness
 
 ---
 
@@ -373,7 +408,8 @@ Spawn an agent for:
 - Work directly in repo files, not scratch files
 - Check `lean_diagnostic_messages` after edits
 - Test via SBS-Test or GCR
-- Use `sbs capture` + `sbs compare` for any visual changes
+- **Always use `python build.py` for builds** (never skip commits/pushes)
+- Use `sbs capture --interactive` + `sbs compliance` for visual changes
 
 ---
 
@@ -397,6 +433,33 @@ Automates documentation updates at plan completion. Invoke manually via `/finali
 - Waves execute sequentially; agents within each wave run in parallel
 - Each wave reads outputs from previous waves before writing
 - PNT preserves original content with fork section at top
+
+### Visual Compliance (CLI)
+
+Run at plan completion to verify visual correctness:
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+python3 -m sbs compliance --project SBSTest --interactive
+```
+
+**Workflow:**
+1. Build project with `python build.py` (never skip sync)
+2. Capture screenshots: `sbs capture --interactive`
+3. Run compliance: `sbs compliance`
+4. AI agents validate screenshots against criteria
+5. Update ledger with pass/fail results
+6. Loop until 100% compliance
+
+**Location:** `scripts/VISUAL_COMPLIANCE.md`
+
+**Key files:**
+- `scripts/sbs/criteria.py` - Compliance criteria per page
+- `scripts/sbs/ledger.py` - Ledger management
+- `scripts/sbs/mapping.py` - Repo→page change detection
+- `scripts/sbs/validate.py` - Validation orchestration
+- `scripts/compliance_ledger.json` - Persistent status
+- `scripts/COMPLIANCE_STATUS.md` - Human-readable report
 
 ---
 

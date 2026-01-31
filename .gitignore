@@ -31,3 +31,8 @@ verso/
 /theorem_proving_in_lean4
 /reference-manual
 /images
+
+# Compliance runtime artifacts (generated during validation)
+scripts/compliance_ledger.json
+scripts/COMPLIANCE_STATUS.md
+scripts/manifests/

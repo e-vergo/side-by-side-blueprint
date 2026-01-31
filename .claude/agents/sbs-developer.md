@@ -195,28 +195,28 @@ Runway generates:
 
 ### Primary Build Command
 
+**Always use the Python build script. Never skip commits or pushes.**
+
 ```bash
 # SBS-Test (fast iteration, ~2 minutes)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-./scripts/build_blueprint.sh
+python ../scripts/build.py
 
 # GCR (production with paper)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
-./scripts/build_blueprint.sh
+python ../scripts/build.py
 
 # PNT (large-scale)
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
-./scripts/build_blueprint.sh
-```
-
-### Alternative: Python Build Script
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 python ../scripts/build.py
 ```
 
-Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
+**Do NOT use `--skip-sync`**. The build script commits and pushes all repo changes, ensuring:
+- Reproducible builds tied to specific commits
+- Compliance ledger tracks actual deployed state
+- Change detection works correctly
+
+Options: `--dry-run`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
 
 ### Build Script Steps
 
@@ -249,17 +249,14 @@ Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--ver
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
 
-# Capture all pages from running server
-python3 -m sbs capture
-
-# Capture specific project
+# Capture static pages
 python3 -m sbs capture --project SBSTest
 
-# Capture from custom URL
-python3 -m sbs capture --url http://localhost:8000
+# Capture with interactive states (recommended)
+python3 -m sbs capture --project SBSTest --interactive
 ```
 
-Captures 8 pages:
+Captures 8 pages plus interactive states:
 1. `dashboard` - Dashboard homepage
 2. `dep_graph` - Dependency graph
 3. `paper_tex` - Paper [TeX]
@@ -269,7 +266,28 @@ Captures 8 pages:
 7. `blueprint_verso` - Blueprint [Verso]
 8. `chapter` - First chapter page (auto-detected)
 
+Plus interactive states: theme toggles, zoom controls, node clicks, proof toggles.
 Pages that return HTTP 404 are skipped without error.
+
+### Visual Compliance Validation
+
+```bash
+# Run compliance check (uses AI vision analysis)
+python3 -m sbs compliance --project SBSTest
+
+# Force full re-validation
+python3 -m sbs compliance --project SBSTest --full
+
+# Include interactive state validation
+python3 -m sbs compliance --project SBSTest --interactive
+```
+
+The compliance system:
+- Tracks pass/fail status per page in persistent ledger
+- Detects repo changes and revalidates affected pages
+- Loops until 100% compliance achieved
+
+See `scripts/VISUAL_COMPLIANCE.md` for full documentation.
 
 ### Visual Comparison
 
@@ -290,18 +308,23 @@ images/
 │   │   ├── capture.json  # Metadata
 │   │   ├── dashboard.png
 │   │   ├── dep_graph.png
-│   │   └── chapters/*.png
+│   │   └── *_interactive.png
 │   └── archive/          # Timestamped history
 │       └── {timestamp}/
+scripts/
+├── compliance_ledger.json  # Persistent status
+├── COMPLIANCE_STATUS.md    # Human-readable report
+└── manifests/              # Interactive element manifests
 ```
 
 ### Standard Workflow for Visual Changes
 
-1. **BEFORE changes:** `python3 -m sbs capture` (creates baseline)
-2. **Make changes** to CSS/JS/Lean/templates
-3. **Rebuild:** `./scripts/build_blueprint.sh`
-4. **AFTER changes:** `python3 -m sbs capture` (archives previous, captures new)
-5. **Compare:** `python3 -m sbs compare` (diff latest vs previous)
+1. **Build:** `python ../scripts/build.py` (commits, pushes, builds)
+2. **Capture:** `python3 -m sbs capture --interactive` (creates baseline)
+3. **Make changes** to CSS/JS/Lean/templates
+4. **Rebuild:** `python ../scripts/build.py`
+5. **Capture:** `python3 -m sbs capture --interactive` (archives previous)
+6. **Validate:** `python3 -m sbs compliance` (AI vision analysis)
 
 ---
 
@@ -395,8 +418,9 @@ theorem ready_for_mathlib : ...
 
 1. Identify affected repos (check dependency chain)
 2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run `build_blueprint.sh` (cleans + rebuilds toolchain)
+3. Run `python ../scripts/build.py` (commits, pushes, rebuilds toolchain)
 4. Test with SBS-Test or GCR
+5. Run `python3 -m sbs compliance` to verify visual correctness
 
 ### CSS/JS Fixes
 

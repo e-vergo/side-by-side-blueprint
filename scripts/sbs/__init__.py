@@ -2,7 +2,7 @@
 sbs - Side-by-Side Blueprint development CLI.
 
 A unified command-line tool for build diagnostics, cross-repo operations,
-and screenshot management.
+screenshot management, and visual compliance validation.
 
 Usage:
     python -m sbs <command> [options]
@@ -13,6 +13,7 @@ Commands:
     history     List capture history for a project
     inspect     Show build state, artifact locations, manifest contents
     validate    Run validation checks on generated site
+    compliance  Visual compliance validation loop
     status      Show git status across all repos
     diff        Show changes across all repos
     sync        Ensure all repos are synced (commit + push)
