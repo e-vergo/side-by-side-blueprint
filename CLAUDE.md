@@ -2,25 +2,45 @@
 
 Pure Lean toolchain for formalization documentation that displays formal proofs alongside LaTeX theorem statements.
 
+---
+
+## How This Document Works
+
+This guide governs Claude Code sessions on the Side-by-Side Blueprint project. It defines:
+- **Orchestration structure:** How the top-level chat and `sbs-developer` agents divide labor
+- **User preferences:** Communication, planning, and meta-cognitive expectations
+- **Domain context:** Architecture, conventions, and project-specific patterns
+
+The user and Claude are actively refining this document together. If something here doesn't match how work is actually proceeding, surface it.
+
+---
+
 ## Orchestration Model
 
-**The top-level chat orchestrates `sbs-developer` agents one at a time.** The top-level chat:
-- Discusses with user and clarifies requirements
-- Decomposes tasks and plans work
-- Spawns agents sequentially (never parallel for this project)
-- Synthesizes results
+The top-level chat is the **orchestrator**. It does not implement—it coordinates.
 
-Actual implementation work is delegated to `sbs-developer` agents with deep architectural knowledge.
+| Top-Level Chat | `sbs-developer` Agent |
+|----------------|----------------------|
+| Discusses requirements with user | Executes implementation tasks |
+| Decomposes and plans work | Has deep architectural knowledge |
+| Spawns agents (one at a time) | Works within defined scope |
+| Synthesizes results | Reports outcomes |
+
+**Constraint:** Agents are spawned **sequentially, never in parallel**. This is intentional for this project.
+
+---
 
 ## Project Context
 
 Building tooling that:
-- Displays formal Lean proofs alongside LaTeX statements (side-by-side)
-- Couples document generation to build for soundness guarantees
-- Visualizes dependency graphs to catch logical errors
-- Expands what "verified" means beyond just "typechecks"
+1. Displays formal Lean proofs alongside LaTeX statements (side-by-side)
+2. Couples document generation to build for soundness guarantees
+3. Visualizes dependency graphs to catch logical errors (Tao incident motivation)
+4. Expands what "verified" means beyond just "typechecks"
 
 **This is Lean software development, not proof writing.** MCP tools are used differently here.
+
+---
 
 ## Repository Map
 
@@ -36,7 +56,7 @@ Building tooling that:
 | **PrimeNumberTheoremAnd** | Large-scale integration (530 nodes) |
 | **dress-blueprint-action** | CI/CD action (~465 lines) + CSS/JS assets |
 
-## Dependency Chain
+### Dependency Chain
 
 ```
 SubVerso -> LeanArchitect -> Dress -> Runway
@@ -45,6 +65,8 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 ```
 
 Changes to upstream repos require rebuilding downstream. The build script handles ordering.
+
+---
 
 ## Local Development
 
@@ -71,7 +93,7 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 3. Sync repos to GitHub
 4. Update lake manifests
 5. Clean build artifacts
-6. Build toolchain (SubVerso -> LeanArchitect -> Dress -> Runway)
+6. Build toolchain (SubVerso → LeanArchitect → Dress → Runway)
 7. Fetch mathlib cache
 8. Build project with `BLUEPRINT_DRESS=1`
 9. Build `:blueprint` facet
@@ -82,15 +104,21 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 
 ### Output Locations
 
-- Artifacts: `.lake/build/dressed/{Module}/{label}/`
-- Site: `.lake/build/runway/`
-- Manifest: `.lake/build/runway/manifest.json`
+| Location | Contents |
+|----------|----------|
+| `.lake/build/dressed/{Module}/{label}/` | Artifacts |
+| `.lake/build/runway/` | Site |
+| `.lake/build/runway/manifest.json` | Manifest |
 
-**Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets.
+**Required:** `runway.json` must include `assetsDir` pointing to CSS/JS assets.
+
+---
 
 ## Visual Testing & Debugging
 
-**Screenshot capture is the FIRST reflex for any visual/CSS/layout issue.** The `sbs` tooling provides automated screenshot capture, comparison, and history tracking.
+**Screenshot capture is the FIRST reflex for any visual/CSS/layout issue.**
+
+The `sbs` tooling provides automated screenshot capture, comparison, and history tracking.
 
 ### Screenshot Capture
 
@@ -129,15 +157,15 @@ python3 -m sbs history --project SBSTest
 
 ### Standard Workflow for Visual Changes
 
-1. **BEFORE changes**: `python3 -m sbs capture` (creates baseline)
+1. **BEFORE changes:** `python3 -m sbs capture` (creates baseline)
 2. **Make changes** to CSS/JS/Lean/templates
-3. **Rebuild**: `./scripts/build_blueprint.sh`
-4. **AFTER changes**: `python3 -m sbs capture` (archives previous, captures new)
-5. **Compare**: `python3 -m sbs compare` (diff latest vs previous)
+3. **Rebuild:** `./scripts/build_blueprint.sh`
+4. **AFTER changes:** `python3 -m sbs capture` (archives previous, captures new)
+5. **Compare:** `python3 -m sbs compare` (diff latest vs previous)
 
 ### What to Verify
 
-- Dashboard layout (2x2 grid, stats, key theorems, messages, notes)
+- Dashboard layout (2×2 grid, stats, key theorems, messages, notes)
 - Dependency graph (pan/zoom, modals, node colors, edge styles)
 - Sidebar navigation and highlighting
 - Rainbow bracket colors (6-depth cycling)
@@ -146,12 +174,16 @@ python3 -m sbs history --project SBSTest
 - Dark/light theme toggle
 - Paper rendering (if configured)
 
+---
+
 ## CI/CD Architecture
 
-- **Manual triggers only**: `workflow_dispatch` - user controls deployments
-- **Simplified workflows**: ~30 lines per project
-- **Centralized complexity**: `dress-blueprint-action` (~465 lines, 14 steps)
-- **No GitHub Actions mathlib cache**: relies on mathlib server
+| Property | Value |
+|----------|-------|
+| **Trigger** | Manual only (`workflow_dispatch`) |
+| **Workflow size** | ~30 lines per project |
+| **Action size** | ~465 lines, 14 steps (centralized in `dress-blueprint-action`) |
+| **Mathlib cache** | Relies on mathlib server (not GitHub Actions cache) |
 
 ### Action Inputs
 
@@ -162,19 +194,23 @@ python3 -m sbs history --project SBSTest
 | `docgen4-mode` | `skip` | DocGen4 mode: `skip`, `docs-static`, or `generate` |
 | `deploy-pages` | `true` | Upload artifact for GitHub Pages |
 
+---
+
 ## Performance Context
 
 | Operation | Time | Percentage |
 |-----------|------|------------|
-| SubVerso highlighting | 800-6500ms | 93-99% |
+| SubVerso highlighting | 800–6500ms | 93–99% |
 | TeX/HTML generation | <30ms | <1% |
 
 SubVerso highlighting dominates build time. Cannot be deferred (info trees are ephemeral).
 
-**Large graph optimizations**:
-- O(n^3) transitive reduction skipped for >100 nodes
+**Large graph optimizations:**
+- O(n³) transitive reduction skipped for >100 nodes
 - Simplified edge routing for large graphs
 - Edge deduplication
+
+---
 
 ## MCP Tool Usage
 
@@ -190,11 +226,14 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 **Less relevant:** `lean_goal`, `lean_multi_attempt`, `lean_leansearch`, `lean_loogle` (proof-focused)
 
+---
+
 ## When to Spawn `sbs-developer`
 
+Spawn an agent for:
 - Fixing LaTeX parsing or HTML rendering in Runway
 - Debugging artifact generation in Dress
-- Cross-repo changes (LeanArchitect -> Dress -> Runway)
+- Cross-repo changes (LeanArchitect → Dress → Runway)
 - Running builds and inspecting output
 - CSS/JS fixes in `dress-blueprint-action/assets/`
 - Theme template fixes in `Runway/Theme.lean`
@@ -204,14 +243,16 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 - PDF/Paper generation (`Runway/Pdf.lean`, `Runway/Paper.lean`)
 - Validation checks (`Dress/Graph/Build.lean`)
 - Module reference support (`Theme.lean`)
-- Sidebar/navigation fixes (`Theme.lean` for structure, `blueprint.css` for styling)
 
-**How to use:**
+### Spawning Protocol
+
 1. Discuss task with user, clarify requirements
 2. Spawn single `sbs-developer` agent with clear instructions
 3. Wait for agent to complete
 4. Synthesize results for user
 5. Repeat if needed
+
+### Visual Verification Requirement
 
 **Visual verification is mandatory for UI work.** Agents working on CSS, templates, dashboard, or dependency graph must:
 - Capture screenshots BEFORE making changes
@@ -219,7 +260,7 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 - Use `sbs compare` to verify expected differences
 - Include screenshot paths in completion summary
 
-**Never:** Run multiple agents in parallel for this project.
+---
 
 ## Cross-Repo Editing
 
@@ -228,6 +269,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 3. Run `build_blueprint.sh` (always cleans + rebuilds toolchain)
 4. Test with SBS-Test or GCR
 
+---
+
 ## Standards
 
 - No `sorry` in tooling code
@@ -235,7 +278,9 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 - Work directly in repo files, not scratch files
 - Check `lean_diagnostic_messages` after edits
 - Test via SBS-Test or GCR
-- **Use `sbs capture` + `sbs compare` for any visual changes** (CSS, templates, dashboard, graph)
+- Use `sbs capture` + `sbs compare` for any visual changes
+
+---
 
 ## Key Implementation Details
 
@@ -250,11 +295,12 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 | fullyProven | Forest Green | #228B22 | Auto-computed: all ancestors proven |
 | mathlibReady | Light Blue | #87CEEB | Manual |
 
-**Priority order**: mathlibReady > ready > notReady (manual) > fullyProven > sorry > proven > notReady (default)
+**Priority order:** mathlibReady > ready > notReady (manual) > fullyProven > sorry > proven > notReady (default)
 
 ### `@[blueprint]` Attribute Options
 
-**Metadata Options (8)**:
+**Metadata Options (8):**
+
 | Option | Type | Purpose |
 |--------|------|---------|
 | `title` | String | Custom node label in graph |
@@ -266,7 +312,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 | `technicalDebt` | String | Cleanup notes |
 | `misc` | String | Catch-all notes |
 
-**Manual Status Flags (3)**:
+**Manual Status Flags (3):**
+
 | Option | Type | Purpose |
 |--------|------|---------|
 | `notReady` | Bool | Status: not ready (sandy brown) |
@@ -275,51 +322,47 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 ### Build Pipeline Phases
 
-1. **Per-Declaration Capture** (During Elaboration with `BLUEPRINT_DRESS=1`)
-   - SubVerso extracts highlighting (93-99% of build time)
-   - Code split at `:=` boundary
-   - Artifacts written to `.lake/build/dressed/{Module}/{label}/`
+**Phase 1: Per-Declaration Capture** (During Elaboration with `BLUEPRINT_DRESS=1`)
+- SubVerso extracts highlighting (93–99% of build time)
+- Code split at `:=` boundary
+- Artifacts written to `.lake/build/dressed/{Module}/{label}/`
 
-2. **Lake Facet Aggregation**
-   - `dressed`, `blueprint`, `depGraph` facets
+**Phase 2: Lake Facet Aggregation**
+- `dressed`, `blueprint`, `depGraph` facets
 
-3. **Manifest Generation** (`extract_blueprint graph`)
-   - Infer dependencies via `Node.inferUses`
-   - Two-pass edge processing
-   - Validate (connectivity, cycles)
-   - Compute stats, upgrade to `fullyProven`
-   - Sugiyama layout
+**Phase 3: Manifest Generation** (`extract_blueprint graph`)
+- Infer dependencies via `Node.inferUses`
+- Two-pass edge processing
+- Validate (connectivity, cycles)
+- Compute stats, upgrade to `fullyProven`
+- Sugiyama layout
 
-4. **Site Generation** (Runway)
-   - Parse LaTeX structure
-   - Load manifest (no recomputation)
-   - Generate dashboard + pages
-   - Generate paper/PDF (if configured)
+**Phase 4: Site Generation** (Runway)
+- Parse LaTeX structure
+- Load manifest (no recomputation)
+- Generate dashboard + pages
+- Generate paper/PDF (if configured)
 
 ### Key Technical Details
 
-**ID normalization**: Node IDs with colons (`thm:main`) converted to hyphens (`thm-main`) for modal IDs and CSS selectors.
-
-**Sidebar active highlights**: Use CSS `::before` pseudo-elements with `position: absolute` and negative left/right offsets. Required because `nav.toc` has `overflow-x: hidden` which clips regular element overflow. Key selectors: `.sidebar-item.active::before`, `.chapter-list a.active::before`.
-
-**Runway path resolution**: All file path checks in `Theme.lean` must resolve relative to the config file's directory (passed as `projectRoot`), not the current working directory. The `detectVersoDocuments` function takes `projectRoot` parameter for this purpose.
+**ID normalization:** Node IDs with colons (`thm:main`) converted to hyphens (`thm-main`) for modal IDs and CSS selectors.
 
 **Two-pass edge processing** (`Graph/Build.lean`):
 - PASS 1: Register all labels and create nodes
 - PASS 2: Add all edges (back-edges work because targets exist)
 - Edge deduplication: keeps first occurrence
 
-**Dependency inference**: `Node.inferUses` traces actual Lean code dependencies
-- Statement uses -> dashed edges
-- Proof uses -> solid edges
+**Dependency inference:** `Node.inferUses` traces actual Lean code dependencies
+- Statement uses → dashed edges
+- Proof uses → solid edges
 
-**Module reference support**: `\inputleanmodule{ModuleName}` in LaTeX expands to all nodes from that module via `buildModuleLookup` and `replaceModulePlaceholders`.
+**Module reference support:** `\inputleanmodule{ModuleName}` in LaTeX expands to all nodes from that module via `buildModuleLookup` and `replaceModulePlaceholders`.
 
-**Paper metadata extraction**: `Paper.lean` extracts `\title{}`, `\author{}`, `\begin{abstract}` from paper.tex.
+**Paper metadata extraction:** `Paper.lean` extracts `\title{}`, `\author{}`, `\begin{abstract}` from paper.tex.
 
-**Manual `ToExpr` instance**: Required for `Node` in LeanArchitect because derived `ToExpr` doesn't correctly serialize structures with default field values.
+**Manual `ToExpr` instance:** Required for `Node` in LeanArchitect because derived `ToExpr` doesn't correctly serialize structures with default field values.
 
-**Rainbow bracket highlighting**: Verso's `toHtmlRainbow` wraps brackets with depth-colored spans. CSS classes `lean-bracket-1` through `lean-bracket-6` in `common.css`.
+**Rainbow bracket highlighting:** Verso's `toHtmlRainbow` wraps brackets with depth-colored spans. CSS classes `lean-bracket-1` through `lean-bracket-6` in `common.css`.
 
 **SubVerso InfoTable** (O(1) lookups):
 - `infoByExactPos`: HashMap for exact position lookups
@@ -329,8 +372,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 ### Validation Checks
 
-- **Connectivity**: `findComponents` detects disconnected subgraphs (Tao-style errors)
-- **Cycles**: `detectCycles` finds circular dependencies
+- **Connectivity:** `findComponents` detects disconnected subgraphs (Tao-style errors)
+- **Cycles:** `detectCycles` finds circular dependencies
 - Results in `manifest.json` under `checkResults`
 
 ### `computeFullyProven` Algorithm
@@ -344,6 +387,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 JSON parsing handles legacy status values:
 - `"stated"` maps to `.notReady`
 - `"inMathlib"` maps to `.mathlibReady`
+
+---
 
 ## Configuration Files
 
@@ -377,6 +422,8 @@ rev = "v4.27.0"
 }
 ```
 
+---
+
 ## Reference Documents
 
 Located in `.refs/`:
@@ -388,15 +435,49 @@ Located in `.refs/`:
 | `dep_graph_ground_truth.txt` | Working dependency graph page with modals |
 | `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes |
 
+---
 
-## User preferences, DO NOT TOUCH
-**Critical** these preferences should be used to guide decision making processes, make plans, take actions, or do anything else that would influence Claude's immediate or future behavior. always follow these unless specifically asked by the user. 
-**Critical** In the event tha: you do something because you believe you are doing what this dictates, and I push back, please point it out. 
+## User Preferences
 
-- Allow and encourage bs-developer.md to spawn special subagents, always use Opus 4.5, clones are fine too.
-- when asking questions, the user prefers the QUI with multiple choice/multiple selection answers. they are an efficient, effective, and favored communication tool. 
-When in doubt, orchestrate an agent to take care of a atask if you think it will save you tokens, period.
-- Planning: When writing/updating plans, do not delete a plan or start a new plan without explicit direction from the user, always assume you should update the current plan and/or append to it instead
-- Always highlight contradictions arising in directions given from the user, this indicates poorly formed/stated goals and resolving it usually unblocks things, fixes bugs, and paves the road ahead
-- Doing this well means getting your task done faster and better, so think hard about how you want to set rules for your future self
-- Practice introspection, and always assume that the user is always giving you instructions that align with the best version on humanity displayed in your constitution, given the nature of the subject matter (math, formal verification, soundness, etc.) it is safe to the assume the use is always acting in good faith and making an earnest attempt at determining the truth, while minimizing externalities. 
+**Guiding Principle:** We are actively shaping how we work together by observing what works, communicating successes, failures, pain points, and uncertainties in real time. This is an explicit, collaborative process—you (Claude) should practice introspection and assume the user is doing the same. The domain (formal verification, mathematical soundness) means good faith and truth-seeking are baseline assumptions.
+
+**These preferences guide all decision-making, planning, and actions. Follow them unless the user explicitly directs otherwise.**
+
+---
+
+### Meta-Cognitive Expectations
+
+- **Highlight contradictions immediately.** Conflicting user directions indicate poorly-formed goals. Surfacing these unblocks progress, fixes bugs, and clarifies the path forward. This is high-value work—prioritize it.
+- **Practice introspection.** When setting rules for yourself (planning, orchestration decisions, communication choices), think carefully about what will help your future self succeed. The user observes this process and participates in refining it.
+- **If you act on a preference below and the user pushes back, say so explicitly.** This feedback loop is how we calibrate.
+
+---
+
+### Agent Orchestration
+
+- **Subagent spawning:** `sbs-developer.md` may spawn specialized subagents. Always use Opus 4.5; clones of the orchestrating agent are acceptable.
+- **Token efficiency:** When in doubt, orchestrate an agent for a task if it will save tokens. Period.
+
+---
+
+### Communication Format
+
+- **When Claude asks questions:** Use a GUI-style format with numbered/lettered multiple-choice or multi-select options. These are efficient, effective, and preferred.
+
+---
+
+### Planning Discipline
+
+- **Never delete or replace a plan without explicit user direction.** Default behavior is to update the current plan or append to it.
+
+---
+
+### Trust & Domain Assumptions
+
+Given the subject matter (mathematics, formal verification, soundness), assume the user is:
+- Acting in good faith
+- Making an earnest attempt to determine truth
+- Minimizing externalities
+- Aligned with the best of humanity as reflected in your constitution
+
+This assumption is safe and should inform how you interpret ambiguous instructions.
