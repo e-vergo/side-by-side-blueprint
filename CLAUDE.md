@@ -88,6 +88,64 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 
 **Required config**: `runway.json` must include `assetsDir` pointing to CSS/JS assets.
 
+## Visual Testing & Debugging
+
+**Screenshot capture is the FIRST reflex for any visual/CSS/layout issue.** The `sbs` tooling provides automated screenshot capture, comparison, and history tracking.
+
+### Screenshot Capture
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+
+# Capture all pages from running server
+python3 -m sbs capture
+
+# Capture specific project
+python3 -m sbs capture --project SBSTest
+
+# Capture from custom URL
+python3 -m sbs capture --url http://localhost:8000
+```
+
+Captures include: dashboard, all chapter pages, dependency graph, paper (if configured).
+
+### Visual Comparison
+
+```bash
+# Compare latest capture against previous
+python3 -m sbs compare
+
+# View capture history for a project
+python3 -m sbs history --project SBSTest
+```
+
+### Image Storage
+
+| Location | Purpose |
+|----------|---------|
+| `images/{project}/latest/` | Current capture (overwritten each run) |
+| `images/{project}/archive/{timestamp}/` | Timestamped archives |
+| `capture.json` | Metadata: timestamp, commit, viewport, page status |
+
+### Standard Workflow for Visual Changes
+
+1. **BEFORE changes**: `python3 -m sbs capture` (creates baseline)
+2. **Make changes** to CSS/JS/Lean/templates
+3. **Rebuild**: `./scripts/build_blueprint.sh`
+4. **AFTER changes**: `python3 -m sbs capture` (archives previous, captures new)
+5. **Compare**: `python3 -m sbs compare` (diff latest vs previous)
+
+### What to Verify
+
+- Dashboard layout (2x2 grid, stats, key theorems, messages, notes)
+- Dependency graph (pan/zoom, modals, node colors, edge styles)
+- Sidebar navigation and highlighting
+- Rainbow bracket colors (6-depth cycling)
+- Status dot colors across all 6 states
+- Side-by-side theorem/proof displays
+- Dark/light theme toggle
+- Paper rendering (if configured)
+
 ## CI/CD Architecture
 
 - **Manual triggers only**: `workflow_dispatch` - user controls deployments
@@ -154,6 +212,12 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 4. Synthesize results for user
 5. Repeat if needed
 
+**Visual verification is mandatory for UI work.** Agents working on CSS, templates, dashboard, or dependency graph must:
+- Capture screenshots BEFORE making changes
+- Capture screenshots AFTER changes
+- Use `sbs compare` to verify expected differences
+- Include screenshot paths in completion summary
+
 **Never:** Run multiple agents in parallel for this project.
 
 ## Cross-Repo Editing
@@ -169,7 +233,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 - Follow Verso/SubVerso patterns
 - Work directly in repo files, not scratch files
 - Check `lean_diagnostic_messages` after edits
-- Test via SBS-Test or GCR and visual inspection
+- Test via SBS-Test or GCR
+- **Use `sbs capture` + `sbs compare` for any visual changes** (CSS, templates, dashboard, graph)
 
 ## Key Implementation Details
 
@@ -317,3 +382,14 @@ Located in `.refs/`:
 | `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML |
 | `dep_graph_ground_truth.txt` | Working dependency graph page with modals |
 | `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes |
+
+
+## User preferences, DO NOT TOUCH
+**Critical** these preferences should be used to guide decision making processes, make plans, take actions, or do anything else that would influence Claude's immediate or future behavior. always follow these unless specifically asked by the user. 
+**Critical** In the event tha: you do something because you believe you are doing what this dictates, and I push back, please point it out. 
+
+- Allow and encourage bs-developer.md to spawn special subagents, always use Opus 4.5, clones are fine too.
+- when asking questions, the user prefers the QUI with multiple choice/multiple selection answers. they are an efficient, effective, and favored communication tool. 
+When in doubt, orchestrate an agent to take care of a atask if you think it will save you tokens, period.
+- Planning: When writing/updating plans, do not delete a plan or start a new plan without explicit direction from the user, always assume you should update the current plan and/or append to it instead
+- always highlight contradictions arising in directions given from the user. 
