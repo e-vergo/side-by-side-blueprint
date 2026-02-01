@@ -1,0 +1,20 @@
+{
+  "page": "paper_tex",
+  "discovered_at": "2026-02-01T00:25:16.463785",
+  "interactions": [
+    {
+      "id": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "count": 1,
+      "sample_count": 1
+    },
+    {
+      "id": "proof_toggle",
+      "selector": ".proof_heading, .expand-proof",
+      "type": "click",
+      "count": 12,
+      "sample_count": 1
+    }
+  ]
+}

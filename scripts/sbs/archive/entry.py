@@ -17,7 +17,6 @@ class ArchiveEntry:
     # Linkage
     project: str
     build_run_id: Optional[str] = None
-    compliance_run_id: Optional[str] = None
 
     # User annotations
     notes: str = ""
@@ -25,8 +24,6 @@ class ArchiveEntry:
 
     # Content references
     screenshots: list[str] = field(default_factory=list)
-    stats_snapshot: Optional[str] = None
-    chat_summary: Optional[str] = None
 
     # Git state
     repo_commits: dict[str, str] = field(default_factory=dict)
@@ -43,12 +40,9 @@ class ArchiveEntry:
             "created_at": self.created_at,
             "project": self.project,
             "build_run_id": self.build_run_id,
-            "compliance_run_id": self.compliance_run_id,
             "notes": self.notes,
             "tags": self.tags,
             "screenshots": self.screenshots,
-            "stats_snapshot": self.stats_snapshot,
-            "chat_summary": self.chat_summary,
             "repo_commits": self.repo_commits,
             "synced_to_icloud": self.synced_to_icloud,
             "sync_timestamp": self.sync_timestamp,
@@ -57,18 +51,19 @@ class ArchiveEntry:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ArchiveEntry":
-        """Create an ArchiveEntry from a dict."""
+        """Create an ArchiveEntry from a dict.
+
+        Note: Ignores legacy fields (compliance_run_id, stats_snapshot,
+        chat_summary) for backward compatibility with old entries.
+        """
         return cls(
             entry_id=data["entry_id"],
             created_at=data["created_at"],
             project=data["project"],
             build_run_id=data.get("build_run_id"),
-            compliance_run_id=data.get("compliance_run_id"),
             notes=data.get("notes", ""),
             tags=data.get("tags", []),
             screenshots=data.get("screenshots", []),
-            stats_snapshot=data.get("stats_snapshot"),
-            chat_summary=data.get("chat_summary"),
             repo_commits=data.get("repo_commits", {}),
             synced_to_icloud=data.get("synced_to_icloud", False),
             sync_timestamp=data.get("sync_timestamp"),

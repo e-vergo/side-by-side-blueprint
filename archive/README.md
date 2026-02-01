@@ -119,11 +119,13 @@ Each build creates an `ArchiveEntry` with:
 | `created_at` | ISO timestamp |
 | `project` | Project name |
 | `build_run_id` | Build run ID (links to unified ledger) |
-| `tags` | User-defined tags |
 | `notes` | User notes |
+| `tags` | User-defined tags |
 | `screenshots` | List of captured screenshots |
 | `repo_commits` | Git commits at build time (all 11 repos) |
 | `synced_to_icloud` | Sync status |
+| `sync_timestamp` | When last synced to iCloud |
+| `sync_error` | Error message if sync failed (sparse - only set on failures) |
 
 ## Visualizations
 

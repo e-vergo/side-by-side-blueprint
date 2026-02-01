@@ -77,12 +77,9 @@ class TestAnalyzeEntry:
             "created_at": "2026-01-31T10:00:00",
             "project": "TestProject",
             "build_run_id": "build_456",
-            "compliance_run_id": "comp_789",
             "notes": "Some notes",
             "tags": ["tag1", "tag2"],
             "screenshots": ["screenshot.png"],
-            "stats_snapshot": "stats.json",
-            "chat_summary": "summary.md",
             "repo_commits": {"repo": "abc123"},
             "synced_to_icloud": True,
             "sync_timestamp": "2026-01-31T11:00:00",
@@ -99,12 +96,9 @@ class TestAnalyzeEntry:
             "created_at": "2026-01-31T10:00:00",
             "project": "TestProject",
             "build_run_id": None,
-            "compliance_run_id": None,
             "notes": "",
             "tags": [],
             "screenshots": [],
-            "stats_snapshot": None,
-            "chat_summary": None,
             "repo_commits": {},
             "synced_to_icloud": False,
             "sync_timestamp": None,
@@ -119,12 +113,9 @@ class TestAnalyzeEntry:
 
         # Optional fields are not populated
         assert result["build_run_id"] is False
-        assert result["compliance_run_id"] is False
         assert result["notes"] is False
         assert result["tags"] is False
         assert result["screenshots"] is False
-        assert result["stats_snapshot"] is False
-        assert result["chat_summary"] is False
         assert result["repo_commits"] is False
         assert result["sync_timestamp"] is False
         assert result["sync_error"] is False
@@ -186,13 +177,10 @@ class TestAnalyzeArchive:
 
         # Unpopulated fields
         assert fp["build_run_id"] == 0.0
-        assert fp["compliance_run_id"] == 0.0
-        assert fp["stats_snapshot"] == 0.0
-        assert fp["chat_summary"] == 0.0
         assert fp["sync_error"] == 0.0
 
-        # Check population rate (9 populated / 14 total = 0.642...)
-        assert 0.64 <= result["population_rate"] <= 0.65
+        # Check population rate (9 populated / 11 total = 0.818...)
+        assert 0.81 <= result["population_rate"] <= 0.82
 
     def test_identifies_unpopulated_fields(self, temp_archive_dir: Path):
         """Correctly identifies fields that are never populated."""
@@ -221,10 +209,7 @@ class TestAnalyzeArchive:
 
         result = analyze_archive(archive_path)
 
-        # These should be identified as never populated
-        assert "compliance_run_id" in result["unpopulated_fields"]
-        assert "stats_snapshot" in result["unpopulated_fields"]
-        assert "chat_summary" in result["unpopulated_fields"]
+        # sync_error should be identified as never populated
         assert "sync_error" in result["unpopulated_fields"]
 
     def test_mixed_population(self, temp_archive_dir: Path):
@@ -374,9 +359,7 @@ class TestLedgerHealthValidator:
 
         # Should report unpopulated fields
         assert any("never populated" in f for f in result.findings)
-        assert "compliance_run_id" in result.metrics["unpopulated_fields"]
-        assert "stats_snapshot" in result.metrics["unpopulated_fields"]
-        assert "chat_summary" in result.metrics["unpopulated_fields"]
+        assert "sync_error" in result.metrics["unpopulated_fields"]
 
     def test_with_real_archive_data(self):
         """Run against actual archive_index.json (integration test)."""

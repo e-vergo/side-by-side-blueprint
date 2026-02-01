@@ -23,17 +23,17 @@ from .registry import register_validator
 
 
 # All fields declared in ArchiveEntry (from archive/entry.py)
+# Note: compliance_run_id, stats_snapshot, chat_summary were removed
+# as dead code (never populated). sync_error is kept - it's legitimately
+# sparse (only set on sync failures).
 DECLARED_FIELDS = [
     "entry_id",
     "created_at",
     "project",
     "build_run_id",
-    "compliance_run_id",
     "notes",
     "tags",
     "screenshots",
-    "stats_snapshot",
-    "chat_summary",
     "repo_commits",
     "synced_to_icloud",
     "sync_timestamp",

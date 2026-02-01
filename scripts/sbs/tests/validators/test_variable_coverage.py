@@ -488,7 +488,7 @@ class TestCSSVariableCoverageValidator:
 
         assert result.passed is True
         assert result.metrics["coverage"] == 1.0
-        assert result.metrics["total_color_usages"] == 0
+        assert result.metrics["total_color_values"] == 0
 
 
 # =============================================================================
@@ -530,7 +530,7 @@ class TestWithRealCSSFiles:
         result = validator.validate(context)
 
         # Should complete without error
-        assert result.metrics["total_color_usages"] > 0
+        assert result.metrics["total_color_values"] > 0
         assert len(result.metrics["files_analyzed"]) == 4
 
     def test_reports_expected_violations(self, validator: CSSVariableCoverageValidator, real_css_dir: Path) -> None:

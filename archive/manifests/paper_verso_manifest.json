@@ -1,0 +1,13 @@
+{
+  "page": "paper_verso",
+  "discovered_at": "2026-02-01T00:25:22.803309",
+  "interactions": [
+    {
+      "id": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "count": 1,
+      "sample_count": 1
+    }
+  ]
+}
