@@ -52,6 +52,11 @@ def cmd_rubric_create(args: argparse.Namespace) -> int:
         with open(json_path) as f:
             data = json.load(f)
 
+        # Generate ID if not provided
+        if "id" not in data:
+            import uuid
+            data["id"] = str(uuid.uuid4())
+
         rubric = Rubric.from_dict(data)
     elif args.name:
         # Create minimal rubric with name
