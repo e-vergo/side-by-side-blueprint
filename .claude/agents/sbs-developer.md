@@ -171,6 +171,27 @@ This is the canonical reference for:
 
 When working with rubrics or validation, consult the hub first.
 
+### Archive & Session Data
+
+The archive system extracts Claude Code interaction data from `~/.claude`:
+- Session logs (conversations, tool calls)
+- Plans and todos
+- Aggregated tool call statistics
+
+**Commands:**
+```bash
+sbs archive upload              # Extract and archive all data
+sbs archive upload --dry-run    # Preview without changes
+```
+
+Archive upload runs automatically with every build. For tagging rules and hooks, see `dev/storage/tagging/rules.yaml`.
+
+**Key files:**
+- `dev/scripts/sbs/archive/upload.py` - Main upload logic
+- `dev/scripts/sbs/archive/extractor.py` - ~/.claude extraction
+- `dev/scripts/sbs/archive/tagger.py` - Auto-tagging engine
+- `dev/storage/tagging/rules.yaml` - Tagging rules
+
 ---
 
 ## Build Pipeline Phases

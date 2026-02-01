@@ -312,6 +312,7 @@ Subcommands:
   charts       Generate all charts from unified ledger
   sync         Sync archive to iCloud
   retroactive  Migrate historical archives to entry system
+  upload       Extract Claude data and upload to archive
 
 Examples:
   sbs archive list                        # List all entries
@@ -322,6 +323,7 @@ Examples:
   sbs archive charts                      # Generate charts
   sbs archive sync                        # Sync to iCloud
   sbs archive retroactive --dry-run       # Preview migration
+  sbs archive upload --dry-run            # Preview upload
         """,
     )
     archive_subparsers = archive_parser.add_subparsers(
@@ -420,6 +422,43 @@ Examples:
         "--dry-run",
         action="store_true",
         help="Show what would be migrated without making changes",
+    )
+
+    # --- archive upload ---
+    archive_upload_parser = archive_subparsers.add_parser(
+        "upload",
+        help="Extract Claude data and upload to archive",
+        description="Extract Claude Code session data, create archive entry, run auto-tagging, sync to iCloud, and ensure porcelain git state.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Extracts all SBS-related data from ~/.claude and creates an archive entry:
+1. Parses session JSONL files and extracts tool calls
+2. Copies plan files
+3. Runs auto-tagging rules and hooks
+4. Syncs to iCloud
+5. Commits and pushes all repos (porcelain guarantee)
+
+Examples:
+  sbs archive upload                    # Full upload
+  sbs archive upload --dry-run          # Preview without making changes
+  sbs archive upload --project SBSTest  # Associate with specific project
+  sbs archive upload --trigger build    # Mark as build-triggered
+        """,
+    )
+    archive_upload_parser.add_argument(
+        "--project",
+        help="Associate with specific project",
+    )
+    archive_upload_parser.add_argument(
+        "--trigger",
+        default="manual",
+        choices=["build", "manual", "skill"],
+        help="Upload trigger type (default: manual)",
+    )
+    archive_upload_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without making changes",
     )
 
     # --- rubric (command group) ---

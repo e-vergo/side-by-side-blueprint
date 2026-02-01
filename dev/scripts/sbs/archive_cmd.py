@@ -31,6 +31,8 @@ def cmd_archive(args: argparse.Namespace) -> int:
         return cmd_archive_sync(args)
     elif args.archive_command == "retroactive":
         return cmd_archive_retroactive(args)
+    elif args.archive_command == "upload":
+        return cmd_archive_upload(args)
     else:
         log.error(f"Unknown archive subcommand: {args.archive_command}")
         return 1
@@ -244,3 +246,34 @@ def cmd_archive_retroactive(args: argparse.Namespace) -> int:
         log.info("No new entries to create.")
 
     return 0 if not result["errors"] else 1
+
+
+def cmd_archive_upload(args: argparse.Namespace) -> int:
+    """Run archive upload."""
+    from .archive.upload import archive_upload
+
+    project = getattr(args, "project", None)
+    trigger = getattr(args, "trigger", "manual")
+    dry_run = getattr(args, "dry_run", False)
+
+    result = archive_upload(
+        project=project,
+        trigger=trigger,
+        dry_run=dry_run,
+    )
+
+    # Log summary
+    log.header("Upload Summary")
+    log.info(f"Entry ID:     {result.get('entry_id', 'N/A')}")
+    log.info(f"Sessions:     {result.get('sessions_extracted', 0)}")
+    log.info(f"Plans:        {result.get('plans_extracted', 0)}")
+    log.info(f"Tags:         {result.get('tags_applied', [])}")
+    log.info(f"Porcelain:    {'Yes' if result.get('porcelain') else 'No'}")
+    log.info(f"Synced:       {'Yes' if result.get('synced') else 'No'}")
+
+    if result.get("errors"):
+        log.header("Errors")
+        for err in result["errors"]:
+            log.error(err)
+
+    return 0 if result.get("success") else 1

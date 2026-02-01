@@ -69,6 +69,13 @@ try:
 except ImportError:
     HAS_ARCHIVE = False
 
+# Import archive upload for build integration
+try:
+    from sbs.archive.upload import archive_upload
+    HAS_ARCHIVE_UPLOAD = True
+except ImportError:
+    HAS_ARCHIVE_UPLOAD = False
+
 
 # =============================================================================
 # Constants
@@ -864,6 +871,31 @@ class BuildOrchestrator:
 
         except Exception as e:
             log.warning(f"iCloud sync skipped: {e}")
+
+        # Run archive upload with build context
+        if HAS_ARCHIVE_UPLOAD:
+            try:
+                # Calculate build duration
+                build_duration = sum(self._phase_timings.values()) if self._phase_timings else None
+
+                # Determine repos that changed
+                repos_changed = []
+                for repo, after_commit in self._commits_after.items():
+                    before_commit = self._commits_before.get(repo)
+                    if before_commit and after_commit != before_commit:
+                        repos_changed.append(repo)
+
+                archive_upload(
+                    project=self.config.project_name,
+                    build_run_id=self._run_id,
+                    trigger="build",
+                    dry_run=self.config.dry_run,
+                    build_success=self._build_success,
+                    build_duration_seconds=build_duration,
+                    repos_changed=repos_changed,
+                )
+            except Exception as e:
+                log.warning(f"Archive upload failed: {e}")
 
     def discover_repos(self) -> None:
         """Discover all repos in the SBS workspace."""

@@ -82,6 +82,15 @@ Read `dev/storage/migrations.json`:
 - Delete files listed in `migrations[].from` if they exist (confirm with user)
 - Replace patterns in `path_references` automatically
 
+### Archive Integration
+
+Archive upload runs automatically during builds. If this skill is invoked after a build, session data has already been archived. For standalone documentation refreshes, run:
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill
+```
+
 ### Git Porcelain
 
 For each repo (main + 10 submodules):

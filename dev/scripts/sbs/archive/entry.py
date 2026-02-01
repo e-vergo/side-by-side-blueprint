@@ -1,9 +1,12 @@
 """Archive entry data structures for SBS project snapshots."""
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from .session_data import ClaudeDataSnapshot
 
 
 @dataclass
@@ -37,6 +40,11 @@ class ArchiveEntry:
     rubric_id: Optional[str] = None  # Links to a rubric in archive/rubrics/
     rubric_evaluation: Optional[dict] = None  # Snapshot of evaluation results
 
+    # Claude data extraction
+    claude_data: Optional[dict] = None  # Serialized ClaudeDataSnapshot
+    auto_tags: list[str] = field(default_factory=list)  # Tags from rules/hooks
+    trigger: str = "manual"  # "build", "manual", "skill"
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -53,6 +61,9 @@ class ArchiveEntry:
             "sync_error": self.sync_error,
             "rubric_id": self.rubric_id,
             "rubric_evaluation": self.rubric_evaluation,
+            "claude_data": self.claude_data,
+            "auto_tags": self.auto_tags,
+            "trigger": self.trigger,
         }
 
     @classmethod
@@ -76,6 +87,9 @@ class ArchiveEntry:
             sync_error=data.get("sync_error"),
             rubric_id=data.get("rubric_id"),
             rubric_evaluation=data.get("rubric_evaluation"),
+            claude_data=data.get("claude_data"),
+            auto_tags=data.get("auto_tags", []),
+            trigger=data.get("trigger", "manual"),
         )
 
 
@@ -120,8 +134,9 @@ class ArchiveIndex:
         # Add to main entries dict
         self.entries[entry_id] = entry
 
-        # Update by_tag index
-        for tag in entry.tags:
+        # Update by_tag index (include both manual tags and auto_tags)
+        all_tags = list(entry.tags) + list(entry.auto_tags)
+        for tag in all_tags:
             if tag not in self.by_tag:
                 self.by_tag[tag] = []
             if entry_id not in self.by_tag[tag]:

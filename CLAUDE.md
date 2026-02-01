@@ -303,6 +303,11 @@ Each build creates an `ArchiveEntry` with:
 ### CLI Commands
 
 ```bash
+# Upload session data and ensure porcelain state
+sbs archive upload
+sbs archive upload --dry-run
+sbs archive upload --trigger build  # Called automatically by build.py
+
 # List archive entries
 sbs archive list [--project NAME] [--tag TAG]
 
@@ -324,6 +329,17 @@ sbs archive sync
 # Migrate historical archives
 sbs archive retroactive [--dry-run]
 ```
+
+### Archive Upload
+
+The `sbs archive upload` command extracts Claude Code interaction data from `~/.claude`:
+- Session logs (conversations, tool calls)
+- Plan files
+- Aggregated tool call statistics
+
+It then applies auto-tagging rules from `dev/storage/tagging/rules.yaml` and ensures all repos are in porcelain (clean) git state.
+
+**Runs automatically** at the end of every build via `build.py`.
 
 ### Visualizations
 
