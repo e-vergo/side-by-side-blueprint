@@ -111,6 +111,7 @@ If all improvements implemented:
 |------|-------|---------|
 | 2026-02-01 | 87.21 | Baseline |
 | 2026-02-01 | 89.69 | +2.48: Fixed 20 CSS violations, removed 3 dead ledger fields |
+| 2026-02-01 | 91.77 | +2.08: Excluded syntax colors from T6, improved toggle styling |
 
 ## Running Tests
 

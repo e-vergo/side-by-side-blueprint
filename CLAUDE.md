@@ -504,6 +504,64 @@ Spawn an agent for:
 
 ---
 
+## Quality Validation Framework
+
+### 8-Dimensional Test Suite (T1-T8)
+
+The toolchain includes automated quality scoring tracking 8 dimensions:
+
+**Deterministic Tests (50% weight):**
+
+| Test | Name | Weight | Description |
+|------|------|--------|-------------|
+| T1 | CLI Execution | 10% | All sbs CLI commands execute without error |
+| T2 | Ledger Population | 10% | Unified ledger fields are populated correctly |
+| T5 | Status Color Match | 15% | 6 status colors match between Lean and CSS |
+| T6 | CSS Variable Coverage | 15% | Hardcoded colors use CSS variables |
+
+**Heuristic Tests (50% weight):**
+
+| Test | Name | Weight | Description |
+|------|------|--------|-------------|
+| T3 | Dashboard Clarity | 10% | Dashboard answers 3 key questions at a glance |
+| T4 | Toggle Discoverability | 10% | Proof toggles and theme switches are findable |
+| T7 | Jarring-Free Check | 15% | No visually jarring elements (AI vision) |
+| T8 | Professional Score | 15% | Overall polish and alignment (AI vision) |
+
+**Score Calculation:** `quality_score = Σ(test_score × weight)`
+
+**Score Tracking:** 87.21 (baseline) -> 89.69 -> 91.77 (current)
+
+### Design Validators
+
+Located in `scripts/sbs/validators/design/`:
+
+| Validator | Purpose |
+|-----------|---------|
+| `color_match.py` | T5: Verifies status colors match between Lean and CSS |
+| `variable_coverage.py` | T6: Measures CSS variable coverage vs hardcoded colors |
+| `dashboard_clarity.py` | T3: AI-based dashboard clarity assessment |
+| `toggle_discoverability.py` | T4: AI-based toggle findability scoring |
+| `jarring_check.py` | T7: AI detection of jarring design elements |
+| `professional_score.py` | T8: AI-based professional polish assessment |
+| `css_parser.py` | Shared CSS parsing utilities |
+
+### Running Quality Tests
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+
+# Run all deterministic tests
+/opt/homebrew/bin/pytest sbs/tests/ -v
+
+# Run design validator suite
+python -m sbs design-check --project SBSTest
+```
+
+See `scripts/sbs/tests/SCORING_RUBRIC.md` for detailed scoring methodology
+
+---
+
 ## Custom Skills
 
 ### `/execute`

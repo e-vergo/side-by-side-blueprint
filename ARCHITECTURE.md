@@ -276,6 +276,21 @@ git = "https://github.com/e-vergo/verso.git"
 rev = "main"
 ```
 
+## Quality Validation
+
+The toolchain includes an 8-dimensional quality scoring system:
+
+**Deterministic Tests (T1, T2, T5, T6):** CLI execution, ledger population, status color matching, CSS variable coverage
+
+**Heuristic Tests (T3, T4, T7, T8):** Dashboard clarity, toggle discoverability, jarring-free check, professional score
+
+**Current Score:** 91.77/100 (as of 2026-02-01)
+
+Design validators in `scripts/sbs/validators/design/` automate quality checks. Run with:
+```bash
+/opt/homebrew/bin/pytest sbs/tests/ -v
+```
+
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started

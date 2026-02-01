@@ -33,6 +33,7 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 - **Automatic dependency inference** from actual Lean code (replaces manual `\uses{}`)
 - **Hover tooltips** with type signatures via Tippy.js
 - **Dark/light theme toggle** with localStorage persistence
+- **8-dimensional quality scoring** with automated design validation (T1-T8 test suite)
 
 ## Repository Structure
 

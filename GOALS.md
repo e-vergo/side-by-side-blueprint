@@ -192,6 +192,19 @@ Side-by-Side-Blueprint/
 - Dashboard is single-column layout (intentional)
 - Build time dominated by SubVerso highlighting (93-99%)
 
+## Quality Validation
+
+The toolchain now includes an 8-dimensional quality scoring system for design validation:
+
+| Category | Tests | Description |
+|----------|-------|-------------|
+| Deterministic (50%) | T1, T2, T5, T6 | CLI execution, ledger health, color matching, CSS coverage |
+| Heuristic (50%) | T3, T4, T7, T8 | Dashboard clarity, toggle discoverability, jarring-free, professional score |
+
+**Current Score:** 91.77/100 (as of 2026-02-01)
+
+Design validators in `scripts/sbs/validators/design/` automate quality assessment, providing measurable quality targets for UI work.
+
 ## Quality Targets
 
 ### Blueprint (Achieved)
