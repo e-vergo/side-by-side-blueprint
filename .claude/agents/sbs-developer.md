@@ -216,12 +216,12 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
 python ../scripts/build.py
 ```
 
-**Do NOT use `--skip-sync`**. The build script commits and pushes all repo changes, ensuring:
+The build script commits and pushes all repo changes (no skip option exists by design), ensuring:
 - Reproducible builds tied to specific commits
 - Compliance ledger tracks actual deployed state
 - Change detection works correctly
 
-Options: `--dry-run`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
+Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`
 
 ### Build Script Steps
 

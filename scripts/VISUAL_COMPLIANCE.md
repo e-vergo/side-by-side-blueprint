@@ -13,7 +13,7 @@ python ../scripts/build.py                    # Full build with git sync
 python ../scripts/sbs capture --interactive   # Capture screenshots
 ```
 
-**Do NOT use `--skip-sync`**. The build script commits and pushes all repo changes, ensuring:
+The build script commits and pushes all repo changes (no skip option exists by design), ensuring:
 - Reproducible builds tied to specific commits
 - Ledger tracks actual deployed state
 - Change detection works correctly

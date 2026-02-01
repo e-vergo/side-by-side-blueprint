@@ -104,7 +104,7 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 python ../scripts/build.py
 ```
 
-Features: `--dry-run`, `--skip-sync`, `--skip-toolchain`, `--skip-cache`, `--verbose`, `--capture`
+Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`
 
 ### Build Script Steps
 
@@ -150,8 +150,8 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
 python ../scripts/build.py                    # Full build with git sync
 ```
 
-Do NOT use `--skip-sync`. The build script ensures:
-- All repos are committed and pushed
+The build script ensures:
+- All repos are committed and pushed (no skip option exists by design)
 - Reproducible builds tied to specific commits
 - Compliance ledger tracks actual deployed state
 
