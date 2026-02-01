@@ -177,6 +177,8 @@ def discover_validators() -> int:
     Scans the validators package for modules and imports them. Each module
     using @register_validator will have its validators registered upon import.
 
+    Also recursively scans subpackages (e.g., sbs.validators.design).
+
     Returns:
         Number of validators discovered and registered.
 
@@ -191,19 +193,32 @@ def discover_validators() -> int:
     # Get the package path
     package_path = validators_pkg.__path__
 
-    # Import all modules in the package (except __init__, base, registry)
+    # Modules to skip at any level
     skip_modules = {"__init__", "base", "registry"}
 
-    for module_info in pkgutil.iter_modules(package_path):
-        if module_info.name not in skip_modules:
+    def _import_recursive(package_name: str, package_path: list[str]) -> None:
+        """Recursively import modules from a package."""
+        for module_info in pkgutil.iter_modules(package_path):
+            if module_info.name in skip_modules:
+                continue
+
+            full_name = f"{package_name}.{module_info.name}"
+
             try:
-                importlib.import_module(f"sbs.validators.{module_info.name}")
+                module = importlib.import_module(full_name)
+
+                # If it's a package, recurse into it
+                if module_info.ispkg and hasattr(module, "__path__"):
+                    _import_recursive(full_name, module.__path__)
+
             except ImportError as e:
                 # Log but don't fail - allows partial discovery
                 import warnings
 
                 warnings.warn(
-                    f"Failed to import validator module '{module_info.name}': {e}"
+                    f"Failed to import validator module '{full_name}': {e}"
                 )
+
+    _import_recursive("sbs.validators", list(package_path))
 
     return len(registry) - initial_count
