@@ -56,7 +56,7 @@ Building tooling that:
 | `showcase/` | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
 | `showcase/` | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
 | `dev/scripts/` | - | Python build tooling (build.py, sbs CLI) |
-| `storage/` | - | Build metrics, screenshots, session archives, iCloud sync |
+| `dev/storage/` | - | Build metrics, screenshots, session archives, iCloud sync |
 
 ### Dependency Chain
 
@@ -207,8 +207,8 @@ python3 -m sbs history --project SBSTest
 
 | Location | Purpose |
 |----------|---------|
-| `storage/{project}/latest/` | Current capture (overwritten each run) |
-| `storage/{project}/archive/{timestamp}/` | Timestamped archives |
+| `dev/storage/{project}/latest/` | Current capture (overwritten each run) |
+| `dev/storage/{project}/archive/{timestamp}/` | Timestamped archives |
 | `capture.json` | Metadata: timestamp, commit, viewport, page status |
 
 ### Standard Workflow for Visual Changes
@@ -238,13 +238,13 @@ python3 -m sbs history --project SBSTest
 
 The archive system provides comprehensive build tracking, iCloud sync, session archiving, and custom rubrics.
 
-**Canonical reference:** [`storage/README.md`](storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
+**Canonical reference:** [`dev/storage/README.md`](dev/storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
 
 ### Directory Structure
 
 **Local Ground Truth:**
 ```
-storage/
+dev/storage/
   unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
   archive_index.json      # Entry index with tags
@@ -565,7 +565,7 @@ See `dev/scripts/sbs/tests/SCORING_RUBRIC.md` for detailed scoring methodology
 
 ## Tooling Hub
 
-All CLI tooling documentation is centralized in [`storage/README.md`](storage/README.md). This includes:
+All CLI tooling documentation is centralized in [`dev/storage/README.md`](dev/storage/README.md). This includes:
 - `sbs capture/compliance` - Visual testing
 - `sbs rubric` - Custom rubric management
 - `sbs archive` - Archive management
@@ -602,7 +602,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 **Key properties:**
 - `disable-model-invocation: true` - Manual trigger only
 - All builds through `python build.py` (no bypass)
-- Unified ledger at `storage/unified_ledger.json`
+- Unified ledger at `dev/storage/unified_ledger.json`
 
 #### Grab-Bag Mode
 
@@ -614,7 +614,7 @@ Invoke with `/execute --grab-bag` for ad-hoc improvement sessions:
 5. Execution with rubric grading
 6. /update-and-archive finalization
 
-Rubrics persist in `storage/rubrics/` and can be reused.
+Rubrics persist in `dev/storage/rubrics/` and can be reused.
 
 ### Visual Compliance (CLI)
 
@@ -640,8 +640,8 @@ python3 -m sbs compliance --project SBSTest --interactive
 - `dev/scripts/sbs/ledger.py` - Ledger management
 - `dev/scripts/sbs/mapping.py` - Repo->page change detection
 - `dev/scripts/sbs/validate.py` - Validation orchestration
-- `storage/compliance_ledger.json` - Persistent status
-- `storage/COMPLIANCE_STATUS.md` - Human-readable report
+- `dev/storage/compliance_ledger.json` - Persistent status
+- `dev/storage/COMPLIANCE_STATUS.md` - Human-readable report
 
 ---
 
@@ -867,7 +867,7 @@ rev = "main"
 | `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes (Tao incident, Zulip discussions) |
 
 **Tooling hub:**
-- `storage/README.md` - Central CLI tooling documentation (capture, compliance, rubrics, archive)
+- `dev/storage/README.md` - Central CLI tooling documentation (capture, compliance, rubrics, archive)
 
 **Per-repository documentation:**
 Each repository has a `README.md` with component-specific documentation:

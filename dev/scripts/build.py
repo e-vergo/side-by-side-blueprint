@@ -803,8 +803,8 @@ class BuildOrchestrator:
                 error_message=self._error_message,
             )
 
-            # Save to unified ledger (in archive/ at repo root)
-            archive_dir = SBS_ROOT / "storage"
+            # Save to unified ledger (in dev/storage/)
+            archive_dir = SBS_ROOT / "dev" / "storage"
             archive_dir.mkdir(parents=True, exist_ok=True)
 
             ledger = get_or_create_unified_ledger(archive_dir, self.config.project_name)
@@ -837,7 +837,7 @@ class BuildOrchestrator:
             return
 
         try:
-            archive_root = SBS_ROOT / "storage"
+            archive_root = SBS_ROOT / "dev" / "storage"
             index_path = archive_root / "archive_index.json"
 
             # Load or create index
@@ -847,7 +847,7 @@ class BuildOrchestrator:
                 index = ArchiveIndex()
 
             # Add screenshots reference
-            project_dir = SBS_ROOT / "storage" / self.config.project_name / "latest"
+            project_dir = SBS_ROOT / "dev" / "storage" / self.config.project_name / "latest"
             if project_dir.exists():
                 entry.screenshots = [str(p.name) for p in project_dir.glob("*.png")]
 

@@ -25,6 +25,6 @@
 [submodule "showcase/PrimeNumberTheoremAnd"]
 	path = showcase/PrimeNumberTheoremAnd
 	url = https://github.com/e-vergo/PrimeNumberTheoremAnd.git
-[submodule "storage"]
-	path = storage
+[submodule "dev/storage"]
+	path = dev/storage
 	url = https://github.com/e-vergo/sbs-storage.git

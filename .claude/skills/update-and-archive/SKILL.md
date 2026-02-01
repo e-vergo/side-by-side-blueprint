@@ -138,7 +138,7 @@ After Part 2 completes, the orchestrator ensures the entire monorepo is "porcela
 
 ### Step 1: Stale File Detection
 
-Read the migration registry at `storage/migrations.json`. This file tracks all path migrations with:
+Read the migration registry at `dev/storage/migrations.json`. This file tracks all path migrations with:
 - `from`: Old path that should no longer exist
 - `to`: New canonical location
 - `date`: When migration occurred
@@ -154,7 +154,7 @@ for each migration in migrations.json:
 
 ### Step 2: Stale Path Detection
 
-Read `path_references` from `storage/migrations.json`. These define patterns that should be replaced in documentation.
+Read `path_references` from `dev/storage/migrations.json`. These define patterns that should be replaced in documentation.
 
 **Detection algorithm:**
 ```
@@ -168,7 +168,7 @@ for each ref in path_references:
 
 ### Adding New Migrations
 
-When paths are migrated in the future, update `storage/migrations.json`:
+When paths are migrated in the future, update `dev/storage/migrations.json`:
 1. Add entry to `migrations` array with from/to/date
 2. Add entry to `path_references` if docs need updating
 3. Next `/update-and-archive` run will detect and clean up automatically
@@ -324,9 +324,8 @@ CRUCIAL, this is something the user expects and will be used a direct measuremen
 
 This skill exists because:
 
-1. **Documentation drift**: Code changes faster than docs. Regular refresh prevents staleness.
-2. **Context preservation**: Core docs inform Claude sessions. Accurate docs = better assistance.
-3. **Onboarding**: New contributors (human or AI) need accurate entry points.
-4. **The audience matters**: This project may be shared with Lean FRO, Terence Tao, and the formalization community. Documentation quality reflects project quality.
+The archival process is central to the self-improvement process in the repo. It uses tolling that captures all of the relevant human and llm interactions in a serchable way and allows us to understand how we work better, enabling introspection and self improvement. 
+
+Automating, standardizing, and optimizing the workflows surrounding that is crucial to our sucsess. This workflow is a key part of that effort. 
 
 Invoke often. Keep docs fresh. Never skip this step.

@@ -98,7 +98,7 @@ After completion:
 
 ## Implementation Notes
 
-All builds must go through `python build.py` (never skip commits/pushes). The unified ledger at `storage/unified_ledger.json` tracks all metrics across builds.
+All builds must go through `python build.py` (never skip commits/pushes). The unified ledger at `dev/storage/unified_ledger.json` tracks all metrics across builds.
 
 To run validators programmatically:
 ```python
@@ -162,8 +162,8 @@ Claude creates a formal rubric for user approval:
    - Scoring type (pass_fail, percentage, score_0_10)
 2. Assign weights based on user priorities
 3. Present rubric for user approval
-4. On approval, save to `storage/rubrics/{id}.json`
-5. Auto-generate markdown at `storage/rubrics/{id}.md`
+4. On approval, save to `dev/storage/rubrics/{id}.json`
+5. Auto-generate markdown at `dev/storage/rubrics/{id}.md`
 
 **CLI integration:**
 ```bash
@@ -249,7 +249,7 @@ Claude: Based on our discussion, I see three categories:
 
 User: Approved
 Claude: Creating rubric "dashboard-ux-2025-01"...
-[Saved to storage/rubrics/dashboard-ux-2025-01.json]
+[Saved to dev/storage/rubrics/dashboard-ux-2025-01.json]
 
 [Plan mode, execution, finalization]
 ```
@@ -257,7 +257,7 @@ Claude: Creating rubric "dashboard-ux-2025-01"...
 ### Rubric Storage
 
 ```
-storage/rubrics/
+dev/storage/rubrics/
 ├── index.json              # Registry of all rubrics
 ├── {rubric-id}.json        # Rubric definition
 ├── {rubric-id}.md          # Human-readable (auto-generated)

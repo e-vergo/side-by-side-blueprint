@@ -16,7 +16,7 @@ from typing import Any, Optional
 # =============================================================================
 
 SBS_ROOT = Path("/Users/eric/GitHub/Side-By-Side-Blueprint")
-ARCHIVE_DIR = SBS_ROOT / "storage"
+ARCHIVE_DIR = SBS_ROOT / "dev" / "storage"
 # Legacy alias for backwards compatibility
 IMAGES_DIR = ARCHIVE_DIR
 CACHE_DIR = Path.home() / ".sbs-cache"
