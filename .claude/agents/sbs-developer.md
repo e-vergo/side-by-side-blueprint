@@ -325,7 +325,7 @@ context = ValidationContext(
     project='SBSTest',
     project_root=Path('/path/to/project'),
     commit='abc123',
-    screenshots_dir=Path('/path/to/images/SBSTest/latest')
+    screenshots_dir=Path('/path/to/archive/SBSTest/latest')
 )
 
 # Run validation
@@ -357,7 +357,7 @@ class MyValidator(BaseValidator):
 
 #### Unified Ledger
 
-All metrics are stored in `scripts/stats/unified_ledger.json` via the `UnifiedLedger` class in `scripts/sbs/ledger.py`.
+All metrics are stored in `archive/unified_ledger.json` via the `UnifiedLedger` class in `scripts/sbs/ledger.py`.
 
 ### Visual Comparison
 

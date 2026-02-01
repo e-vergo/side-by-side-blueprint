@@ -27,9 +27,12 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 - **PDF/Paper generation** with `\paperstatement{}` and `\paperfull{}` hooks
 - **6-status color model** for tracking formalization progress (notReady, ready, sorry, proven, fullyProven, mathlibReady)
 - **Module reference support** via `\inputleanmodule{ModuleName}`
-- **Rainbow bracket highlighting** for nested expressions
+- **Rainbow bracket highlighting** for nested expressions (6-depth cycling)
 - **Validation checks** detecting disconnected subgraphs and cycles
-- **Auto-computed `fullyProven` status** via dependency graph traversal
+- **Auto-computed `fullyProven` status** via O(V+E) dependency graph traversal
+- **Automatic dependency inference** from actual Lean code (replaces manual `\uses{}`)
+- **Hover tooltips** with type signatures via Tippy.js
+- **Dark/light theme toggle** with localStorage persistence
 
 ## Repository Structure
 
@@ -44,15 +47,15 @@ This monorepo contains the complete toolchain and example projects:
 | [LeanArchitect](LeanArchitect/) | `@[blueprint]` attribute with 8 metadata + 3 status options | [README](LeanArchitect/README.md) |
 | [Dress](Dress/) | Artifact generation, graph layout, validation | [README](Dress/README.md) |
 | [Runway](Runway/) | Site generator, dashboard, paper/PDF generation | [README](Runway/README.md) |
-| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action for CI/CD + CSS/JS assets | [README](dress-blueprint-action/README.md) |
+| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,744 lines) | [README](dress-blueprint-action/README.md) |
 
 ### Example Projects
 
 | Project | Scale | Purpose | Documentation |
 |---------|-------|---------|---------------|
-| [SBS-Test](SBS-Test/) | 25 nodes | Minimal test project (all 6 status colors) | [README](SBS-Test/README.md) |
+| [SBS-Test](SBS-Test/) | 33 nodes | Minimal test project (all 6 status colors, validation testing) | [README](SBS-Test/README.md) |
 | [General_Crystallographic_Restriction](General_Crystallographic_Restriction/) | 57 nodes | Production example with paper generation | [README](General_Crystallographic_Restriction/README.md) |
-| [PrimeNumberTheoremAnd](PrimeNumberTheoremAnd/) | 530 nodes | Large-scale integration (Tao's PNT project) | [README](PrimeNumberTheoremAnd/README.md) |
+| [PrimeNumberTheoremAnd](PrimeNumberTheoremAnd/) | 591 nodes | Large-scale integration (Tao's PNT project) | [README](PrimeNumberTheoremAnd/README.md) |
 
 ### Dependency Chain
 
@@ -260,11 +263,25 @@ Include all declarations from a Lean module in your blueprint:
 
 This expands to all `@[blueprint]`-annotated declarations from that module.
 
+## Validation Features
+
+The toolchain provides validation beyond "typechecks":
+
+| Check | Purpose | Location |
+|-------|---------|----------|
+| **Connectivity** | Detect disconnected subgraphs (Tao-style errors) | `manifest.json` |
+| **Cycles** | Find circular dependencies | `manifest.json` |
+| **fullyProven** | Verify all ancestors are proven | Auto-computed |
+
+Results are displayed in the dashboard and stored in `manifest.json` under `checkResults`.
+
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
-| [ARCHITECTURE.md](.refs/ARCHITECTURE.md) | System architecture, data flow, performance analysis |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, build pipeline |
+| [GOALS.md](GOALS.md) | Project vision and design goals |
+| [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) | Detailed technical reference |
 | [Individual READMEs](#repository-structure) | Per-component documentation |
 
 ## Live Examples

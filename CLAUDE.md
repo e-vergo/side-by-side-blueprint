@@ -54,7 +54,7 @@ Building tooling that:
 | **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, XSS testing) |
 | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
 | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
-| **dress-blueprint-action** | CI/CD action (~465 lines) + CSS/JS assets |
+| **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,744 lines) |
 | **scripts** | Python build tooling (build.py, sbs CLI) |
 | **archive** | Build metrics, screenshots, session archives, iCloud sync |
 
@@ -327,16 +327,23 @@ Archive data syncs to iCloud on every build:
 
 ## CSS Organization
 
-The CSS is organized into 4 files by concern:
+The CSS is organized into 4 files by concern (3,145 lines total):
 
-| File | Scope |
-|------|-------|
-| `common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
-| `blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays, zebra striping |
-| `paper.css` | Paper page: ar5iv-style academic layout |
-| `dep_graph.css` | Dependency graph: pan/zoom container, modal styles |
+| File | Lines | Scope |
+|------|-------|-------|
+| `common.css` | 1,053 | Design system: CSS variables, theme toggle, status dots, Lean syntax, rainbow brackets |
+| `blueprint.css` | 1,283 | Blueprint pages: plasTeX base, sidebar, chapter layout, side-by-side, zebra striping |
+| `paper.css` | 271 | Paper page: ar5iv-style academic layout, verification badges |
+| `dep_graph.css` | 538 | Dependency graph: pan/zoom viewport, toolbar, legend, SVG nodes |
 
 Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` config.
+
+### JavaScript (599 lines total)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `verso-code.js` | 490 | Token binding, Tippy.js tooltips, proof sync, pan/zoom, modal handling |
+| `plastex.js` | 109 | Theme toggle, TOC toggle, LaTeX proof expand/collapse |
 
 ---
 
@@ -355,8 +362,8 @@ Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` c
 | Property | Value |
 |----------|-------|
 | **Trigger** | Manual only (`workflow_dispatch`) |
-| **Workflow size** | ~30 lines per project |
-| **Action size** | ~465 lines, 14 steps (centralized in `dress-blueprint-action`) |
+| **Workflow size** | ~30 lines per project (minimal) |
+| **Action size** | 432 lines, 14 steps (centralized in `dress-blueprint-action`) |
 | **Mathlib cache** | Relies on mathlib server (not GitHub Actions cache) |
 
 ### Action Inputs
@@ -678,6 +685,46 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 
 ---
 
+## Key File Locations by Repository
+
+### SubVerso (Fork)
+- `Highlighting/Code.lean` - Main highlighting with InfoTable indexing
+- `Highlighting/Highlighted.lean` - Token.Kind, Highlighted types
+
+### Verso (Fork)
+- `src/verso-sbs/SBSBlueprint/` - Blueprint genre
+- `src/verso-paper/VersoPaper/` - Paper genre
+- `src/verso/Verso/Code/Highlighted.lean` - Rainbow bracket rendering (`toHtmlRainbow`)
+
+### LeanArchitect (Fork)
+- `Architect/Basic.lean` - `Node`, `NodePart`, `NodeStatus` with manual `ToExpr` instance
+- `Architect/Attribute.lean` - `@[blueprint]` attribute with all options
+- `Architect/CollectUsed.lean` - Dependency inference from expression trees
+
+### Dress
+- `Capture/ElabRules.lean` - elab_rules hooks for @[blueprint] declarations
+- `Graph/Build.lean` - Graph construction, validation, `Node.inferUses`, two-pass edge processing
+- `Graph/Layout.lean` - Sugiyama algorithm (~1500 lines), edge routing
+- `Graph/Svg.lean` - SVG generation, **canonical status colors**
+- `HtmlRender.lean` - Verso HTML rendering wrapper with rainbow brackets
+- `Main.lean` - CLI: `extract_blueprint graph`
+
+### Runway
+- `Main.lean` - CLI: build/paper/pdf commands, manifest loading
+- `Render.lean` - Dashboard, side-by-side rendering
+- `Theme.lean` - Page templates, sidebar, `buildModuleLookup`, `isBlueprintPage`
+- `DepGraph.lean` - Dependency graph page with modals
+- `Paper.lean` - Paper rendering, `PaperMetadata` extraction
+- `Latex/Parser.lean` - LaTeX parsing with O(n) string concatenation
+
+### dress-blueprint-action
+- `action.yml` - GitHub Action (432 lines, 14 steps)
+- `assets/common.css` - Design system, status dots, rainbow brackets
+- `assets/blueprint.css` - Blueprint pages, sidebar, side-by-side
+- `assets/verso-code.js` - Hovers, pan/zoom, modal handling
+
+---
+
 ## Configuration Files
 
 ### lakefile.toml
@@ -720,14 +767,24 @@ rev = "main"
 
 ## Reference Documents
 
-Located in `.refs/`:
-
+**Core documentation:**
 | File | Purpose |
 |------|---------|
-| `ARCHITECTURE.md` | System architecture with data flow and performance analysis |
+| `README.md` | Public-facing project overview |
+| `ARCHITECTURE.md` | Public architecture documentation |
+| `GOALS.md` | Project vision and design goals |
+| `CLAUDE.md` | This file - Claude Code development guide |
+
+**Detailed references** (in `.refs/`):
+| File | Purpose |
+|------|---------|
+| `ARCHITECTURE.md` | Detailed technical reference with data flow and performance analysis |
 | `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML |
 | `dep_graph_ground_truth.txt` | Working dependency graph page with modals |
-| `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes |
+| `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes (Tao incident, Zulip discussions) |
+
+**Per-repository documentation:**
+Each repository has a `README.md` with component-specific documentation. See links in the main `README.md`.
 
 ---
 

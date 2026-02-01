@@ -53,6 +53,17 @@ Fully autonomous:
 3. Generate summary report
 4. Commit final state
 
+## Phase 5: Documentation Cleanup (MANDATORY)
+
+**Execution is NOT complete until this phase runs.**
+
+Invoke `/update-and-archive` as the final step. This:
+1. Refreshes all repository READMEs in parallel waves
+2. Synchronizes core documentation (ARCHITECTURE.md, CLAUDE.md, GOALS.md, README.md)
+3. Ensures documentation reflects the changes made during execution
+
+This phase cannot be skipped. The `/execute` skill is considered incomplete until `/update-and-archive` completes successfully.
+
 ## Validators
 
 Specify validators in plan:
@@ -87,7 +98,7 @@ After completion:
 
 ## Implementation Notes
 
-All builds must go through `python build.py` (never skip commits/pushes). The unified ledger at `scripts/stats/unified_ledger.json` tracks all metrics across builds.
+All builds must go through `python build.py` (never skip commits/pushes). The unified ledger at `archive/unified_ledger.json` tracks all metrics across builds.
 
 To run validators programmatically:
 ```python

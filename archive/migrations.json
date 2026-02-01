@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "description": "Tracks path migrations for staleness detection. If any 'from' path exists, it is stale and should be deleted.",
+  "migrations": [
+    {
+      "from": "scripts/stats/",
+      "to": "archive/",
+      "date": "2026-01-31",
+      "description": "Unified ledger and build metrics moved to archive"
+    },
+    {
+      "from": "scripts/images/",
+      "to": "archive/",
+      "date": "2026-01-31",
+      "description": "Screenshots moved to archive/{project}/"
+    },
+    {
+      "from": "scripts/manifests/",
+      "to": "archive/",
+      "date": "2026-01-31",
+      "description": "Page manifests deprecated, data now in compliance_ledger.json"
+    },
+    {
+      "from": "scripts/compliance_ledger.json",
+      "to": "archive/compliance_ledger.json",
+      "date": "2026-01-31",
+      "description": "Compliance ledger moved to archive"
+    },
+    {
+      "from": "scripts/COMPLIANCE_STATUS.md",
+      "to": "archive/COMPLIANCE_STATUS.md",
+      "date": "2026-01-31",
+      "description": "Compliance status report moved to archive"
+    },
+    {
+      "from": "images/",
+      "to": "archive/",
+      "date": "2026-01-31",
+      "description": "Root images directory moved to archive"
+    }
+  ],
+  "path_references": [
+    {
+      "pattern": "scripts/stats/unified_ledger.json",
+      "replacement": "archive/unified_ledger.json",
+      "description": "Old ledger path"
+    },
+    {
+      "pattern": "scripts/images/",
+      "replacement": "archive/",
+      "description": "Old screenshot path"
+    },
+    {
+      "pattern": "images/SBSTest",
+      "replacement": "archive/SBSTest",
+      "description": "Old project screenshot path"
+    }
+  ]
+}

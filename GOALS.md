@@ -13,6 +13,7 @@
 - [Target Audience](#target-audience)
 - [Relationship to Existing Tools](#relationship-to-existing-tools)
 - [Technical Design](#technical-design)
+- [Current Status](#current-status)
 - [Quality Targets](#quality-targets)
 
 ## Vision
@@ -33,11 +34,13 @@ Create a pure Lean toolchain that displays formalized mathematical proofs alongs
 ## The Problem This Solves
 
 **Terence Tao, January 2026 (PNT+ Zulip):**
-> "When reviewing the blueprint graph I noticed an oddity in the Erdos 392 project: the final theorems were mysteriously disconnected from the rest of the lemmas; and the (AI-provided) proofs were suspiciously short. After some inspection I realized the problem: I had asked to prove the (trivial) statements that n! can be factored into **at least** n factors... when in fact the Erdos problem asks for **at most** n factors. The trivial factorization n! = 1 × ... × n would satisfy the previous versions."
+> "When reviewing the blueprint graph I noticed an oddity in the Erdos 392 project: the final theorems were mysteriously disconnected from the rest of the lemmas; and the (AI-provided) proofs were suspiciously short. After some inspection I realized the problem: I had asked to prove the (trivial) statements that n! can be factored into **at least** n factors... when in fact the Erdos problem asks for **at most** n factors. The trivial factorization n! = 1 x ... x n would satisfy the previous versions."
 >
 > "Another cautionary tale not to blindly trust AI auto-formalization, even when it typechecks..."
 
 **The core insight**: A proof can typecheck while proving something entirely different from what was intended. Side-by-side display and dependency visualization make these mismatches visible.
+
+This incident directly motivated the connectivity validation feature: disconnected subgraphs in the dependency graph indicate that "proven" theorems may not actually follow from the foundational lemmas.
 
 ## What We're Building
 
@@ -54,17 +57,21 @@ Create a pure Lean toolchain that displays formalized mathematical proofs alongs
 - Semantic syntax highlighting with hover tooltips
 - Integrated dependency graph visualization
 - Build-time soundness checks
+- Rainbow bracket matching for nested expressions
+- Automatic dependency inference from Lean code
 
 ## Soundness Guarantees
 
-The toolchain hypothetically could offer guarantees beyond "typechecks":
+The toolchain offers guarantees beyond "typechecks":
 
-| Guarantee | Description |
-|-----------|-------------|
-| **No sorry** | Build fails if any `sorry` remains in formalized declarations |
-| **Connected graph** | Warn on disconnected dependency subgraphs (the Tao check) |
-| **Label consistency** | Verify `\inputleannode{label}` matches actual Lean declaration |
-| **Uses completeness** | Compare `\uses{}` annotations against actual code dependencies |
+| Guarantee | Status | Description |
+|-----------|--------|-------------|
+| **No sorry** | Implemented | Status auto-detected from proof body |
+| **Connected graph** | Implemented | `findComponents` detects disconnected subgraphs |
+| **Cycle detection** | Implemented | `detectCycles` finds circular dependencies |
+| **Label consistency** | Implemented | `\inputleannode{label}` verified against manifest |
+| **Uses completeness** | Implemented | `Node.inferUses` traces actual code dependencies |
+| **Fully proven** | Implemented | O(V+E) graph traversal verifies all ancestors |
 
 These are type-checkable properties of the formalization project itself.
 
@@ -77,7 +84,8 @@ These are type-checkable properties of the formalization project itself.
 - All dependencies explicitly declared and accurate
 - Human-readable statement exists for every formal theorem
 - Side-by-side display available for inspection
-- Build-time checks pass
+- Validation checks pass (connectivity, cycles)
+- `fullyProven` status indicates complete verification chain
 
 ## Core Features
 
@@ -88,13 +96,22 @@ LaTeX theorem statements on the left, syntax-highlighted Lean code on the right.
 Collapsible proof sections animate together - LaTeX prose and Lean tactics expand/collapse in sync.
 
 ### 3. Dependency Graphs
-Visual representation of lemma dependencies. **Critical for catching logical errors** - disconnected nodes or unexpected dependencies signal problems.
+Visual representation of lemma dependencies with Sugiyama hierarchical layout. **Critical for catching logical errors** - disconnected nodes or unexpected dependencies signal problems.
 
 ### 4. Hover Tooltips
-Type signatures and documentation appear on hover, making Lean code navigable by non-experts.
+Type signatures and documentation appear on hover via Tippy.js, making Lean code navigable by non-experts.
 
 ### 5. Chapter/Section Structure
 LaTeX `\chapter{}` and `\section{}` commands drive HTML structure. Prose interleaves with formal declarations. Numbered theorems (4.1.1, 4.1.2) match LaTeX conventions.
+
+### 6. Rainbow Bracket Highlighting
+Bracket pairs colored by nesting depth (6 colors cycling). Makes deeply nested expressions readable.
+
+### 7. Module References
+`\inputleanmodule{ModuleName}` in LaTeX includes all `@[blueprint]`-annotated declarations from a Lean module. Useful for organizing large projects by mathematical topic.
+
+### 8. Paper Generation
+Academic papers with `\paperstatement{}` and `\paperfull{}` hooks linking to formalizations. ar5iv-style layout with verification badges.
 
 ## Audience
 
@@ -121,44 +138,82 @@ LaTeX `\chapter{}` and `\section{}` commands drive HTML structure. Prose interle
 
 **Inspired by Lean Reference Manual**: Same technical foundation (Verso, SubVerso, 100% Lean), different purpose (reference docs vs formalization blueprints)
 
+**Port of leanblueprint**: Pure Lean reimplementation of Patrick Massot's Python/Plastex blueprint system
+
 ## Repository Architecture
 
 ```
 Side-by-Side-Blueprint/
-├── Runway/           # Site generator (replaces Python leanblueprint)
-├── Dress/            # Artifact generation during Lean elaboration
-├── LeanArchitect/    # @[blueprint] attribute and metadata storage
-├── subverso/         # Syntax highlighting extraction (fork)
-├── SBS-Test/         # Minimal test project for fast iteration
-├── General_Crystallographic_Restriction/  # Production example
-└── dress-blueprint-action/  # GitHub Action for CI automation
+  SubVerso/         # Syntax highlighting (fork with O(1) indexed lookups)
+  Verso/            # Document framework (fork with SBSBlueprint/VersoPaper genres)
+  LeanArchitect/    # @[blueprint] attribute (fork with 8 metadata + 3 status options)
+  Dress/            # Artifact generation during Lean elaboration
+  Runway/           # Site generator (replaces Python leanblueprint)
+  SBS-Test/         # Minimal test project for fast iteration
+  General_Crystallographic_Restriction/  # Production example with paper
+  PrimeNumberTheoremAnd/                 # Large-scale integration (591 nodes)
+  dress-blueprint-action/                # GitHub Action (432 lines) + CSS/JS assets (3,744 lines)
 ```
 
-**Dependency chain:** SubVerso → LeanArchitect → Dress → Runway → Consumer projects
+**Dependency chain:** SubVerso -> LeanArchitect -> Dress -> Runway -> Consumer projects
 
-## Success Criteria
+## Current Status
+
+### Completed
+
+| Feature | Status |
+|---------|--------|
+| Side-by-side display | Complete |
+| Dashboard homepage | Complete |
+| Dependency graph with Sugiyama layout | Complete |
+| 6-status color model | Complete |
+| `fullyProven` auto-computation | Complete |
+| Rainbow bracket highlighting | Complete |
+| Module reference support | Complete |
+| Paper generation (HTML + PDF) | Complete |
+| Validation checks (connectivity, cycles) | Complete |
+| Hover tooltips via Tippy.js | Complete |
+| Dark/light theme toggle | Complete |
+| GitHub Action for CI/CD | Complete |
+| Visual compliance testing | Complete |
+| Archive system with iCloud sync | Complete |
+
+### Production Examples
+
+| Project | Nodes | Status |
+|---------|-------|--------|
+| SBS-Test | 33 | All features demonstrated |
+| GCR | 57 | Complete formalization with paper |
+| PNT | 591 | Large-scale integration working |
+
+### Known Limitations
+
+- Verso LaTeX export not implemented (`pdf_verso` disabled)
+- Dashboard is single-column layout (intentional)
+- Build time dominated by SubVerso highlighting (93-99%)
+
+## Quality Targets
 
 ### Blueprint (Achieved)
 1. **SBS-Test builds and serves** with chapter/section structure matching `blueprint.tex`
 2. **Output matches goal images** - hierarchical navigation, numbered theorems, prose between declarations
 3. **dress-blueprint-action** works for external consumers without Python/texlive
 4. **External assets architecture** - CSS/JS in `dress-blueprint-action/assets/`, configured via `assetsDir`
+5. **Validation checks** - disconnected graphs and cycles detected and reported
 
-### ar5iv Paper Generation (Next)
-5. **Full paper rendering** with MathJax, no inline Lean code
-6. **Links to formalization** instead of displaying code directly
-7. **Same build workflow** - defined by tex, uses Dress artifacts
+### ar5iv Paper Generation (Achieved)
+6. **Full paper rendering** with MathJax, verification badges
+7. **Links to formalization** instead of displaying code directly
+8. **Same build workflow** - defined by tex, uses Dress artifacts
+9. **Paper metadata extraction** from `\title{}`, `\author{}`, `\begin{abstract}`
 
-### Soundness (Future)
-8. **Soundness checks** catch disconnected graphs and missing dependencies
+### Future Directions
 
-## Non-Goals (Current Phase)
-
-- Tactic state expansion (future)
-- Full doc-gen4 bidirectional linking (future)
-- Verso Genre with document DSL (future)
+- Verso document DSL as primary authoring format (reducing LaTeX dependency)
+- Tactic state expansion in tooltips
+- Full docgen4 bidirectional linking
 - Mobile-optimized responsive design
-- Offline/PWA support
+- Upstream contribution to official Verso/SubVerso
 
 ## Why Pure Lean Matters
 
@@ -170,21 +225,14 @@ Side-by-Side-Blueprint/
 
 ## Timeline Context
 
-- **Lean Together 2026**: Leo de Moura discussed tooling like this
-- **Current**: Blueprint feature-complete, ar5iv paper generation next
-- **Next**: Full paper generation with MathJax (ar5iv style)
+- **Lean Together 2026**: Leo de Moura discussed tooling goals aligned with this project
+- **January 2026**: Tao incident motivates connectivity validation
+- **Current**: Feature-complete prototype, production examples working
+- **Next**: Stabilization, documentation, community feedback
 - **Future**: Propose as official FRO tool
-
-## Next Major Feature: ar5iv Paper Generation
-
-The next milestone is full paper generation (not just blueprint):
-- MathJax rendering (like current blueprint)
-- Never display Lean code directly (just links to it)
-- Defined by tex file, uses Dress artifacts
-- Same build pattern as blueprint
-- Target: papers rendered like ar5iv.org
 
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
+- [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) - Detailed technical reference

@@ -224,7 +224,7 @@ context = ValidationContext(
     project='SBSTest',
     project_root=Path('/Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test'),
     commit='abc123',
-    screenshots_dir=Path('/Users/eric/GitHub/Side-By-Side-Blueprint/images/SBSTest/latest'),
+    screenshots_dir=Path('/Users/eric/GitHub/Side-By-Side-Blueprint/archive/SBSTest/latest'),
     extra={
         'pages': ['dashboard', 'dep_graph'],  # Optional: filter pages
         'include_interactive': True
@@ -239,7 +239,7 @@ result = validator.validate(context)
 
 ### Unified Ledger
 
-Visual compliance results are now stored in the unified ledger at `scripts/stats/unified_ledger.json` alongside build metrics and other validators.
+Visual compliance results are now stored in the unified ledger at `archive/unified_ledger.json` alongside build metrics and other validators.
 
 ### Other Validators
 
