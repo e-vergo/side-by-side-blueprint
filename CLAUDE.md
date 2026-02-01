@@ -337,7 +337,7 @@ The CSS is organized into 4 files by concern (3,196 lines total):
 | `paper.css` | 271 | Paper page: ar5iv-style academic layout, verification badges |
 | `dep_graph.css` | 538 | Dependency graph: pan/zoom viewport, toolbar, legend, SVG nodes |
 
-Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` config.
+Located in `toolchain/dress-blueprint-action/assets/`. Copied to project via `assetsDir` config.
 
 ### JavaScript (609 lines total)
 
@@ -770,21 +770,21 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 
 ## Key File Locations by Repository
 
-### SubVerso (Fork)
-- `Highlighting/Code.lean` - Main highlighting with InfoTable indexing
-- `Highlighting/Highlighted.lean` - Token.Kind, Highlighted types
+### SubVerso (`forks/subverso/`)
+- `src/SubVerso/Highlighting/Code.lean` - Main highlighting with InfoTable indexing
+- `src/SubVerso/Highlighting/Highlighted.lean` - Token.Kind, Highlighted types
 
-### Verso (Fork)
+### Verso (`forks/verso/`)
 - `src/verso-sbs/SBSBlueprint/` - Blueprint genre
 - `src/verso-paper/VersoPaper/` - Paper genre
 - `src/verso/Verso/Code/Highlighted.lean` - Rainbow bracket rendering (`toHtmlRainbow`)
 
-### LeanArchitect (Fork)
+### LeanArchitect (`forks/LeanArchitect/`)
 - `Architect/Basic.lean` - `Node`, `NodePart`, `NodeStatus` with manual `ToExpr` instance
 - `Architect/Attribute.lean` - `@[blueprint]` attribute with all options
 - `Architect/CollectUsed.lean` - Dependency inference from expression trees
 
-### Dress
+### Dress (`toolchain/Dress/`)
 - `Capture/ElabRules.lean` - elab_rules hooks for @[blueprint] declarations
 - `Graph/Build.lean` - Graph construction, validation, `Node.inferUses`, two-pass edge processing
 - `Graph/Layout.lean` - Sugiyama algorithm (~1500 lines), edge routing
@@ -792,7 +792,7 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 - `HtmlRender.lean` - Verso HTML rendering wrapper with rainbow brackets
 - `Main.lean` - CLI: `extract_blueprint graph`
 
-### Runway
+### Runway (`toolchain/Runway/`)
 - `Main.lean` - CLI: build/paper/pdf commands, manifest loading
 - `Render.lean` - Dashboard, side-by-side rendering
 - `Theme.lean` - Page templates, sidebar, `buildModuleLookup`, `isBlueprintPage`
@@ -800,7 +800,7 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 - `Paper.lean` - Paper rendering, `PaperMetadata` extraction
 - `Latex/Parser.lean` - LaTeX parsing with O(n) string concatenation
 
-### dress-blueprint-action
+### dress-blueprint-action (`toolchain/dress-blueprint-action/`)
 - `action.yml` - GitHub Action (432 lines, 14 steps)
 - `assets/common.css` - Design system, status dots, rainbow brackets
 - `assets/blueprint.css` - Blueprint pages, sidebar, side-by-side
@@ -851,12 +851,12 @@ rev = "main"
 ## Reference Documents
 
 **Core documentation:**
-| File | Purpose |
-|------|---------|
-| `README.md` | Public-facing project overview |
-| `ARCHITECTURE.md` | Public architecture documentation |
-| `GOALS.md` | Project vision and design goals |
-| `CLAUDE.md` | This file - Claude Code development guide |
+| File | Location | Purpose |
+|------|----------|---------|
+| `README.md` | `dev/markdowns/README.md` | Public-facing project overview |
+| `ARCHITECTURE.md` | `dev/markdowns/ARCHITECTURE.md` | Public architecture documentation |
+| `GOALS.md` | `dev/markdowns/GOALS.md` | Project vision and design goals |
+| `CLAUDE.md` | Root (this file) | Claude Code development guide |
 
 **Detailed references** (in `dev/.refs/`):
 | File | Purpose |
@@ -866,8 +866,14 @@ rev = "main"
 | `dep_graph_ground_truth.txt` | Working dependency graph page with modals |
 | `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes (Tao incident, Zulip discussions) |
 
+**Tooling hub:**
+- `storage/README.md` - Central CLI tooling documentation (capture, compliance, rubrics, archive)
+
 **Per-repository documentation:**
-Each repository has a `README.md` with component-specific documentation. See links in the main `README.md`.
+Each repository has a `README.md` with component-specific documentation:
+- `forks/subverso/README.md`, `forks/verso/README.md`, `forks/LeanArchitect/README.md`
+- `toolchain/Dress/README.md`, `toolchain/Runway/README.md`, `toolchain/SBS-Test/README.md`, `toolchain/dress-blueprint-action/README.md`
+- `showcase/General_Crystallographic_Restriction/README.md`, `showcase/PrimeNumberTheoremAnd/README.md`
 
 ---
 

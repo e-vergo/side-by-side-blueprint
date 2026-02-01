@@ -7,16 +7,16 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 
 ## Screenshots
 
-![Dashboard](SBS-Test/images/Dashboard.png)
+![Dashboard](../../toolchain/SBS-Test/images/Dashboard.png)
 *Dashboard with project stats, key theorems, and project notes*
 
-![Blueprint](SBS-Test/images/blueprint.png)
+![Blueprint](../../toolchain/SBS-Test/images/blueprint.png)
 *Side-by-side LaTeX and Lean display with proof toggles*
 
-![Dependency Graph](SBS-Test/images/dep_graph.png)
+![Dependency Graph](../../toolchain/SBS-Test/images/dep_graph.png)
 *Interactive dependency visualization with Sugiyama layout*
 
-![Paper](SBS-Test/images/paper_web.png)
+![Paper](../../toolchain/SBS-Test/images/paper_web.png)
 *Generated paper with verification badges*
 
 ## Features
@@ -35,28 +35,42 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 - **Dark/light theme toggle** with localStorage persistence
 - **8-dimensional quality scoring** with automated design validation (T1-T8 test suite)
 
-## Repository Structure
+## Monorepo Structure
 
-This monorepo contains the complete toolchain and example projects:
+This monorepo contains the complete toolchain, forks, and example projects:
+
+```
+Side-by-Side-Blueprint/
+  forks/                    # Forked Lean 4 repositories
+  toolchain/                # Core toolchain components
+  showcase/                 # Production examples
+  dev/                      # Development tooling and documentation
+  storage/                  # Archive submodule (sbs-storage)
+```
+
+### Forks
+
+| Repository | Purpose | Documentation |
+|------------|---------|---------------|
+| [SubVerso](../../forks/subverso/) | Syntax highlighting extraction with O(1) indexed lookups | [README](../../forks/subverso/README.md) |
+| [Verso](../../forks/verso/) | Document framework with SBSBlueprint and VersoPaper genres | [README](../../forks/verso/README.md) |
+| [LeanArchitect](../../forks/LeanArchitect/) | `@[blueprint]` attribute with 8 metadata + 3 status options | [README](../../forks/LeanArchitect/README.md) |
 
 ### Toolchain Components
 
 | Repository | Purpose | Documentation |
 |------------|---------|---------------|
-| [SubVerso](subverso/) | Syntax highlighting extraction with O(1) indexed lookups | [README](subverso/README.md) |
-| [Verso](verso/) | Document framework with SBSBlueprint and VersoPaper genres | [README](verso/README.md) |
-| [LeanArchitect](LeanArchitect/) | `@[blueprint]` attribute with 8 metadata + 3 status options | [README](LeanArchitect/README.md) |
-| [Dress](Dress/) | Artifact generation, graph layout, validation | [README](Dress/README.md) |
-| [Runway](Runway/) | Site generator, dashboard, paper/PDF generation | [README](Runway/README.md) |
-| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) | [README](dress-blueprint-action/README.md) |
+| [Dress](../../toolchain/Dress/) | Artifact generation, graph layout, validation | [README](../../toolchain/Dress/README.md) |
+| [Runway](../../toolchain/Runway/) | Site generator, dashboard, paper/PDF generation | [README](../../toolchain/Runway/README.md) |
+| [dress-blueprint-action](../../toolchain/dress-blueprint-action/) | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) | [README](../../toolchain/dress-blueprint-action/README.md) |
+| [SBS-Test](../../toolchain/SBS-Test/) | 33 nodes: Minimal test project (all 6 status colors, validation testing) | [README](../../toolchain/SBS-Test/README.md) |
 
-### Example Projects
+### Showcase Projects
 
 | Project | Scale | Purpose | Documentation |
 |---------|-------|---------|---------------|
-| [SBS-Test](SBS-Test/) | 33 nodes | Minimal test project (all 6 status colors, validation testing) | [README](SBS-Test/README.md) |
-| [General_Crystallographic_Restriction](General_Crystallographic_Restriction/) | 57 nodes | Production example with paper generation | [README](General_Crystallographic_Restriction/README.md) |
-| [PrimeNumberTheoremAnd](PrimeNumberTheoremAnd/) | 591 nodes | Large-scale integration (Tao's PNT project) | [README](PrimeNumberTheoremAnd/README.md) |
+| [General_Crystallographic_Restriction](../../showcase/General_Crystallographic_Restriction/) | 57 nodes | Production example with paper generation | [README](../../showcase/General_Crystallographic_Restriction/README.md) |
+| [PrimeNumberTheoremAnd](../../showcase/PrimeNumberTheoremAnd/) | 591 nodes | Large-scale integration (Tao's PNT project) | [README](../../showcase/PrimeNumberTheoremAnd/README.md) |
 
 ### Dependency Chain
 
@@ -278,7 +292,7 @@ Results are displayed in the dashboard and stored in `manifest.json` under `chec
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
 
 ## Documentation
 
@@ -286,9 +300,9 @@ For build commands, screenshot capture, compliance validation, archive managemen
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, build pipeline |
 | [GOALS.md](GOALS.md) | Project vision and design goals |
-| [archive/README.md](archive/README.md) | Central tooling hub (CLI, validators, rubrics) |
-| [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) | Detailed technical reference |
-| [Individual READMEs](#repository-structure) | Per-component documentation |
+| [storage/README.md](../../storage/README.md) | Central tooling hub (CLI, validators, rubrics) |
+| [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) | Detailed technical reference |
+| [Individual READMEs](#monorepo-structure) | Per-component documentation |
 
 ## Live Examples
 

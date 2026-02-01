@@ -2,6 +2,29 @@
 
 Pure Lean toolchain for formalization documentation that displays formal proofs alongside LaTeX theorem statements. Generates interactive websites with dependency graphs, dashboards, and paper/PDF output.
 
+## Monorepo Structure
+
+```
+Side-by-Side-Blueprint/
+  forks/                    # Forked Lean 4 repositories
+    subverso/               # Syntax highlighting (O(1) indexed lookups)
+    verso/                  # Document framework (SBSBlueprint/VersoPaper genres)
+    LeanArchitect/          # @[blueprint] attribute (8 metadata + 3 status)
+  toolchain/                # Core toolchain components
+    Dress/                  # Artifact generation, graph layout, validation
+    Runway/                 # Site generator, dashboard, paper/PDF
+    SBS-Test/               # Minimal test project (33 nodes)
+    dress-blueprint-action/ # GitHub Action + CSS/JS assets
+  showcase/                 # Production examples
+    General_Crystallographic_Restriction/  # 57 nodes, paper generation
+    PrimeNumberTheoremAnd/                 # 591 nodes, large-scale
+  dev/                      # Development tooling
+    scripts/                # Build scripts, sbs CLI
+    .refs/                  # Detailed reference docs (this file)
+    markdowns/              # Public documentation
+  storage/                  # Archive submodule (sbs-storage)
+```
+
 ## Component Overview
 
 ```
@@ -11,22 +34,22 @@ SubVerso (fork) -> LeanArchitect (fork) -> Dress -> Runway
                             (genres use SubVerso for highlighting)
 ```
 
-| Component | Purpose | Key Responsibility |
-|-----------|---------|-------------------|
-| **SubVerso** | Syntax highlighting | Extract semantic tokens, type signatures, proof states during elaboration with O(1) indexed lookups via InfoTable |
-| **LeanArchitect** | Metadata attribute | Define `@[blueprint]` attribute with 8 metadata + 3 status options, dependency inference via `CollectUsed` |
-| **Dress** | Artifact generation | Capture highlighting, render HTML/LaTeX with rainbow brackets, build dependency graph, validate, compute stats |
-| **Runway** | Site generation | Parse LaTeX structure, render dashboard, generate paper/PDF, expand module references |
-| **Verso** | Document framework | Provide `SBSBlueprint` and `VersoPaper` genres with rainbow bracket rendering via `toHtmlRainbow` |
-| **dress-blueprint-action** | CI/CD + Assets | GitHub Action (432 lines, 14 steps), CSS (4 files, 3,196 lines), JavaScript (2 files, 609 lines) |
+| Component | Location | Purpose | Key Responsibility |
+|-----------|----------|---------|-------------------|
+| **SubVerso** | `forks/subverso/` | Syntax highlighting | Extract semantic tokens, type signatures, proof states during elaboration with O(1) indexed lookups via InfoTable |
+| **LeanArchitect** | `forks/LeanArchitect/` | Metadata attribute | Define `@[blueprint]` attribute with 8 metadata + 3 status options, dependency inference via `CollectUsed` |
+| **Dress** | `toolchain/Dress/` | Artifact generation | Capture highlighting, render HTML/LaTeX with rainbow brackets, build dependency graph, validate, compute stats |
+| **Runway** | `toolchain/Runway/` | Site generation | Parse LaTeX structure, render dashboard, generate paper/PDF, expand module references |
+| **Verso** | `forks/verso/` | Document framework | Provide `SBSBlueprint` and `VersoPaper` genres with rainbow bracket rendering via `toHtmlRainbow` |
+| **dress-blueprint-action** | `toolchain/dress-blueprint-action/` | CI/CD + Assets | GitHub Action (432 lines, 14 steps), CSS (4 files, 3,196 lines), JavaScript (2 files, 609 lines) |
 
 ### Consumer Projects
 
-| Project | Scale | Purpose |
-|---------|-------|---------|
-| **SBS-Test** | 33 nodes (32 Lean + 1 LaTeX) | Feature testing: all 6 status colors, XSS prevention, rainbow brackets (depths 1-10), module references, validation testing (cycles, disconnected components), visual compliance baseline |
-| **General_Crystallographic_Restriction** | 57 nodes | Production example with paper generation, complete formalization of the crystallographic restriction theorem |
-| **PrimeNumberTheoremAnd** | 591 annotations | Large-scale integration (Tao's PNT project), exercises >100 node optimizations, validates connectivity checks, origin of Tao incident motivation |
+| Project | Location | Scale | Purpose |
+|---------|----------|-------|---------|
+| **SBS-Test** | `toolchain/SBS-Test/` | 33 nodes (32 Lean + 1 LaTeX) | Feature testing: all 6 status colors, XSS prevention, rainbow brackets (depths 1-10), module references, validation testing (cycles, disconnected components), visual compliance baseline |
+| **General_Crystallographic_Restriction** | `showcase/General_Crystallographic_Restriction/` | 57 nodes | Production example with paper generation, complete formalization of the crystallographic restriction theorem |
+| **PrimeNumberTheoremAnd** | `showcase/PrimeNumberTheoremAnd/` | 591 annotations | Large-scale integration (Tao's PNT project), exercises >100 node optimizations, validates connectivity checks, origin of Tao incident motivation |
 
 ---
 
@@ -744,6 +767,10 @@ Located in `scripts/sbs/validators/design/`:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
+# Or from project directories
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
+python ../../dev/scripts/build.py
+
 # Run all deterministic tests
 /opt/homebrew/bin/pytest sbs/tests/ -v
 
@@ -799,14 +826,14 @@ The compliance system:
 - Loops until 100% compliance achieved
 
 Key files:
-- `archive/compliance_ledger.json` - Persistent status
-- `archive/COMPLIANCE_STATUS.md` - Human-readable report
+- `storage/compliance_ledger.json` - Persistent status
+- `storage/COMPLIANCE_STATUS.md` - Human-readable report
 - `scripts/sbs/criteria.py` - Compliance criteria per page
 
 ### Image Storage
 
 ```
-archive/
+storage/
   {project}/
     latest/           # Current capture (overwritten each run)
       capture.json    # Metadata: timestamp, commit, viewport, page status
@@ -814,7 +841,7 @@ archive/
       dep_graph.png
       *_interactive.png
       ...
-    archive/          # Timestamped history
+    storage/          # Timestamped history
       {timestamp}/
 ```
 
@@ -833,12 +860,12 @@ archive/
 
 The archive system provides comprehensive build tracking, iCloud sync, session archiving, and custom rubrics.
 
-**Canonical reference:** [`archive/README.md`](../archive/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
+**Canonical reference:** [`storage/README.md`](../../storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
 
 ### Directory Structure
 
 ```
-archive/
+storage/
   unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
   archive_index.json      # Entry index with tags
@@ -856,7 +883,7 @@ archive/
     {entry_id}.md
   SBSTest/                # Per-project screenshots
     latest/
-    archive/{timestamp}/
+    storage/{timestamp}/
   GCR/
     ...
 ```
@@ -881,7 +908,7 @@ Charts generated from `unified_ledger.json`:
 
 ### iCloud Sync
 
-Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_archive/`:
+Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_storage/`:
 - Non-blocking (failures logged but don't break builds)
 - Syncs: unified ledger, archive index, charts, screenshots, rubrics
 - Manual sync: `sbs archive sync`

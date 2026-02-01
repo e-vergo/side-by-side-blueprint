@@ -140,22 +140,32 @@ Academic papers with `\paperstatement{}` and `\paperfull{}` hooks linking to for
 
 **Port of leanblueprint**: Pure Lean reimplementation of Patrick Massot's Python/Plastex blueprint system
 
-## Repository Architecture
+## Monorepo Architecture
 
 ```
 Side-by-Side-Blueprint/
-  SubVerso/         # Syntax highlighting (fork with O(1) indexed lookups)
-  Verso/            # Document framework (fork with SBSBlueprint/VersoPaper genres)
-  LeanArchitect/    # @[blueprint] attribute (fork with 8 metadata + 3 status options)
-  Dress/            # Artifact generation during Lean elaboration
-  Runway/           # Site generator (replaces Python leanblueprint)
-  SBS-Test/         # Minimal test project for fast iteration
-  General_Crystallographic_Restriction/  # Production example with paper
-  PrimeNumberTheoremAnd/                 # Large-scale integration (591 nodes)
-  dress-blueprint-action/                # GitHub Action (432 lines) + CSS/JS assets (3,805 lines)
+  forks/                    # Forked Lean 4 repositories
+    subverso/               # Syntax highlighting (O(1) indexed lookups)
+    verso/                  # Document framework (SBSBlueprint/VersoPaper genres)
+    LeanArchitect/          # @[blueprint] attribute (8 metadata + 3 status)
+  toolchain/                # Core toolchain components
+    Dress/                  # Artifact generation during Lean elaboration
+    Runway/                 # Site generator (replaces Python leanblueprint)
+    SBS-Test/               # Minimal test project for fast iteration
+    dress-blueprint-action/ # GitHub Action (432 lines) + CSS/JS assets (3,805 lines)
+  showcase/                 # Production examples
+    General_Crystallographic_Restriction/  # Production example with paper (57 nodes)
+    PrimeNumberTheoremAnd/                 # Large-scale integration (591 nodes)
+  dev/                      # Development tooling
+    scripts/                # Build scripts, sbs CLI
+    .refs/                  # Detailed reference docs
+    markdowns/              # Public documentation (this file)
+  storage/                  # Archive submodule (sbs-storage)
 ```
 
 **Dependency chain:** SubVerso -> LeanArchitect -> Dress -> Runway -> Consumer projects
+
+**Monorepo refactor (February 2026):** Consolidated all repositories into a single monorepo for easier cross-repo development and dependency management. Forks, toolchain, and showcase projects are now organized into separate directories.
 
 ## Current Status
 
@@ -205,7 +215,7 @@ The toolchain now includes an 8-dimensional quality scoring system for design va
 
 **Current Score:** 91.77/100 (as of 2026-02-01)
 
-Design validators in `scripts/sbs/validators/design/` automate quality assessment, providing measurable quality targets for UI work.
+Design validators in `dev/scripts/sbs/validators/design/` automate quality assessment, providing measurable quality targets for UI work.
 
 ## Quality Targets
 
@@ -248,11 +258,11 @@ Design validators in `scripts/sbs/validators/design/` automate quality assessmen
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
 
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
-- [archive/README.md](archive/README.md) - Central tooling hub
-- [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) - Detailed technical reference
+- [storage/README.md](../../storage/README.md) - Central tooling hub
+- [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference

@@ -7,6 +7,29 @@
 
 Pure Lean toolchain for formalization documentation that displays formal proofs alongside LaTeX theorem statements.
 
+## Monorepo Structure
+
+```
+Side-by-Side-Blueprint/
+  forks/                    # Forked Lean 4 repositories
+    subverso/               # Syntax highlighting (O(1) indexed lookups)
+    verso/                  # Document framework (SBSBlueprint/VersoPaper genres)
+    LeanArchitect/          # @[blueprint] attribute (8 metadata + 3 status)
+  toolchain/                # Core toolchain components
+    Dress/                  # Artifact generation, graph layout, validation
+    Runway/                 # Site generator, dashboard, paper/PDF
+    SBS-Test/               # Minimal test project (33 nodes)
+    dress-blueprint-action/ # GitHub Action + CSS/JS assets
+  showcase/                 # Production examples
+    General_Crystallographic_Restriction/  # 57 nodes, paper generation
+    PrimeNumberTheoremAnd/                 # 591 nodes, large-scale
+  dev/                      # Development tooling
+    scripts/                # Build scripts, sbs CLI
+    .refs/                  # Detailed reference docs
+    markdowns/              # Public documentation (this file)
+  storage/                  # Archive submodule (sbs-storage)
+```
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -22,19 +45,19 @@ Pure Lean toolchain for formalization documentation that displays formal proofs 
 
 ## Overview
 
-Eight repositories work together to produce formalization documentation:
+Components work together to produce formalization documentation:
 
-| Repository | Purpose |
-|------------|---------|
-| **SubVerso** | Syntax highlighting extraction from Lean info trees with O(1) indexed lookups |
-| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata options + 3 manual status flags |
-| **Dress** | Artifact generation, rainbow brackets, dependency graph layout, stats computation, validation |
-| **Runway** | Site generator with dashboard, PDF/paper generation, module reference support |
-| **Verso** | Document framework with SBSBlueprint and VersoPaper genres |
-| **dress-blueprint-action** | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
-| **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, validation testing) |
-| **General_Crystallographic_Restriction** | Production example with full paper generation (57 nodes) |
-| **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| **SubVerso** | `forks/subverso/` | Syntax highlighting extraction from Lean info trees with O(1) indexed lookups |
+| **LeanArchitect** | `forks/LeanArchitect/` | `@[blueprint]` attribute with 8 metadata options + 3 manual status flags |
+| **Dress** | `toolchain/Dress/` | Artifact generation, rainbow brackets, dependency graph layout, stats computation, validation |
+| **Runway** | `toolchain/Runway/` | Site generator with dashboard, PDF/paper generation, module reference support |
+| **Verso** | `forks/verso/` | Document framework with SBSBlueprint and VersoPaper genres |
+| **dress-blueprint-action** | `toolchain/dress-blueprint-action/` | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
+| **SBS-Test** | `toolchain/SBS-Test/` | Minimal test project (33 nodes, all 6 status colors, validation testing) |
+| **General_Crystallographic_Restriction** | `showcase/General_Crystallographic_Restriction/` | Production example with full paper generation (57 nodes) |
+| **PrimeNumberTheoremAnd** | `showcase/PrimeNumberTheoremAnd/` | Large-scale integration (591 annotations) |
 
 ## Dependency Chain
 
@@ -286,18 +309,19 @@ The toolchain includes an 8-dimensional quality scoring system:
 
 **Current Score:** 91.77/100 (as of 2026-02-01)
 
-Design validators in `scripts/sbs/validators/design/` automate quality checks. Run with:
+Design validators in `dev/scripts/sbs/validators/design/` automate quality checks. Run with:
 ```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 /opt/homebrew/bin/pytest sbs/tests/ -v
 ```
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
 
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [GOALS.md](GOALS.md) - Project vision and design goals
-- [archive/README.md](archive/README.md) - Central tooling hub
-- [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) - Detailed technical reference
+- [storage/README.md](../../storage/README.md) - Central tooling hub
+- [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference
