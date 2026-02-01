@@ -44,8 +44,10 @@ Side-by-Side-Blueprint/
   forks/                    # Forked Lean 4 repositories
   toolchain/                # Core toolchain components
   showcase/                 # Production examples
-  dev/                      # Development tooling and documentation
-  storage/                  # Archive submodule (sbs-storage)
+  dev/                      # Development tooling
+    scripts/                # sbs CLI and Python tooling
+    storage/                # Archive (screenshots, metrics, rubrics)
+    build-*.sh              # One-click build scripts
 ```
 
 ### Forks
@@ -292,7 +294,17 @@ Results are displayed in the dashboard and stored in `manifest.json` under `chec
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../storage/README.md).
+
+### One-Click Build Scripts
+
+From the monorepo root:
+
+```bash
+./dev/build-sbs-test.sh   # SBS-Test (~2 min)
+./dev/build-gcr.sh        # GCR (~5 min)
+./dev/build-pnt.sh        # PNT (~20 min)
+```
 
 ## Documentation
 
@@ -300,7 +312,7 @@ For build commands, screenshot capture, compliance validation, archive managemen
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, build pipeline |
 | [GOALS.md](GOALS.md) | Project vision and design goals |
-| [storage/README.md](../../storage/README.md) | Central tooling hub (CLI, validators, rubrics) |
+| [dev/storage/README.md](../storage/README.md) | Central tooling hub (CLI, validators, rubrics) |
 | [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) | Detailed technical reference |
 | [Individual READMEs](#monorepo-structure) | Per-component documentation |
 

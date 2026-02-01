@@ -55,8 +55,9 @@ Building tooling that:
 | `toolchain/` | **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
 | `showcase/` | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
 | `showcase/` | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
-| `dev/scripts/` | - | Python build tooling (build.py, sbs CLI) |
+| `dev/scripts/` | - | Python tooling (sbs CLI) |
 | `dev/storage/` | - | Build metrics, screenshots, session archives, iCloud sync |
+| `dev/build-*.sh` | - | One-click build scripts for each project |
 
 ### Dependency Chain
 
@@ -81,7 +82,21 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Local Development
 
-All projects use the Python build script:
+### One-Click Build Scripts (Recommended)
+
+From the monorepo root:
+
+```bash
+./dev/build-sbs-test.sh   # SBS-Test (~2 min)
+./dev/build-gcr.sh        # GCR (~5 min)
+./dev/build-pnt.sh        # PNT (~20 min)
+```
+
+These scripts wrap `python dev/scripts/build.py` with the correct working directory.
+
+### Direct Build Script Usage
+
+Alternatively, run from project directories:
 
 ```bash
 # SBS-Test (fast iteration, ~2 minutes)

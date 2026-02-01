@@ -35,10 +35,11 @@ Pure Lean toolchain for formalization documentation that:
 ├── showcase/
 │   ├── General_Crystallographic_Restriction/  # Production example (57 nodes)
 │   └── PrimeNumberTheoremAnd/  # Large-scale integration (591 annotations)
-├── dev/
-│   ├── scripts/         # Python build tooling (build.py, sbs CLI)
-│   └── .refs/           # Reference documents
-└── storage/             # Build metrics, screenshots, session archives
+└── dev/
+    ├── scripts/         # Python tooling (sbs CLI)
+    ├── storage/         # Build metrics, screenshots, session archives
+    ├── .refs/           # Reference documents
+    └── build-*.sh       # One-click build scripts
 ```
 
 ### Dependency Chain (Build Order)
@@ -160,7 +161,7 @@ The CSS is organized by concern, not by page:
 
 ## Tooling Reference
 
-**For comprehensive tooling documentation, see [`storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/storage/README.md).**
+**For comprehensive tooling documentation, see [`dev/storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/README.md).**
 
 This is the canonical reference for:
 - `sbs` CLI commands (capture, compliance, rubric, archive)
@@ -222,7 +223,12 @@ Runway generates:
 **Always use the Python build script. Never skip commits or pushes.**
 
 ```bash
-# SBS-Test (fast iteration, ~2 minutes)
+# One-click build scripts (from monorepo root)
+./dev/build-sbs-test.sh   # SBS-Test (~2 min)
+./dev/build-gcr.sh        # GCR (~5 min)
+./dev/build-pnt.sh        # PNT (~20 min)
+
+# Or from project directories
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
 python ../../dev/scripts/build.py
 
@@ -376,7 +382,7 @@ class MyValidator(BaseValidator):
 
 #### Unified Ledger
 
-All metrics are stored in `storage/unified_ledger.json` via the `UnifiedLedger` class in `dev/scripts/sbs/ledger.py`.
+All metrics are stored in `dev/storage/unified_ledger.json` via the `UnifiedLedger` class in `dev/scripts/sbs/ledger.py`.
 
 ### Visual Comparison
 
@@ -391,7 +397,7 @@ python3 -m sbs history --project SBSTest
 ### Image Storage
 
 ```
-storage/
+dev/storage/
 ├── {project}/
 │   ├── latest/           # Current capture (overwritten)
 │   │   ├── capture.json  # Metadata

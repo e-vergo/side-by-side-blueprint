@@ -157,10 +157,13 @@ Side-by-Side-Blueprint/
     General_Crystallographic_Restriction/  # Production example with paper (57 nodes)
     PrimeNumberTheoremAnd/                 # Large-scale integration (591 nodes)
   dev/                      # Development tooling
-    scripts/                # Build scripts, sbs CLI
+    scripts/                # sbs CLI and Python tooling
+    storage/                # Archive (screenshots, metrics, rubrics)
     .refs/                  # Detailed reference docs
     markdowns/              # Public documentation (this file)
-  storage/                  # Archive submodule (sbs-storage)
+    build-sbs-test.sh       # One-click SBS-Test build
+    build-gcr.sh            # One-click GCR build
+    build-pnt.sh            # One-click PNT build
 ```
 
 **Dependency chain:** SubVerso -> LeanArchitect -> Dress -> Runway -> Consumer projects
@@ -258,11 +261,11 @@ Design validators in `dev/scripts/sbs/validators/design/` automate quality asses
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../storage/README.md).
 
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
-- [storage/README.md](../../storage/README.md) - Central tooling hub
-- [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference
+- [dev/storage/README.md](../storage/README.md) - Central tooling hub
+- [dev/.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference

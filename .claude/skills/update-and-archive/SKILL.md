@@ -10,14 +10,17 @@ immutable: true
 
 ## Purpose
 
-This skill serves two purposes:
+This skill serves exactly one purpose:
 
-1. **Standalone invocation**: Quick "repo reset" to synchronize all documentation with current codebase state
-2. **Mandatory cleanup step**: Final phase of `/execute` - execution is NOT complete until this runs
+Update all documentation for this project and trigger the archival process resulting in a well documented, porcelain repos.
 
-## Immutability Notice
+## Rationale
 
-**DO NOT MODIFY THIS SKILL** without explicit user instruction. This skill is designed to be static and invoked frequently. Any changes require direct user approval.
+This skill exists because:
+
+The archival process is central to the self-improvement process in the repo. It uses tooling that captures all of the relevant human and llm interactions in a serchable way and allows us to understand how we work better, enabling introspection and self improvement. 
+
+Automating, standardizing, and optimizing the workflows surrounding that is crucial to our sucsess. This workflow is a key part of that effort. 
 
 ## Required Reading (All Agents)
 
@@ -318,14 +321,5 @@ CRUCIAL, this is something the user expects and will be used a direct measuremen
   - All commits pushed to origin
   - `git status` shows clean working tree in all repos
 
----
 
-## Rationale
 
-This skill exists because:
-
-The archival process is central to the self-improvement process in the repo. It uses tolling that captures all of the relevant human and llm interactions in a serchable way and allows us to understand how we work better, enabling introspection and self improvement. 
-
-Automating, standardizing, and optimizing the workflows surrounding that is crucial to our sucsess. This workflow is a key part of that effort. 
-
-Invoke often. Keep docs fresh. Never skip this step.

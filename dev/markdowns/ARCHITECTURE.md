@@ -24,10 +24,13 @@ Side-by-Side-Blueprint/
     General_Crystallographic_Restriction/  # 57 nodes, paper generation
     PrimeNumberTheoremAnd/                 # 591 nodes, large-scale
   dev/                      # Development tooling
-    scripts/                # Build scripts, sbs CLI
+    scripts/                # sbs CLI and Python tooling
+    storage/                # Archive (screenshots, metrics, rubrics)
     .refs/                  # Detailed reference docs
     markdowns/              # Public documentation (this file)
-  storage/                  # Archive submodule (sbs-storage)
+    build-sbs-test.sh       # One-click SBS-Test build
+    build-gcr.sh            # One-click GCR build
+    build-pnt.sh            # One-click PNT build
 ```
 
 ## Table of Contents
@@ -317,11 +320,23 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 ## Tooling
 
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../../storage/README.md).
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../storage/README.md).
+
+### One-Click Build Scripts
+
+From the monorepo root:
+
+```bash
+./dev/build-sbs-test.sh   # SBS-Test (~2 min)
+./dev/build-gcr.sh        # GCR (~5 min)
+./dev/build-pnt.sh        # PNT (~20 min)
+```
+
+These scripts wrap `python dev/scripts/build.py` with the correct working directory.
 
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [GOALS.md](GOALS.md) - Project vision and design goals
-- [storage/README.md](../../storage/README.md) - Central tooling hub
-- [.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference
+- [dev/storage/README.md](../storage/README.md) - Central tooling hub
+- [dev/.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference

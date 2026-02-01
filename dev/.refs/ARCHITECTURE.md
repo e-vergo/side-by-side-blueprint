@@ -19,10 +19,13 @@ Side-by-Side-Blueprint/
     General_Crystallographic_Restriction/  # 57 nodes, paper generation
     PrimeNumberTheoremAnd/                 # 591 nodes, large-scale
   dev/                      # Development tooling
-    scripts/                # Build scripts, sbs CLI
+    scripts/                # sbs CLI and Python tooling
     .refs/                  # Detailed reference docs (this file)
     markdowns/              # Public documentation
-  storage/                  # Archive submodule (sbs-storage)
+    dev/storage/                # Archive (screenshots, metrics, rubrics)
+    build-sbs-test.sh       # One-click SBS-Test build
+    build-gcr.sh            # One-click GCR build
+    build-pnt.sh            # One-click PNT build
 ```
 
 ## Component Overview
@@ -765,13 +768,17 @@ Located in `scripts/sbs/validators/design/`:
 ### Running Quality Tests
 
 ```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+# From the monorepo root, use convenience scripts
+./dev/build-sbs-test.sh   # SBS-Test (~2 min)
+./dev/build-gcr.sh        # GCR (~5 min)
+./dev/build-pnt.sh        # PNT (~20 min)
 
 # Or from project directories
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
 python ../../dev/scripts/build.py
 
 # Run all deterministic tests
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 /opt/homebrew/bin/pytest sbs/tests/ -v
 
 # Run specific validator
@@ -826,14 +833,14 @@ The compliance system:
 - Loops until 100% compliance achieved
 
 Key files:
-- `storage/compliance_ledger.json` - Persistent status
-- `storage/COMPLIANCE_STATUS.md` - Human-readable report
+- `dev/storage/compliance_ledger.json` - Persistent status
+- `dev/storage/COMPLIANCE_STATUS.md` - Human-readable report
 - `scripts/sbs/criteria.py` - Compliance criteria per page
 
 ### Image Storage
 
 ```
-storage/
+dev/storage/
   {project}/
     latest/           # Current capture (overwritten each run)
       capture.json    # Metadata: timestamp, commit, viewport, page status
@@ -841,7 +848,7 @@ storage/
       dep_graph.png
       *_interactive.png
       ...
-    storage/          # Timestamped history
+    dev/storage/          # Timestamped history
       {timestamp}/
 ```
 
@@ -860,12 +867,12 @@ storage/
 
 The archive system provides comprehensive build tracking, iCloud sync, session archiving, and custom rubrics.
 
-**Canonical reference:** [`storage/README.md`](../../storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
+**Canonical reference:** [`dev/storage/README.md`](../storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
 
 ### Directory Structure
 
 ```
-storage/
+dev/storage/
   unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
   archive_index.json      # Entry index with tags
@@ -883,7 +890,7 @@ storage/
     {entry_id}.md
   SBSTest/                # Per-project screenshots
     latest/
-    storage/{timestamp}/
+    dev/storage/{timestamp}/
   GCR/
     ...
 ```
@@ -908,7 +915,7 @@ Charts generated from `unified_ledger.json`:
 
 ### iCloud Sync
 
-Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_storage/`:
+Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_dev/storage/`:
 - Non-blocking (failures logged but don't break builds)
 - Syncs: unified ledger, archive index, charts, screenshots, rubrics
 - Manual sync: `sbs archive sync`
