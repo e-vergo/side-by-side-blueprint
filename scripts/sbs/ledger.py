@@ -181,12 +181,25 @@ class UnifiedLedger:
     # Validator results
     validator_results: dict[str, Any] = field(default_factory=dict)
 
+    # Rubric evaluations (quality scoring history)
+    rubric_evaluations: list[dict] = field(default_factory=list)
+
     def add_build(self, build: BuildMetrics) -> None:
         """Add build to history, keeping last 20."""
         self.current_build = build
         self.build_history.append(build)
         if len(self.build_history) > 20:
             self.build_history = self.build_history[-20:]
+
+    def add_rubric_evaluation(self, evaluation_dict: dict) -> None:
+        """Add a rubric evaluation to history, keeping last 20.
+
+        Args:
+            evaluation_dict: The RubricEvaluation.to_dict() result
+        """
+        self.rubric_evaluations.append(evaluation_dict)
+        if len(self.rubric_evaluations) > 20:
+            self.rubric_evaluations = self.rubric_evaluations[-20:]
 
     def get_build(self, run_id: str) -> Optional[BuildMetrics]:
         """Get build by run_id."""
@@ -485,6 +498,8 @@ def _serialize_unified_ledger(ledger: UnifiedLedger) -> dict:
         "lifetime_stats": asdict(ledger.lifetime_stats),
         # Validator results
         "validator_results": ledger.validator_results,
+        # Rubric evaluations
+        "rubric_evaluations": ledger.rubric_evaluations[-20:],
     }
 
     # Serialize pages
@@ -575,6 +590,9 @@ def _deserialize_unified_ledger(data: dict) -> UnifiedLedger:
 
     # Validator results
     ledger.validator_results = data.get("validator_results", {})
+
+    # Rubric evaluations (backward compatible - defaults to empty list)
+    ledger.rubric_evaluations = data.get("rubric_evaluations", [])
 
     return ledger
 

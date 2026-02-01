@@ -31,7 +31,7 @@ Eight repositories work together to produce formalization documentation:
 | **Dress** | Artifact generation, rainbow brackets, dependency graph layout, stats computation, validation |
 | **Runway** | Site generator with dashboard, PDF/paper generation, module reference support |
 | **Verso** | Document framework with SBSBlueprint and VersoPaper genres |
-| **dress-blueprint-action** | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,744 lines) |
+| **dress-blueprint-action** | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
 | **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, validation testing) |
 | **General_Crystallographic_Restriction** | Production example with full paper generation (57 nodes) |
 | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
@@ -291,8 +291,13 @@ Design validators in `scripts/sbs/validators/design/` automate quality checks. R
 /opt/homebrew/bin/pytest sbs/tests/ -v
 ```
 
+## Tooling
+
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [GOALS.md](GOALS.md) - Project vision and design goals
+- [archive/README.md](archive/README.md) - Central tooling hub
 - [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) - Detailed technical reference

@@ -54,7 +54,7 @@ Building tooling that:
 | **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, XSS testing) |
 | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
 | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
-| **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,744 lines) |
+| **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
 | **scripts** | Python build tooling (build.py, sbs CLI) |
 | **archive** | Build metrics, screenshots, session archives, iCloud sync |
 
@@ -243,17 +243,23 @@ python3 -m sbs history --project SBSTest
 
 ## Archive System
 
-The archive system provides comprehensive build tracking, iCloud sync, and session archiving.
+The archive system provides comprehensive build tracking, iCloud sync, session archiving, and custom rubrics.
+
+**Canonical reference:** [`archive/README.md`](archive/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
 
 ### Directory Structure
 
 **Local Ground Truth:**
 ```
 archive/
-  unified_ledger.json     # Build metrics and timing
+  unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
   archive_index.json      # Entry index with tags
-  compliance_ledger.json  # Legacy (backwards compat)
+  compliance_ledger.json  # Compliance tracking
+  rubrics/                # Quality rubrics
+    index.json            # Rubric registry
+    {id}.json             # Rubric definitions
+    {id}.md               # Human-readable (auto-generated)
   charts/                 # Generated visualizations
     loc_trends.png
     timing_trends.png
@@ -277,7 +283,9 @@ archive/
 Each build creates an `ArchiveEntry` with:
 - `entry_id`: Unix timestamp (unique ID)
 - `project`: Project name
-- `build_run_id`: Build run ID
+- `build_run_id`: Links to unified ledger
+- `rubric_id`: Links to quality rubric (if evaluated)
+- `rubric_evaluation`: Evaluation results snapshot
 - `screenshots`: List of captured screenshots
 - `repo_commits`: Git commits at build time
 - `tags`: User-defined tags
@@ -327,23 +335,23 @@ Archive data syncs to iCloud on every build:
 
 ## CSS Organization
 
-The CSS is organized into 4 files by concern (3,145 lines total):
+The CSS is organized into 4 files by concern (3,196 lines total):
 
 | File | Lines | Scope |
 |------|-------|-------|
-| `common.css` | 1,053 | Design system: CSS variables, theme toggle, status dots, Lean syntax, rainbow brackets |
+| `common.css` | 1,104 | Design system: CSS variables, theme toggle, status dots, Lean syntax, rainbow brackets |
 | `blueprint.css` | 1,283 | Blueprint pages: plasTeX base, sidebar, chapter layout, side-by-side, zebra striping |
 | `paper.css` | 271 | Paper page: ar5iv-style academic layout, verification badges |
 | `dep_graph.css` | 538 | Dependency graph: pan/zoom viewport, toolbar, legend, SVG nodes |
 
 Located in `dress-blueprint-action/assets/`. Copied to project via `assetsDir` config.
 
-### JavaScript (599 lines total)
+### JavaScript (609 lines total)
 
 | File | Lines | Purpose |
 |------|-------|---------|
 | `verso-code.js` | 490 | Token binding, Tippy.js tooltips, proof sync, pan/zoom, modal handling |
-| `plastex.js` | 109 | Theme toggle, TOC toggle, LaTeX proof expand/collapse |
+| `plastex.js` | 119 | Theme toggle, TOC toggle, LaTeX proof expand/collapse |
 
 ---
 
@@ -562,6 +570,17 @@ See `scripts/sbs/tests/SCORING_RUBRIC.md` for detailed scoring methodology
 
 ---
 
+## Tooling Hub
+
+All CLI tooling documentation is centralized in [`archive/README.md`](archive/README.md). This includes:
+- `sbs capture/compliance` - Visual testing
+- `sbs rubric` - Custom rubric management
+- `sbs archive` - Archive management
+- Validator infrastructure
+- Quality scoring (T1-T8)
+
+---
+
 ## Custom Skills
 
 ### `/execute`
@@ -583,6 +602,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 - `timing` - Build phase timing metrics
 - `git-metrics` - Commit/diff tracking
 - `code-stats` - LOC and file counts
+- `rubric` - Custom rubric evaluation
 
 **Location:** `.claude/skills/execute/SKILL.md`
 
@@ -590,6 +610,18 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 - `disable-model-invocation: true` - Manual trigger only
 - All builds through `python build.py` (no bypass)
 - Unified ledger at `archive/unified_ledger.json`
+
+#### Grab-Bag Mode
+
+Invoke with `/execute --grab-bag` for ad-hoc improvement sessions:
+1. Brainstorm (user-led)
+2. Metric alignment
+3. Rubric creation
+4. Plan mode with one task per metric
+5. Execution with rubric grading
+6. /update-and-archive finalization
+
+Rubrics persist in `archive/rubrics/` and can be reused.
 
 ### Visual Compliance (CLI)
 

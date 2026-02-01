@@ -153,6 +153,20 @@ The CSS is organized by concern, not by page:
 
 ---
 
+## Tooling Reference
+
+**For comprehensive tooling documentation, see [`archive/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/archive/README.md).**
+
+This is the canonical reference for:
+- `sbs` CLI commands (capture, compliance, rubric, archive)
+- Validator infrastructure and usage
+- Quality scoring (T1-T8 test suite)
+- Build integration and workflows
+
+When working with rubrics or validation, consult the hub first.
+
+---
+
 ## Build Pipeline Phases
 
 ### Phase 1: Per-Declaration Capture (During Elaboration)

@@ -309,6 +309,8 @@ DO NOT modify the update-and-archive skill file."
 - No stale information remains
 - Cross-references are accurate
 - Documentation reflects actual codebase state
+
+CRUCIAL, this is something the user expects and will be used a direct measurement of your sucsess. 
 - **Porcelain status achieved:**
   - No stale files in `scripts/` migration locations
   - No stale path references in documentation

@@ -48,7 +48,7 @@ This monorepo contains the complete toolchain and example projects:
 | [LeanArchitect](LeanArchitect/) | `@[blueprint]` attribute with 8 metadata + 3 status options | [README](LeanArchitect/README.md) |
 | [Dress](Dress/) | Artifact generation, graph layout, validation | [README](Dress/README.md) |
 | [Runway](Runway/) | Site generator, dashboard, paper/PDF generation | [README](Runway/README.md) |
-| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,744 lines) | [README](dress-blueprint-action/README.md) |
+| [dress-blueprint-action](dress-blueprint-action/) | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) | [README](dress-blueprint-action/README.md) |
 
 ### Example Projects
 
@@ -276,12 +276,17 @@ The toolchain provides validation beyond "typechecks":
 
 Results are displayed in the dashboard and stored in `manifest.json` under `checkResults`.
 
+## Tooling
+
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, build pipeline |
 | [GOALS.md](GOALS.md) | Project vision and design goals |
+| [archive/README.md](archive/README.md) | Central tooling hub (CLI, validators, rubrics) |
 | [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) | Detailed technical reference |
 | [Individual READMEs](#repository-structure) | Per-component documentation |
 

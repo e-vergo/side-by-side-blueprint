@@ -33,6 +33,10 @@ class ArchiveEntry:
     sync_timestamp: Optional[str] = None
     sync_error: Optional[str] = None
 
+    # Rubric evaluation
+    rubric_id: Optional[str] = None  # Links to a rubric in archive/rubrics/
+    rubric_evaluation: Optional[dict] = None  # Snapshot of evaluation results
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -47,6 +51,8 @@ class ArchiveEntry:
             "synced_to_icloud": self.synced_to_icloud,
             "sync_timestamp": self.sync_timestamp,
             "sync_error": self.sync_error,
+            "rubric_id": self.rubric_id,
+            "rubric_evaluation": self.rubric_evaluation,
         }
 
     @classmethod
@@ -68,6 +74,8 @@ class ArchiveEntry:
             synced_to_icloud=data.get("synced_to_icloud", False),
             sync_timestamp=data.get("sync_timestamp"),
             sync_error=data.get("sync_error"),
+            rubric_id=data.get("rubric_id"),
+            rubric_evaluation=data.get("rubric_evaluation"),
         )
 
 

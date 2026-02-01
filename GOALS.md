@@ -152,7 +152,7 @@ Side-by-Side-Blueprint/
   SBS-Test/         # Minimal test project for fast iteration
   General_Crystallographic_Restriction/  # Production example with paper
   PrimeNumberTheoremAnd/                 # Large-scale integration (591 nodes)
-  dress-blueprint-action/                # GitHub Action (432 lines) + CSS/JS assets (3,744 lines)
+  dress-blueprint-action/                # GitHub Action (432 lines) + CSS/JS assets (3,805 lines)
 ```
 
 **Dependency chain:** SubVerso -> LeanArchitect -> Dress -> Runway -> Consumer projects
@@ -177,6 +177,8 @@ Side-by-Side-Blueprint/
 | GitHub Action for CI/CD | Complete |
 | Visual compliance testing | Complete |
 | Archive system with iCloud sync | Complete |
+| 8-dimensional quality scoring (T1-T8) | Complete |
+| Custom rubric system | Complete |
 
 ### Production Examples
 
@@ -244,8 +246,13 @@ Design validators in `scripts/sbs/validators/design/` automate quality assessmen
 - **Next**: Stabilization, documentation, community feedback
 - **Future**: Propose as official FRO tool
 
+## Tooling
+
+For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Archive & Tooling Hub](archive/README.md).
+
 ## Related Documents
 
 - [README.md](README.md) - Project overview and getting started
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
+- [archive/README.md](archive/README.md) - Central tooling hub
 - [.refs/ARCHITECTURE.md](.refs/ARCHITECTURE.md) - Detailed technical reference
