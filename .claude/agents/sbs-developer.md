@@ -171,6 +171,49 @@ This is the canonical reference for:
 
 When working with rubrics or validation, consult the hub first.
 
+---
+
+## SBS-Oracle for Codebase Questions
+
+When you need to know "where is X?" or "how does Y work?", spawn the Oracle BEFORE searching:
+
+```python
+Task(subagent_type="sbs-oracle", prompt="Where is graph layout implemented?")
+```
+
+The Oracle contains pre-compiled knowledge:
+- **Concept Index**: Concept -> file location
+- **File Purpose Map**: One-liner summaries
+- **How-To Patterns**: Add CLI command, add validator, etc.
+- **Gotchas**: Known quirks and tribal knowledge
+- **Cross-Repo Impact**: What to check when changing X
+
+**Use Oracle BEFORE:**
+- Grepping for file locations
+- Reading multiple files to understand architecture
+- Asking "where is X implemented?"
+- Figuring out patterns for common modifications
+
+The Oracle is auto-regenerated during `/update-and-archive`.
+
+---
+
+## README Staleness Check
+
+Before updating READMEs, check which repos have changes:
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python -m sbs readme-check --json
+```
+
+This checks git state across all repos and reports:
+- Which repos have uncommitted changes
+- Which repos have unpushed commits
+- List of changed files per repo
+
+Focus README updates on repos that actually changed.
+
 ### Archive & Session Data
 
 The archive system extracts Claude Code interaction data from `~/.claude`:

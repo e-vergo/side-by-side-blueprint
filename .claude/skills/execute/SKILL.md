@@ -13,13 +13,8 @@ User triggers `/execute` with a task description.
 
 ## Phase 1: Alignment (Q&A)
 
-Claude asks clarifying questions until user explicitly signals readiness:
-- "ready to plan"
-- "let's plan"
-- "proceed to planning"
-
 Questions should cover:
-- Task scope and boundaries
+- Task scope, boundaries, methods brainstorming
 - Success criteria
 - Validation requirements
 - Affected repositories

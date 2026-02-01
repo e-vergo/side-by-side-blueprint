@@ -45,6 +45,8 @@ Commands:
   sync        Ensure all repos are synced (commit + push)
   versions    Show dependency versions across repos
   archive     Archive management commands
+  rubric      Rubric management commands
+  oracle      Oracle management commands
 
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
@@ -54,6 +56,8 @@ Examples:
   sbs inspect                    # Show build artifacts and manifest
   sbs sync -m "Fix bug"          # Commit and push all changes
   sbs rubric list                # List all rubrics
+  sbs oracle compile             # Compile Oracle from sources
+  sbs readme-check               # Check which READMEs may need updating
         """,
     )
 
@@ -572,7 +576,133 @@ Examples:
         help="Skip confirmation prompt",
     )
 
+    # --- oracle (command group) ---
+    oracle_parser = subparsers.add_parser(
+        "oracle",
+        help="Oracle management commands",
+        description="Compile and manage the SBS Oracle agent documentation.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Subcommands:
+  compile      Compile Oracle from sources
+
+Examples:
+  sbs oracle compile                         # Compile to default location
+  sbs oracle compile --dry-run               # Print output without writing
+  sbs oracle compile --output custom.md      # Write to custom path
+        """,
+    )
+    oracle_subparsers = oracle_parser.add_subparsers(
+        dest="oracle_command",
+        title="oracle commands",
+        metavar="<subcommand>",
+    )
+
+    # --- oracle compile ---
+    oracle_compile_parser = oracle_subparsers.add_parser(
+        "compile",
+        help="Compile Oracle from sources",
+        description="Compile the SBS Oracle agent documentation from source files.",
+    )
+    oracle_compile_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print output without writing",
+    )
+    oracle_compile_parser.add_argument(
+        "--output",
+        help="Output path (default: .claude/agents/sbs-oracle.md)",
+    )
+
+    # --- readme-check ---
+    readme_check_parser = subparsers.add_parser(
+        "readme-check",
+        help="Check which READMEs may need updating",
+        description="Check git state across all repos and report which READMEs may need updating.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Checks all 11 repos (main + 10 submodules) for uncommitted changes or
+unpushed commits. Repos with changes may have READMEs that need updating.
+
+Examples:
+  sbs readme-check         # Human-readable report
+  sbs readme-check --json  # JSON output for scripts
+        """,
+    )
+    readme_check_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
+    )
+
     return parser
+
+
+# =============================================================================
+# Command Handlers
+# =============================================================================
+
+
+def cmd_oracle(args: argparse.Namespace) -> int:
+    """Handle oracle commands."""
+    from pathlib import Path
+    from sbs.oracle import OracleCompiler
+
+    if not args.oracle_command:
+        log.error("No oracle subcommand specified. Use 'sbs oracle compile'.")
+        return 1
+
+    if args.oracle_command == "compile":
+        # Find repo root: cli.py is at dev/scripts/sbs/cli.py (4 levels up)
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+
+        compiler = OracleCompiler(repo_root)
+        content = compiler.compile()
+
+        if args.dry_run:
+            print(content)
+            log.info("\n--- Dry run complete ---")
+            log.info(f"  Size: {len(content):,} bytes")
+        else:
+            # Determine output path
+            if args.output:
+                output_path = Path(args.output)
+                if not output_path.is_absolute():
+                    output_path = repo_root / output_path
+            else:
+                output_path = repo_root / ".claude" / "agents" / "sbs-oracle.md"
+
+            # Ensure parent directory exists
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write output
+            output_path.write_text(content, encoding="utf-8")
+
+            log.success(f"Compiled Oracle to: {output_path}")
+            log.info(f"  Size: {len(content):,} bytes")
+
+        return 0
+
+    log.error(f"Unknown oracle command: {args.oracle_command}")
+    return 1
+
+
+def cmd_readme_check(args: argparse.Namespace) -> int:
+    """Handle readme-check command."""
+    from pathlib import Path
+    from sbs.readme import check_all_repos, format_report, format_json
+
+    # Find repo root: cli.py is at dev/scripts/sbs/cli.py (4 levels up)
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent
+
+    statuses = check_all_repos(repo_root)
+
+    if args.json:
+        print(format_json(statuses))
+    else:
+        print(format_report(statuses))
+
+    return 0
 
 
 # =============================================================================
@@ -643,6 +773,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "rubric":
             from sbs.tests.rubrics import cmd_rubric
             return cmd_rubric(args)
+
+        elif args.command == "oracle":
+            return cmd_oracle(args)
+
+        elif args.command == "readme-check":
+            return cmd_readme_check(args)
 
         else:
             log.error(f"Unknown command: {args.command}")

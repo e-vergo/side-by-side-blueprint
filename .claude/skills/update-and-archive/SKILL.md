@@ -19,11 +19,36 @@ Agents must read these before making changes:
 /Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation1.txt
 /Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation2.txt
 /Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation3.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/ARCHITECTURE.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation4.txt
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/ARCHITECTURE.md
 /Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/GOALS.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/README.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/GOALS.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/README.md
 ```
+
+---
+
+## Part 0: README Staleness Check
+
+Run the staleness check to determine which repos need documentation updates:
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs readme-check --json
+```
+
+**Interpret the JSON output:**
+- `repos_with_changes` array lists repos with uncommitted/unpushed changes
+- `changed_files` shows what was modified in each repo
+- `clean_repos` array lists repos needing no updates
+
+**Agent allocation based on `summary.needs_review`:**
+- 0 repos changed → Skip Part 1 entirely
+- 1-2 repos changed → Single agent for all README updates
+- 3-5 repos changed → 2 agents (grouped by wave)
+- 6+ repos changed → 3 agents (one per wave)
+
+**Only update READMEs for repos appearing in `repos_with_changes`.**
 
 ---
 
@@ -65,16 +90,33 @@ After READMEs are updated, synchronize:
 | Document | Focus |
 |----------|-------|
 | `dev/.refs/ARCHITECTURE.md` | Technical reference |
-| `ARCHITECTURE.md` | Public architecture |
+| `dev/markdowns/ARCHITECTURE.md` | Public architecture |
 | `CLAUDE.md` | Claude Code instructions |
-| `GOALS.md` | Project vision |
-| `README.md` | Public overview |
+| `dev/markdowns/GOALS.md` | Project vision |
+| `dev/markdowns/README.md` | Public overview |
 
 **Exclusion:** Do not modify this skill file.
 
 ---
 
-## Part 3: Finalization
+## Part 3: Oracle Regeneration
+
+After documentation updates, regenerate the Oracle:
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs oracle compile
+```
+
+This extracts content from all READMEs and CLAUDE.md into `.claude/agents/sbs-oracle.md`.
+
+**Validation:**
+- Oracle must have all sections populated
+- File paths must be valid
+
+---
+
+## Part 4: Finalization
 
 ### Stale Detection
 

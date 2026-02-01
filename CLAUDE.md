@@ -605,6 +605,70 @@ All CLI tooling documentation is centralized in [`dev/storage/README.md`](dev/st
 
 ---
 
+## SBS-Oracle Agent
+
+Instant codebase Q&A for Claude agents. Use when you need to know "where is X?" or "how does Y work?" without searching.
+
+### Invoking the Oracle
+
+Spawn the oracle agent for single questions:
+```
+Task(subagent_type="sbs-oracle", prompt="Where is graph layout implemented?")
+```
+
+### What the Oracle Knows
+
+- **Concept Index**: Concept -> file location mapping
+- **File Purpose Map**: One-liner summaries per file
+- **How-To Patterns**: Add CLI command, add validator, add hook, etc.
+- **Gotchas**: Status color source of truth, manual ToExpr, etc.
+- **Cross-Repo Impact**: What to check when changing X
+
+### When to Use
+
+Use the oracle BEFORE searching when:
+- Looking for where functionality lives
+- Need to understand cross-repo dependencies
+- Want to know the pattern for adding features
+- Unsure what will break if you change something
+
+### Keeping It Fresh
+
+The oracle is auto-regenerated during `/update-and-archive`:
+```bash
+sbs oracle compile
+```
+
+---
+
+## README Staleness Detection
+
+Identifies which READMEs may need updating based on git state across all repos.
+
+### Running Checks
+
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+
+# Human-readable report
+python -m sbs readme-check
+
+# JSON output for programmatic use
+python -m sbs readme-check --json
+```
+
+### What It Checks
+
+- Uncommitted changes in each repo (main + 10 submodules)
+- Unpushed commits
+- List of changed files per repo
+
+### Integration with /update-and-archive
+
+The skill runs `sbs readme-check --json` at the start to determine which repos have changes. Agents only update READMEs for repos with actual code changes.
+
+---
+
 ## Custom Skills
 
 ### `/execute`
