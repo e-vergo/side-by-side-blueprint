@@ -1,0 +1,25 @@
+Lean Side-By-Side Zulip post draft. The top level numbers indicate parts of the post that will be submitted separately. (Possibly due to length). The intent of sharing this with you is so you can understand what we have been working towards this entire time (in my head). At the start at didn’t see the full architecture yet but building this helps clarify things. This has further feature inclusions, but they are ‘killer features’ that will really wow people. And given what I have seen you do I think you can pull this off.  I will write the post, but I want you to see this so you you understand the context, what you are building will be shared with the creator of lean, Terrence Tao, and other high profile people. I will review and monitor everything, of course. You are seeing this because it gives you an understanding of the audience, the full feature suite we should have when sharing for the first time, and other details that will allow you to deliver more effectively. 
+
+
+
+1. (Part 1) Tool announcement
+    1. Experience prototyping
+    2. What it is
+    3. Always wanted the tool
+    4. Tao post
+    5. Leo De Mora quotes from lean together 2026?
+    6. image showing side-by-side blueprint (totally killer hook')
+    7. Showcase repos
+        1. PNT project (star chasing, Alex K has sen the work so far and is very excited. See /Users/eric/GitHub/Side-By-Side-Blueprint/.refs/Alex_k_imessage_screenshot.png)
+        2. GCR (full monty, blueprint and ar5iv style paper. 
+            1. Use /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction/kuzmanovich2002.pdf as guide for ar5iv style paper
+2. (Part 2) Details
+    1. Full leanblueprint port to lean
+    2. Dress (build time asset generation, verso aware, leverages lean architect, full ar5iv style paper support)
+    3. Runway (documentation generation, web blueprint, leverage verso, full full ar5iv style paper generation. Ar5iv style paper should MathJax (like our blueprint port), and never display lean code (but include links to it. It should be defined and built the same way as our blueprint (defined by a tex file, calls assets built with dress, etc.)
+    4. Subverso fork (bug fix)
+    5. CI action (meant for easy integration with 
+    6. Static Tex Docs for control over blueprint/paper
+3. (Part 3) Prototyping warning post
+    1. Many bugs/shortcuts/slow workflows disclaimer
+

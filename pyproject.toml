@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbs"
+version = "0.1.0"
+description = "Side-by-Side Blueprint CLI tools"
+readme = "dev/markdowns/README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "rich>=13.0",
+    "toml>=0.10",
+]
+
+[project.scripts]
+sbs = "sbs.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["dev/scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["dev/scripts/sbs/tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

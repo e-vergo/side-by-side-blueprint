@@ -1,0 +1,30 @@
+[submodule "forks/LeanArchitect"]
+	path = forks/LeanArchitect
+	url = https://github.com/e-vergo/LeanArchitect.git
+[submodule "forks/subverso"]
+	path = forks/subverso
+	url = https://github.com/e-vergo/subverso.git
+[submodule "forks/verso"]
+	path = forks/verso
+	url = https://github.com/e-vergo/verso.git
+[submodule "toolchain/Dress"]
+	path = toolchain/Dress
+	url = https://github.com/e-vergo/Dress.git
+[submodule "toolchain/Runway"]
+	path = toolchain/Runway
+	url = https://github.com/e-vergo/Runway.git
+[submodule "toolchain/SBS-Test"]
+	path = toolchain/SBS-Test
+	url = https://github.com/e-vergo/SBS-Test.git
+[submodule "toolchain/dress-blueprint-action"]
+	path = toolchain/dress-blueprint-action
+	url = https://github.com/e-vergo/dress-blueprint-action.git
+[submodule "showcase/General_Crystallographic_Restriction"]
+	path = showcase/General_Crystallographic_Restriction
+	url = https://github.com/e-vergo/General_Crystallographic_Restriction.git
+[submodule "showcase/PrimeNumberTheoremAnd"]
+	path = showcase/PrimeNumberTheoremAnd
+	url = https://github.com/e-vergo/PrimeNumberTheoremAnd.git
+[submodule "storage"]
+	path = storage
+	url = https://github.com/e-vergo/sbs-storage.git

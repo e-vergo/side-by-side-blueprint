@@ -23,17 +23,22 @@ Pure Lean toolchain for formalization documentation that:
 
 ```
 /Users/eric/GitHub/Side-By-Side-Blueprint/
-├── subverso/        # Syntax highlighting (fork with O(1) indexed lookups)
-├── verso/           # Document framework (fork with SBSBlueprint/VersoPaper genres)
-├── LeanArchitect/   # @[blueprint] attribute with 8 metadata + 3 status options
-├── Dress/           # Artifact generation + graph layout + validation
-├── Runway/          # Site generator + dashboard + paper/PDF
-├── SBS-Test/        # Minimal test project (33 nodes: 32 Lean + 1 LaTeX)
-├── General_Crystallographic_Restriction/  # Production example (57 nodes)
-├── PrimeNumberTheoremAnd/  # Large-scale integration (591 annotations)
-├── dress-blueprint-action/  # CI/CD action + CSS/JS assets
-├── scripts/         # Python build tooling (build.py, sbs CLI)
-└── images/          # Screenshot capture storage
+├── forks/
+│   ├── subverso/        # Syntax highlighting (fork with O(1) indexed lookups)
+│   ├── verso/           # Document framework (fork with SBSBlueprint/VersoPaper genres)
+│   └── LeanArchitect/   # @[blueprint] attribute with 8 metadata + 3 status options
+├── toolchain/
+│   ├── Dress/           # Artifact generation + graph layout + validation
+│   ├── Runway/          # Site generator + dashboard + paper/PDF
+│   ├── SBS-Test/        # Minimal test project (33 nodes: 32 Lean + 1 LaTeX)
+│   └── dress-blueprint-action/  # CI/CD action + CSS/JS assets
+├── showcase/
+│   ├── General_Crystallographic_Restriction/  # Production example (57 nodes)
+│   └── PrimeNumberTheoremAnd/  # Large-scale integration (591 annotations)
+├── dev/
+│   ├── scripts/         # Python build tooling (build.py, sbs CLI)
+│   └── .refs/           # Reference documents
+└── storage/             # Build metrics, screenshots, session archives
 ```
 
 ### Dependency Chain (Build Order)
@@ -155,7 +160,7 @@ The CSS is organized by concern, not by page:
 
 ## Tooling Reference
 
-**For comprehensive tooling documentation, see [`archive/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/archive/README.md).**
+**For comprehensive tooling documentation, see [`storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/storage/README.md).**
 
 This is the canonical reference for:
 - `sbs` CLI commands (capture, compliance, rubric, archive)
@@ -218,16 +223,16 @@ Runway generates:
 
 ```bash
 # SBS-Test (fast iteration, ~2 minutes)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-python ../scripts/build.py
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
+python ../../dev/scripts/build.py
 
 # GCR (production with paper)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
-python ../scripts/build.py
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/showcase/General_Crystallographic_Restriction
+python ../../dev/scripts/build.py
 
 # PNT (large-scale)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
-python ../scripts/build.py
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/showcase/PrimeNumberTheoremAnd
+python ../../dev/scripts/build.py
 ```
 
 The build script commits and pushes all repo changes (no skip option exists by design), ensuring:
@@ -266,7 +271,7 @@ Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`
 ### Screenshot Capture
 
 ```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 # Capture static pages
 python3 -m sbs capture --project SBSTest
@@ -339,7 +344,7 @@ context = ValidationContext(
     project='SBSTest',
     project_root=Path('/path/to/project'),
     commit='abc123',
-    screenshots_dir=Path('/path/to/archive/SBSTest/latest')
+    screenshots_dir=Path('/path/to/storage/SBSTest/latest')
 )
 
 # Run validation
@@ -348,7 +353,7 @@ result = validator.validate(context)
 
 #### Creating New Validators
 
-1. Create a new file in `scripts/sbs/validators/`
+1. Create a new file in `dev/scripts/sbs/validators/`
 2. Extend `BaseValidator` or implement the `Validator` protocol
 3. Use `@register_validator` decorator
 
@@ -371,7 +376,7 @@ class MyValidator(BaseValidator):
 
 #### Unified Ledger
 
-All metrics are stored in `archive/unified_ledger.json` via the `UnifiedLedger` class in `scripts/sbs/ledger.py`.
+All metrics are stored in `storage/unified_ledger.json` via the `UnifiedLedger` class in `dev/scripts/sbs/ledger.py`.
 
 ### Visual Comparison
 
@@ -386,7 +391,7 @@ python3 -m sbs history --project SBSTest
 ### Image Storage
 
 ```
-images/
+storage/
 ├── {project}/
 │   ├── latest/           # Current capture (overwritten)
 │   │   ├── capture.json  # Metadata
@@ -395,7 +400,6 @@ images/
 │   │   └── *_interactive.png
 │   └── archive/          # Timestamped history
 │       └── {timestamp}/
-scripts/
 ├── compliance_ledger.json  # Persistent status
 ├── COMPLIANCE_STATUS.md    # Human-readable report
 └── manifests/              # Interactive element manifests

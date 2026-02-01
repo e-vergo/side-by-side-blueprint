@@ -24,10 +24,10 @@ This skill serves two purposes:
 Every agent spawned by this skill MUST begin by reading these 8 documents:
 
 ```
-/Users/eric/GitHub/Side-By-Side-Blueprint/.refs/ARCHITECTURE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/.refs/motivation1.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/.refs/motivation2.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/.refs/motivation3.txt
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/ARCHITECTURE.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation1.txt
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation2.txt
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation3.txt
 /Users/eric/GitHub/Side-By-Side-Blueprint/ARCHITECTURE.md
 /Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md
 /Users/eric/GitHub/Side-By-Side-Blueprint/GOALS.md
@@ -52,9 +52,9 @@ Repos that are forks of upstream projects. READMEs should:
 
 | Repo | Upstream |
 |------|----------|
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/verso` | leanprover/verso |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/subverso` | leanprover/subverso |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/LeanArchitect` | hanwenzhu/LeanArchitect |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/forks/verso` | leanprover/verso |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/forks/subverso` | leanprover/subverso |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/forks/LeanArchitect` | hanwenzhu/LeanArchitect |
 
 ### Wave 2: Showcase Repos (Real Project Style)
 
@@ -66,8 +66,8 @@ These are demonstration projects. READMEs should read as if they were independen
 
 | Repo | Special Notes |
 |------|---------------|
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction` | Full production example with paper |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd` | Add note at top: "This is a fork of the original PNT+ project with SBS integration" |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/showcase/General_Crystallographic_Restriction` | Full production example with paper |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/showcase/PrimeNumberTheoremAnd` | Add note at top: "This is a fork of the original PNT+ project with SBS integration" |
 
 ### Wave 3: Full Documentation
 
@@ -80,10 +80,10 @@ These are core toolchain components. READMEs should be comprehensive:
 
 | Repo |
 |------|
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test` |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/Runway` |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/Dress` |
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/dress-blueprint-action` |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test` |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/Runway` |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/Dress` |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/dress-blueprint-action` |
 
 ### Wave Awareness
 
@@ -120,7 +120,7 @@ Update these core documents to incorporate learnings, reflect current state, and
 
 | Document | Update Focus |
 |----------|--------------|
-| `/Users/eric/GitHub/Side-By-Side-Blueprint/.refs/ARCHITECTURE.md` | Technical reference - keep detailed and accurate |
+| `/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/ARCHITECTURE.md` | Technical reference - keep detailed and accurate |
 | `/Users/eric/GitHub/Side-By-Side-Blueprint/ARCHITECTURE.md` | Public architecture doc - sync with .refs version |
 | `/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md` | Claude Code instructions - update for new patterns/conventions |
 | `/Users/eric/GitHub/Side-By-Side-Blueprint/GOALS.md` | Project vision - update progress, refine goals |
@@ -138,7 +138,7 @@ After Part 2 completes, the orchestrator ensures the entire monorepo is "porcela
 
 ### Step 1: Stale File Detection
 
-Read the migration registry at `archive/migrations.json`. This file tracks all path migrations with:
+Read the migration registry at `storage/migrations.json`. This file tracks all path migrations with:
 - `from`: Old path that should no longer exist
 - `to`: New canonical location
 - `date`: When migration occurred
@@ -154,7 +154,7 @@ for each migration in migrations.json:
 
 ### Step 2: Stale Path Detection
 
-Read `path_references` from `archive/migrations.json`. These define patterns that should be replaced in documentation.
+Read `path_references` from `storage/migrations.json`. These define patterns that should be replaced in documentation.
 
 **Detection algorithm:**
 ```
@@ -168,7 +168,7 @@ for each ref in path_references:
 
 ### Adding New Migrations
 
-When paths are migrated in the future, update `archive/migrations.json`:
+When paths are migrated in the future, update `storage/migrations.json`:
 1. Add entry to `migrations` array with from/to/date
 2. Add entry to `path_references` if docs need updating
 3. Next `/update-and-archive` run will detect and clean up automatically

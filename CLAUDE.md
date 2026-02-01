@@ -44,19 +44,19 @@ Building tooling that:
 
 ## Repository Map
 
-| Repo | Purpose |
-|------|---------|
-| **subverso** | Syntax highlighting (fork with O(1) indexed lookups via InfoTable) |
-| **verso** | Document framework (fork with SBSBlueprint/VersoPaper genres, rainbow brackets) |
-| **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 status options |
-| **Dress** | Artifact generation + graph layout + validation + rainbow brackets |
-| **Runway** | Site generator + dashboard + paper/PDF + module references |
-| **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, XSS testing) |
-| **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
-| **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
-| **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
-| **scripts** | Python build tooling (build.py, sbs CLI) |
-| **archive** | Build metrics, screenshots, session archives, iCloud sync |
+| Directory | Repo | Purpose |
+|-----------|------|---------|
+| `forks/` | **subverso** | Syntax highlighting (fork with O(1) indexed lookups via InfoTable) |
+| `forks/` | **verso** | Document framework (fork with SBSBlueprint/VersoPaper genres, rainbow brackets) |
+| `forks/` | **LeanArchitect** | `@[blueprint]` attribute with 8 metadata + 3 status options |
+| `toolchain/` | **Dress** | Artifact generation + graph layout + validation + rainbow brackets |
+| `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF + module references |
+| `toolchain/` | **SBS-Test** | Minimal test project (33 nodes, all 6 status colors, XSS testing) |
+| `toolchain/` | **dress-blueprint-action** | CI/CD action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
+| `showcase/` | **General_Crystallographic_Restriction** | Production example with paper (57 nodes) |
+| `showcase/` | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
+| `dev/scripts/` | - | Python build tooling (build.py, sbs CLI) |
+| `storage/` | - | Build metrics, screenshots, session archives, iCloud sync |
 
 ### Dependency Chain
 
@@ -81,27 +81,20 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 
 ## Local Development
 
-All projects use a shared script with 3-line wrappers:
+All projects use the Python build script:
 
 ```bash
 # SBS-Test (fast iteration, ~2 minutes)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-./scripts/build_blueprint.sh
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
+python ../../dev/scripts/build.py
 
 # GCR (production with paper)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/General_Crystallographic_Restriction
-./scripts/build_blueprint.sh
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/showcase/General_Crystallographic_Restriction
+python ../../dev/scripts/build.py
 
 # PNT (large-scale)
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/PrimeNumberTheoremAnd
-./scripts/build_blueprint.sh
-```
-
-### Alternative: Python Build Script
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-python ../scripts/build.py
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/showcase/PrimeNumberTheoremAnd
+python ../../dev/scripts/build.py
 ```
 
 Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`
@@ -146,8 +139,8 @@ The `sbs` tooling provides automated screenshot capture, comparison, compliance 
 
 ```bash
 # Standard build workflow
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/SBS-Test
-python ../scripts/build.py                    # Full build with git sync
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
+python ../../dev/scripts/build.py                    # Full build with git sync
 ```
 
 The build script ensures:
@@ -158,7 +151,7 @@ The build script ensures:
 ### Screenshot Capture
 
 ```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 # Capture static pages
 python3 -m sbs capture --project SBSTest
@@ -198,7 +191,7 @@ The compliance system:
 - Generates `compliance_ledger.json` and `COMPLIANCE_STATUS.md`
 - Loops until 100% compliance achieved
 
-See `scripts/VISUAL_COMPLIANCE.md` for full documentation.
+See `dev/scripts/VISUAL_COMPLIANCE.md` for full documentation.
 
 ### Visual Comparison
 
@@ -214,16 +207,16 @@ python3 -m sbs history --project SBSTest
 
 | Location | Purpose |
 |----------|---------|
-| `archive/{project}/latest/` | Current capture (overwritten each run) |
-| `archive/{project}/archive/{timestamp}/` | Timestamped archives |
+| `storage/{project}/latest/` | Current capture (overwritten each run) |
+| `storage/{project}/archive/{timestamp}/` | Timestamped archives |
 | `capture.json` | Metadata: timestamp, commit, viewport, page status |
 
 ### Standard Workflow for Visual Changes
 
-1. **Build:** `python ../scripts/build.py` (commits, pushes, builds)
+1. **Build:** `python ../../dev/scripts/build.py` (commits, pushes, builds)
 2. **Capture:** `python3 -m sbs capture --interactive` (creates baseline)
 3. **Make changes** to CSS/JS/Lean/templates
-4. **Rebuild:** `python ../scripts/build.py`
+4. **Rebuild:** `python ../../dev/scripts/build.py`
 5. **Capture:** `python3 -m sbs capture --interactive` (archives previous)
 6. **Validate:** `python3 -m sbs compliance` (AI vision analysis)
 
@@ -245,13 +238,13 @@ python3 -m sbs history --project SBSTest
 
 The archive system provides comprehensive build tracking, iCloud sync, session archiving, and custom rubrics.
 
-**Canonical reference:** [`archive/README.md`](archive/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
+**Canonical reference:** [`storage/README.md`](storage/README.md) is the central tooling hub. All repository READMEs link there for CLI commands, validation, and development workflows.
 
 ### Directory Structure
 
 **Local Ground Truth:**
 ```
-archive/
+storage/
   unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
   archive_index.json      # Entry index with tags
@@ -494,7 +487,7 @@ Spawn an agent for:
 
 1. Identify affected repos via dependency chain
 2. Edit upstream first (LeanArchitect before Dress before Runway)
-3. Run `python ../scripts/build.py` (commits, pushes, rebuilds toolchain)
+3. Run `python ../../dev/scripts/build.py` (commits, pushes, rebuilds toolchain)
 4. Test with SBS-Test or GCR
 5. Run `sbs compliance` to verify visual correctness
 
@@ -542,7 +535,7 @@ The toolchain includes automated quality scoring tracking 8 dimensions:
 
 ### Design Validators
 
-Located in `scripts/sbs/validators/design/`:
+Located in `dev/scripts/sbs/validators/design/`:
 
 | Validator | Purpose |
 |-----------|---------|
@@ -557,7 +550,7 @@ Located in `scripts/sbs/validators/design/`:
 ### Running Quality Tests
 
 ```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 # Run all deterministic tests
 /opt/homebrew/bin/pytest sbs/tests/ -v
@@ -566,13 +559,13 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
 python -m sbs design-check --project SBSTest
 ```
 
-See `scripts/sbs/tests/SCORING_RUBRIC.md` for detailed scoring methodology
+See `dev/scripts/sbs/tests/SCORING_RUBRIC.md` for detailed scoring methodology
 
 ---
 
 ## Tooling Hub
 
-All CLI tooling documentation is centralized in [`archive/README.md`](archive/README.md). This includes:
+All CLI tooling documentation is centralized in [`storage/README.md`](storage/README.md). This includes:
 - `sbs capture/compliance` - Visual testing
 - `sbs rubric` - Custom rubric management
 - `sbs archive` - Archive management
@@ -609,7 +602,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 **Key properties:**
 - `disable-model-invocation: true` - Manual trigger only
 - All builds through `python build.py` (no bypass)
-- Unified ledger at `archive/unified_ledger.json`
+- Unified ledger at `storage/unified_ledger.json`
 
 #### Grab-Bag Mode
 
@@ -621,14 +614,14 @@ Invoke with `/execute --grab-bag` for ad-hoc improvement sessions:
 5. Execution with rubric grading
 6. /update-and-archive finalization
 
-Rubrics persist in `archive/rubrics/` and can be reused.
+Rubrics persist in `storage/rubrics/` and can be reused.
 
 ### Visual Compliance (CLI)
 
 Run at plan completion to verify visual correctness:
 
 ```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/scripts
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 python3 -m sbs compliance --project SBSTest --interactive
 ```
 
@@ -640,15 +633,15 @@ python3 -m sbs compliance --project SBSTest --interactive
 5. Update ledger with pass/fail results
 6. Loop until 100% compliance
 
-**Location:** `scripts/VISUAL_COMPLIANCE.md`
+**Location:** `dev/scripts/VISUAL_COMPLIANCE.md`
 
 **Key files:**
-- `scripts/sbs/criteria.py` - Compliance criteria per page
-- `scripts/sbs/ledger.py` - Ledger management
-- `scripts/sbs/mapping.py` - Repo->page change detection
-- `scripts/sbs/validate.py` - Validation orchestration
-- `archive/compliance_ledger.json` - Persistent status
-- `archive/COMPLIANCE_STATUS.md` - Human-readable report
+- `dev/scripts/sbs/criteria.py` - Compliance criteria per page
+- `dev/scripts/sbs/ledger.py` - Ledger management
+- `dev/scripts/sbs/mapping.py` - Repo->page change detection
+- `dev/scripts/sbs/validate.py` - Validation orchestration
+- `storage/compliance_ledger.json` - Persistent status
+- `storage/COMPLIANCE_STATUS.md` - Human-readable report
 
 ---
 
@@ -865,7 +858,7 @@ rev = "main"
 | `GOALS.md` | Project vision and design goals |
 | `CLAUDE.md` | This file - Claude Code development guide |
 
-**Detailed references** (in `.refs/`):
+**Detailed references** (in `dev/.refs/`):
 | File | Purpose |
 |------|---------|
 | `ARCHITECTURE.md` | Detailed technical reference with data flow and performance analysis |
