@@ -1,0 +1,14 @@
+{
+  "total_runs": 0,
+  "total_pages_validated": 0,
+  "total_screenshots_captured": 0,
+  "total_agents_spawned": 0,
+  "best_first_run_compliance": 0.0,
+  "fastest_to_100_percent": 0,
+  "most_iterations_needed": 0,
+  "consecutive_100_percent_runs": 0,
+  "current_streak": 0,
+  "first_run_date": "",
+  "last_run_date": "",
+  "last_100_percent_date": ""
+}

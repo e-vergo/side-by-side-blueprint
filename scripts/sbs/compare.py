@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from .utils import IMAGES_DIR, detect_project, log
+from .utils import ARCHIVE_DIR, IMAGES_DIR, detect_project, log
 
 
 # =============================================================================

@@ -235,61 +235,70 @@ class ComplianceLedger:
 # Paths
 # =============================================================================
 
-# Per-project compliance data lives alongside screenshots in images/{project}/
-# Lifetime stats live in scripts/stats/ for cross-project aggregation
+# All archive data lives in archive/ at the repo root:
+#   archive/{project}/           - Per-project screenshots and compliance
+#   archive/unified_ledger.json  - Cross-project metrics
+#   archive/lifetime_stats.json  - Historical statistics
+#   archive/charts/              - Generated chart outputs
+#   archive/manifests/           - Interaction manifests
+
+
+def get_archive_root() -> Path:
+    """Get path to archive directory (repo root level)."""
+    return get_sbs_root() / "archive"
 
 
 def get_images_dir() -> Path:
-    """Get path to images directory."""
-    return get_sbs_root() / "images"
+    """Get path to images directory (alias for archive root)."""
+    return get_archive_root()
 
 
 def get_project_dir(project: str) -> Path:
-    """Get path to project's image/compliance directory."""
-    return get_images_dir() / project
+    """Get path to project's screenshot/compliance directory."""
+    return get_archive_root() / project
 
 
 def get_ledger_path(project: str = "") -> Path:
     """Get path to compliance ledger JSON.
 
-    If project specified, returns per-project path: images/{project}/latest/compliance.json
-    Otherwise returns legacy path for backwards compatibility.
+    If project specified, returns per-project path: archive/{project}/latest/compliance.json
+    Otherwise returns global path: archive/compliance_ledger.json
     """
     if project:
         return get_project_dir(project) / "latest" / "compliance.json"
-    return get_sbs_root() / "scripts" / "compliance_ledger.json"
+    return get_archive_root() / "compliance_ledger.json"
 
 
 def get_status_md_path(project: str = "") -> Path:
     """Get path to compliance status markdown.
 
-    If project specified, returns per-project path: images/{project}/latest/COMPLIANCE.md
-    Otherwise returns legacy path for backwards compatibility.
+    If project specified, returns per-project path: archive/{project}/latest/COMPLIANCE.md
+    Otherwise returns global path: archive/COMPLIANCE_STATUS.md
     """
     if project:
         return get_project_dir(project) / "latest" / "COMPLIANCE.md"
-    return get_sbs_root() / "scripts" / "COMPLIANCE_STATUS.md"
+    return get_archive_root() / "COMPLIANCE_STATUS.md"
 
 
 def get_lifetime_stats_path() -> Path:
     """Get path to lifetime statistics (cross-project)."""
-    stats_dir = get_sbs_root() / "scripts" / "stats"
-    stats_dir.mkdir(parents=True, exist_ok=True)
-    return stats_dir / "lifetime_stats.json"
+    archive_dir = get_archive_root()
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    return archive_dir / "lifetime_stats.json"
 
 
 def get_manifests_dir() -> Path:
     """Get path to interaction manifests directory."""
-    manifests_dir = get_sbs_root() / "scripts" / "manifests"
+    manifests_dir = get_archive_root() / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
     return manifests_dir
 
 
 def get_unified_ledger_path() -> Path:
-    """Get path to unified ledger JSON (scripts/stats/unified_ledger.json)."""
-    stats_dir = get_sbs_root() / "scripts" / "stats"
-    stats_dir.mkdir(parents=True, exist_ok=True)
-    return stats_dir / "unified_ledger.json"
+    """Get path to unified ledger JSON (archive/unified_ledger.json)."""
+    archive_dir = get_archive_root()
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    return archive_dir / "unified_ledger.json"
 
 
 # =============================================================================
@@ -638,8 +647,8 @@ def load_ledger(project: str = "") -> ComplianceLedger:
     """Load ledger from disk, or create empty one if not exists.
 
     Args:
-        project: If specified, loads from images/{project}/latest/compliance.json
-                 Otherwise loads from legacy scripts/compliance_ledger.json
+        project: If specified, loads from archive/{project}/latest/compliance.json
+                 Otherwise loads from archive/compliance_ledger.json
     """
     path = get_ledger_path(project)
 
@@ -679,9 +688,9 @@ def save_ledger(ledger: ComplianceLedger, project: str = "") -> None:
     """Save ledger to disk (both JSON and Markdown).
 
     Saves to:
-    - images/{project}/latest/compliance.json (if project specified)
-    - images/{project}/latest/COMPLIANCE.md
-    - scripts/stats/lifetime_stats.json (always, for cross-project stats)
+    - archive/{project}/latest/compliance.json (if project specified)
+    - archive/{project}/latest/COMPLIANCE.md
+    - archive/lifetime_stats.json (always, for cross-project stats)
     """
     # Update timestamp
     ledger.last_run = datetime.now().isoformat()
@@ -702,14 +711,14 @@ def save_ledger(ledger: ComplianceLedger, project: str = "") -> None:
 
 
 def save_lifetime_stats(stats: HistoricalStats) -> None:
-    """Save lifetime stats to scripts/stats/lifetime_stats.json."""
+    """Save lifetime stats to archive/lifetime_stats.json."""
     path = get_lifetime_stats_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(asdict(stats), indent=2))
 
 
 def load_lifetime_stats() -> HistoricalStats:
-    """Load lifetime stats from scripts/stats/lifetime_stats.json."""
+    """Load lifetime stats from archive/lifetime_stats.json."""
     path = get_lifetime_stats_path()
     if path.exists():
         try:
@@ -724,7 +733,7 @@ def get_or_create_unified_ledger(stats_dir: Path, project: str) -> UnifiedLedger
     """Get or create a unified ledger for the given project.
 
     Args:
-        stats_dir: Directory to store the ledger (typically scripts/stats/)
+        stats_dir: Directory to store the ledger (typically archive/)
         project: Project name for the ledger
 
     Returns:

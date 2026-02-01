@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-01-31T14:43:14.566981",
+  "project": "SBSTest",
+  "commit": "57dfc885c2cc",
+  "base_url": "http://localhost:8000",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pages": [
+    {
+      "name": "dashboard",
+      "path": "dashboard.png",
+      "url": "http://localhost:8000/index.html",
+      "status": "success"
+    },
+    {
+      "name": "dep_graph",
+      "path": "dep_graph.png",
+      "url": "http://localhost:8000/dep_graph.html",
+      "status": "success"
+    },
+    {
+      "name": "paper_tex",
+      "path": "paper_tex.png",
+      "url": "http://localhost:8000/paper_tex.html",
+      "status": "success"
+    },
+    {
+      "name": "pdf_tex",
+      "path": "pdf_tex.png",
+      "url": "http://localhost:8000/pdf_tex.html",
+      "status": "success"
+    },
+    {
+      "name": "paper_verso",
+      "path": "paper_verso.png",
+      "url": "http://localhost:8000/paper_verso.html",
+      "status": "success"
+    },
+    {
+      "name": "pdf_verso",
+      "path": "pdf_verso.png",
+      "url": "http://localhost:8000/pdf_verso.html",
+      "status": "success"
+    },
+    {
+      "name": "blueprint_verso",
+      "path": "blueprint_verso.png",
+      "url": "http://localhost:8000/blueprint_verso.html",
+      "status": "success"
+    },
+    {
+      "name": "chapter",
+      "path": "chapter.png",
+      "url": "http://localhost:8000/main-graph-status-types.html",
+      "status": "success"
+    }
+  ]
+}

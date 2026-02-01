@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-01-31T14:42:31.256516",
+  "project": "GCR",
+  "commit": "57dfc885c2cc",
+  "base_url": "http://localhost:8001",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pages": [
+    {
+      "name": "dashboard",
+      "path": null,
+      "url": "http://localhost:8001/index.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/index.html\nCall log:\n  - navigating to \"http://localhost:8001/index.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "dep_graph",
+      "path": null,
+      "url": "http://localhost:8001/dep_graph.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/dep_graph.html\nCall log:\n  - navigating to \"http://localhost:8001/dep_graph.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "paper_tex",
+      "path": null,
+      "url": "http://localhost:8001/paper_tex.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/paper_tex.html\nCall log:\n  - navigating to \"http://localhost:8001/paper_tex.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "pdf_tex",
+      "path": null,
+      "url": "http://localhost:8001/pdf_tex.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/pdf_tex.html\nCall log:\n  - navigating to \"http://localhost:8001/pdf_tex.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "paper_verso",
+      "path": null,
+      "url": "http://localhost:8001/paper_verso.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/paper_verso.html\nCall log:\n  - navigating to \"http://localhost:8001/paper_verso.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "pdf_verso",
+      "path": null,
+      "url": "http://localhost:8001/pdf_verso.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/pdf_verso.html\nCall log:\n  - navigating to \"http://localhost:8001/pdf_verso.html\", waiting until \"networkidle\"\n"
+    },
+    {
+      "name": "blueprint_verso",
+      "path": null,
+      "url": "http://localhost:8001/blueprint_verso.html",
+      "status": "error",
+      "error": "Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:8001/blueprint_verso.html\nCall log:\n  - navigating to \"http://localhost:8001/blueprint_verso.html\", waiting until \"networkidle\"\n"
+    }
+  ]
+}

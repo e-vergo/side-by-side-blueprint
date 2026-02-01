@@ -1,0 +1,145 @@
+{
+  "timestamp": "2026-01-31T17:02:17.883146",
+  "project": "SBSTest",
+  "commit": "dc1abc544b0c",
+  "base_url": "http://localhost:8000",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pages": [
+    {
+      "name": "dashboard",
+      "path": "dashboard.png",
+      "url": "http://localhost:8000/index.html",
+      "status": "success"
+    },
+    {
+      "name": "dep_graph",
+      "path": "dep_graph.png",
+      "url": "http://localhost:8000/dep_graph.html",
+      "status": "success"
+    },
+    {
+      "name": "paper_tex",
+      "path": "paper_tex.png",
+      "url": "http://localhost:8000/paper_tex.html",
+      "status": "success"
+    },
+    {
+      "name": "pdf_tex",
+      "path": "pdf_tex.png",
+      "url": "http://localhost:8000/pdf_tex.html",
+      "status": "success"
+    },
+    {
+      "name": "paper_verso",
+      "path": "paper_verso.png",
+      "url": "http://localhost:8000/paper_verso.html",
+      "status": "success"
+    },
+    {
+      "name": "pdf_verso",
+      "path": null,
+      "url": "http://localhost:8000/pdf_verso.html",
+      "status": "skipped",
+      "reason": "HTTP 404"
+    },
+    {
+      "name": "blueprint_verso",
+      "path": "blueprint_verso.png",
+      "url": "http://localhost:8000/blueprint_verso.html",
+      "status": "success"
+    }
+  ],
+  "interactions": [
+    {
+      "page": "dashboard",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "dashboard_theme_toggle.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_theme_toggle.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "zoom_in",
+      "selector": "#graph-zoom-in",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_zoom_in.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "zoom_out",
+      "selector": "#graph-zoom-out",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_zoom_out.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "zoom_fit",
+      "selector": "#graph-fit",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_zoom_fit.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "node_click_0",
+      "selector": ".node",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_node_click_0.png"
+    },
+    {
+      "page": "dep_graph",
+      "interaction": "node_click_1",
+      "selector": ".node",
+      "type": "click",
+      "status": "success",
+      "path": "dep_graph_node_click_1.png"
+    },
+    {
+      "page": "paper_tex",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "paper_tex_theme_toggle.png"
+    },
+    {
+      "page": "paper_tex",
+      "interaction": "proof_toggle",
+      "selector": ".proof_heading, .expand-proof",
+      "type": "click",
+      "status": "success",
+      "path": "paper_tex_proof_toggle.png"
+    },
+    {
+      "page": "paper_verso",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "paper_verso_theme_toggle.png"
+    },
+    {
+      "page": "blueprint_verso",
+      "interaction": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "status": "success",
+      "path": "blueprint_verso_theme_toggle.png"
+    }
+  ]
+}

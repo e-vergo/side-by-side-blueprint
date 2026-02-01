@@ -1,0 +1,822 @@
+{
+  "version": "1.0",
+  "entries": {
+    "20260131102119": {
+      "entry_id": "20260131102119",
+      "created_at": "2026-01-31T10:21:19.665942",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.284422",
+      "sync_error": null
+    },
+    "20260131102201": {
+      "entry_id": "20260131102201",
+      "created_at": "2026-01-31T10:22:01.803287",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.284636",
+      "sync_error": null
+    },
+    "20260131102234": {
+      "entry_id": "20260131102234",
+      "created_at": "2026-01-31T10:22:34.680321",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.284839",
+      "sync_error": null
+    },
+    "20260131105407": {
+      "entry_id": "20260131105407",
+      "created_at": "2026-01-31T10:54:07.388910",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285028",
+      "sync_error": null
+    },
+    "20260131105556": {
+      "entry_id": "20260131105556",
+      "created_at": "2026-01-31T10:55:56.867444",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285220",
+      "sync_error": null
+    },
+    "20260131105714": {
+      "entry_id": "20260131105714",
+      "created_at": "2026-01-31T10:57:14.407519",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285414",
+      "sync_error": null
+    },
+    "20260131105814": {
+      "entry_id": "20260131105814",
+      "created_at": "2026-01-31T10:58:14.659641",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285602",
+      "sync_error": null
+    },
+    "20260131105853": {
+      "entry_id": "20260131105853",
+      "created_at": "2026-01-31T10:58:53.959166",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "e58158f24a48"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285792",
+      "sync_error": null
+    },
+    "20260131110702": {
+      "entry_id": "20260131110702",
+      "created_at": "2026-01-31T11:07:02.421100",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "2ec0477e78ae"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.285977",
+      "sync_error": null
+    },
+    "20260131110829": {
+      "entry_id": "20260131110829",
+      "created_at": "2026-01-31T11:08:29.807783",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "2ec0477e78ae"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.286160",
+      "sync_error": null
+    },
+    "20260131111243": {
+      "entry_id": "20260131111243",
+      "created_at": "2026-01-31T11:12:43.644879",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "main-graph-fixed.png",
+        "chapter.png",
+        "validation-fixed.png",
+        "bracket-demo.png",
+        "bracket-demo-fixed.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "ffef59a5be22"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.286369",
+      "sync_error": null
+    },
+    "20260131113647": {
+      "entry_id": "20260131113647",
+      "created_at": "2026-01-31T11:36:47.142684",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "3562ea76ab78"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.286737",
+      "sync_error": null
+    },
+    "20260131114632": {
+      "entry_id": "20260131114632",
+      "created_at": "2026-01-31T11:46:32.247911",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "3562ea76ab78"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.286931",
+      "sync_error": null
+    },
+    "20260131121608": {
+      "entry_id": "20260131121608",
+      "created_at": "2026-01-31T12:16:08.442739",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "9c5566cb8eb6"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.287154",
+      "sync_error": null
+    },
+    "20260131121637": {
+      "entry_id": "20260131121637",
+      "created_at": "2026-01-31T12:16:37.070603",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "9c5566cb8eb6"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.287354",
+      "sync_error": null
+    },
+    "20260131122347": {
+      "entry_id": "20260131122347",
+      "created_at": "2026-01-31T12:23:47.964059",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "4dc799fb61da"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.287614",
+      "sync_error": null
+    },
+    "20260131122934": {
+      "entry_id": "20260131122934",
+      "created_at": "2026-01-31T12:29:34.281890",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "8daf10e56fb0"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.287908",
+      "sync_error": null
+    },
+    "20260131123153": {
+      "entry_id": "20260131123153",
+      "created_at": "2026-01-31T12:31:53.962357",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "8daf10e56fb0"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.288203",
+      "sync_error": null
+    },
+    "20260131123911": {
+      "entry_id": "20260131123911",
+      "created_at": "2026-01-31T12:39:11.139959",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "b52305fad3a3"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.288468",
+      "sync_error": null
+    },
+    "20260131125004": {
+      "entry_id": "20260131125004",
+      "created_at": "2026-01-31T12:50:04.376841",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "b52305fad3a3"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.288735",
+      "sync_error": null
+    },
+    "20260131130051": {
+      "entry_id": "20260131130051",
+      "created_at": "2026-01-31T13:00:51.317458",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "b52305fad3a3"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.289021",
+      "sync_error": null
+    },
+    "20260131130435": {
+      "entry_id": "20260131130435",
+      "created_at": "2026-01-31T13:04:35.554563",
+      "project": "GCR",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "GCR": "b52305fad3a3"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.289255",
+      "sync_error": null
+    },
+    "20260131132217": {
+      "entry_id": "20260131132217",
+      "created_at": "2026-01-31T13:22:17.987913",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "29cc316411e4"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.289491",
+      "sync_error": null
+    },
+    "20260131132730": {
+      "entry_id": "20260131132730",
+      "created_at": "2026-01-31T13:27:30.507740",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "dashboard.png",
+        "chapter.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "29cc316411e4"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.289730",
+      "sync_error": null
+    },
+    "20260131144211": {
+      "entry_id": "20260131144211",
+      "created_at": "2026-01-31T14:42:11.536742",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "paper_verso.png",
+        "dashboard.png",
+        "blueprint_verso.png",
+        "chapter.png",
+        "pdf_verso.png",
+        "paper_tex.png",
+        "pdf_tex.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "57dfc885c2cc"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.290073",
+      "sync_error": null
+    },
+    "20260131144314": {
+      "entry_id": "20260131144314",
+      "created_at": "2026-01-31T14:43:14.566981",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "paper_verso.png",
+        "dashboard.png",
+        "blueprint_verso.png",
+        "chapter.png",
+        "pdf_verso.png",
+        "paper_tex.png",
+        "pdf_tex.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "57dfc885c2cc"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.290564",
+      "sync_error": null
+    },
+    "20260131145501": {
+      "entry_id": "20260131145501",
+      "created_at": "2026-01-31T14:55:01.087242",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "paper_verso.png",
+        "dashboard.png",
+        "blueprint_verso.png",
+        "paper_tex.png",
+        "pdf_tex.png",
+        "dep_graph.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "57dfc885c2cc"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.290826",
+      "sync_error": null
+    },
+    "20260131153236": {
+      "entry_id": "20260131153236",
+      "created_at": "2026-01-31T15:32:36.528999",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "[Retroactive migration]",
+      "tags": [
+        "retroactive"
+      ],
+      "screenshots": [
+        "paper_verso.png",
+        "dep_graph_zoom_fit.png",
+        "paper_verso_theme_toggle.png",
+        "dashboard.png",
+        "dashboard_theme_toggle.png",
+        "dep_graph_zoom_out.png",
+        "blueprint_verso.png",
+        "paper_tex_proof_toggle.png",
+        "paper_tex.png",
+        "dep_graph_zoom_in.png",
+        "pdf_tex.png",
+        "blueprint_verso_theme_toggle.png",
+        "dep_graph.png",
+        "dep_graph_node_click_0.png",
+        "dep_graph_theme_toggle.png",
+        "dep_graph_node_click_1.png",
+        "paper_tex_theme_toggle.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "d9bb5a023a98"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.291230",
+      "sync_error": null
+    },
+    "20260131170217": {
+      "entry_id": "20260131170217",
+      "created_at": "2026-01-31T17:02:17.883146",
+      "project": "SBSTest",
+      "build_run_id": null,
+      "compliance_run_id": null,
+      "notes": "First release candidate",
+      "tags": [
+        "retroactive",
+        "release",
+        "v1"
+      ],
+      "screenshots": [
+        "paper_verso.png",
+        "dep_graph_zoom_fit.png",
+        "paper_verso_theme_toggle.png",
+        "dashboard.png",
+        "dashboard_theme_toggle.png",
+        "dep_graph_zoom_out.png",
+        "blueprint_verso.png",
+        "paper_tex_proof_toggle.png",
+        "paper_tex.png",
+        "dep_graph_zoom_in.png",
+        "pdf_tex.png",
+        "blueprint_verso_theme_toggle.png",
+        "dep_graph.png",
+        "dep_graph_node_click_0.png",
+        "dep_graph_theme_toggle.png",
+        "dep_graph_node_click_1.png",
+        "paper_tex_theme_toggle.png"
+      ],
+      "stats_snapshot": null,
+      "chat_summary": null,
+      "repo_commits": {
+        "SBSTest": "dc1abc544b0c"
+      },
+      "synced_to_icloud": true,
+      "sync_timestamp": "2026-01-31T19:15:08.291589",
+      "sync_error": null
+    }
+  },
+  "by_tag": {
+    "retroactive": [
+      "20260131102119",
+      "20260131102201",
+      "20260131102234",
+      "20260131105407",
+      "20260131105556",
+      "20260131105714",
+      "20260131105814",
+      "20260131105853",
+      "20260131110702",
+      "20260131110829",
+      "20260131111243",
+      "20260131113647",
+      "20260131114632",
+      "20260131121608",
+      "20260131121637",
+      "20260131122347",
+      "20260131122934",
+      "20260131123153",
+      "20260131123911",
+      "20260131125004",
+      "20260131130051",
+      "20260131130435",
+      "20260131132217",
+      "20260131132730",
+      "20260131144211",
+      "20260131144314",
+      "20260131145501",
+      "20260131153236",
+      "20260131170217"
+    ],
+    "release": [
+      "20260131170217"
+    ],
+    "v1": [
+      "20260131170217"
+    ]
+  },
+  "by_project": {
+    "SBSTest": [
+      "20260131102119",
+      "20260131102201",
+      "20260131102234",
+      "20260131105407",
+      "20260131105556",
+      "20260131105714",
+      "20260131105814",
+      "20260131105853",
+      "20260131110702",
+      "20260131110829",
+      "20260131111243",
+      "20260131113647",
+      "20260131114632",
+      "20260131121608",
+      "20260131121637",
+      "20260131122347",
+      "20260131122934",
+      "20260131123153",
+      "20260131123911",
+      "20260131125004",
+      "20260131130051",
+      "20260131132217",
+      "20260131132730",
+      "20260131144211",
+      "20260131144314",
+      "20260131145501",
+      "20260131153236",
+      "20260131170217"
+    ],
+    "GCR": [
+      "20260131130435"
+    ]
+  },
+  "latest_by_project": {
+    "SBSTest": "20260131170217",
+    "GCR": "20260131130435"
+  }
+}

@@ -62,6 +62,13 @@ try:
 except ImportError:
     HAS_LEDGER = False
 
+# Import archive types for iCloud sync
+try:
+    from sbs.archive import ArchiveEntry, ArchiveIndex, full_sync
+    HAS_ARCHIVE = True
+except ImportError:
+    HAS_ARCHIVE = False
+
 
 # =============================================================================
 # Constants
@@ -783,19 +790,67 @@ class BuildOrchestrator:
                 error_message=self._error_message,
             )
 
-            # Save to unified ledger
-            stats_dir = SCRIPT_DIR / "stats"
-            stats_dir.mkdir(parents=True, exist_ok=True)
+            # Save to unified ledger (in archive/ at repo root)
+            archive_dir = SBS_ROOT / "archive"
+            archive_dir.mkdir(parents=True, exist_ok=True)
 
-            ledger = get_or_create_unified_ledger(stats_dir, self.config.project_name)
+            ledger = get_or_create_unified_ledger(archive_dir, self.config.project_name)
             ledger.add_build(metrics)
-            ledger.save(stats_dir / "unified_ledger.json")
+            ledger.save(archive_dir / "unified_ledger.json")
 
             log.success(f"Build metrics saved (run_id: {self._run_id})")
             log.info(f"  Duration: {duration:.1f}s across {len(self._phase_timings)} phases")
 
         except Exception as e:
             log.warning(f"Failed to save metrics: {e}")
+
+    def _create_archive_entry(self) -> Optional["ArchiveEntry"]:
+        """Create an archive entry for this build."""
+        if not HAS_ARCHIVE:
+            log.debug("Archive module not available, skipping entry creation")
+            return None
+
+        return ArchiveEntry(
+            entry_id=str(int(time.time())),
+            created_at=datetime.now().isoformat(),
+            project=self.config.project_name,
+            build_run_id=self._run_id,
+            repo_commits=self._commits_after,
+        )
+
+    def _finalize_archive(self, entry: Optional["ArchiveEntry"]) -> None:
+        """Finalize archive entry and sync to iCloud."""
+        if not HAS_ARCHIVE or entry is None:
+            return
+
+        try:
+            archive_root = SBS_ROOT / "archive"
+            index_path = archive_root / "archive_index.json"
+
+            # Load or create index
+            if index_path.exists():
+                index = ArchiveIndex.load(index_path)
+            else:
+                index = ArchiveIndex()
+
+            # Add screenshots reference
+            project_dir = SBS_ROOT / "images" / self.config.project_name / "latest"
+            if project_dir.exists():
+                entry.screenshots = [str(p.name) for p in project_dir.glob("*.png")]
+
+            # Add entry to index
+            index.add_entry(entry)
+            index.save(index_path)
+
+            # Sync to iCloud (non-blocking)
+            sync_result = full_sync(archive_root, index)
+            if sync_result["success"]:
+                log.success("Archive synced to iCloud")
+            else:
+                log.warning(f"iCloud sync partial: {sync_result['errors']}")
+
+        except Exception as e:
+            log.warning(f"iCloud sync skipped: {e}")
 
     def discover_repos(self) -> None:
         """Discover all repos in the SBS workspace."""
@@ -1297,6 +1352,10 @@ class BuildOrchestrator:
         finally:
             # Always save metrics (best-effort)
             self._save_metrics()
+
+            # Archive finalization (best-effort)
+            entry = self._create_archive_entry()
+            self._finalize_archive(entry)
 
 
 # =============================================================================

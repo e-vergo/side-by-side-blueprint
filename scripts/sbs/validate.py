@@ -38,7 +38,8 @@ from .mapping import (
     ALL_PAGES,
 )
 from .utils import (
-    IMAGES_DIR,
+    ARCHIVE_DIR,
+    IMAGES_DIR,  # Legacy alias
     get_sbs_root,
     detect_project,
     log,

@@ -50,7 +50,7 @@ class VisualValidator(BaseValidator):
             project="SBSTest",
             project_root=Path("/path/to/project"),
             commit="abc123",
-            screenshots_dir=Path("/path/to/images/SBSTest/latest"),
+            screenshots_dir=Path("/path/to/archive/SBSTest/latest"),
             extra={"pages": ["dashboard", "dep_graph"]}  # Optional filter
         )
         result = validator.validate(context)

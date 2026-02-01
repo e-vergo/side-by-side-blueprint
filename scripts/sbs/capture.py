@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Optional
 
 from .utils import (
-    IMAGES_DIR,
+    ARCHIVE_DIR,
+    IMAGES_DIR,  # Legacy alias
     detect_project,
     get_git_commit,
     log,
@@ -145,7 +146,7 @@ def archive_previous_captures(project_dir: Path, latest_dir: Path) -> Optional[P
 
     # Move latest to archive
     shutil.move(str(latest_dir), str(archive_dir))
-    log.info(f"Archived previous captures to: {archive_dir.relative_to(IMAGES_DIR)}")
+    log.info(f"Archived previous captures to: {archive_dir.relative_to(ARCHIVE_DIR)}")
 
     return archive_dir
 
@@ -335,7 +336,7 @@ def run_capture(
 def get_manifests_dir() -> Path:
     """Get path to interaction manifests directory."""
     from .utils import get_sbs_root
-    manifests_dir = get_sbs_root() / "scripts" / "manifests"
+    manifests_dir = get_sbs_root() / "archive" / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
     return manifests_dir
 
@@ -664,7 +665,7 @@ def cmd_capture(args) -> int:
         # Report results
         print()
         log.success("Capture complete!")
-        log.info(f"Output: images/{project_name}/latest/")
+        log.info(f"Output: archive/{project_name}/latest/")
         log.info(f"Commit: {metadata['commit']}")
         print()
 

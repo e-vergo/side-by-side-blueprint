@@ -56,7 +56,7 @@ Building tooling that:
 | **PrimeNumberTheoremAnd** | Large-scale integration (591 annotations) |
 | **dress-blueprint-action** | CI/CD action (~465 lines) + CSS/JS assets |
 | **scripts** | Python build tooling (build.py, sbs CLI) |
-| **images** | Screenshot capture storage for visual testing |
+| **archive** | Build metrics, screenshots, session archives, iCloud sync |
 
 ### Dependency Chain
 
@@ -210,12 +210,12 @@ python3 -m sbs compare
 python3 -m sbs history --project SBSTest
 ```
 
-### Image Storage
+### Screenshot Storage
 
 | Location | Purpose |
 |----------|---------|
-| `images/{project}/latest/` | Current capture (overwritten each run) |
-| `images/{project}/archive/{timestamp}/` | Timestamped archives |
+| `archive/{project}/latest/` | Current capture (overwritten each run) |
+| `archive/{project}/archive/{timestamp}/` | Timestamped archives |
 | `capture.json` | Metadata: timestamp, commit, viewport, page status |
 
 ### Standard Workflow for Visual Changes
@@ -238,6 +238,90 @@ python3 -m sbs history --project SBSTest
 - Dark/light theme toggle
 - Paper rendering (if configured)
 - Zebra striping in both light and dark mode
+
+---
+
+## Archive System
+
+The archive system provides comprehensive build tracking, iCloud sync, and session archiving.
+
+### Directory Structure
+
+**Local Ground Truth:**
+```
+archive/
+  unified_ledger.json     # Build metrics and timing
+  lifetime_stats.json     # Cross-run aggregates
+  archive_index.json      # Entry index with tags
+  compliance_ledger.json  # Legacy (backwards compat)
+  charts/                 # Generated visualizations
+    loc_trends.png
+    timing_trends.png
+    activity_heatmap.png
+  chat_summaries/         # Session summaries
+    {entry_id}.md
+  SBSTest/                # Per-project screenshots
+    latest/
+    archive/{timestamp}/
+  GCR/
+    ...
+```
+
+**iCloud Backup:**
+```
+~/Library/Mobile Documents/com~apple~CloudDocs/SBS_archive/
+```
+
+### Archive Entries
+
+Each build creates an `ArchiveEntry` with:
+- `entry_id`: Unix timestamp (unique ID)
+- `project`: Project name
+- `build_run_id`: Build run ID
+- `screenshots`: List of captured screenshots
+- `repo_commits`: Git commits at build time
+- `tags`: User-defined tags
+- `notes`: User notes
+- `synced_to_icloud`: Sync status
+
+### CLI Commands
+
+```bash
+# List archive entries
+sbs archive list [--project NAME] [--tag TAG]
+
+# Show entry details
+sbs archive show <entry_id>
+
+# Add tags to entry
+sbs archive tag <entry_id> <tag> [<tag>...]
+
+# Add note to entry
+sbs archive note <entry_id> "Your note here"
+
+# Generate charts from build data
+sbs archive charts
+
+# Sync to iCloud
+sbs archive sync
+
+# Migrate historical archives
+sbs archive retroactive [--dry-run]
+```
+
+### Visualizations
+
+Charts generated from `unified_ledger.json`:
+- **LOC Trends**: Lines of code by language over time
+- **Timing Trends**: Build phase durations (stacked area)
+- **Activity Heatmap**: Files changed per repo per build
+
+### iCloud Sync
+
+Archive data syncs to iCloud on every build:
+- Non-blocking (failures logged but don't break builds)
+- Syncs: unified ledger, archive index, charts, screenshots
+- Manual sync: `sbs archive sync`
 
 ---
 
@@ -440,7 +524,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 **Key properties:**
 - `disable-model-invocation: true` - Manual trigger only
 - All builds through `python build.py` (no bypass)
-- Unified ledger at `scripts/stats/unified_ledger.json`
+- Unified ledger at `archive/unified_ledger.json`
 
 ### Visual Compliance (CLI)
 
@@ -466,8 +550,8 @@ python3 -m sbs compliance --project SBSTest --interactive
 - `scripts/sbs/ledger.py` - Ledger management
 - `scripts/sbs/mapping.py` - Repo->page change detection
 - `scripts/sbs/validate.py` - Validation orchestration
-- `scripts/compliance_ledger.json` - Persistent status
-- `scripts/COMPLIANCE_STATUS.md` - Human-readable report
+- `archive/compliance_ledger.json` - Persistent status
+- `archive/COMPLIANCE_STATUS.md` - Human-readable report
 
 ---
 

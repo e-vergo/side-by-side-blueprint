@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-01-31T13:04:35.554563",
+  "project": "GCR",
+  "commit": "b52305fad3a3",
+  "base_url": "http://localhost:8000",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pages": [
+    {
+      "name": "dep_graph",
+      "path": "dep_graph.png",
+      "url": "http://localhost:8000/dep_graph.html",
+      "status": "success"
+    }
+  ]
+}

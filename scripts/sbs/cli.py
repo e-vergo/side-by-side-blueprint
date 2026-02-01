@@ -44,6 +44,7 @@ Commands:
   diff        Show changes across all repos
   sync        Ensure all repos are synced (commit + push)
   versions    Show dependency versions across repos
+  archive     Archive management commands
 
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
@@ -295,6 +296,131 @@ Examples:
         help="Show full version table",
     )
 
+    # --- archive (command group) ---
+    archive_parser = subparsers.add_parser(
+        "archive",
+        help="Archive management commands",
+        description="Manage archive entries, tags, notes, and sync to iCloud.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Subcommands:
+  tag          Add tags to an archive entry
+  note         Add or update note on an archive entry
+  list         List archive entries
+  show         Show details of an archive entry
+  charts       Generate all charts from unified ledger
+  sync         Sync archive to iCloud
+  retroactive  Migrate historical archives to entry system
+
+Examples:
+  sbs archive list                        # List all entries
+  sbs archive list --project SBSTest      # List entries for project
+  sbs archive tag 1738340279 release v1   # Add tags to entry
+  sbs archive note 1738340279 "Baseline"  # Add note to entry
+  sbs archive show 1738340279             # Show entry details
+  sbs archive charts                      # Generate charts
+  sbs archive sync                        # Sync to iCloud
+  sbs archive retroactive --dry-run       # Preview migration
+        """,
+    )
+    archive_subparsers = archive_parser.add_subparsers(
+        dest="archive_command",
+        title="archive commands",
+        metavar="<subcommand>",
+    )
+
+    # --- archive tag ---
+    archive_tag_parser = archive_subparsers.add_parser(
+        "tag",
+        help="Add tags to an archive entry",
+        description="Add one or more tags to an existing archive entry.",
+    )
+    archive_tag_parser.add_argument(
+        "entry_id",
+        help="Archive entry ID (Unix timestamp)",
+    )
+    archive_tag_parser.add_argument(
+        "tags",
+        nargs="+",
+        help="Tags to add",
+    )
+
+    # --- archive note ---
+    archive_note_parser = archive_subparsers.add_parser(
+        "note",
+        help="Add or update note on an archive entry",
+        description="Set the note field on an existing archive entry.",
+    )
+    archive_note_parser.add_argument(
+        "entry_id",
+        help="Archive entry ID (Unix timestamp)",
+    )
+    archive_note_parser.add_argument(
+        "note_text",
+        help="Note text to set",
+    )
+
+    # --- archive list ---
+    archive_list_parser = archive_subparsers.add_parser(
+        "list",
+        help="List archive entries",
+        description="List archive entries with optional filtering.",
+    )
+    archive_list_parser.add_argument(
+        "--project", "-p",
+        help="Filter by project name",
+    )
+    archive_list_parser.add_argument(
+        "--tag", "-t",
+        help="Filter by tag",
+    )
+
+    # --- archive show ---
+    archive_show_parser = archive_subparsers.add_parser(
+        "show",
+        help="Show details of an archive entry",
+        description="Display detailed information about an archive entry.",
+    )
+    archive_show_parser.add_argument(
+        "entry_id",
+        help="Archive entry ID (Unix timestamp)",
+    )
+
+    # --- archive charts ---
+    archive_subparsers.add_parser(
+        "charts",
+        help="Generate all charts from unified ledger",
+        description="Generate LOC trends, timing breakdown, and activity heatmap charts.",
+    )
+
+    # --- archive sync ---
+    archive_subparsers.add_parser(
+        "sync",
+        help="Sync archive to iCloud",
+        description="Sync archive index, charts, and unsynced entries to iCloud.",
+    )
+
+    # --- archive retroactive ---
+    archive_retroactive_parser = archive_subparsers.add_parser(
+        "retroactive",
+        help="Migrate historical archives to entry system",
+        description="Scan existing archive directories and create ArchiveEntry records.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Scans archive/{project}/archive/{timestamp}/ directories and creates
+ArchiveEntry records with best-effort metadata linkage from unified_ledger.
+
+Examples:
+  sbs archive retroactive            # Run migration
+  sbs archive retroactive --dry-run  # Preview without making changes
+        """,
+    )
+    archive_retroactive_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be migrated without making changes",
+    )
+
     return parser
 
 
@@ -358,6 +484,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "versions":
             from .versions import cmd_versions
             return cmd_versions(args)
+
+        elif args.command == "archive":
+            from .archive_cmd import cmd_archive
+            return cmd_archive(args)
 
         else:
             log.error(f"Unknown command: {args.command}")

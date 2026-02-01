@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-01-31T10:58:14.659641",
+  "project": "SBSTest",
+  "commit": "e58158f24a48",
+  "base_url": "http://localhost:8000",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "pages": [
+    {
+      "name": "dashboard",
+      "path": "dashboard.png",
+      "url": "http://localhost:8000/index.html",
+      "status": "success"
+    },
+    {
+      "name": "dep_graph",
+      "path": "dep_graph.png",
+      "url": "http://localhost:8000/dep_graph.html",
+      "status": "success"
+    },
+    {
+      "name": "chapter",
+      "path": "chapter.png",
+      "url": "http://localhost:8000/main-graph-status-types.html",
+      "status": "success"
+    }
+  ]
+}

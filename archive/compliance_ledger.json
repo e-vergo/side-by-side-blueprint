@@ -1,0 +1,156 @@
+{
+  "version": "1.0",
+  "last_run": "2026-01-31T17:12:58.283614",
+  "project": "SBSTest",
+  "commit": "d9bb5a023a98",
+  "repo_commits": {
+    "subverso": "7d53717624a5",
+    "LeanArchitect": "bf0c5e178502",
+    "Dress": "ef9b2d2f2c79",
+    "Runway": "f875edd4bfbe",
+    "verso": "9755d3a94378",
+    "dress-blueprint-action": "87a7a4f543bc",
+    "SBS-Test": "6d9514fc3d87",
+    "General_Crystallographic_Restriction": "834f3d305ac9",
+    "PrimeNumberTheoremAnd": "eb9f82354487",
+    "scripts": "dc1abc544b0c"
+  },
+  "pages": {
+    "dashboard": {
+      "status": "pass",
+      "screenshot": "dashboard.png",
+      "findings": [],
+      "last_checked": "2026-01-31T17:06:24.535045",
+      "confidence": 0.95,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "dep_graph": {
+      "status": "pass",
+      "screenshot": "dep_graph.png",
+      "findings": [],
+      "last_checked": "2026-01-31T17:06:24.535693",
+      "confidence": 0.92,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "paper_tex": {
+      "status": "pass",
+      "screenshot": "paper_tex.png",
+      "findings": [],
+      "last_checked": "2026-01-31T17:06:24.536179",
+      "confidence": 0.95,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "pdf_tex": {
+      "status": "skipped",
+      "screenshot": "pdf_tex.png",
+      "findings": [
+        "PDF plugins cannot load in headless browser - this is expected behavior"
+      ],
+      "last_checked": "2026-01-31T17:07:52.492899",
+      "confidence": 0.0,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "paper_verso": {
+      "status": "pass",
+      "screenshot": "paper_verso.png",
+      "findings": [],
+      "last_checked": "2026-01-31T17:06:24.537144",
+      "confidence": 0.95,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "pdf_verso": {
+      "status": "skipped",
+      "screenshot": null,
+      "findings": [
+        "Page does not exist in SBS-Test project (HTTP 404)"
+      ],
+      "last_checked": "2026-01-31T17:07:52.492915",
+      "confidence": 0.0,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "blueprint_verso": {
+      "status": "pass",
+      "screenshot": "blueprint_verso.png",
+      "findings": [],
+      "last_checked": "2026-01-31T17:06:24.537560",
+      "confidence": 0.93,
+      "needs_revalidation": false,
+      "interactions": {}
+    },
+    "chapter": {
+      "status": "pass",
+      "screenshot": "chapter.png",
+      "findings": [
+        "Sidebar active state highlighting not clearly distinguishable in dark theme",
+        "Rainbow bracket depth colors not verifiable at screenshot resolution - general syntax highlighting present"
+      ],
+      "last_checked": "2026-01-31T17:12:38.799839",
+      "confidence": 0.85,
+      "needs_revalidation": false,
+      "interactions": {}
+    }
+  },
+  "summary": {
+    "total_checks": 8,
+    "passed": 6,
+    "failed": 0,
+    "pending": 0,
+    "skipped": 2,
+    "compliance_percent": 75.0
+  },
+  "history": [
+    {
+      "date": "2026-01-31",
+      "message": "Initialized ledger for SBSTest"
+    },
+    {
+      "date": "2026-01-31",
+      "message": "Reset 8 page(s): dashboard, dep_graph, paper_tex, pdf_tex, paper_verso, pdf_verso, blueprint_verso, chapter"
+    },
+    {
+      "date": "2026-01-31",
+      "message": "Reset 8 page(s): dashboard, dep_graph, paper_tex, pdf_tex, paper_verso, pdf_verso, blueprint_verso, chapter"
+    }
+  ],
+  "current_run": {
+    "run_id": "",
+    "project": "",
+    "commit": "",
+    "total_criteria": 0,
+    "criteria_by_category": {},
+    "pages_checked": 0,
+    "pages_passed": 0,
+    "pages_failed": 0,
+    "pages_skipped": 0,
+    "interactive_states_checked": 0,
+    "interactive_states_passed": 0,
+    "screenshots_captured": 0,
+    "interactive_screenshots": 0,
+    "iteration_number": 1,
+    "iterations_to_compliance": 0,
+    "validation_agents_spawned": 0,
+    "final_compliance_percent": 0.0,
+    "achieved_100_percent": false
+  },
+  "run_history": [],
+  "lifetime_stats": {
+    "total_runs": 0,
+    "total_pages_validated": 0,
+    "total_screenshots_captured": 0,
+    "total_agents_spawned": 0,
+    "best_first_run_compliance": 0.0,
+    "fastest_to_100_percent": 0,
+    "most_iterations_needed": 0,
+    "consecutive_100_percent_runs": 0,
+    "current_streak": 0,
+    "first_run_date": "",
+    "last_run_date": "",
+    "last_100_percent_date": ""
+  }
+}
