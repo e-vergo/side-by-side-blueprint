@@ -18,12 +18,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .entry import ArchiveEntry, ArchiveIndex
-from .extractor import extract_claude_data
-from .session_data import ClaudeDataSnapshot, SessionData
-from .tagger import TaggingEngine, build_tagging_context
-from .icloud_sync import full_sync
-from ..utils import log, ARCHIVE_DIR, SBS_ROOT
+from sbs.archive.entry import ArchiveEntry, ArchiveIndex
+from sbs.archive.extractor import extract_claude_data
+from sbs.archive.session_data import ClaudeDataSnapshot, SessionData
+from sbs.archive.tagger import TaggingEngine, build_tagging_context
+from sbs.archive.icloud_sync import full_sync
+from sbs.core.utils import log, ARCHIVE_DIR, SBS_ROOT
 
 # Repo paths relative to monorepo root
 REPO_PATHS = {

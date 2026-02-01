@@ -248,7 +248,7 @@ The plugin system includes additional validators:
 - `git-metrics` - Commit/diff tracking
 - `code-stats` - LOC and file counts
 
-See `dev/scripts/sbs/validators/` for the full plugin architecture.
+See `dev/scripts/sbs/tests/validators/` for the full plugin architecture.
 
 ## Exit Codes
 

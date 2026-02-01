@@ -218,7 +218,7 @@ The toolchain now includes an 8-dimensional quality scoring system for design va
 
 **Current Score:** 91.77/100 (as of 2026-02-01)
 
-Design validators in `dev/scripts/sbs/validators/design/` automate quality assessment, providing measurable quality targets for UI work.
+Design validators in `dev/scripts/sbs/tests/validators/design/` automate quality assessment, providing measurable quality targets for UI work.
 
 ## Quality Targets
 

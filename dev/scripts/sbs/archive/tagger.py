@@ -10,9 +10,9 @@ from typing import Any, Callable, Optional
 
 import yaml
 
-from .entry import ArchiveEntry
-from .session_data import SessionData
-from ..utils import log
+from sbs.archive.entry import ArchiveEntry
+from sbs.archive.session_data import SessionData
+from sbs.core.utils import log
 
 
 class TaggingEngine:

@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .utils import log
+from sbs.core.utils import log
 
 
 # =============================================================================
@@ -597,51 +597,51 @@ def main(argv: list[str] | None = None) -> int:
     # Dispatch to command handler
     try:
         if args.command == "capture":
-            from .capture import cmd_capture
+            from sbs.tests.compliance.capture import cmd_capture
             return cmd_capture(args)
 
         elif args.command == "compare":
-            from .compare import cmd_compare
+            from sbs.tests.compliance.compare import cmd_compare
             return cmd_compare(args)
 
         elif args.command == "history":
-            from .compare import cmd_history
+            from sbs.tests.compliance.compare import cmd_history
             return cmd_history(args)
 
         elif args.command == "inspect":
-            from .inspect_cmd import cmd_inspect
+            from sbs.build.inspect import cmd_inspect
             return cmd_inspect(args)
 
         elif args.command == "validate":
-            from .inspect_cmd import cmd_validate
+            from sbs.build.inspect import cmd_validate
             return cmd_validate(args)
 
         elif args.command == "compliance":
-            from .validate import cmd_compliance
+            from sbs.tests.compliance.validate import cmd_compliance
             return cmd_compliance(args)
 
         elif args.command == "status":
-            from .git_ops import cmd_status
+            from sbs.core.git_ops import cmd_status
             return cmd_status(args)
 
         elif args.command == "diff":
-            from .git_ops import cmd_diff
+            from sbs.core.git_ops import cmd_diff
             return cmd_diff(args)
 
         elif args.command == "sync":
-            from .git_ops import cmd_sync
+            from sbs.core.git_ops import cmd_sync
             return cmd_sync(args)
 
         elif args.command == "versions":
-            from .versions import cmd_versions
+            from sbs.build.versions import cmd_versions
             return cmd_versions(args)
 
         elif args.command == "archive":
-            from .archive_cmd import cmd_archive
+            from sbs.archive import cmd_archive
             return cmd_archive(args)
 
         elif args.command == "rubric":
-            from .rubric_cmd import cmd_rubric
+            from sbs.tests.rubrics import cmd_rubric
             return cmd_rubric(args)
 
         else:

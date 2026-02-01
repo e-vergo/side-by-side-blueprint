@@ -25,3 +25,5 @@ scripts/compliance_ledger.json
 scripts/COMPLIANCE_STATUS.md
 scripts/manifests/
 scripts/stats/
+__pycache__/
+*.pyc

@@ -1,0 +1,861 @@
+"""
+Build orchestrator for Side-by-Side Blueprint.
+
+Coordinates multi-repo builds with timing, caching, and metrics.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+import time
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from sbs.core.utils import (
+    log,
+    run_cmd,
+    parse_lakefile,
+    git_has_changes,
+    SBS_ROOT,
+)
+from sbs.build.config import (
+    BuildConfig,
+    Repo,
+    REPO_NAMES,
+    REPO_PATHS,
+    TOOLCHAIN_BUILD_ORDER,
+    detect_project,
+    get_lakefile_path,
+)
+from sbs.build.caching import (
+    get_cache_key,
+    get_cached_build,
+    save_to_cache,
+    restore_from_cache,
+)
+from sbs.build.compliance import run_compliance_checks
+from sbs.build.phases import (
+    clean_build_artifacts,
+    lake_build,
+    lake_update,
+    fetch_mathlib_cache,
+    build_project_with_dress,
+    git_commit_and_push,
+    git_pull,
+    get_mcp_chrome_window_id,
+    cleanup_chrome_windows,
+    kill_processes_on_port,
+    start_http_server,
+    open_browser,
+)
+
+# Import ledger types for metrics
+try:
+    from sbs.core.ledger import BuildMetrics, get_or_create_unified_ledger
+    HAS_LEDGER = True
+except ImportError:
+    HAS_LEDGER = False
+
+# Import archive types for iCloud sync
+try:
+    from sbs.archive import ArchiveEntry, ArchiveIndex, full_sync
+    HAS_ARCHIVE = True
+except ImportError:
+    HAS_ARCHIVE = False
+
+# Import archive upload for build integration
+try:
+    from sbs.archive.upload import archive_upload
+    HAS_ARCHIVE_UPLOAD = True
+except ImportError:
+    HAS_ARCHIVE_UPLOAD = False
+
+# Script directory for capture commands
+SCRIPT_DIR = Path(__file__).parent.parent
+
+
+# =============================================================================
+# Build Orchestrator
+# =============================================================================
+
+
+class BuildOrchestrator:
+    """Orchestrates the multi-repo build process."""
+
+    def __init__(self, config: BuildConfig):
+        self.config = config
+        self.repos: dict[str, Repo] = {}
+
+        # Timing tracking
+        self._phase_start: Optional[float] = None
+        self._phase_timings: dict[str, float] = {}
+        self._build_start: Optional[float] = None
+        self._run_id: str = ""
+        self._commits_before: dict[str, str] = {}
+        self._commits_after: dict[str, str] = {}
+        self._build_success: bool = False
+        self._error_message: Optional[str] = None
+
+    def _generate_run_id(self) -> str:
+        """Generate run_id as ISO timestamp + short hash."""
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+        short_hash = uuid.uuid4().hex[:6]
+        return f"{timestamp}_{short_hash}"
+
+    def _start_phase(self, name: str) -> None:
+        """Mark start of a phase."""
+        self._phase_start = time.time()
+
+    def _end_phase(self, name: str) -> None:
+        """Record phase duration."""
+        if self._phase_start is not None:
+            duration = time.time() - self._phase_start
+            self._phase_timings[name] = round(duration, 3)
+            self._phase_start = None
+
+    def _collect_commits_before(self) -> None:
+        """Collect git commits from all repos before build."""
+        for name, repo in self.repos.items():
+            if repo.exists():
+                result = run_cmd(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=repo.path,
+                    capture=True,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    self._commits_before[name] = result.stdout.strip()[:12]
+
+    def _collect_commits_after(self) -> None:
+        """Collect git commits from all repos after build."""
+        for name, repo in self.repos.items():
+            if repo.exists():
+                result = run_cmd(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=repo.path,
+                    capture=True,
+                    check=False,
+                )
+                if result.returncode == 0:
+                    self._commits_after[name] = result.stdout.strip()[:12]
+
+    def _save_metrics(self) -> None:
+        """Save build metrics to unified ledger."""
+        if not HAS_LEDGER:
+            log.info("Ledger module not available, skipping metrics save")
+            return
+
+        try:
+            # Calculate total duration
+            duration = 0.0
+            if self._build_start is not None:
+                duration = time.time() - self._build_start
+
+            # Get current commit
+            commit = ""
+            result = run_cmd(
+                ["git", "rev-parse", "HEAD"],
+                cwd=self.config.project_root,
+                capture=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                commit = result.stdout.strip()[:12]
+
+            # Determine which repos changed
+            repos_changed = []
+            for name in self._commits_before:
+                before = self._commits_before.get(name, "")
+                after = self._commits_after.get(name, "")
+                if before and after and before != after:
+                    repos_changed.append(name)
+
+            # Create metrics
+            metrics = BuildMetrics(
+                run_id=self._run_id,
+                project=self.config.project_name,
+                commit=commit,
+                started_at=datetime.fromtimestamp(self._build_start).isoformat() if self._build_start else "",
+                completed_at=datetime.now().isoformat(),
+                duration_seconds=round(duration, 2),
+                phase_timings=self._phase_timings,
+                repos_changed=repos_changed,
+                commits_before=self._commits_before,
+                commits_after=self._commits_after,
+                success=self._build_success,
+                error_message=self._error_message,
+            )
+
+            # Save to unified ledger (in dev/storage/)
+            archive_dir = SBS_ROOT / "dev" / "storage"
+            archive_dir.mkdir(parents=True, exist_ok=True)
+
+            ledger = get_or_create_unified_ledger(archive_dir, self.config.project_name)
+            ledger.add_build(metrics)
+            ledger.save(archive_dir / "unified_ledger.json")
+
+            log.success(f"Build metrics saved (run_id: {self._run_id})")
+            log.info(f"  Duration: {duration:.1f}s across {len(self._phase_timings)} phases")
+
+        except Exception as e:
+            log.warning(f"Failed to save metrics: {e}")
+
+    def _create_archive_entry(self) -> Optional["ArchiveEntry"]:
+        """Create an archive entry for this build."""
+        if not HAS_ARCHIVE:
+            log.info("Archive module not available, skipping entry creation")
+            return None
+
+        return ArchiveEntry(
+            entry_id=str(int(time.time())),
+            created_at=datetime.now().isoformat(),
+            project=self.config.project_name,
+            build_run_id=self._run_id,
+            repo_commits=self._commits_after,
+        )
+
+    def _finalize_archive(self, entry: Optional["ArchiveEntry"]) -> None:
+        """Finalize archive entry and sync to iCloud."""
+        if not HAS_ARCHIVE or entry is None:
+            return
+
+        try:
+            archive_root = SBS_ROOT / "dev" / "storage"
+            index_path = archive_root / "archive_index.json"
+
+            # Load or create index
+            if index_path.exists():
+                index = ArchiveIndex.load(index_path)
+            else:
+                index = ArchiveIndex()
+
+            # Add screenshots reference
+            project_dir = SBS_ROOT / "dev" / "storage" / self.config.project_name / "latest"
+            if project_dir.exists():
+                entry.screenshots = [str(p.name) for p in project_dir.glob("*.png")]
+
+            # Add entry to index
+            index.add_entry(entry)
+            index.save(index_path)
+
+            # Sync to iCloud (non-blocking)
+            sync_result = full_sync(archive_root, index)
+            if sync_result["success"]:
+                log.success("Archive synced to iCloud")
+            else:
+                log.warning(f"iCloud sync partial: {sync_result['errors']}")
+
+        except Exception as e:
+            log.warning(f"iCloud sync skipped: {e}")
+
+        # Run archive upload with build context
+        if HAS_ARCHIVE_UPLOAD:
+            try:
+                # Calculate build duration
+                build_duration = sum(self._phase_timings.values()) if self._phase_timings else None
+
+                # Determine repos that changed
+                repos_changed = []
+                for repo, after_commit in self._commits_after.items():
+                    before_commit = self._commits_before.get(repo)
+                    if before_commit and after_commit != before_commit:
+                        repos_changed.append(repo)
+
+                archive_upload(
+                    project=self.config.project_name,
+                    build_run_id=self._run_id,
+                    trigger="build",
+                    dry_run=self.config.dry_run,
+                    build_success=self._build_success,
+                    build_duration_seconds=build_duration,
+                    repos_changed=repos_changed,
+                )
+            except Exception as e:
+                log.warning(f"Archive upload failed: {e}")
+
+    def discover_repos(self) -> None:
+        """Discover all repos in the SBS workspace."""
+        for name in REPO_NAMES:
+            rel_path = REPO_PATHS.get(name, name)
+            path = self.config.sbs_root / rel_path
+            lakefile_path, lakefile_type = get_lakefile_path(path)
+
+            repo = Repo(
+                name=name,
+                path=path,
+                is_toolchain=name in TOOLCHAIN_BUILD_ORDER,
+                has_lakefile=lakefile_path is not None,
+                lakefile_type=lakefile_type,
+            )
+
+            if path.exists() and lakefile_path:
+                requirements = parse_lakefile(path)
+                repo.dependencies = [
+                    req["name"] for req in requirements
+                    if req.get("name") in REPO_NAMES
+                ]
+
+            self.repos[name] = repo
+
+        # Add the top-level monorepo
+        self.repos["Side-By-Side-Blueprint"] = Repo(
+            name="Side-By-Side-Blueprint",
+            path=self.config.sbs_root,
+            is_toolchain=False,
+            has_lakefile=False,
+        )
+
+        # Add current project if not already in repos
+        project_name = self.config.project_name
+        if project_name not in self.repos:
+            self.repos[project_name] = Repo(
+                name=project_name,
+                path=self.config.project_root,
+                is_toolchain=False,
+                has_lakefile=True,
+            )
+
+    def sync_repos(self) -> None:
+        """Commit and push changes, then pull latest from all repos."""
+        log.header("Syncing local repos to GitHub")
+
+        # Commit and push all repos
+        for name in REPO_NAMES + ["Side-By-Side-Blueprint"]:
+            repo = self.repos.get(name)
+            if not repo or not repo.exists():
+                continue
+
+            if git_commit_and_push(repo.path, self.config.dry_run):
+                log.success(f"{name}: Committed and pushed changes")
+            else:
+                log.info(f"{name}: No changes to commit")
+
+        # Also sync current project if different
+        if self.config.project_root != self.config.sbs_root:
+            if git_commit_and_push(self.config.project_root, self.config.dry_run):
+                log.success(f"{self.config.project_name}: Committed and pushed changes")
+
+        log.header("Pulling latest from GitHub")
+
+        # Pull all repos
+        for name in REPO_NAMES + ["Side-By-Side-Blueprint"]:
+            repo = self.repos.get(name)
+            if not repo or not repo.exists():
+                continue
+
+            git_pull(repo.path, self.config.dry_run)
+            log.info(f"{name}: Pulled latest")
+
+    def update_manifests(self) -> None:
+        """Update lake manifests in dependency order."""
+        log.header("Updating lake manifests")
+
+        # Update toolchain repos
+        updates = [
+            ("LeanArchitect", "SubVerso"),
+            ("Dress", "LeanArchitect"),
+            ("Runway", "Dress"),
+            ("verso", None),  # Full update
+        ]
+
+        for repo_name, dep in updates:
+            repo = self.repos.get(repo_name)
+            if not repo or not repo.exists():
+                continue
+
+            lake_update(repo.path, dep, self.config.dry_run)
+            log.info(f"{repo_name}: Updated" + (f" {dep}" if dep else ""))
+
+        # Update consumer projects
+        for name in ["General_Crystallographic_Restriction", "PrimeNumberTheoremAnd"]:
+            repo = self.repos.get(name)
+            if repo and repo.exists():
+                lake_update(repo.path, "Dress", self.config.dry_run)
+                log.info(f"{name}: Updated Dress")
+
+        # Update current project
+        lake_update(self.config.project_root, "Dress", self.config.dry_run)
+        log.info(f"{self.config.project_name}: Updated Dress")
+
+        # Commit manifest changes
+        for name in REPO_NAMES:
+            repo = self.repos.get(name)
+            if not repo or not repo.exists():
+                continue
+
+            manifest_path = repo.path / "lake-manifest.json"
+            if manifest_path.exists():
+                result = run_cmd(
+                    ["git", "status", "--porcelain", "lake-manifest.json"],
+                    cwd=repo.path,
+                    capture=True,
+                    check=False,
+                )
+                if result.stdout.strip():
+                    if self.config.dry_run:
+                        log.info(f"[DRY-RUN] Would commit manifest update in {name}")
+                    else:
+                        run_cmd(["git", "add", "lake-manifest.json"], cwd=repo.path)
+                        run_cmd(
+                            ["git", "commit", "-m", "Update lake-manifest.json from build.py\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"],
+                            cwd=repo.path,
+                        )
+                        run_cmd(["git", "push"], cwd=repo.path)
+                        log.success(f"{name}: Committed manifest update")
+
+    def run_compliance_checks(self) -> None:
+        """Run compliance checks and fail if issues found."""
+        log.header("Running compliance checks")
+
+        errors = run_compliance_checks(self.repos)
+
+        if errors:
+            log.error("Compliance check failed:")
+            for error in errors:
+                log.error(f"  - {error}")
+            raise RuntimeError("Compliance check failed")
+
+        log.success("All compliance checks passed")
+
+    def clean_artifacts(self) -> None:
+        """Clean build artifacts from toolchain and project."""
+        log.header("Cleaning build artifacts")
+
+        # Clean toolchain repos
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo = self.repos.get(name)
+            if repo and repo.exists():
+                clean_build_artifacts(repo.path, self.config.dry_run)
+                log.info(f"{name}: Cleaned build artifacts")
+
+        # Clean project artifacts
+        build_dir = self.config.project_root / ".lake" / "build"
+        for subdir in ["lib", "ir", "dressed", "runway"]:
+            target = build_dir / subdir / self.config.module_name
+            if target.exists():
+                if self.config.dry_run:
+                    log.info(f"[DRY-RUN] Would remove {target}")
+                else:
+                    shutil.rmtree(target)
+
+        # Also clean dressed and runway dirs directly
+        for subdir in ["dressed", "runway"]:
+            target = build_dir / subdir
+            if target.exists():
+                if self.config.dry_run:
+                    log.info(f"[DRY-RUN] Would remove {target}")
+                else:
+                    shutil.rmtree(target)
+
+        log.success("Build artifacts cleaned")
+
+    def build_toolchain(self) -> None:
+        """Build the toolchain in dependency order with caching."""
+        log.header("Building toolchain")
+
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo = self.repos.get(name)
+            if not repo or not repo.exists():
+                log.warning(f"{name}: Not found, skipping")
+                continue
+
+            # Check cache
+            if not self.config.skip_cache:
+                cache_key = get_cache_key(repo.path)
+                cached = get_cached_build(self.config.cache_dir, name, cache_key)
+
+                if cached:
+                    log.info(f"{name}: Restoring from cache")
+                    restore_from_cache(
+                        cached,
+                        repo.path / ".lake" / "build",
+                        self.config.dry_run,
+                    )
+                    continue
+
+            # Build
+            log.info(f"{name}: Building...")
+            lake_build(repo.path, dry_run=self.config.dry_run)
+            log.success(f"{name}: Built")
+
+            # Cache the build
+            if not self.config.skip_cache:
+                cache_key = get_cache_key(repo.path)
+                save_to_cache(
+                    self.config.cache_dir,
+                    name,
+                    cache_key,
+                    repo.path / ".lake" / "build",
+                    self.config.dry_run,
+                )
+
+    def build_project(self) -> None:
+        """Build the project with dressed artifacts (legacy method for compatibility)."""
+        log.header("Fetching mathlib cache")
+        fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
+
+        self._build_project_internal()
+
+        log.header("Building blueprint facet")
+        lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
+        log.success("Blueprint facet built")
+
+    def _build_project_internal(self) -> None:
+        """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
+        log.header("Building Lean project with dressed artifacts")
+        build_project_with_dress(self.config.project_root, self.config.dry_run)
+        log.success("Project built with dressed artifacts")
+
+    def generate_dep_graph(self) -> None:
+        """Generate the dependency graph."""
+        log.header("Generating dependency graph")
+
+        dress_path = self.repos["Dress"].path
+        extract_exe = dress_path / ".lake" / "build" / "bin" / "extract_blueprint"
+
+        if not extract_exe.exists() and not self.config.dry_run:
+            log.error(f"extract_blueprint not found at {extract_exe}")
+            raise RuntimeError("extract_blueprint executable not found")
+
+        cmd = [
+            "lake", "env",
+            str(extract_exe),
+            "graph",
+            "--build", str(self.config.project_root / ".lake" / "build"),
+            self.config.module_name,
+        ]
+
+        if self.config.dry_run:
+            log.info(f"[DRY-RUN] Would run: {' '.join(cmd)}")
+        else:
+            subprocess.run(cmd, cwd=self.config.project_root, check=True)
+
+        log.success("Dependency graph generated")
+
+    def generate_site(self) -> None:
+        """Generate the site with Runway."""
+        log.header("Generating site with Runway")
+
+        runway_path = self.repos["Runway"].path
+        output_dir = self.config.project_root / ".lake" / "build" / "runway"
+
+        cmd = [
+            "lake", "exe", "runway",
+            "--build-dir", str(self.config.project_root / ".lake" / "build"),
+            "--output", str(output_dir),
+            "build",
+            str(self.config.project_root / "runway.json"),
+        ]
+
+        if self.config.dry_run:
+            log.info(f"[DRY-RUN] Would run: {' '.join(cmd)}")
+        else:
+            subprocess.run(cmd, cwd=runway_path, check=True)
+
+        log.success("Site generated")
+
+        # Check for paper configuration
+        runway_json = json.loads((self.config.project_root / "runway.json").read_text())
+        has_paper = (
+            runway_json.get("paperTexPath") or
+            (runway_json.get("runwayDir") and
+             (self.config.project_root / runway_json.get("runwayDir", "") / "src" / "paper.tex").exists())
+        )
+
+        if has_paper:
+            log.header("Generating paper")
+
+            cmd = [
+                "lake", "exe", "runway",
+                "--build-dir", str(self.config.project_root / ".lake" / "build"),
+                "--output", str(output_dir),
+                "paper",
+                str(self.config.project_root / "runway.json"),
+            ]
+
+            if self.config.dry_run:
+                log.info(f"[DRY-RUN] Would run: {' '.join(cmd)}")
+            else:
+                subprocess.run(cmd, cwd=runway_path, check=True)
+
+            log.success("Paper generated")
+
+    def start_server(self) -> int:
+        """Start the HTTP server and return PID."""
+        log.header("Starting server")
+
+        output_dir = self.config.project_root / ".lake" / "build" / "runway"
+
+        # Kill any existing servers on port 8000
+        kill_processes_on_port(8000, self.config.dry_run)
+
+        if self.config.dry_run:
+            log.info(f"[DRY-RUN] Would start server at {output_dir}")
+            return 0
+
+        # Start server in background
+        pid = start_http_server(output_dir, 8000, self.config.dry_run)
+
+        log.success(f"Server started at http://localhost:8000 (PID: {pid})")
+
+        # Open browser
+        time.sleep(1)
+        open_browser("http://localhost:8000", self.config.dry_run)
+
+        return pid or 0
+
+    def run_capture(self) -> None:
+        """Run screenshot capture using the sbs CLI."""
+        log.header("Capturing screenshots")
+
+        if self.config.dry_run:
+            log.info("[DRY-RUN] Would capture screenshots")
+            return
+
+        # Wait a bit for server to be ready
+        time.sleep(2)
+
+        try:
+            # Run the sbs capture command
+            cmd = [
+                sys.executable, "-m", "sbs", "capture",
+                "--url", self.config.capture_url,
+                "--project", self.config.project_name,
+            ]
+
+            result = subprocess.run(
+                cmd,
+                cwd=SCRIPT_DIR,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                log.success("Screenshots captured")
+            else:
+                log.warning("Screenshot capture failed (non-blocking)")
+
+        except Exception as e:
+            log.warning(f"Screenshot capture error: {e}")
+
+    def run(self) -> None:
+        """Run the full build process."""
+        # Initialize timing
+        self._build_start = time.time()
+        self._run_id = self._generate_run_id()
+
+        log.header(f"{self.config.project_name} Blueprint Builder")
+        log.info(f"Run ID: {self._run_id}")
+
+        try:
+            # Discover repos
+            self.discover_repos()
+
+            # Collect commits before build
+            self._collect_commits_before()
+
+            # Chrome cleanup (before build to prevent interference)
+            mcp_window = get_mcp_chrome_window_id()
+            cleanup_chrome_windows(mcp_window, self.config.dry_run)
+
+            # Git sync (mandatory - ensures reproducible builds)
+            self._start_phase("sync_repos")
+            self.sync_repos()
+            self._end_phase("sync_repos")
+
+            self._start_phase("update_manifests")
+            self.update_manifests()
+            self._end_phase("update_manifests")
+
+            # Compliance checks
+            self._start_phase("compliance_checks")
+            self.run_compliance_checks()
+            self._end_phase("compliance_checks")
+
+            # Clean artifacts
+            self._start_phase("clean_build")
+            self.clean_artifacts()
+            self._end_phase("clean_build")
+
+            # Build toolchain (mandatory - ensures consistency)
+            self._start_phase("build_toolchain")
+            self.build_toolchain()
+            self._end_phase("build_toolchain")
+
+            # Fetch mathlib cache (extracted from build_project for granular timing)
+            self._start_phase("fetch_mathlib_cache")
+            fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
+            self._end_phase("fetch_mathlib_cache")
+
+            # Build project
+            self._start_phase("build_project")
+            self._build_project_internal()
+            self._end_phase("build_project")
+
+            # Build blueprint facet
+            self._start_phase("build_blueprint")
+            lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
+            self._end_phase("build_blueprint")
+
+            # Generate outputs
+            self._start_phase("build_dep_graph")
+            self.generate_dep_graph()
+            self._end_phase("build_dep_graph")
+
+            self._start_phase("generate_site")
+            self.generate_site()
+            self._end_phase("generate_site")
+
+            # Final git sync (mandatory)
+            self._start_phase("final_sync")
+            if git_commit_and_push(self.config.project_root, self.config.dry_run):
+                log.success("Final changes committed and pushed")
+            self._end_phase("final_sync")
+
+            # Collect commits after build
+            self._collect_commits_after()
+
+            # Start server
+            self._start_phase("start_server")
+            self.start_server()
+            self._end_phase("start_server")
+
+            # Capture screenshots if requested
+            if self.config.capture:
+                self._start_phase("capture")
+                self.run_capture()
+                self._end_phase("capture")
+
+            # Mark build as successful
+            self._build_success = True
+
+            log.header("BUILD COMPLETE")
+            log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
+            log.info("Web: http://localhost:8000")
+
+            # Print timing summary
+            total = time.time() - self._build_start
+            log.info(f"Total time: {total:.1f}s")
+            if self.config.verbose:
+                for phase, duration in self._phase_timings.items():
+                    log.info(f"  {phase}: {duration:.1f}s")
+
+        except Exception as e:
+            self._build_success = False
+            self._error_message = str(e)
+            raise
+
+        finally:
+            # Always save metrics (best-effort)
+            self._save_metrics()
+
+            # Archive finalization (best-effort)
+            entry = self._create_archive_entry()
+            self._finalize_archive(entry)
+
+
+# =============================================================================
+# CLI
+# =============================================================================
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Side-by-Side Blueprint Build Orchestrator",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python build.py                  # Build current project
+    python build.py --dry-run        # Show what would be done
+    python build.py --verbose        # Enable debug output
+        """,
+    )
+
+    parser.add_argument(
+        "project_dir",
+        nargs="?",
+        default=".",
+        help="Project directory (default: current directory)",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without executing",
+    )
+
+    parser.add_argument(
+        "--skip-cache",
+        action="store_true",
+        help="Skip caching (always rebuild)",
+    )
+
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose debug output",
+    )
+
+    parser.add_argument(
+        "--capture",
+        action="store_true",
+        help="Capture screenshots after successful build",
+    )
+
+    parser.add_argument(
+        "--capture-url",
+        default="http://localhost:8000",
+        help="URL to capture from (default: http://localhost:8000)",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> int:
+    """Main entry point."""
+    args = parse_args()
+
+    # Resolve project directory
+    project_root = Path(args.project_dir).resolve()
+
+    try:
+        # Detect project
+        project_name, module_name = detect_project(project_root)
+
+        # Build config
+        config = BuildConfig(
+            project_root=project_root,
+            project_name=project_name,
+            module_name=module_name,
+            skip_cache=args.skip_cache,
+            dry_run=args.dry_run,
+            verbose=args.verbose,
+            capture=args.capture,
+            capture_url=args.capture_url,
+        )
+
+        # Run build
+        orchestrator = BuildOrchestrator(config)
+        orchestrator.run()
+
+        return 0
+
+    except KeyboardInterrupt:
+        log.warning("Build interrupted")
+        return 130
+    except Exception as e:
+        log.error(str(e))
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

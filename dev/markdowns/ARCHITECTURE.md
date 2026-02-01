@@ -312,10 +312,10 @@ The toolchain includes an 8-dimensional quality scoring system:
 
 **Current Score:** 91.77/100 (as of 2026-02-01)
 
-Design validators in `dev/scripts/sbs/validators/design/` automate quality checks. Run with:
+Design validators in `dev/scripts/sbs/tests/validators/design/` automate quality checks. Run with:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-/opt/homebrew/bin/pytest sbs/tests/ -v
+/opt/homebrew/bin/pytest sbs/tests/pytest/ -v
 ```
 
 ## Tooling

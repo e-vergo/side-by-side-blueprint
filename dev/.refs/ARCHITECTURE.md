@@ -753,7 +753,7 @@ quality_score = Σ(test_score × weight)
 
 ### Design Validators
 
-Located in `scripts/sbs/validators/design/`:
+Located in `scripts/sbs/tests/validators/design/`:
 
 | Validator | Purpose |
 |-----------|---------|
@@ -835,7 +835,7 @@ The compliance system:
 Key files:
 - `dev/storage/compliance_ledger.json` - Persistent status
 - `dev/storage/COMPLIANCE_STATUS.md` - Human-readable report
-- `scripts/sbs/criteria.py` - Compliance criteria per page
+- `scripts/sbs/tests/compliance/criteria.py` - Compliance criteria per page
 
 ### Image Storage
 
@@ -924,7 +924,7 @@ Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_dev/st
 
 ## Validator Plugin Architecture
 
-Located in `scripts/sbs/validators/`, this system provides pluggable validation.
+Located in `scripts/sbs/tests/validators/`, this system provides pluggable validation.
 
 ### Registered Validators
 
@@ -937,7 +937,7 @@ Located in `scripts/sbs/validators/`, this system provides pluggable validation.
 | `ledger-health` | code | Unified ledger field population (T2) |
 | `rubric` | code | Custom rubric evaluation |
 
-### Design Validators (`scripts/sbs/validators/design/`)
+### Design Validators (`scripts/sbs/tests/validators/design/`)
 
 | Name | Test ID | Purpose |
 |------|---------|---------|

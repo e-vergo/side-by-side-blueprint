@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Optional
 import shutil
 
-from .session_data import SessionData, ToolCall, ClaudeDataSnapshot
-from ..utils import log
+from sbs.archive.session_data import SessionData, ToolCall, ClaudeDataSnapshot
+from sbs.core.utils import log
 
 # Constants
 CLAUDE_DIR = Path.home() / ".claude"

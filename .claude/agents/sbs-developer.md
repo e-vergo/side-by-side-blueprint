@@ -342,7 +342,7 @@ See `scripts/VISUAL_COMPLIANCE.md` for full documentation.
 
 ### Validator Plugin Architecture
 
-The `scripts/sbs/validators/` directory contains a pluggable validator system.
+The `scripts/sbs/tests/validators/` directory contains a pluggable validator system.
 
 #### Core Components
 
@@ -380,7 +380,7 @@ result = validator.validate(context)
 
 #### Creating New Validators
 
-1. Create a new file in `dev/scripts/sbs/validators/`
+1. Create a new file in `dev/scripts/sbs/tests/validators/`
 2. Extend `BaseValidator` or implement the `Validator` protocol
 3. Use `@register_validator` decorator
 
@@ -403,7 +403,7 @@ class MyValidator(BaseValidator):
 
 #### Unified Ledger
 
-All metrics are stored in `dev/storage/unified_ledger.json` via the `UnifiedLedger` class in `dev/scripts/sbs/ledger.py`.
+All metrics are stored in `dev/storage/unified_ledger.json` via the `UnifiedLedger` class in `dev/scripts/sbs/core/ledger.py`.
 
 ### Visual Comparison
 

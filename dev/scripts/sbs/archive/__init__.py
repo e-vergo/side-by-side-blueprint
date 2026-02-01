@@ -33,6 +33,7 @@ from .retroactive import (
     retroactive_migration,
     scan_historical_captures,
 )
+from .cmd import cmd_archive
 
 __all__ = [
     # Entry types
@@ -71,4 +72,6 @@ __all__ = [
     # Retroactive
     "retroactive_migration",
     "scan_historical_captures",
+    # CLI commands
+    "cmd_archive",
 ]

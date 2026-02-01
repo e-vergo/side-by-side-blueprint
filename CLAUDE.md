@@ -566,7 +566,7 @@ The toolchain includes automated quality scoring tracking 8 dimensions:
 
 ### Design Validators
 
-Located in `dev/scripts/sbs/validators/design/`:
+Located in `dev/scripts/sbs/tests/validators/design/`:
 
 | Validator | Purpose |
 |-----------|---------|
@@ -584,7 +584,7 @@ Located in `dev/scripts/sbs/validators/design/`:
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 # Run all deterministic tests
-/opt/homebrew/bin/pytest sbs/tests/ -v
+/opt/homebrew/bin/pytest sbs/tests/pytest/ -v
 
 # Run design validator suite
 python -m sbs design-check --project SBSTest
@@ -667,10 +667,10 @@ python3 -m sbs compliance --project SBSTest --interactive
 **Location:** `dev/scripts/VISUAL_COMPLIANCE.md`
 
 **Key files:**
-- `dev/scripts/sbs/criteria.py` - Compliance criteria per page
-- `dev/scripts/sbs/ledger.py` - Ledger management
-- `dev/scripts/sbs/mapping.py` - Repo->page change detection
-- `dev/scripts/sbs/validate.py` - Validation orchestration
+- `dev/scripts/sbs/tests/compliance/criteria.py` - Compliance criteria per page
+- `dev/scripts/sbs/tests/compliance/ledger_ops.py` - Ledger management
+- `dev/scripts/sbs/tests/compliance/mapping.py` - Repo->page change detection
+- `dev/scripts/sbs/tests/compliance/validate.py` - Validation orchestration
 - `dev/storage/compliance_ledger.json` - Persistent status
 - `dev/storage/COMPLIANCE_STATUS.md` - Human-readable report
 
