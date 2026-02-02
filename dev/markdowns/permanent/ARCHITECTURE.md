@@ -359,6 +359,7 @@ Architectural bedrock. Changes are significant events, not routine updates.
 | `ARCHITECTURE.md` | Build pipeline, component responsibilities, dependency chain |
 | `Archive_Orchestration_and_Agent_Harmony.md` | Script-agent boundary, archive roles, state machine model |
 | `GOALS.md` | Project vision, problem statement, target audience |
+| `GRAND_VISION.md` | Broader vision: SBS in the age of AI-assisted mathematics |
 
 ### Living Documents
 
@@ -390,6 +391,7 @@ When creating or updating documentation:
 
 ## Related Documents
 
+- [GRAND_VISION.md](GRAND_VISION.md) - Broader vision: SBS in the age of AI-assisted mathematics
 - [GOALS.md](GOALS.md) - Project vision and design goals
 - [README.md](../living/README.md) - Agent-facing monorepo overview
 - [Archive_Orchestration_and_Agent_Harmony.md](Archive_Orchestration_and_Agent_Harmony.md) - Script-agent boundary, archive roles

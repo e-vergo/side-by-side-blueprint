@@ -280,6 +280,7 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 | `README.md` | `dev/markdowns/living/README.md` | Agent-facing monorepo overview |
 | `ARCHITECTURE.md` | `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components, document taxonomy |
 | `GOALS.md` | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
+| `GRAND_VISION.md` | `dev/markdowns/permanent/GRAND_VISION.md` | SBS in the age of AI-assisted mathematics |
 | `Archive_Orchestration_and_Agent_Harmony.md` | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
 | `dev/storage/README.md` | Tooling hub | CLI commands, validation, workflows |
 | `TEST_CATALOG.md` | `dev/storage/TEST_CATALOG.md` | Auto-generated testable components catalog |

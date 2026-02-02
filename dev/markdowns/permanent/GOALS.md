@@ -264,6 +264,7 @@ For build commands, screenshot capture, compliance validation, archive managemen
 
 ## Related Documents
 
+- [GRAND_VISION.md](GRAND_VISION.md) - The broader vision: SBS in the age of AI-assisted mathematics
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
 - [README.md](../living/README.md) - Agent-facing monorepo overview
 - [TAXONOMY.md](TAXONOMY.md) - Document classification system
