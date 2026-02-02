@@ -1,0 +1,13 @@
+{
+  "page": "dashboard",
+  "discovered_at": "2026-02-02T06:03:46.354598",
+  "interactions": [
+    {
+      "id": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "count": 1,
+      "sample_count": 1
+    }
+  ]
+}

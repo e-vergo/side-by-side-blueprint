@@ -1,0 +1,13 @@
+{
+  "page": "blueprint_verso",
+  "discovered_at": "2026-02-02T06:06:36.264956",
+  "interactions": [
+    {
+      "id": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "count": 1,
+      "sample_count": 1
+    }
+  ]
+}
