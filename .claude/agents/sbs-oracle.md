@@ -37,6 +37,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | agents | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | always use `python build.py` for builds | `CLAUDE.md` | Standards |
+| archive inspection | `forks/sbs-lsp-mcp/README.md` | Overview |
 | archive system | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | archiveentry | `dev/storage/README.md` | Archive Entries |
 | at least | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
@@ -57,6 +58,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | build & run | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | build and verify: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | build phases are standalone functions | `dev/scripts/sbs/build/README.md` | Design Notes |
+| build tools | `forks/sbs-lsp-mcp/README.md` | Overview |
 | build: | `CLAUDE.md` | Standard Workflow |
 | building the product | `dev/markdowns/living/README.md` | Why This Matters for Agents |
 | building the tools that build the product | `dev/markdowns/living/README.md` | Why This Matters for Agents |
@@ -81,6 +83,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | connectivity validation | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | constraint: | `CLAUDE.md` | Orchestration Model |
 | containment search | `forks/subverso/README.md` | Identifier Resolution |
+| context generation | `forks/sbs-lsp-mcp/README.md` | Overview |
 | core components: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | core palette | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 | core responsibilities: | `toolchain/Dress/README.md` | Overview |
@@ -90,6 +93,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dashboard | `toolchain/SBS-Test/README.md` | What to Inspect |
 | dashboard homepage | `toolchain/Runway/README.md` | Features |
 | dashboard stat discrepancies: | `toolchain/Runway/README.md` | Debugging Tips |
+| debug | `forks/sbs-lsp-mcp/README.md` | Environment Variables |
 | declarative rules | `dev/storage/README.md` | Auto-Tagging |
 | dep graph node click * | `storage/dep_graph_node_click_*.png` | Node modal views |
 | dep graph zoom * | `storage/dep_graph_zoom_*.png` | Zoom in/out/fit states |
@@ -101,7 +105,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dev/storage/compliance ledger | `SBS-Test/dev/storage/compliance_ledger.json` | Pass/fail status per page |
 | dev/storage/compliance status | `SBS-Test/dev/storage/COMPLIANCE_STATUS.md` | Human-readable status report |
 | dev/storage/unified ledger | `SBS-Test/dev/storage/unified_ledger.json` | Build metrics and timing |
-| do not | `dev/scripts/.pytest_cache/README.md` | pytest cache directory # |
+| do not | `forks/sbs-lsp-mcp/.pytest_cache/README.md` | pytest cache directory # |
 | document | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
 | document structure: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | domain context: | `CLAUDE.md` | How This Document Works |
@@ -150,6 +154,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | inline roles: | `forks/verso/README.md` | 1. SBSBlueprint Genre (`src/verso-sbs/`) |
 | inputs consumed: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | interactive dependency graph | `toolchain/Runway/README.md` | Features |
+| investigation tools | `forks/sbs-lsp-mcp/README.md` | Overview |
 | javascript | `toolchain/dress-blueprint-action/README.md` | Overview |
 | key results: | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | key theorems | `toolchain/Runway/README.md` | Dashboard (index.html) |
@@ -175,7 +180,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | manual triggers only | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
 | math: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | mathjax compatibility | `toolchain/Runway/README.md` | Design Principles |
-| mcp tool usage: | `CLAUDE.md` | Quick Reference |
+| mcp tool usage (via sbs-lsp-mcp): | `CLAUDE.md` | Quick Reference |
 | mcp tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | mediumpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | messages | `toolchain/Runway/README.md` | Dashboard (index.html) |
@@ -203,6 +208,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | o(1) name-based search | `forks/subverso/README.md` | Identifier Resolution |
 | o(n) string concatenation | `toolchain/Runway/README.md` | Design Principles |
 | one at a time | `toolchain/Dress/README.md` | 1. Acyclic Transformation |
+| oracle querying | `forks/sbs-lsp-mcp/README.md` | Overview |
 | orchestration structure: | `CLAUDE.md` | How This Document Works |
 | orchestrator | `CLAUDE.md` | Orchestration Model |
 | original repositories: | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
@@ -274,6 +280,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | runway/traverse.lean | `toolchain/Runway/README.md` | Module Architecture |
 | runway/versopaper.lean | `toolchain/Runway/README.md` | Module Architecture |
 | sbs toolchain | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
+| sbs-lsp-mcp | `CLAUDE.md` | Repository Map |
 | sbs-test | `CLAUDE.md` | Repository Map |
 | sbsblueprint | `forks/verso/README.md` | Fork Purpose |
 | screenshot capture is the first reflex for any visual/css/layout issue. | `CLAUDE.md` | Visual Testing |
@@ -309,6 +316,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | terence tao, january 2026 | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | test_cli.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | test_ledger_health.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
+| testing tools | `forks/sbs-lsp-mcp/README.md` | Overview |
 | text formatting: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | the core insight | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | theme | `toolchain/Runway/README.md` | Module Architecture |

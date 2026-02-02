@@ -4,6 +4,11 @@
 
 ---
 
+## First and foremost
+
+Every line of every file in this repo and its sub-repos has been written with Claude Code. This has been true, for all intents and purposes, since the start of all of those repo, and will be so moving forward.
+
+
 ## Dual Nature
 
 The project has multiple distinct but interwoven purposes, and so does this repository:
@@ -24,7 +29,7 @@ The active development environment for **agentic and project-specific developmen
 
 - **Archive system** - Event log, state machine, context provider
 - **Validators** - T1-T8 quality scoring, visual compliance
-- **MCP tools** - Lean LSP integration, future sbs-lsp-mcp
+- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (29 tools: 18 Lean + 11 SBS)
 - **Skills** - `/task`, `/update-and-archive` workflow definitions
 - **Agents** - `sbs-developer`, `sbs-oracle` agent specifications
 
@@ -49,6 +54,13 @@ The archive system that tracks your work is itself being developed in this repo.
 - Quality scoring applies to both product and meta-tooling work
 - Context injection means you benefit from what previous agents learned
 
+### Critical requirement - one agent at a time
+- Execept for the `/update-and-archive` skill, there will only ever be one agent working on the repo at a time
+- This eliminates the signifigant overhead required in preventing collisions
+- Helps reduce costs
+- Allows for meaningful human oversight will allowing large amounts of autonomy to the agents
+
+
 ---
 
 ## What This Means in Practice
@@ -68,6 +80,7 @@ The archive tracks:
 - What phase you're in (`substate`)
 - What happened since the last epoch (`entries`)
 - Aggregate metrics (`epoch_summary`)
+- Allows for meaningful and powerful data collection (crucial for long term analysis and introspection)
 
 When in doubt about project state, the archive knows.
 

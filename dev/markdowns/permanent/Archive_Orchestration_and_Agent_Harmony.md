@@ -312,9 +312,11 @@ When an epoch closes, the final entry includes an `epoch_summary` with aggregate
 
 ### sbs-lsp-mcp: Extending lean-lsp-mcp
 
-The planned `sbs-lsp-mcp` will be a fork of `lean-lsp-mcp` that extends it with SBS-specific capabilities while retaining all Lean proof-writing features.
+The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` with SBS-specific capabilities while retaining all Lean proof-writing features.
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
+
+**Implementation:** 29 total tools (18 Lean + 11 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -327,9 +329,9 @@ All existing Lean tools remain available:
 - `lean_local_search` - Declaration search
 - `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
 
-### Added Capabilities (SBS-specific)
+### Added Capabilities (11 SBS-specific Tools)
 
-New tools for archive and orchestration:
+Tools for archive and orchestration:
 
 | Tool | Purpose |
 |------|---------|
@@ -337,6 +339,13 @@ New tools for archive and orchestration:
 | `sbs_archive_state` | Get current global state and recent entries |
 | `sbs_context` | Build context for agent spawn |
 | `sbs_epoch_summary` | Get summary of current or previous epoch |
+| `sbs_run_tests` | Run pytest suite |
+| `sbs_validate_project` | Run T1-T8 validators |
+| `sbs_build_project` | Trigger project build |
+| `sbs_serve_project` | Manage dev server |
+| `sbs_last_screenshot` | Get latest screenshot for a page |
+| `sbs_visual_history` | View screenshot history |
+| `sbs_search_entries` | Search archive entries |
 
 ### Why a Fork?
 

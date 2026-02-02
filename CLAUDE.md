@@ -49,6 +49,7 @@ Building tooling that:
 | `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
 | `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
 | `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
+| `forks/` | **sbs-lsp-mcp** | MCP server (29 tools: 18 Lean + 11 SBS) |
 | `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
 | `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
 | `toolchain/` | **SBS-Test** | Minimal test project (33 nodes) |
@@ -235,7 +236,9 @@ For implementation details, file locations, and build internals, see:
 
 **Color source of truth:** Lean code (`Dress/Graph/Svg.lean`). CSS variables in `common.css` must match exactly.
 
-**MCP Tool Usage:**
+**MCP Tool Usage (via sbs-lsp-mcp):**
+
+*Lean Tools (for Lean software development):*
 | Tool | Use For |
 |------|---------|
 | `lean_diagnostic_messages` | Compilation errors after edits |
@@ -243,6 +246,15 @@ For implementation details, file locations, and build internals, see:
 | `lean_completions` | Discover available functions |
 | `lean_file_outline` | Module structure overview |
 | `lean_local_search` | Find declarations across repos |
+
+*SBS Tools (for orchestration and testing):*
+| Tool | Use For |
+|------|---------|
+| `sbs_oracle_query` | File locations and concept info |
+| `sbs_archive_state` | Current orchestration state |
+| `sbs_run_tests` | Run pytest suite |
+| `sbs_validate_project` | Run T1-T8 validators |
+| `sbs_build_project` | Trigger project build |
 
 ---
 
