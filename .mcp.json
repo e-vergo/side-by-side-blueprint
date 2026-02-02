@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "sbs-lsp": {
+      "command": "uv",
+      "args": ["run", "--directory", "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp", "sbs-lsp-mcp"],
+      "env": {
+        "ZULIP_ENABLED": "1"
+      }
+    }
+  }
+}
