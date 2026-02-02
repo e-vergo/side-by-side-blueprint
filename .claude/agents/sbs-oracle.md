@@ -505,6 +505,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
 | `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components, document taxonomy |
 | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
+| `dev/markdowns/permanent/GRAND_VISION.md` | SBS in the age of AI-assisted mathematics |
 | `dev/storage/TEST_CATALOG.md` | Auto-generated testable components catalog |
 
 ### storage
