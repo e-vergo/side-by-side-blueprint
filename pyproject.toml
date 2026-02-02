@@ -10,6 +10,7 @@ readme = "dev/markdowns/README.md"
 requires-python = ">=3.10"
 dependencies = [
     "click>=8.0",
+    "pyyaml>=6.0.3",
     "rich>=13.0",
     "toml>=0.10",
 ]

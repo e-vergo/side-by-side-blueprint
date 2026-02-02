@@ -1,0 +1,294 @@
+{
+  "scraped_at": "2026-02-02T18:10:00.000000",
+  "total_count": 35,
+  "messages": [
+    {
+      "id": 365896813,
+      "sender": "Eric Vergo",
+      "stream": "new members",
+      "topic": "Introduction",
+      "content": "Hey all,\nI'm a mechanical engineer by trade and spent the last decade on the product design team at Apple. I spent my time there designing Macs, but recently left and will be pursuing a masters in math at Queens college starting this fall. I'm excited to dive in, and learn all of the things I missed the first time around. I'm still very much at the beginning of my higher-level math journey, but it is clear to me that ITPs are the future of mathematics. \nLet's build something great.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/365896813"
+    },
+    {
+      "id": 473141441,
+      "sender": "Eric Vergo",
+      "stream": "lean4",
+      "topic": "Lean as a Language",
+      "content": "Jon Eugster said:\n\nEric Vergo said:\n\nWhen showing Lean to my professors and other students I have been met with responses such as \"gross\" and \"this looks awful\".\n\nFor what it's worth, I'm still quite amazed about how beautiful Lean as a Language is, while being as expressive as it is! In my opinion it's way better than latex source code! But you are certainly right about certain ideas how to display things.\n\nI'm still amazed at the fact anything like this could exist at all. That's why I keep trying to share it with people!",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/473141441"
+    },
+    {
+      "id": 554781388,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Terence Tao said:\n\nIn contrast, machine-generated proofs (whether coming from LLMs, \"good old fashioned AI\", CASs, etc.) can produce proof artefacts which may indeed be completely correct and pass all verification tests, yet lack the penumbra of additional insight and understanding that the human-powered process organically generates. \n\nI agree if you restrict yourself to considering only the final output of current systems, but that is not the only artifact generated in some workflows. For instance, LLMs interacting with Lean via the lean-lsp MCP generate reasoning traces, code, error message logs, and other intermediate outputs. This means every proof attempt, strategy change, success, failure, and notation modification can be stored and inspected by both humans and other language models. I see no reason why insights extracted from these artifacts could not be used to influence how the LLM writes the final proof and what information is communicated in other domains.\nI would even argue that a mature version of this system (though none exists today) has an advantage in this regard. Humans have imperfect memories and chalkboards get erased. Everything the LLM does in this workflow is text that can be stored in a lossless, immutable, and transparent manner.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/554781388"
+    },
+    {
+      "id": 555002768,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Terence Tao said:\n\nMore generally, perhaps moving towards a culture of not just disclosing AI use in research, but showing more of the AI process, e.g., sharing the actual prompts and conversation with an LLM rather than just the final output...\n\nGiven the nature of math and formal verification, setting a standard of 'full transparency' seems prudent and consistent with other values driving norms in this space. Are there good arguments against full transparency beyond the overhead added when producing proofs?\nTerence Tao said:\n\n(this) may ameliorate some of the critiques against current AI usage practices, though this of course is not a panacea for all AI-related issues.\n\nWe are in full agreement on this point. I have spent a significant amount of time thinking about this and discussing it with mathematicians over the last few years which is why I decided to jump in. It's nice to see the conversation happening more broadly. This is one of the many challenges, both technical and not, that I do not see how to fully overcome. Moreover, I am of the opinion that we as a community have far less time to prepare for this than the mathematicians that I have spoken to think we do. The scaling laws coupled with better RL techniques are producing consistent trends that are likely to hold. Based on the fact that much larger data centers are going to be coming online in 2026 it would be foolish to assume things are not going to change, and fast.\nAs for Emily's talk/slide, I detect no sensationalism in her communication and believe she is right to be concerned. I fully endorse her proposal.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/555002768"
+    },
+    {
+      "id": 555723519,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Timothy Chow said:\n\nAnother amusing possibility is to build a library of striking examples of incorrect but plausible LLM-generated proofs, to serve as cautionary tales.\n\nI nominate this for the first entry. It contains a complete, type-checked proof of a statement involving Chebyshev polynomials and roots of unity. This involved writing 3000+ lines of Lean over 10 files. In addition, it contains all the standard things: automatically generated documentation, a blueprint and dependency graph, an associated research paper, additional expository items, all packaged and displayed on a nice landing page. Most importantly, it is a 100%, \"Vibe-proven\" project from beginning to end per @Emily Riehl 's definition.\nIt is also completely riddled with errors. But if you squint it looks the part. It may also be trivially easy to prove given what's in Mathlib—I'm genuinely not sure. Regardless, That is not the point of this exercise. \nTo kick things off, I used GitHub Copilot to write a short Python script containing code capturing the basic idea. Other than that, every line of every file written between that moment and the repo's current state was written with Claude Code. It also executed essentially every GitHub action along with every other software engineering task. All I did was prompt it, with a few exceptions...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/555723519"
+    },
+    {
+      "id": 556642414,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Everything builds, and the Lean compiler says things successfully type check. But I make no claims that it is a valid proof... I am barely a mathematician, and far from competent with Lean. At best, I am a well-intentioned amateur... I am not qualified to judge whether this is a legitimate formalized proof... The \"lesson\" is this: This is existence proof that, in some very limited sense, one can produce seemingly correct mathematical proofs in Lean via almost exclusively prompting a tool-using LLM. This should inform earlier discussion in this thread about the pace of change and potential volume problems facing the community...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/556642414"
+    },
+    {
+      "id": 556959345,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Kim Morrison said:\n\nWhat do people think?\nI think we could write up a document explaining this criteria, and write a simple tool that verifies that a project fulfills these requirements (and probably runs the various sanity checkers too).\nThen whenever someone advertises a new AI generated repository, it might be as simple as @mentioning a bot that runs the tool, and if if fails replies with a link to the document. :-)\n\nI think this is worth exploring and would be happy to do some testing. What do you think about this? let people run this while vibe proving, possibly even through callable tools like the lean-lsp MCP. This would allow people to ensure their repo is going to pass the checks before submitting.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/556959345"
+    },
+    {
+      "id": 558062623,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Kim Morrison said:\n\nI think Eric Vergo's example above is interesting to look at. There's no doubt that the AIs are already capable of creating repositories with correct (perhaps not interesting) mathematics, checked by Lean.\n\n\nFor what it's worth, I think the math here is interesting. I say this not to put up a stink, but because I think it's relevant to the discussion we are having: Who gets to decide what it means for some piece of mathematics to be interesting?\nTimothy Chow said:\n\nIf we go down the route of publishing a list of recommendations, then we should be mindful that mathematicians hate being told what to do. I'm reminded of the brouhaha that Jaffe and Quinn's article on Theoretical Mathematics generated. Atiyah responded by saying that even though he agreed with much of what they said,  \"I rebel against their general tone and attitude which appears too authoritarian.\" In order to minimize backlash, we will need to avoid sounding too authoritarian.\n\n\nThis is front and center for me... In August of 2024 I was interviewed on a podcast, where I describe the process of leaving my mechanical engineering career at Apple to pursue mathematics... Additionally, in October of 2023 I wrote \"Math is now an Engineering Problem\" on my now defunct blog. The critical part of that post is this: \n\"Just as Napster was the first warning shot to the music industry that everything was about to change, Sagredo is the first warning shot to mathematicians...\"",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/558062623"
+    },
+    {
+      "id": 558272001,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "I see the source of the confusion now; I was not clear when sharing the repo. It doesn't exactly meet any of Alex's definitions... The Lean project builds and there is no reason to assume that there is a kernel error or major bug... The 'riddled with errors' comment was directed to the other files in the repo. There are obvious errors and inaccuracies such as broken links, improper citations, etc...\n\nOn reflection, I should have placed more emphasis on the following: I spent ~100 hours vibe proving this, and while that is a non-trivial amount of time this is something that would have taken me many months to produce without LLMs. We should expect that people are going to find that sort of time-saving irresistible...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/558272001"
+    },
+    {
+      "id": 558327426,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Tremendous. Thank you for both requesting the clarifications and working through my explanations. Shared understanding is important and I did a poor job of making that possible. I'd like to build on that and tie up a few loose threads.\nTimothy Chow said:\n\nEric Vergo said:\n\nAre there good arguments against full transparency beyond the overhead added when producing proofs?\n\n\nWhat exactly do you mean by \"full transparency\"? \n\n\nBy full transparency I mean two different things. First, and much less of a concern on my end, are end user mathematicians disclosing the use of \"AI\" tools, along with the logs and techniques used in doing so... The far greater concern, and the intent of my previous posts, is to push for full transparency from companies who are producing the tools that we are going to use...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/558327426"
+    },
+    {
+      "id": 558465939,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "Kim Morrison said:\n\nEric Vergo said:\n\nJust as Napster was the first warning shot to the music industry that everything was about to change, Sagredo is the first warning shot to mathematicians.\n\nThanks for the Sagredo shout-out. :-) I'm glad someone noticed it!\n\nI showed it to so many people and no one 'got it'. I couldn't believe what I was seeing, or peoples lack of reaction. I'm sure you are busy with the modules launch (which looks awesome!), but I do think we should develop the tool you mentioned if/when you get some time. I'd be happy to use this repo and others for some stress testing :)",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/558465939"
+    },
+    {
+      "id": 558843568,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Discussion: AI-written mathematical proofs",
+      "content": "David Michael Roberts said:\n\nAnd this is, I think, one of Michael Harris' main points around the move towards increasing formalisation.\n\n\nIndeed. The introduction of generative AI makes this point much sharper. I am not familiar with everything he has written but have been following his blog for a while. It's rare I find myself disagreeing with him, but I do expect the technology to get better much faster than he does. \"Is it time to sell out\" is one of his better pieces IMO and this line is particularly relevant: \"But I have to confess that the prospect of foisting the work off on an AI agent, even Tao's imagined GPT, looks deeply appealing.\" I am deeply conflicted about this technology. The appeal is clearly there, but the concerns about what it will do to mathematics (and the world at large) are there too.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/558843568"
+    },
+    {
+      "id": 563558805,
+      "sender": "Eric Vergo",
+      "stream": "mathlib4",
+      "topic": "Properties of Chebyshev polynomials over the reals",
+      "content": "The to do list in Mathlib.RingTheory.Polynomial.Chebyshev has a litem \"Compute zeroes and extrema of Chebyshev polynomials.\" so that might be the right place. \nCan you share the files you are looking to merge? I am also working on results related to Chebyshev polynomials and defined the roots using cosine values. I would love to update this to a proof and will use yours once it's in mathlib.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/563558805"
+    },
+    {
+      "id": 563564456,
+      "sender": "Eric Vergo",
+      "stream": "mathlib4",
+      "topic": "Properties of Chebyshev polynomials over the reals",
+      "content": "Yuval Filmus said:\n\nThe file you mention as several TODO's, and it's clear that not all of them can belong to the same file (considering there are entire books written down on extremal properties of Chebyshev polynomials).\n\nIndeed, there is a huge body of work that should eventually be formalized. For the results you mentioned we are going to need multiple files regardless of whether it goes into .../trigonometry or .../polynomials. I'm leaning towards .../polynomials but don't know enough to feel strongly about it.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/563564456"
+    },
+    {
+      "id": 563840651,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "AI-discovered proof on psi-integrals (with Lean formalizat.)",
+      "content": "Johannes Schmitt said:\n\nEric Vergo This sounds very interesting (will read up on your precise proposal), but please do go ahead with using this as a case study! Very happy to provide any assistance you might need.\n\nGreat, this will take me a day or two and I'll post here when things are ready.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/563840651"
+    },
+    {
+      "id": 565574878,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "TAIL - Template for AI generated Lean proofs",
+      "content": "Chris Henson said:\n\n\nit is valuable to have a canonical, relatively user friendly tool like Comparator to evaluate Lean proofs\n\n\nI have been working on something in this direction. Initiated by this discussion/comment I put together a template for AI generated lean proofs, or 'TAIL', along with a verification tool that checks a repo against the template. It offers two modes, a 'strict' mode which does not allow the introduction of new definitions, and a more relaxed mode that does...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/565574878"
+    },
+    {
+      "id": 565681013,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "TAIL - Template for AI generated Lean proofs",
+      "content": "Jason Rute said:\n\nEric Vergo, I have a lot of reservations about your system.\n\nAll of the points here are well taken. In the interest of keeping this thread focused I will start a new thread for this tool. (maybe a mod should break it off?)",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/565681013"
+    },
+    {
+      "id": 565690854,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "Standards for Lean proofs of unsolved problems",
+      "content": "Niels Voss said:\n\n...this problem is much more complicated than it initially seems. \n\nI did, and still do, think that this is a key component in the most difficult problem humanity will ever have to solve... In the abstract we are asking the question \"How can we trust what the AI generated?\" As you noted, we are operating in high-rigor domain and have the opportunity to draw clear boundaries around 'what we should accept'. This is a question being asked in almost every domain of the human experience and unfortunately, other domains do not have the luxury of clearly delineating things...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/565690854"
+    },
+    {
+      "id": 565914963,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "TAIL - Template for AI generated Lean proofs",
+      "content": "@Jason Rute responding in-line to your points, but a lot of the details here may be irrelevant given the proposal I make afterwards. Additionally, this is my first real interaction with the lean backend and this effort was partially a forcing-function for me to learn about the details of it... My proposal:\n\nUpdate the TAIL standard as we see fit (discussion ongoing)\nRe-architect TailVerify to focus on checking for compliance to our standard using the more robust tools\nDrop the custom implemented soundness checks and leverage one or more of Lean4Checker/SafeVerify/comparator/etc. instead.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/565914963"
+    },
+    {
+      "id": 566015450,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "I'm interested in developing tiling theory for eventual submission to Mathlib. There has been previous but unresolved discussion, which seems worth continuing. Based on that discussion, it seems like a tiling should exist in a topological space, with its associated symmetry group being a subgroup of the automorphisms of that space. Beyond this, however, it's not clear how other aspects of the definition should be formulated...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566015450"
+    },
+    {
+      "id": 566063934,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "Joseph Myers said:\n\n\nWhen additive tilings are defined, should everything be set up at the same time to support use of Additive and Multiplicative type tags for translating between additive and multiplicative versions of the same tiling?\n\n\nTo confirm my understanding: In the statement \"... additive and multiplicative versions of the same tiling\" the two different versions are the same from a mathematical/structural perspective. Meaning the additive/multiplicative distinction is essentially bookkeeping needed to properly integrate with mathlib.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566063934"
+    },
+    {
+      "id": 566069003,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "ok, good; everything here tracks. \nIt sounds like making sure we can use to_additive is the right way to go. As an exercise I will try this out with what you currently have and report back. It may take some time as I'm using this as a learning opportunity, but I have some time today and tomorrow to work through it.\nP.S. the docs for to_additive are exceptional.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566069003"
+    },
+    {
+      "id": 566095873,
+      "sender": "Eric Vergo",
+      "stream": "new members",
+      "topic": "Budden's claims about Navier Stokes",
+      "content": "Alex Kontorovich said:\n\nI'm hoping it'll go away on its own and I don't need to waste my time on it.\n\nI'm guessing this will go away eventually, but not all problems do. The problems where a lot of people hope it'll go away but don't (or hope it isn't actually a problem and then it suddenly becomes one) tend to hit pretty hard.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566095873"
+    },
+    {
+      "id": 566168841,
+      "sender": "Eric Vergo",
+      "stream": "new members",
+      "topic": "Budden's claims about Navier Stokes",
+      "content": "Jason Rute said:\n\nAs for DeepMind's FormalConjectures repo, I think everyone is aware that it is REALLY hard to state problems without errors, so I think there are likely lots of mistakes, and some have already been found. But at the same time, I've felt the team making that repo has show a lot of professionalism.\n\n\nThere is an important meta point here. We are in a position where:\n\n1. People are generally acting in good faith\n2. We're operating in a high-rigor domain with substantial scrutiny around certain results\n3. Things still slip through the cracks\n\nIndeed, this is because what we are doing is very hard, but it's still happening...\n\nWhat has changed is the importance of things like proofs of IMO problems. A few years ago if we mis-formalized some random problem or validated a proof that hid the exploitation of some bug, it really didn't matter as there were no externalities. Now, all of a sudden, this is not the case. People are using Lean to evaluate (and more importantly, increase) the capability of their LLMs...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566168841"
+    },
+    {
+      "id": 566237127,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "I have some time to code today, should I piggy back on this PR for the to_additive work? FYI, your suspicions were correct in that it works 'out of the box', but there are challenges with Multiplicative ℤ",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566237127"
+    },
+    {
+      "id": 566591943,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "Discussion thread for Lean Language Reference",
+      "content": "I have been spending a lot of time in the language reference recently, which is very well written and thorough. But, I was having a difficult time reading them due to the flat formatting/my dyslexia. I find syntax highlighting helps a lot, so I threw together a browser extension that does it vis css injection...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566591943"
+    },
+    {
+      "id": 566626231,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "...After the mono tile discovery my friend and I spent time trying to make a puzzle with solid 'monotile pieces'... During that effort I got completely sidetracked by the following observation: under certain constraints, when transitioning through the infinite family, all of the vertices follow circular arcs. I had the opportunity to speak with Chaim about this a number of times and we could not get a handle on things...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566626231"
+    },
+    {
+      "id": 566668465,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Theorem Proving for Machine Learning",
+      "content": "Love what's going on here; I have not heard of Robbins-Siegmund either and will read about it. \nThis is something I vibe-coded a little while ago, and updated it today after seeing this post. https://e-vergo.github.io/LEAN_mnist/\nNot sure it's exactly what you're looking for, but it's a working MLP that trains on the classic MNIST handwritten dataset, written entirely in Lean 4 (using SciLean). It achieves ~93% accuracy on the full 60K training set using a 784->128->10 dense MLP...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566668465"
+    },
+    {
+      "id": 566753962,
+      "sender": "Eric Vergo",
+      "stream": "mathlib4",
+      "topic": "Mathlib as a source of definitions",
+      "content": "James E Hanson said:\n\nI think that it's a ridiculous idea in two ways.\nThe first is that I don't think there really can be a singe \"canonical\" source of every mathematical definition being used today...\n\n\nWhat percentage of all canonical definitions used today can be found on the arXiv? I bet it is up there... The barrier to entry is plummeting thanks to LLMS, as evidenced by the original post in this thread. I am not going to hang my hat on these things being true moving forward.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566753962"
+    },
+    {
+      "id": 566811416,
+      "sender": "Eric Vergo",
+      "stream": "maths",
+      "topic": "Discussion - Definition of tilings",
+      "content": "There are many things in this space I'm looking to formalize. Beyond verification, my intent in formalizing is to strengthen my understanding. I 'learn by doing' and the hope is that formalizing tiling theory will help me understand both the established results I half-understand and things I have found like the one above. That being said, it really looks like we may not have a 'one size fits all' definition. \nOne 'intermediate' result I was considering going after was the classification of frieze/wallpaper groups...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566811416"
+    },
+    {
+      "id": 566800106,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "Discussion thread for Lean Language Reference",
+      "content": "David Thrane Christiansen said:\n\n... Are you interested in making something like that?\n\nIf you are willing to put up with some hand-holding then yes, absolutely. I have not contributed to larger projects before.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/566800106"
+    },
+    {
+      "id": 567007897,
+      "sender": "Eric Vergo",
+      "stream": "general",
+      "topic": "Discussion thread for Lean Language Reference",
+      "content": "David Thrane Christiansen said:\n\nEric Vergo said:\n\nmore tightly couple the css classes generated by Subverso to actual lean\n\nCan you say more about what you mean here?\n\nSure, there are a few specific points behind this. For instance, right now SubVerso is tagging a lot of lean text as unknown, including things that would have different styling if it were rendered in, say, live.lean-lang...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/567007897"
+    },
+    {
+      "id": 567053001,
+      "sender": "Eric Vergo",
+      "stream": "Machine Learning for Theorem Proving",
+      "topic": "Theorem Proving for Machine Learning",
+      "content": "GasStationManager said:\n\nBut at some point we do need to formally deal with floating point and how they affect accuracy. My intuition is that a good theoretical treatment should take into account the optimization process. SGD is an algorithm that appears to be extremely robust to noise...\n\nyes, I had thoughts in this space as well. In the limit we could study binary neural nets, which may permit to being modeled in convenient ways.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/567053001"
+    },
+    {
+      "id": 568507979,
+      "sender": "Eric Vergo",
+      "stream": "PrimeNumberTheorem+",
+      "topic": "Disclosure of AI tools in PRs",
+      "content": "In the interest of continuing the discussion surrounding best practices:\nPR #535 was vibe-proven using Claude code. To allow for easier inspection of that process I used claude-code-log, which generates an interactive html page containing the entire session (prompts, tool calls, etc.). A readme plus all of the relevant files can be found here.\nThe PR was vibe proven last week at the NYC meetup and after the LLM completed the proof inspecting the logs was informative...",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/568507979"
+    },
+    {
+      "id": 568522782,
+      "sender": "Eric Vergo",
+      "stream": "PrimeNumberTheorem+",
+      "topic": "Fixing a sign error in Erdos 392",
+      "content": "It sounds like you were able to catch this, in part, because the dependency graph is generated using the LeanArchitect system. Maybe checking for a disconnected dependency graph can be automated and happen as the dependency graph is being generated. It would be especially useful when working towards a specific result, such as this project.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/568522782"
+    },
+    {
+      "id": 568529499,
+      "sender": "Eric Vergo",
+      "stream": "PrimeNumberTheorem+",
+      "topic": "Fixing a sign error in Erdos 392",
+      "content": "Awesome, I made a feature request for this.",
+      "url": "https://leanprover.zulipchat.com/#narrow/id/568529499"
+    }
+  ]
+}

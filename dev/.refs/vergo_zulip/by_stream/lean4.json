@@ -1,0 +1,15 @@
+{
+  "stream": "lean4",
+  "message_count": 1,
+  "messages": [
+    {
+      "id": 473141441,
+      "sender": "Eric Vergo",
+      "content": "Jon Eugster said:\n\nEric Vergo said:\n\nWhen showing Lean to my professors and other students I have been met with responses such as “gross” and “this looks awful”.\n\nFor what it's worth, I'm still quite amazed about how beautiful Lean as a Language is, while being as expressive as it is! In my opinion it's way better than latex source code! But you are certainly right about certain ideas how to display things.\n\nI’m still amazed at the fact anything like this could exist at all. That's why I keep trying to share it with people!",
+      "timestamp": "2026-02-02T11:08:51.510651",
+      "stream": "lean4",
+      "topic": null,
+      "url": "https://leanprover.zulipchat.com/#narrow/id/473141441"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "stream": "new_members",
+  "message_count": 1,
+  "messages": [
+    {
+      "id": 365896813,
+      "sender": "Eric Vergo",
+      "content": "Hey all,\nI’m a mechanical engineer by trade and spent the last decade on the product design team at Apple. I spent my time there designing Macs, but recently left and will be pursuing a masters in math at Queens college starting this fall. I’m excited to dive in, and learn all of the things I missed the first time around. I’m still very much at the beginning of my higher-level math journey, but it is clear to me that ITPs are the future of mathematics. \nLet’s build something great.",
+      "timestamp": "2026-02-02T11:08:51.510599",
+      "stream": "new members",
+      "topic": null,
+      "url": "https://leanprover.zulipchat.com/#narrow/id/365896813"
+    }
+  ]
+}
