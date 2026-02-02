@@ -1,6 +1,10 @@
 """Non-blocking iCloud sync for SBS archive data.
 
+Syncs the entire local archive to iCloud for backup.
 Never fails a build on sync errors - all operations log warnings and return False on failure.
+
+Local archive: dev/storage/ (referred to as ARCHIVE_DIR)
+iCloud backup: ~/Library/Mobile Documents/com~apple~CloudDocs/SBS_archive/
 """
 
 import json
@@ -15,6 +19,25 @@ from .entry import ArchiveEntry, ArchiveIndex
 logger = logging.getLogger(__name__)
 
 ICLOUD_BASE = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/SBS_archive"
+
+# Files to sync from archive root
+ARCHIVE_FILES = [
+    "archive_index.json",
+    "unified_ledger.json",
+    "compliance_ledger.json",
+    "baselines.json",
+    "migrations.json",
+]
+
+# Directories to sync from archive root
+ARCHIVE_DIRS = [
+    "charts",
+    "claude_data",
+    "tagging",
+]
+
+# Known project directories (screenshots)
+PROJECT_DIRS = ["SBSTest", "GCR", "PNT"]
 
 
 def get_icloud_path() -> Path:
@@ -34,16 +57,12 @@ def ensure_icloud_structure() -> bool:
             logger.warning("iCloud Drive not available at %s", icloud_parent)
             return False
 
-        # Create the directory structure
-        dirs_to_create = [
-            ICLOUD_BASE,
-            ICLOUD_BASE / "charts",
-            ICLOUD_BASE / "chat_summaries",
-            ICLOUD_BASE / "entries",
-        ]
+        # Create the base directory
+        ICLOUD_BASE.mkdir(parents=True, exist_ok=True)
 
-        for dir_path in dirs_to_create:
-            dir_path.mkdir(parents=True, exist_ok=True)
+        # Create subdirectories
+        for subdir in ["entries", "charts", "claude_data", "tagging"]:
+            (ICLOUD_BASE / subdir).mkdir(exist_ok=True)
 
         return True
 
@@ -52,18 +71,72 @@ def ensure_icloud_structure() -> bool:
         return False
 
 
-def sync_entry(entry: ArchiveEntry, local_base: Path) -> bool:
+def sync_file(local_path: Path, dest_path: Path) -> bool:
+    """Sync a single file to iCloud."""
+    try:
+        if not local_path.exists():
+            return True  # Not an error if file doesn't exist locally
+
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(local_path, dest_path)
+        logger.debug("Synced file: %s", local_path.name)
+        return True
+
+    except Exception as e:
+        logger.warning("Failed to sync file %s: %s", local_path, e)
+        return False
+
+
+def sync_directory(local_dir: Path, dest_dir: Path, incremental: bool = False) -> bool:
+    """
+    Sync an entire directory to iCloud.
+
+    Args:
+        local_dir: Source directory
+        dest_dir: Destination directory in iCloud
+        incremental: If True, only copy new items (for archive/ directories)
+    """
+    try:
+        if not local_dir.exists():
+            return True  # Not an error if directory doesn't exist locally
+
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        if incremental:
+            # Only copy items that don't exist in destination
+            for item in local_dir.iterdir():
+                dest_item = dest_dir / item.name
+                if not dest_item.exists():
+                    if item.is_dir():
+                        shutil.copytree(item, dest_item)
+                    else:
+                        shutil.copy2(item, dest_item)
+        else:
+            # Full sync - replace destination contents
+            for item in local_dir.iterdir():
+                dest_item = dest_dir / item.name
+                if item.is_dir():
+                    if dest_item.exists():
+                        shutil.rmtree(dest_item)
+                    shutil.copytree(item, dest_item)
+                else:
+                    shutil.copy2(item, dest_item)
+
+        logger.debug("Synced directory: %s", local_dir.name)
+        return True
+
+    except Exception as e:
+        logger.warning("Failed to sync directory %s: %s", local_dir, e)
+        return False
+
+
+def sync_entry(entry: ArchiveEntry, local_archive: Path) -> bool:
     """
     Sync a single archive entry to iCloud.
 
-    Steps:
-    1. Create entry dir: SBS_archive/entries/{entry_id}/
-    2. Write metadata.json with entry.to_dict()
-    3. Copy screenshots from local to iCloud
-    4. Mark entry.synced_to_icloud = True
-
-    On error: log warning, set entry.sync_error, return False.
-    Never raises exceptions - this must not fail builds.
+    Creates entries/{entry_id}/ with:
+    - metadata.json: Full entry data
+    - screenshots/: Any screenshots for this entry
     """
     try:
         if not ensure_icloud_structure():
@@ -79,17 +152,16 @@ def sync_entry(entry: ArchiveEntry, local_base: Path) -> bool:
             json.dump(entry.to_dict(), f, indent=2)
 
         # Copy screenshots if they exist
-        # Screenshots are stored in local_base/{project}/latest/ or local_base/{project}/archive/{timestamp}/
         screenshots_dir = entry_dir / "screenshots"
         screenshots_dir.mkdir(exist_ok=True)
 
         project = entry.project or "SBSMonorepo"
         for screenshot in entry.screenshots:
             # Try latest/ first (most common case)
-            local_screenshot = local_base / project / "latest" / screenshot
+            local_screenshot = local_archive / project / "latest" / screenshot
             if not local_screenshot.exists():
                 # Try archive/{entry_id}/ as fallback (for historical entries)
-                local_screenshot = local_base / project / "archive" / entry.entry_id / screenshot
+                local_screenshot = local_archive / project / "archive" / entry.entry_id / screenshot
             if local_screenshot.exists():
                 dest = screenshots_dir / Path(screenshot).name
                 shutil.copy2(local_screenshot, dest)
@@ -99,7 +171,7 @@ def sync_entry(entry: ArchiveEntry, local_base: Path) -> bool:
         entry.sync_timestamp = datetime.now().isoformat()
         entry.sync_error = None
 
-        logger.info("Synced entry %s to iCloud", entry.entry_id)
+        logger.debug("Synced entry %s to iCloud", entry.entry_id)
         return True
 
     except Exception as e:
@@ -107,27 +179,6 @@ def sync_entry(entry: ArchiveEntry, local_base: Path) -> bool:
         logger.warning(error_msg)
         entry.sync_error = str(e)
         entry.synced_to_icloud = False
-        return False
-
-
-def sync_ledger(local_ledger_path: Path) -> bool:
-    """Sync unified_ledger.json to iCloud."""
-    try:
-        if not ensure_icloud_structure():
-            return False
-
-        if not local_ledger_path.exists():
-            logger.warning("Local ledger not found: %s", local_ledger_path)
-            return False
-
-        dest = ICLOUD_BASE / "unified_ledger.json"
-        shutil.copy2(local_ledger_path, dest)
-
-        logger.info("Synced unified_ledger.json to iCloud")
-        return True
-
-    except Exception as e:
-        logger.warning("Failed to sync ledger: %s", e)
         return False
 
 
@@ -149,47 +200,21 @@ def sync_index(index: ArchiveIndex) -> bool:
         return False
 
 
-def sync_charts(local_charts_dir: Path) -> bool:
-    """Sync all charts from archive/charts/ to iCloud."""
-    try:
-        if not ensure_icloud_structure():
-            return False
-
-        if not local_charts_dir.exists():
-            logger.warning("Local charts directory not found: %s", local_charts_dir)
-            return False
-
-        dest_dir = ICLOUD_BASE / "charts"
-        dest_dir.mkdir(exist_ok=True)
-
-        # Copy all chart files
-        for chart_file in local_charts_dir.iterdir():
-            if chart_file.is_file():
-                shutil.copy2(chart_file, dest_dir / chart_file.name)
-
-        logger.info("Synced charts to iCloud")
-        return True
-
-    except Exception as e:
-        logger.warning("Failed to sync charts: %s", e)
-        return False
-
-
-def sync_project_screenshots(project: str, local_base: Path) -> bool:
+def sync_project_screenshots(project: str, local_archive: Path) -> bool:
     """Sync a project's screenshots (latest/ and archive/) to iCloud."""
     try:
         if not ensure_icloud_structure():
             return False
 
-        local_project_dir = local_base / project
+        local_project_dir = local_archive / project
         if not local_project_dir.exists():
-            logger.warning("Local project directory not found: %s", local_project_dir)
-            return False
+            logger.debug("Local project directory not found: %s", local_project_dir)
+            return True  # Not an error
 
         dest_project_dir = ICLOUD_BASE / project
         dest_project_dir.mkdir(exist_ok=True)
 
-        # Sync latest/
+        # Sync latest/ (full replacement)
         local_latest = local_project_dir / "latest"
         if local_latest.exists():
             dest_latest = dest_project_dir / "latest"
@@ -197,20 +222,12 @@ def sync_project_screenshots(project: str, local_base: Path) -> bool:
                 shutil.rmtree(dest_latest)
             shutil.copytree(local_latest, dest_latest)
 
-        # Sync archive/
-        local_archive = local_project_dir / "archive"
-        if local_archive.exists():
-            dest_archive = dest_project_dir / "archive"
-            dest_archive.mkdir(exist_ok=True)
+        # Sync archive/ (incremental - only new snapshots)
+        local_archive_dir = local_project_dir / "archive"
+        if local_archive_dir.exists():
+            sync_directory(local_archive_dir, dest_project_dir / "archive", incremental=True)
 
-            # Only copy new archive entries (by timestamp directory name)
-            for archive_entry in local_archive.iterdir():
-                if archive_entry.is_dir():
-                    dest_entry = dest_archive / archive_entry.name
-                    if not dest_entry.exists():
-                        shutil.copytree(archive_entry, dest_entry)
-
-        logger.info("Synced project %s screenshots to iCloud", project)
+        logger.debug("Synced project %s screenshots to iCloud", project)
         return True
 
     except Exception as e:
@@ -218,14 +235,23 @@ def sync_project_screenshots(project: str, local_base: Path) -> bool:
         return False
 
 
-def full_sync(local_base: Path, index: ArchiveIndex) -> dict:
+def full_sync(local_archive: Path, index: ArchiveIndex) -> dict:
     """
-    Full sync of all archive data to iCloud.
+    Full sync of entire archive to iCloud.
+
+    Syncs:
+    - All JSON files (ledgers, baselines, migrations)
+    - archive_index.json (from index object)
+    - charts/ directory
+    - claude_data/ directory (sessions, plans, tool_calls)
+    - tagging/ directory (rules, hooks)
+    - Project screenshots (SBSTest, GCR, PNT)
+    - Individual entry metadata
 
     Returns dict with:
     {
         "success": bool,
-        "synced": ["unified_ledger.json", "archive_index.json", ...],
+        "synced": ["archive_index.json", "claude_data/", ...],
         "failed": ["charts/", ...],
         "errors": ["iCloud not available", ...]
     }
@@ -243,35 +269,41 @@ def full_sync(local_base: Path, index: ArchiveIndex) -> dict:
         result["errors"].append("iCloud not available")
         return result
 
-    # Sync unified ledger
-    ledger_path = local_base / "stats" / "unified_ledger.json"
-    if ledger_path.exists():
-        if sync_ledger(ledger_path):
-            result["synced"].append("unified_ledger.json")
-        else:
-            result["failed"].append("unified_ledger.json")
-            result["success"] = False
-
-    # Sync archive index
+    # Sync archive index (from object, not file)
     if sync_index(index):
         result["synced"].append("archive_index.json")
     else:
         result["failed"].append("archive_index.json")
         result["success"] = False
 
-    # Sync charts
-    charts_dir = local_base / "archive" / "charts"
-    if charts_dir.exists():
-        if sync_charts(charts_dir):
-            result["synced"].append("charts/")
-        else:
-            result["failed"].append("charts/")
-            result["success"] = False
+    # Sync individual JSON files
+    for filename in ARCHIVE_FILES:
+        if filename == "archive_index.json":
+            continue  # Already synced above
+        local_path = local_archive / filename
+        dest_path = ICLOUD_BASE / filename
+        if local_path.exists():
+            if sync_file(local_path, dest_path):
+                result["synced"].append(filename)
+            else:
+                result["failed"].append(filename)
+                result["success"] = False
 
-    # Sync all entries
+    # Sync directories (charts, claude_data, tagging)
+    for dirname in ARCHIVE_DIRS:
+        local_dir = local_archive / dirname
+        dest_dir = ICLOUD_BASE / dirname
+        if local_dir.exists():
+            if sync_directory(local_dir, dest_dir):
+                result["synced"].append(f"{dirname}/")
+            else:
+                result["failed"].append(f"{dirname}/")
+                result["success"] = False
+
+    # Sync all entries (only unsynced ones)
     for entry_id, entry in index.entries.items():
         if not entry.synced_to_icloud:
-            if sync_entry(entry, local_base):
+            if sync_entry(entry, local_archive):
                 result["synced"].append(f"entries/{entry_id}/")
             else:
                 result["failed"].append(f"entries/{entry_id}/")
@@ -280,12 +312,28 @@ def full_sync(local_base: Path, index: ArchiveIndex) -> dict:
                 result["success"] = False
 
     # Sync project screenshots
-    # Screenshots are stored directly in local_base/{project}/ (e.g., dev/storage/SBSTest/)
-    for project in index.by_project.keys():
-        if sync_project_screenshots(project, local_base):
+    # Include both known projects and any found in index
+    projects_to_sync = set(PROJECT_DIRS)
+    projects_to_sync.update(index.by_project.keys())
+
+    for project in projects_to_sync:
+        if sync_project_screenshots(project, local_archive):
             result["synced"].append(f"{project}/")
         else:
             result["failed"].append(f"{project}/")
             result["success"] = False
 
+    logger.info("Full sync complete: %d synced, %d failed",
+                len(result["synced"]), len(result["failed"]))
     return result
+
+
+# Legacy function aliases for backwards compatibility
+def sync_ledger(local_ledger_path: Path) -> bool:
+    """Sync unified_ledger.json to iCloud."""
+    return sync_file(local_ledger_path, ICLOUD_BASE / local_ledger_path.name)
+
+
+def sync_charts(local_charts_dir: Path) -> bool:
+    """Sync charts directory to iCloud."""
+    return sync_directory(local_charts_dir, ICLOUD_BASE / "charts")
