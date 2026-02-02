@@ -207,7 +207,17 @@ General-purpose agentic task execution with validation. Invoke manually.
 
 **Workflow:** Alignment (Q&A) -> Planning -> Execution -> Finalization -> /update-and-archive
 
+Accepts issue numbers: `/task #42` loads issue context and prompts to close on completion.
+
 **Location:** `.claude/skills/task/SKILL.md`
+
+### `/log`
+
+Quick capture of bugs, features, and ideas to GitHub Issues.
+
+**Usage:** `/log <description>` - parses input, infers type, asks for missing details.
+
+**Location:** `.claude/skills/log/SKILL.md`
 
 ### `/update-and-archive`
 
