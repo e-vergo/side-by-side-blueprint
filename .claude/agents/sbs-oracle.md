@@ -237,6 +237,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
+| pr integration: | `CLAUDE.md` | `/task` |
 | practice introspection. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | preamble | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
 | primenumbertheoremand | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
