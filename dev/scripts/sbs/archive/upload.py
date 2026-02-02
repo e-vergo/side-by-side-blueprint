@@ -42,19 +42,11 @@ REPO_PATHS = {
 
 
 def get_monorepo_root() -> Path:
-    """Get the Side-By-Side-Blueprint monorepo root."""
-    # Use the constant from utils if available
-    if SBS_ROOT.exists() and (SBS_ROOT / "CLAUDE.md").exists():
-        return SBS_ROOT
+    """Get the Side-By-Side-Blueprint monorepo root.
 
-    # Navigate up from archive module to find monorepo root
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / "CLAUDE.md").exists() and (parent / "forks").exists():
-            return parent
-
-    # Fallback
-    return Path("/Users/eric/GitHub/Side-By-Side-Blueprint")
+    Uses the auto-detected SBS_ROOT from utils.py.
+    """
+    return SBS_ROOT
 
 
 def get_repo_commit(repo_path: Path) -> Optional[str]:

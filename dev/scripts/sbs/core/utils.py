@@ -15,7 +15,33 @@ from typing import Any, Optional
 # Constants
 # =============================================================================
 
-SBS_ROOT = Path("/Users/eric/GitHub/Side-By-Side-Blueprint")
+
+def _detect_sbs_root() -> Path:
+    """Auto-detect SBS workspace root.
+
+    Priority:
+    1. SBS_ROOT environment variable (if set)
+    2. Auto-detect by walking up from this file to find CLAUDE.md
+    """
+    # Check environment variable first
+    env_root = os.environ.get("SBS_ROOT")
+    if env_root:
+        return Path(env_root)
+
+    # Auto-detect: walk up from this file to find directory containing CLAUDE.md
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "CLAUDE.md").exists() and (parent / "forks").exists():
+            return parent
+
+    # Fallback (should not happen in normal use)
+    raise RuntimeError(
+        "Could not detect SBS_ROOT. Set SBS_ROOT environment variable or "
+        "ensure this file is within the Side-By-Side-Blueprint repository."
+    )
+
+
+SBS_ROOT = _detect_sbs_root()
 ARCHIVE_DIR = SBS_ROOT / "dev" / "storage"
 # Legacy alias for backwards compatibility
 IMAGES_DIR = ARCHIVE_DIR
