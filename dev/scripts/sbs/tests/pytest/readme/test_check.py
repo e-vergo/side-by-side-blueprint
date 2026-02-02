@@ -18,6 +18,7 @@ from sbs.readme.check import (
 )
 
 
+@pytest.mark.evergreen
 class TestRepoStatus:
     """Tests for RepoStatus dataclass."""
 
@@ -86,6 +87,7 @@ class TestRepoStatus:
         assert status.changed_files == ["file1.py", "file2.py"]
 
 
+@pytest.mark.evergreen
 class TestFormatReport:
     """Tests for format_report function."""
 
@@ -167,6 +169,7 @@ class TestFormatReport:
         assert "1 repos clean" in report
 
 
+@pytest.mark.evergreen
 class TestFormatJson:
     """Tests for format_json function."""
 

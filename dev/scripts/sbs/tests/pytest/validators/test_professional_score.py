@@ -74,6 +74,7 @@ def empty_screenshots_dir() -> Path:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestValidatorProperties:
     """Tests for validator name and category."""
 
@@ -91,6 +92,7 @@ class TestValidatorProperties:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestPromptGeneration:
     """Tests for prompt generation mode."""
 
@@ -256,6 +258,7 @@ class TestPromptGeneration:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestResponseParsing:
     """Tests for AI response parsing mode."""
 
@@ -546,6 +549,7 @@ class TestResponseParsing:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestFallbackParsing:
     """Tests for pattern-based fallback parsing."""
 
@@ -641,6 +645,7 @@ class TestFallbackParsing:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestStaticMethods:
     """Tests for static utility methods."""
 
@@ -672,6 +677,7 @@ class TestStaticMethods:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestIntegration:
     """Integration tests for the full validation flow."""
 

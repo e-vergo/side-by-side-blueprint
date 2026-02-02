@@ -20,6 +20,7 @@ from sbs.archive.entry import ArchiveEntry, ArchiveIndex
 from .conftest import CLIRunner
 
 
+@pytest.mark.evergreen
 class TestArchiveCLI:
     """Test suite for archive CLI commands."""
 

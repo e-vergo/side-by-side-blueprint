@@ -36,6 +36,7 @@ from sbs.tests.validators.base import ValidationContext
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestNormalizeHexColor:
     """Tests for hex color normalization."""
 
@@ -70,6 +71,7 @@ class TestNormalizeHexColor:
         assert normalize_hex_color("") == ""
 
 
+@pytest.mark.evergreen
 class TestExtractCssVariables:
     """Tests for CSS variable extraction."""
 
@@ -144,6 +146,7 @@ class TestExtractCssVariables:
         assert variables == {}
 
 
+@pytest.mark.evergreen
 class TestParseCssFile:
     """Tests for CSS file parsing."""
 
@@ -178,6 +181,7 @@ class TestParseCssFile:
             parse_css_file(Path("/nonexistent/file.css"))
 
 
+@pytest.mark.evergreen
 class TestExtractColorValues:
     """Tests for color value extraction."""
 
@@ -211,6 +215,7 @@ class TestExtractColorValues:
         assert var_colors[0].variable_name == "--my-color"
 
 
+@pytest.mark.evergreen
 class TestParseRealCommonCss:
     """Tests that parse the actual common.css file."""
 
@@ -247,6 +252,7 @@ class TestParseRealCommonCss:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestStatusColorValidator:
     """Tests for the StatusColorValidator."""
 
@@ -435,6 +441,7 @@ class TestStatusColorValidator:
         assert validator.category == "visual"
 
 
+@pytest.mark.evergreen
 class TestCanonicalColors:
     """Tests for canonical color constants."""
 

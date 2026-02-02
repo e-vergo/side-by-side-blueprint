@@ -17,6 +17,7 @@ from sbs.oracle.extractors import (
 )
 
 
+@pytest.mark.evergreen
 class TestExtractFileTables:
     """Tests for extract_file_tables function."""
 
@@ -102,6 +103,7 @@ class TestExtractFileTables:
         assert result == {}
 
 
+@pytest.mark.evergreen
 class TestExtractHowTos:
     """Tests for extract_how_tos function."""
 
@@ -175,6 +177,7 @@ This should not be included.
         assert "Next Section" not in steps
 
 
+@pytest.mark.evergreen
 class TestExtractGotchas:
     """Tests for extract_gotchas function."""
 
@@ -231,6 +234,7 @@ More text.
         assert len(result) >= 1
 
 
+@pytest.mark.evergreen
 class TestBuildConceptIndex:
     """Tests for build_concept_index function."""
 

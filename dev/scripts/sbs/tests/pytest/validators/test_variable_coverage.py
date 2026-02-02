@@ -31,6 +31,7 @@ from sbs.tests.validators.base import ValidationContext
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestIsNamedColor:
     """Tests for named color detection."""
 
@@ -83,6 +84,7 @@ class TestIsNamedColor:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestExtractColorUsages:
     """Tests for color usage extraction."""
 
@@ -236,6 +238,7 @@ class TestExtractColorUsages:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestCSSVariableCoverageValidator:
     """Tests for the CSS variable coverage validator."""
 
@@ -496,6 +499,7 @@ class TestCSSVariableCoverageValidator:
 # =============================================================================
 
 
+@pytest.mark.evergreen
 class TestWithRealCSSFiles:
     """Tests that analyze the actual CSS files in dress-blueprint-action."""
 

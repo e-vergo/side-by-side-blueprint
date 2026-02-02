@@ -23,6 +23,7 @@ from sbs.tests.validators.ledger_health import (
 )
 
 
+@pytest.mark.evergreen
 class TestIsPopulated:
     """Tests for the is_populated helper function."""
 
@@ -67,6 +68,7 @@ class TestIsPopulated:
         assert is_populated({"key": "value"}) is True
 
 
+@pytest.mark.evergreen
 class TestAnalyzeEntry:
     """Tests for the analyze_entry function."""
 
@@ -124,6 +126,7 @@ class TestAnalyzeEntry:
         assert result["synced_to_icloud"] is True
 
 
+@pytest.mark.evergreen
 class TestAnalyzeArchive:
     """Tests for the analyze_archive function."""
 
@@ -240,6 +243,7 @@ class TestAnalyzeArchive:
         assert result["field_population"]["notes"] == 0.5  # 1 of 2
 
 
+@pytest.mark.evergreen
 class TestLedgerHealthValidator:
     """Tests for the LedgerHealthValidator class."""
 

@@ -14,6 +14,7 @@ import pytest
 from sbs.oracle.compiler import OracleCompiler
 
 
+@pytest.mark.evergreen
 class TestOracleCompiler:
     """Tests for OracleCompiler class."""
 

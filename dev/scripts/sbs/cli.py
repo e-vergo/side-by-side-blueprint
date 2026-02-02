@@ -47,6 +47,7 @@ Commands:
   versions     Show dependency versions across repos
   archive      Archive management commands
   oracle       Oracle management commands
+  test-catalog List all testable components (MCP tools, tests, CLI commands)
 
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
@@ -556,6 +557,35 @@ Examples:
         help="Project name (default: detect from runway.json)",
     )
 
+    # --- test-catalog ---
+    test_catalog_parser = subparsers.add_parser(
+        "test-catalog",
+        help="List all testable components",
+        description="List all MCP tools, pytest tests, and CLI commands.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Lists all testable components in the SBS toolchain:
+- MCP Tools (11 SBS-specific tools)
+- Pytest tests with tier markers (evergreen, dev, temporary)
+- CLI commands
+
+Examples:
+  sbs test-catalog                  # Human-readable output
+  sbs test-catalog --json           # JSON output for scripts
+  sbs test-catalog --tier evergreen # Filter tests by tier
+        """,
+    )
+    test_catalog_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
+    )
+    test_catalog_parser.add_argument(
+        "--tier",
+        choices=["evergreen", "dev", "temporary"],
+        help="Filter pytest tests by tier",
+    )
+
     return parser
 
 
@@ -736,6 +766,25 @@ def cmd_validate_all(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_test_catalog(args: argparse.Namespace) -> int:
+    """Handle test-catalog command."""
+    from pathlib import Path
+    from sbs.test_catalog import build_catalog, format_catalog, format_catalog_json
+
+    # Find scripts dir: cli.py is at dev/scripts/sbs/cli.py (2 levels up to dev/scripts)
+    scripts_dir = Path(__file__).resolve().parent.parent
+
+    tier_filter = getattr(args, "tier", None)
+    catalog = build_catalog(scripts_dir, tier_filter)
+
+    if args.json:
+        print(format_catalog_json(catalog))
+    else:
+        print(format_catalog(catalog))
+
+    return 0
+
+
 # =============================================================================
 # Command Dispatch
 # =============================================================================
@@ -809,6 +858,9 @@ def main(argv: list[str] | None = None) -> int:
 
         elif args.command == "validate-all":
             return cmd_validate_all(args)
+
+        elif args.command == "test-catalog":
+            return cmd_test_catalog(args)
 
         else:
             log.error(f"Unknown command: {args.command}")

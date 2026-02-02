@@ -3,6 +3,11 @@ Shared pytest fixtures for sbs CLI tests.
 
 Provides fixtures for creating isolated test environments that don't
 pollute the real archive data.
+
+Test Tier Markers:
+  @pytest.mark.evergreen - Tests that always run, never skip (production tests)
+  @pytest.mark.dev       - Development/WIP tests, toggle-able
+  @pytest.mark.temporary - Tests with explicit discard flag
 """
 
 from __future__ import annotations
@@ -18,6 +23,27 @@ from typing import Generator
 import pytest
 
 from sbs.archive.entry import ArchiveEntry, ArchiveIndex
+
+
+# =============================================================================
+# Pytest Configuration
+# =============================================================================
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register custom markers for test tiers."""
+    config.addinivalue_line(
+        "markers",
+        "evergreen: tests that always run, never skip (production tests)"
+    )
+    config.addinivalue_line(
+        "markers",
+        "dev: development/WIP tests, toggle-able for active development"
+    )
+    config.addinivalue_line(
+        "markers",
+        "temporary: tests with explicit discard flag"
+    )
 
 
 @pytest.fixture

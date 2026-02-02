@@ -442,6 +442,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             Optional[str],
             Field(description="Pytest -k filter pattern"),
         ] = None,
+        tier: Annotated[
+            Optional[str],
+            Field(description="Test tier to run: evergreen, dev, temporary, or all (default: all)"),
+        ] = None,
         verbose: Annotated[
             bool,
             Field(description="Show verbose output"),
@@ -456,6 +460,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - Run all tests: sbs_run_tests()
         - Run specific tests: sbs_run_tests(filter="test_color")
         - Run tests in a specific path: sbs_run_tests(path="sbs/tests/pytest/validators")
+        - Run only evergreen tests: sbs_run_tests(tier="evergreen")
         """
         scripts_dir = SBS_ROOT / "dev" / "scripts"
         test_path = path or "sbs/tests/pytest"
@@ -465,6 +470,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
 
         if filter:
             cmd.extend(["-k", filter])
+
+        # Add tier marker filter if specified
+        if tier and tier != "all":
+            cmd.extend(["-m", tier])
 
         if verbose:
             cmd.append("-v")
