@@ -1,6 +1,6 @@
 # sbs-lsp-mcp
 
-SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 11 SBS-specific tools while preserving all 18 Lean proof-writing capabilities.
+SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 14 SBS-specific tools (including 3 Zulip browsing tools) while preserving all 18 Lean proof-writing capabilities.
 
 ## Overview
 
@@ -12,6 +12,7 @@ This package extends the upstream lean-lsp-mcp with SBS-specific tools for:
 - **Testing tools**: Run pytest suites and T1-T8 validators
 - **Build tools**: Trigger project builds and manage dev servers
 - **Investigation tools**: View screenshots, visual history, and search archive entries
+- **Zulip browsing**: Search and browse Leanprover Zulip anonymously via browser automation
 
 ## Installation
 
@@ -72,7 +73,7 @@ Or if globally installed:
 }
 ```
 
-## Tools (29 Total)
+## Tools (32 Total)
 
 ### Lean Tools (18)
 
@@ -116,6 +117,16 @@ Tools for Side-by-Side Blueprint development workflows:
 | `sbs_last_screenshot` | Get latest screenshot for a page |
 | `sbs_visual_history` | View screenshot history |
 | `sbs_search_entries` | Search archive entries |
+
+### Zulip Tools (3)
+
+Tools for browsing Leanprover Zulip anonymously (requires `ZULIP_ENABLED=1`):
+
+| Tool | Description |
+|------|-------------|
+| `zulip_search` | Search messages across streams/topics |
+| `zulip_fetch_thread` | Fetch complete thread content as markdown |
+| `zulip_screenshot` | Capture screenshot of a Zulip thread |
 
 ## SBS Tool Details
 
@@ -263,6 +274,59 @@ sbs_search_entries(tags=["build", "visual-change"])
 sbs_search_entries(project="SBSTest", trigger="build", limit=10)
 ```
 
+### Zulip Tools
+
+**Note:** Zulip tools require `ZULIP_ENABLED=1` and Playwright to be installed:
+
+```bash
+pip install sbs-lsp-mcp[zulip]
+playwright install chromium
+```
+
+#### `zulip_search`
+
+Search Zulip messages across streams.
+
+```python
+# Simple search
+zulip_search(query="SubVerso")
+
+# Stream-scoped search
+zulip_search(query="tactic", stream="lean4")
+
+# Topic-scoped search
+zulip_search(query="apply", stream="lean4", topic="Metaprogramming", limit=50)
+```
+
+#### `zulip_fetch_thread`
+
+Fetch complete thread content as structured data.
+
+```python
+# Fetch thread messages
+zulip_fetch_thread(stream="lean4", topic="Metaprogramming")
+# Returns: messages, participants, date range
+
+# With limit
+zulip_fetch_thread(stream="mathlib4", topic="PR reviews", limit=100)
+```
+
+#### `zulip_screenshot`
+
+Capture screenshot of a Zulip thread.
+
+```python
+# Capture to latest/
+zulip_screenshot(stream="lean4", topic="Metaprogramming")
+
+# Capture with archiving
+zulip_screenshot(stream="lean4", topic="Metaprogramming", archive=True)
+
+# Full page capture
+zulip_screenshot(stream="lean4", topic="Metaprogramming", full_page=True)
+# Returns: image_path, url, hash, captured_at
+```
+
 ## Environment Variables
 
 | Variable | Description |
@@ -273,6 +337,8 @@ sbs_search_entries(project="SBSTest", trigger="build", limit=10)
 | `LEAN_LOG_LEVEL` | Logging level (`INFO`, `DEBUG`, `NONE`) |
 | `LEAN_LSP_MCP_TOKEN` | Optional auth token |
 | `SBS_ROOT` | Side-by-Side Blueprint monorepo root |
+| `ZULIP_ENABLED` | Enable Zulip tools (`true`/`false`) |
+| `ZULIP_URL` | Zulip instance URL (default: `https://leanprover.zulipchat.com`) |
 
 ## Development
 
