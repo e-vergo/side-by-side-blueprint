@@ -154,5 +154,21 @@ The skill uses these GitHub labels (should exist in repo):
 - `bug` - Something isn't working
 - `feature` - New feature or request
 - `idea` - Idea or suggestion for consideration
+- `ai-authored` - **Always applied** to indicate AI authorship
 
-If a label doesn't exist, the issue will still be created but without the label.
+If a type label doesn't exist, the issue will still be created but without that label.
+
+---
+
+## AI Attribution
+
+**All issues created by this skill are transparently marked as AI-authored:**
+
+1. **Label:** `ai-authored` label is always added (purple badge)
+2. **Footer:** Attribution footer appended to body:
+   ```
+   ---
+   🤖 Created with [Claude Code](https://claude.ai/code)
+   ```
+
+This ensures clear provenance and transparency for all AI-generated content.

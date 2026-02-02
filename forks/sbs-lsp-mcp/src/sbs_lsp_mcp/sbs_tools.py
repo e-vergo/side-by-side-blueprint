@@ -1359,12 +1359,18 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - sbs_issue_create(title="Bug in graph layout")
         - sbs_issue_create(title="Add dark mode", body="Details here", label="feature")
         """
-        cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
+        # Attribution footer for AI transparency
+        attribution = "\n\n---\n🤖 Created with [Claude Code](https://claude.ai/code)"
+        full_body = (body or "") + attribution
 
-        if body:
-            cmd.extend(["--body", body])
+        cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
+        cmd.extend(["--body", full_body])
+
+        # Always add ai-authored label, plus optional type label
+        labels = ["ai-authored"]
         if label:
-            cmd.extend(["--label", label])
+            labels.append(label)
+        cmd.extend(["--label", ",".join(labels)])
 
         try:
             result = subprocess.run(
