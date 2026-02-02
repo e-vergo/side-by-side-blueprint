@@ -23,6 +23,8 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from .sbs_models import (
+    AnalysisFinding,
+    AnalysisSummary,
     ArchiveEntrySummary,
     ArchiveStateResult,
     ContextResult,
@@ -45,6 +47,8 @@ from .sbs_models import (
     SBSValidationResult,
     ScreenshotResult,
     SearchResult,
+    SelfImproveEntries,
+    SelfImproveEntrySummary,
     ServeResult,
     TestFailure,
     TestResult,
@@ -2094,6 +2098,52 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 sha=None,
                 error=str(e),
             )
+
+    # =========================================================================
+    # Self-Improve Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sbs_analysis_summary",
+        annotations=ToolAnnotations(
+            title="SBS Analysis Summary",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_analysis_summary(ctx: Context) -> AnalysisSummary:
+        """Get aggregate statistics for archive analysis.
+
+        Returns summary statistics useful for self-improvement:
+        - Total entries and date range
+        - Entries by trigger type
+        - Quality metrics aggregates
+        - Most common tags
+        - Projects summary
+        - Basic improvement findings
+        """
+        from .sbs_self_improve import sbs_analysis_summary_impl
+        return sbs_analysis_summary_impl()
+
+    @mcp.tool(
+        "sbs_entries_since_self_improve",
+        annotations=ToolAnnotations(
+            title="SBS Entries Since Self-Improve",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_entries_since_self_improve(ctx: Context) -> SelfImproveEntries:
+        """Get all entries since the last self-improve invocation.
+
+        Finds the most recent archive entry where global_state.skill == "self-improve"
+        and returns all entries created after that point. Useful for determining
+        what happened since the last self-improvement cycle.
+        """
+        from .sbs_self_improve import sbs_entries_since_self_improve_impl
+        return sbs_entries_since_self_improve_impl()
 
 
 # =============================================================================

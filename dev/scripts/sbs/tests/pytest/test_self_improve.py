@@ -4,15 +4,16 @@ Tests for the /self-improve skill and sbs-improver agent.
 Validates:
 - V1: Skill file exists and parses correctly
 - V2: Agent file exists and parses correctly
+- V3: sbs_analysis_summary returns structured data
+- V4: sbs_entries_since_self_improve returns entry count
 - V5: Archive entries with self-improve tag work
 - V7: Recovery from each phase works
-
-MCP tool tests (V3, V4) are in Wave 2.
 """
 
 from __future__ import annotations
 
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,6 +21,45 @@ import pytest
 import yaml
 
 from sbs.archive.entry import ArchiveEntry, ArchiveIndex
+
+# Add sbs-lsp-mcp to path for MCP tool tests (using importlib to avoid __init__.py)
+import importlib.util
+
+_SBS_LSP_MCP_SRC = Path("/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src")
+
+
+def _load_module_directly(module_name: str, file_path: Path):
+    """Load a module directly from file path, bypassing __init__.py."""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {module_name} from {file_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _get_self_improve_module():
+    """Get the sbs_self_improve module, loading dependencies as needed."""
+    # First load sbs_models (no external deps)
+    if "sbs_lsp_mcp.sbs_models" not in sys.modules:
+        _load_module_directly(
+            "sbs_lsp_mcp.sbs_models",
+            _SBS_LSP_MCP_SRC / "sbs_lsp_mcp" / "sbs_models.py"
+        )
+    # Then load sbs_utils (needs sbs.archive which is in scripts path)
+    if "sbs_lsp_mcp.sbs_utils" not in sys.modules:
+        _load_module_directly(
+            "sbs_lsp_mcp.sbs_utils",
+            _SBS_LSP_MCP_SRC / "sbs_lsp_mcp" / "sbs_utils.py"
+        )
+    # Finally load sbs_self_improve
+    if "sbs_lsp_mcp.sbs_self_improve" not in sys.modules:
+        _load_module_directly(
+            "sbs_lsp_mcp.sbs_self_improve",
+            _SBS_LSP_MCP_SRC / "sbs_lsp_mcp" / "sbs_self_improve.py"
+        )
+    return sys.modules["sbs_lsp_mcp.sbs_self_improve"]
 
 
 # =============================================================================
@@ -401,3 +441,212 @@ class TestRecoveryFromEachPhase:
 
         loaded = ArchiveIndex.load(index_path)
         assert loaded.global_state is None
+
+
+# =============================================================================
+# V3: sbs_analysis_summary Returns Structured Data
+# =============================================================================
+
+
+@pytest.mark.dev
+class TestAnalysisSummaryReturnsStructuredData:
+    """V3: sbs_analysis_summary returns valid structured data."""
+
+    def test_returns_total_entries(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns total_entries field."""
+        # Import using helper to avoid __init__.py MCP dependencies
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "total_entries")
+        assert isinstance(result.total_entries, int)
+        assert result.total_entries >= 0
+
+    def test_returns_entries_by_trigger(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns entries_by_trigger dict."""
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "entries_by_trigger")
+        assert isinstance(result.entries_by_trigger, dict)
+
+    def test_returns_most_common_tags(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns most_common_tags list."""
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "most_common_tags")
+        assert isinstance(result.most_common_tags, list)
+
+    def test_returns_date_range(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns date_range string."""
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "date_range")
+        assert isinstance(result.date_range, str)
+
+    def test_returns_projects_summary(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns projects_summary dict."""
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "projects_summary")
+        assert isinstance(result.projects_summary, dict)
+
+    def test_returns_findings_list(self, mock_archive_dir: Path):
+        """sbs_analysis_summary returns findings as list."""
+        module = _get_self_improve_module()
+        result = module.sbs_analysis_summary_impl()
+
+        assert hasattr(result, "findings")
+        assert isinstance(result.findings, list)
+
+    def test_with_populated_archive(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """sbs_analysis_summary works with populated archive."""
+        # Patch ARCHIVE_DIR in sbs_lsp_mcp.sbs_utils too
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        # Create some entries
+        index = ArchiveIndex()
+        for i in range(3):
+            entry = ArchiveEntry(
+                entry_id=f"2024010{i}120000",
+                created_at=datetime.now(timezone.utc).isoformat(),
+                project="TestProject",
+                trigger="build" if i < 2 else "manual",
+                tags=["test", f"tag{i}"],
+            )
+            index.add_entry(entry)
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_analysis_summary_impl()
+
+        assert result.total_entries == 3
+        assert "build" in result.entries_by_trigger
+        assert result.entries_by_trigger["build"] == 2
+        assert "test" in result.most_common_tags
+
+
+# =============================================================================
+# V4: sbs_entries_since_self_improve Returns Entry Count
+# =============================================================================
+
+
+@pytest.mark.dev
+class TestEntriesSinceReturnsCount:
+    """V4: sbs_entries_since_self_improve returns entry count."""
+
+    def test_returns_entries_since(self, mock_archive_dir: Path):
+        """sbs_entries_since_self_improve returns entries_since list."""
+        module = _get_self_improve_module()
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert hasattr(result, "entries_since")
+        assert isinstance(result.entries_since, list)
+
+    def test_returns_count_by_trigger(self, mock_archive_dir: Path):
+        """sbs_entries_since_self_improve returns count_by_trigger dict."""
+        module = _get_self_improve_module()
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert hasattr(result, "count_by_trigger")
+        assert isinstance(result.count_by_trigger, dict)
+
+    def test_returns_count(self, mock_archive_dir: Path):
+        """sbs_entries_since_self_improve returns count integer."""
+        module = _get_self_improve_module()
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert hasattr(result, "count")
+        assert isinstance(result.count, int)
+        assert result.count >= 0
+
+    def test_returns_last_self_improve_fields(self, mock_archive_dir: Path):
+        """sbs_entries_since_self_improve returns last_self_improve fields."""
+        module = _get_self_improve_module()
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert hasattr(result, "last_self_improve_entry")
+        assert hasattr(result, "last_self_improve_timestamp")
+        # Can be None if no self-improve entry exists
+        assert result.last_self_improve_entry is None or isinstance(
+            result.last_self_improve_entry, str
+        )
+
+    def test_finds_entries_after_self_improve(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """sbs_entries_since_self_improve finds entries after last self-improve."""
+        # Patch ARCHIVE_DIR in sbs_lsp_mcp.sbs_utils too
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+
+        # Create a self-improve entry
+        self_improve_entry = ArchiveEntry(
+            entry_id="20240101120000",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "self-improve", "substate": "archive"},
+        )
+        index.add_entry(self_improve_entry)
+
+        # Create entries after self-improve
+        for i in range(1, 4):
+            entry = ArchiveEntry(
+                entry_id=f"2024010{i + 1}120000",
+                created_at=datetime.now(timezone.utc).isoformat(),
+                project="TestProject",
+                trigger="build",
+            )
+            index.add_entry(entry)
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert result.last_self_improve_entry == "20240101120000"
+        assert result.count == 3
+        assert len(result.entries_since) == 3
+        assert "build" in result.count_by_trigger
+        assert result.count_by_trigger["build"] == 3
+
+    def test_all_entries_when_no_self_improve(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Returns all entries when no self-improve entry exists."""
+        # Patch ARCHIVE_DIR in sbs_lsp_mcp.sbs_utils too
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+
+        # Create entries without any self-improve
+        for i in range(3):
+            entry = ArchiveEntry(
+                entry_id=f"2024010{i}120000",
+                created_at=datetime.now(timezone.utc).isoformat(),
+                project="TestProject",
+                trigger="build",
+            )
+            index.add_entry(entry)
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_entries_since_self_improve_impl()
+
+        assert result.last_self_improve_entry is None
+        assert result.count == 3
