@@ -57,6 +57,9 @@ class ArchiveEntry:
     # Gate validation
     gate_validation: Optional[dict] = None  # {passed: bool, findings: list[str]} if gates were checked
 
+    # GitHub issue references
+    issue_refs: list[str] = field(default_factory=list)  # Issue numbers, e.g., ["42", "57"]
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -82,6 +85,7 @@ class ArchiveEntry:
             "state_transition": self.state_transition,
             "epoch_summary": self.epoch_summary,
             "gate_validation": self.gate_validation,
+            "issue_refs": self.issue_refs,
         }
 
     @classmethod
@@ -114,6 +118,7 @@ class ArchiveEntry:
             state_transition=data.get("state_transition"),
             epoch_summary=data.get("epoch_summary"),
             gate_validation=data.get("gate_validation"),
+            issue_refs=data.get("issue_refs", []),
         )
 
 

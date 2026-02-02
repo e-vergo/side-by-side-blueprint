@@ -386,3 +386,51 @@ class ZulipScreenshotResult(BaseModel):
     stream: Optional[str] = Field(None, description="Stream name if thread")
     topic: Optional[str] = Field(None, description="Topic name if thread")
     archived: bool = Field(default=False, description="Whether screenshot was archived")
+
+
+# =============================================================================
+# GitHub Issue Tools
+# =============================================================================
+
+
+class GitHubIssue(BaseModel):
+    """A GitHub issue."""
+
+    number: int = Field(description="Issue number")
+    title: str = Field(description="Issue title")
+    state: str = Field(description="Issue state: open or closed")
+    labels: List[str] = Field(default_factory=list, description="Issue labels")
+    url: str = Field(description="Issue URL")
+    body: Optional[str] = Field(None, description="Issue body/description")
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+
+
+class IssueCreateResult(BaseModel):
+    """Result from creating an issue."""
+
+    success: bool = Field(description="Whether creation succeeded")
+    number: Optional[int] = Field(None, description="New issue number")
+    url: Optional[str] = Field(None, description="New issue URL")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class IssueListResult(BaseModel):
+    """Result from listing issues."""
+
+    issues: List[GitHubIssue] = Field(default_factory=list, description="List of issues")
+    total: int = Field(description="Total count of issues returned")
+
+
+class IssueGetResult(BaseModel):
+    """Result from getting a single issue."""
+
+    success: bool = Field(description="Whether fetch succeeded")
+    issue: Optional[GitHubIssue] = Field(None, description="The issue if found")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class IssueCloseResult(BaseModel):
+    """Result from closing an issue."""
+
+    success: bool = Field(description="Whether close succeeded")
+    error: Optional[str] = Field(None, description="Error message if failed")

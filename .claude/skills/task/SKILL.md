@@ -9,7 +9,26 @@ version: 3.0.0
 
 ## Invocation
 
-User triggers `/task` with a task description.
+| Pattern | Behavior |
+|---------|----------|
+| `/task` | Lists open issues, offers choice OR freeform description |
+| `/task #42` | Loads issue #42 as task context |
+| `/task <description>` | Uses description as task (no issue linkage) |
+
+### Issue-Driven Invocation
+
+When invoked with an issue number (`/task #42`):
+1. Call `sbs_issue_get` MCP tool to fetch issue details
+2. Use issue title and body as task context
+3. Track `issue_refs: [42]` throughout execution
+
+When invoked without arguments (`/task`):
+1. Call `sbs_issue_list` MCP tool to get open issues
+2. Present list to user with AskUserQuestion:
+   - Option for each open issue (up to 5 most recent)
+   - "Describe a new task" option for freeform
+3. If user selects an issue, proceed as issue-driven
+4. If user describes new task, proceed without issue linkage
 
 ---
 
@@ -35,10 +54,13 @@ Every phase change MUST execute:
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"<phase>"}' \
-  --state-transition phase_start
+  --state-transition phase_start \
+  --issue-refs <comma-separated-issue-numbers>  # If issue-driven
 ```
 
 Phases: `alignment` → `planning` → `execution` → `finalization`
+
+**Issue Tracking:** If the task is issue-driven, include `--issue-refs` with the linked issue number(s) in every archive upload during this task.
 
 ### Ending the Task
 
@@ -191,6 +213,27 @@ python3 -m sbs archive upload --trigger skill \
 
 ---
 
+## Issue Closure (If Issue-Driven)
+
+If this task was linked to GitHub issue(s):
+
+1. **After gate validation passes**, prompt user:
+   ```
+   Task linked to issue #42: "<issue title>"
+   Close this issue? [Yes/No]
+   ```
+
+2. Use AskUserQuestion with options:
+   - "Yes, close it" → Call `sbs_issue_close` MCP tool
+   - "No, keep open" → Continue without closing
+   - "Close with comment" → Ask for comment, then call `sbs_issue_close` with comment
+
+3. Report closure result before proceeding to Phase 5
+
+**Important:** Only prompt for closure if all gates passed. If gates failed and user overrode, still prompt but note that gates were overridden.
+
+---
+
 ## Phase 5: Documentation Cleanup (MANDATORY)
 
 **Execution is NOT complete until this phase runs.**
@@ -218,10 +261,17 @@ If context compacts mid-task:
 
 | Substate | Resume Action |
 |----------|---------------|
-| `alignment` | Re-ask clarifying questions |
+| `alignment` | Re-ask clarifying questions, **re-fetch issue if issue-driven** |
 | `planning` | Read plan file, continue planning |
 | `execution` | Check wave completion, resume incomplete waves |
 | `finalization` | Re-run validators, re-check gates |
+
+### Issue Linkage Recovery
+
+The `issue_refs` field in archive entries persists the issue linkage. On recovery:
+1. Query recent archive entries for this task
+2. Extract `issue_refs` from entries
+3. Continue tracking the same issue(s)
 
 ### Execution Wave Recovery
 

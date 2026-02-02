@@ -248,6 +248,8 @@ def archive_upload(
     state_transition: Optional[str] = None,
     # Gate validation
     force: bool = False,
+    # Issue references
+    issue_refs: Optional[list[str]] = None,
 ) -> dict:
     """
     Main archive upload function.
@@ -314,6 +316,7 @@ def archive_upload(
             trigger=trigger,
             global_state=global_state,
             state_transition=state_transition,
+            issue_refs=issue_refs or [],
         )
         result["entry_id"] = entry_id
 

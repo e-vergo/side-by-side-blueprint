@@ -259,6 +259,12 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
     state_transition = getattr(args, "state_transition", None)
     force = getattr(args, "force", False)
 
+    # Parse issue_refs from comma-separated string to list
+    issue_refs = []
+    issue_refs_str = getattr(args, "issue_refs", None)
+    if issue_refs_str:
+        issue_refs = [ref.strip() for ref in issue_refs_str.split(",") if ref.strip()]
+
     # Parse global_state JSON if provided
     global_state = None
     global_state_str = getattr(args, "global_state", None)
@@ -276,6 +282,7 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
         global_state=global_state,
         state_transition=state_transition,
         force=force,
+        issue_refs=issue_refs,
     )
 
     # Log summary

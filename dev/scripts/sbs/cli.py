@@ -479,6 +479,11 @@ Examples:
         action="store_true",
         help="Force transition even if gate validation fails",
     )
+    archive_upload_parser.add_argument(
+        "--issue-refs",
+        type=str,
+        help="Comma-separated list of GitHub issue numbers to link (e.g., '42,57')",
+    )
 
     # --- oracle (command group) ---
     oracle_parser = subparsers.add_parser(

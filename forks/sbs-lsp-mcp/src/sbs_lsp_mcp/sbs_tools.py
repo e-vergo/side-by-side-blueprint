@@ -27,7 +27,12 @@ from .sbs_models import (
     ArchiveStateResult,
     ContextResult,
     EpochSummaryResult,
+    GitHubIssue,
     HistoryEntry,
+    IssueCloseResult,
+    IssueCreateResult,
+    IssueGetResult,
+    IssueListResult,
     OracleConcept,
     OracleMatch,
     OracleQueryResult,
@@ -1315,6 +1320,358 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             query=None,
             filters=filters_dict,
         )
+
+    # =========================================================================
+    # GitHub Issue Tools
+    # =========================================================================
+
+    GITHUB_REPO = "e-vergo/Side-By-Side-Blueprint"
+
+    @mcp.tool(
+        "sbs_issue_create",
+        annotations=ToolAnnotations(
+            title="SBS Issue Create",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_create(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="Issue title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="Issue body/description"),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="Issue label: bug, feature, or idea"),
+        ] = None,
+    ) -> IssueCreateResult:
+        """Create a new GitHub issue in the SBS repository.
+
+        Creates an issue in e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sbs_issue_create(title="Bug in graph layout")
+        - sbs_issue_create(title="Add dark mode", body="Details here", label="feature")
+        """
+        cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
+
+        if body:
+            cmd.extend(["--body", body])
+        if label:
+            cmd.extend(["--label", label])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueCreateResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    error=result.stderr.strip() or "Failed to create issue",
+                )
+
+            # Parse URL from output (e.g., "https://github.com/e-vergo/Side-By-Side-Blueprint/issues/123")
+            url = result.stdout.strip()
+            number = None
+            if url and "/issues/" in url:
+                try:
+                    number = int(url.split("/issues/")[-1])
+                except ValueError:
+                    pass
+
+            return IssueCreateResult(
+                success=True,
+                number=number,
+                url=url,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_issue_list",
+        annotations=ToolAnnotations(
+            title="SBS Issue List",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_list(
+        ctx: Context,
+        state: Annotated[
+            Optional[str],
+            Field(description="Issue state filter: open, closed, or all (default: open)"),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="Filter by label"),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description="Maximum issues to return", ge=1),
+        ] = 20,
+    ) -> IssueListResult:
+        """List GitHub issues from the SBS repository.
+
+        Lists issues from e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sbs_issue_list()  # Open issues
+        - sbs_issue_list(state="closed", limit=10)
+        - sbs_issue_list(label="bug")
+        """
+        cmd = [
+            "gh", "issue", "list",
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,createdAt",
+            "--limit", str(limit),
+        ]
+
+        if state:
+            cmd.extend(["--state", state])
+        if label:
+            cmd.extend(["--label", label])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueListResult(
+                    issues=[],
+                    total=0,
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueListResult(
+                    issues=[],
+                    total=0,
+                )
+
+            issues = []
+            for item in data:
+                # Extract label names from label objects
+                label_names = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                issues.append(
+                    GitHubIssue(
+                        number=item.get("number", 0),
+                        title=item.get("title", ""),
+                        state=item.get("state", ""),
+                        labels=label_names,
+                        url=item.get("url", ""),
+                        body=item.get("body"),
+                        created_at=item.get("createdAt"),
+                    )
+                )
+
+            return IssueListResult(
+                issues=issues,
+                total=len(issues),
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueListResult(
+                issues=[],
+                total=0,
+            )
+        except Exception:
+            return IssueListResult(
+                issues=[],
+                total=0,
+            )
+
+    @mcp.tool(
+        "sbs_issue_get",
+        annotations=ToolAnnotations(
+            title="SBS Issue Get",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_get(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="Issue number to fetch"),
+        ],
+    ) -> IssueGetResult:
+        """Get details of a specific GitHub issue.
+
+        Fetches a single issue from e-vergo/Side-By-Side-Blueprint by number.
+
+        Examples:
+        - sbs_issue_get(number=123)
+        """
+        cmd = [
+            "gh", "issue", "view", str(number),
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,createdAt",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueGetResult(
+                    success=False,
+                    issue=None,
+                    error=result.stderr.strip() or f"Issue #{number} not found",
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueGetResult(
+                    success=False,
+                    issue=None,
+                    error="Failed to parse issue data",
+                )
+
+            # Extract label names from label objects
+            label_names = []
+            for lbl in data.get("labels", []):
+                if isinstance(lbl, dict):
+                    label_names.append(lbl.get("name", ""))
+                elif isinstance(lbl, str):
+                    label_names.append(lbl)
+
+            issue = GitHubIssue(
+                number=data.get("number", 0),
+                title=data.get("title", ""),
+                state=data.get("state", ""),
+                labels=label_names,
+                url=data.get("url", ""),
+                body=data.get("body"),
+                created_at=data.get("createdAt"),
+            )
+
+            return IssueGetResult(
+                success=True,
+                issue=issue,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueGetResult(
+                success=False,
+                issue=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueGetResult(
+                success=False,
+                issue=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_issue_close",
+        annotations=ToolAnnotations(
+            title="SBS Issue Close",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_close(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="Issue number to close"),
+        ],
+        comment: Annotated[
+            Optional[str],
+            Field(description="Optional comment when closing"),
+        ] = None,
+    ) -> IssueCloseResult:
+        """Close a GitHub issue in the SBS repository.
+
+        Closes an issue in e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sbs_issue_close(number=123)
+        - sbs_issue_close(number=123, comment="Fixed in PR #456")
+        """
+        cmd = ["gh", "issue", "close", str(number), "--repo", GITHUB_REPO]
+
+        if comment:
+            cmd.extend(["--comment", comment])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueCloseResult(
+                    success=False,
+                    error=result.stderr.strip() or f"Failed to close issue #{number}",
+                )
+
+            return IssueCloseResult(
+                success=True,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueCloseResult(
+                success=False,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueCloseResult(
+                success=False,
+                error=str(e),
+            )
 
 
 # =============================================================================
