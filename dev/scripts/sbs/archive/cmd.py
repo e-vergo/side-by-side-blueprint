@@ -257,6 +257,7 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
     trigger = getattr(args, "trigger", "manual")
     dry_run = getattr(args, "dry_run", False)
     state_transition = getattr(args, "state_transition", None)
+    force = getattr(args, "force", False)
 
     # Parse global_state JSON if provided
     global_state = None
@@ -274,6 +275,7 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
         dry_run=dry_run,
         global_state=global_state,
         state_transition=state_transition,
+        force=force,
     )
 
     # Log summary

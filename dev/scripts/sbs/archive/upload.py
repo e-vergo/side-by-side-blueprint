@@ -20,6 +20,7 @@ from typing import Optional
 
 from sbs.archive.entry import ArchiveEntry, ArchiveIndex
 from sbs.archive.extractor import extract_claude_data
+from sbs.archive.gates import check_gates, GateResult
 from sbs.archive.session_data import ClaudeDataSnapshot, SessionData
 from sbs.archive.tagger import TaggingEngine, build_tagging_context
 from sbs.archive.icloud_sync import full_sync
@@ -253,6 +254,8 @@ def archive_upload(
     # State machine parameters
     global_state: Optional[dict] = None,
     state_transition: Optional[str] = None,
+    # Gate validation
+    force: bool = False,
 ) -> dict:
     """
     Main archive upload function.
@@ -370,6 +373,37 @@ def archive_upload(
         result["tags_applied"] = auto_tags
 
         log.info(f"Applied {len(auto_tags)} auto-tags: {auto_tags}")
+
+        # 4.5 Gate validation for /task execution->finalization transition
+        gate_result: Optional[GateResult] = None
+        if (state_transition == "phase_start" and
+            global_state and
+            global_state.get("skill") == "task" and
+            global_state.get("substate") == "finalization"):
+
+            log.info("Checking gates before finalization...")
+            gate_result = check_gates(project=project or "SBSTest", force=force)
+
+            for finding in gate_result.findings:
+                log.dim(f"  {finding}")
+
+            if not gate_result.passed:
+                log.error("[BLOCKED] Gate validation failed - transition blocked")
+                log.warning("Use --force to bypass gate validation")
+                return {
+                    "success": False,
+                    "error": "Gate validation failed",
+                    "gate_findings": gate_result.findings,
+                    "entry_id": entry_id,
+                }
+            else:
+                log.success("[OK] Gate validation passed")
+
+            # Record gate validation in entry
+            entry.gate_validation = {
+                "passed": gate_result.passed,
+                "findings": gate_result.findings,
+            }
 
         # 5. Save to archive index
         log.info("Saving to archive index...")

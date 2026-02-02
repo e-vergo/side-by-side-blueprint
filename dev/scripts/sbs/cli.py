@@ -474,6 +474,11 @@ Examples:
         choices=["phase_start", "phase_end"],
         help="State transition type (phase_start or phase_end)",
     )
+    archive_upload_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force transition even if gate validation fails",
+    )
 
     # --- oracle (command group) ---
     oracle_parser = subparsers.add_parser(

@@ -31,6 +31,7 @@ class OracleCompiler:
     # Additional root-level files to include
     ROOT_FILES = [
         "CLAUDE.md",
+        "dev/storage/TEST_CATALOG.md",
     ]
 
     # Paths to exclude (contain external dependencies, not SBS code)

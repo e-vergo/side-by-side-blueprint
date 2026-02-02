@@ -178,6 +178,8 @@ This is the canonical reference for:
 
 When working with rubrics or validation, consult the hub first.
 
+**See also:** [`TEST_CATALOG.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/TEST_CATALOG.md) for the auto-generated catalog of all testable components (MCP tools, pytest tests, CLI commands).
+
 ---
 
 ## SBS-Oracle for Codebase Questions

@@ -54,6 +54,9 @@ class ArchiveEntry:
     state_transition: Optional[str] = None  # "phase_start" | "phase_end" | null
     epoch_summary: Optional[dict] = None  # Computed on skill-triggered entries that close epochs
 
+    # Gate validation
+    gate_validation: Optional[dict] = None  # {passed: bool, findings: list[str]} if gates were checked
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -78,6 +81,7 @@ class ArchiveEntry:
             "global_state": self.global_state,
             "state_transition": self.state_transition,
             "epoch_summary": self.epoch_summary,
+            "gate_validation": self.gate_validation,
         }
 
     @classmethod
@@ -109,6 +113,7 @@ class ArchiveEntry:
             global_state=data.get("global_state"),
             state_transition=data.get("state_transition"),
             epoch_summary=data.get("epoch_summary"),
+            gate_validation=data.get("gate_validation"),
         )
 
 

@@ -282,6 +282,7 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 | `GOALS.md` | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
 | `Archive_Orchestration_and_Agent_Harmony.md` | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
 | `dev/storage/README.md` | Tooling hub | CLI commands, validation, workflows |
+| `TEST_CATALOG.md` | `dev/storage/TEST_CATALOG.md` | Auto-generated testable components catalog |
 
 **Detailed references** (in `dev/.refs/`): `ARCHITECTURE.md`, ground truth files, motivation notes.
 
