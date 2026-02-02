@@ -1,7 +1,7 @@
 ---
 name: update-and-archive
 description: Documentation refresh and porcelain state
-version: 3.0.0
+version: 3.1.0
 ---
 
 # /update-and-archive
@@ -33,6 +33,52 @@ The `sbs archive upload` command accepts a `--trigger` flag for provenance track
 | Manual (no flag) | User CLI invocation | Marks as manual |
 
 **Key**: Trigger affects metadata only, not behavior. Archive upload always does the same thing regardless of trigger source.
+
+---
+
+## Mandatory Archive Protocol
+
+**This is not optional. Violations break the skill contract.**
+
+### First Action on Invocation
+
+Before doing ANY work:
+
+1. Call `sbs_archive_state()` via MCP
+2. Check `global_state` field:
+   - `null` → Fresh invocation, proceed
+   - `{skill: "update-and-archive", substate: X}` → Resume from substate X
+   - `{skill: "other", ...}` → Error: state conflict, do NOT proceed
+
+### Substate Transitions
+
+Each part transition MUST execute the corresponding archive call:
+
+| Transition | Command |
+|------------|---------|
+| Start | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start` |
+| Part 1→2 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start` |
+| Part 2→3 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start` |
+| Part 3→4 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start` |
+
+### Ending the Skill
+
+Final archive call closes the epoch and clears state:
+
+```bash
+sbs archive upload --trigger skill --state-transition phase_end
+```
+
+This sets `global_state` to `null` and marks the epoch boundary.
+
+---
+
+## Recovery Semantics
+
+If context compacts mid-skill:
+1. Query `sbs_archive_state()`
+2. Resume from start of current substate
+3. Substates are designed to be idempotent (re-running is safe)
 
 ---
 
@@ -124,6 +170,12 @@ In all cases, the u&a agent runs autonomously - the invoking context does not or
 
 ## Part 0: README Staleness Check
 
+**REQUIRED:** Before starting, record skill entry:
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start
+```
+
 Run the staleness check to determine which repos need documentation updates:
 
 ```bash
@@ -147,6 +199,12 @@ python3 -m sbs readme-check --json
 ---
 
 ## Part 1: README Updates
+
+**REQUIRED:** After completing Part 0 analysis, if READMEs need updates, this part executes. Upon completion of all README updates, transition to Part 2:
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start
+```
 
 ### Wave Dependencies
 
@@ -179,6 +237,12 @@ The orchestrator decides agent count based on git state:
 
 ## Part 2: Core Documentation
 
+**REQUIRED:** After completing core documentation sync, transition to Part 3:
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start
+```
+
 After READMEs are updated, synchronize:
 
 | Document | Focus |
@@ -194,6 +258,12 @@ After READMEs are updated, synchronize:
 ---
 
 ## Part 3: Oracle Regeneration
+
+**REQUIRED:** After completing oracle regeneration, transition to Part 4:
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start
+```
 
 **Timing**: Oracle regeneration happens AFTER all README waves complete in Part 1, and AFTER core documentation sync in Part 2. This ensures the Oracle captures the final state of all documentation.
 
@@ -213,6 +283,14 @@ This extracts content from all READMEs and CLAUDE.md into `.claude/agents/sbs-or
 ---
 
 ## Part 4: Finalization
+
+**REQUIRED:** After achieving porcelain state and completing all work, close the epoch:
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+sbs archive upload --trigger skill --state-transition phase_end
+```
+
+This clears `global_state` to `null` and marks the epoch boundary.
 
 ### Stale Detection
 

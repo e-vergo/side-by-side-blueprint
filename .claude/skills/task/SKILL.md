@@ -2,7 +2,7 @@
 name: task
 description: General-purpose agentic task execution with validation
 disable-model-invocation: true
-version: 2.0.0
+version: 3.0.0
 ---
 
 # /task - Agentic Task Workflow
@@ -10,6 +10,47 @@ version: 2.0.0
 ## Invocation
 
 User triggers `/task` with a task description.
+
+---
+
+## Mandatory Archive Protocol
+
+**This is not optional. Violations break the skill contract.**
+
+### First Action on Invocation
+
+Before doing ANYTHING else:
+
+1. Call `sbs_archive_state()` via MCP
+2. Check `global_state` field:
+   - `null` → Fresh task, proceed to alignment
+   - `{skill: "task", substate: X}` → Resume from substate X
+   - `{skill: "other", ...}` → Error: state conflict, do NOT proceed
+
+### Phase Transitions
+
+Every phase change MUST execute:
+
+```bash
+sbs archive upload --trigger skill \
+  --global-state '{"skill":"task","substate":"<phase>"}' \
+  --state-transition phase_start
+```
+
+Phases: `alignment` → `planning` → `execution` → `finalization`
+
+### Ending the Task
+
+Final archive call clears state:
+
+```bash
+sbs archive upload --trigger skill \
+  --state-transition phase_end
+```
+
+This sets `global_state` to `null`, returning system to idle.
+
+---
 
 ## Phase 1: Alignment (Q&A)
 
@@ -19,6 +60,16 @@ Questions should cover:
 - Validation requirements
 - Affected repositories
 
+**REQUIRED:** After completing alignment, transition to planning:
+
+```bash
+sbs archive upload --trigger skill \
+  --global-state '{"skill":"task","substate":"planning"}' \
+  --state-transition phase_start
+```
+
+---
+
 ## Phase 2: Planning
 
 User moves chat to plan mode. Claude presents:
@@ -26,6 +77,31 @@ User moves chat to plan mode. Claude presents:
 2. Validator specifications per wave
 3. Success criteria mapped to ledger checks
 4. Estimated scope (files, repos, complexity)
+
+### Gate Definition (REQUIRED)
+
+Every plan MUST include a `gates:` section in YAML format:
+
+```yaml
+gates:
+  tests: all_pass | <threshold>    # Test requirements
+  quality:                          # Quality score requirements
+    T5: >= 0.8
+    T6: >= 0.9
+  regression: >= 0                  # No regression allowed
+```
+
+Plans without gates are incomplete. Define appropriate gates based on task scope.
+
+**REQUIRED:** After plan approval, transition to execution:
+
+```bash
+sbs archive upload --trigger skill \
+  --global-state '{"skill":"task","substate":"execution"}' \
+  --state-transition phase_start
+```
+
+---
 
 ## Phase 3: Execution
 
@@ -41,12 +117,63 @@ Fully autonomous:
    - If retry fails, pause for re-approval
 5. Continue until all agents complete
 
+**REQUIRED:** After all waves complete and gates pass, transition to finalization:
+
+```bash
+sbs archive upload --trigger skill \
+  --global-state '{"skill":"task","substate":"finalization"}' \
+  --state-transition phase_start
+```
+
+---
+
+## Metric Gates
+
+### Enforcement
+
+Before transitioning to finalization:
+
+1. Run `sbs_validate_project` with validators specified in plan
+2. Run `sbs_run_tests` with specified filters
+3. Compare results to gate thresholds defined in plan
+4. **If ANY gate fails:**
+   - Do NOT proceed to finalization
+   - Report all findings with specific failures
+   - Ask user: "Gate failed. Approve to continue anyway, or abort?"
+   - Wait for explicit approval before continuing
+
+### Gate Failure Response
+
+On failure, report:
+- Which gate(s) failed
+- Expected vs actual values
+- Specific test/validator failures
+- Suggested remediation
+
+User can:
+- Approve continuation (override gate)
+- Request retry (fix issues, re-validate)
+- Abort task (clear state, return to idle)
+
+**Gate failures MUST pause execution.** Automatic continuation is a skill contract violation.
+
+---
+
 ## Phase 4: Finalization
 
 1. Run full validation suite
 2. Update unified ledger
 3. Generate summary report
 4. Commit final state
+
+**REQUIRED:** After finalization completes, clear state:
+
+```bash
+sbs archive upload --trigger skill \
+  --state-transition phase_end
+```
+
+---
 
 ## Phase 5: Documentation Cleanup (MANDATORY)
 
@@ -59,11 +186,69 @@ Invoke `/update-and-archive` as the final step. This:
 
 This phase cannot be skipped. The `/task` skill is considered incomplete until `/update-and-archive` completes successfully.
 
+---
+
+## Recovery Semantics
+
+### Compaction Survival
+
+If context compacts mid-task:
+
+1. New context queries `sbs_archive_state()`
+2. Reads current `global_state.substate`
+3. Resumes from **start** of that substate
+
+### Substate Resume Behavior
+
+| Substate | Resume Action |
+|----------|---------------|
+| `alignment` | Re-ask clarifying questions |
+| `planning` | Read plan file, continue planning |
+| `execution` | Check wave completion, resume incomplete waves |
+| `finalization` | Re-run validators, re-check gates |
+
+### Execution Wave Recovery
+
+During `execution` substate, determine wave completion by checking BOTH:
+1. **Commit evidence**: Check `repo_commits` field in archive entries for expected commits
+2. **Artifact existence**: Verify expected output files exist (e.g., `_site/`, test reports)
+
+A wave is only considered complete if BOTH checks pass. This belt-and-suspenders approach prevents:
+- False positives from stale artifacts
+- False positives from commits without successful builds
+
+Only re-run waves that fail either check.
+
+### State Conflict
+
+If `global_state.skill != "task"`:
+- Another skill owns the state
+- Do NOT proceed
+- Report error: "State conflict: skill '<other_skill>' currently owns global state"
+- Wait for user resolution
+
+---
+
+## Substates
+
+The task skill has four substates, tracked in the archive:
+
+| Substate | Description | Transition |
+|----------|-------------|------------|
+| `alignment` | Q&A phase, clarifying requirements | → planning |
+| `planning` | Designing implementation approach | → execution |
+| `execution` | Agents running, validators checking | → finalization |
+| `finalization` | Full validation, summary generation | → (triggers /update-and-archive) |
+
+Each substate transition archives state with `state_transition: "phase_start"` for the incoming phase. Only the final transition uses `phase_end` to clear global state.
+
+---
+
 ## Validators
 
 Specify validators in plan:
 
-```
+```yaml
 validators:
   - visual: [dashboard, dep_graph, chapter]
   - timing: true
@@ -97,11 +282,17 @@ The compliance validation uses a bidirectional agent-script pattern:
 
 **Why this pattern**: Scripts never call AI APIs. Agents never bypass scripts for state changes. This pattern satisfies both constraints while enabling AI-powered validation.
 
+---
+
 ## Error Handling
 
 - Agent failure: retry once, then pause
 - Validation failure: pause for re-approval with findings
 - Build failure: halt, report, wait for user
+- Gate failure: pause for user approval (NEVER auto-continue)
+- State conflict: halt, report, wait for user resolution
+
+---
 
 ## Summary Report
 
@@ -110,6 +301,9 @@ After completion:
 - Validation passes: X/Y
 - Build metrics: timing, commits, diffs
 - Failures: list with causes
+- Gates: all pass/fail status with values
+
+---
 
 ## Implementation Notes
 
@@ -168,18 +362,3 @@ All development work in this repository should go through `/task` because:
 2. Structured phases ensure thorough execution
 3. Validation gates catch issues early
 4. Data enables recursive self-improvement of the tooling itself
-
----
-
-## Substates
-
-The task skill has four substates, tracked in the archive:
-
-| Substate | Description | Transition |
-|----------|-------------|------------|
-| `alignment` | Q&A phase, clarifying requirements | → planning |
-| `planning` | Designing implementation approach | → execution |
-| `execution` | Agents running, validators checking | → finalization |
-| `finalization` | Full validation, summary generation | → (triggers /update-and-archive) |
-
-Each substate transition archives state with `state_transition: "phase_end"` for the outgoing phase and `state_transition: "phase_start"` for the incoming phase.
