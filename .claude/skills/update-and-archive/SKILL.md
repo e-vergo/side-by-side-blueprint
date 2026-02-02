@@ -56,17 +56,20 @@ Each part transition MUST execute the corresponding archive call:
 
 | Transition | Command |
 |------------|---------|
-| Start | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start` |
-| Part 1→2 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start` |
-| Part 2→3 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start` |
-| Part 3→4 | `sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start` |
+| Start | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start` |
+| Part 1→2 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start` |
+| Part 2→3 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start` |
+| Part 3→4 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start` |
+
+**Note:** All commands assume working directory is `/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts`.
 
 ### Ending the Skill
 
 Final archive call closes the epoch and clears state:
 
 ```bash
-sbs archive upload --trigger skill --state-transition phase_end
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill --state-transition phase_end
 ```
 
 This sets `global_state` to `null` and marks the epoch boundary.
@@ -173,7 +176,7 @@ In all cases, the u&a agent runs autonomously - the invoking context does not or
 **REQUIRED:** Before starting, record skill entry:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start
 ```
 
 Run the staleness check to determine which repos need documentation updates:
@@ -203,7 +206,7 @@ python3 -m sbs readme-check --json
 **REQUIRED:** After completing Part 0 analysis, if READMEs need updates, this part executes. Upon completion of all README updates, transition to Part 2:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start
 ```
 
 ### Wave Dependencies
@@ -240,7 +243,7 @@ The orchestrator decides agent count based on git state:
 **REQUIRED:** After completing core documentation sync, transition to Part 3:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start
 ```
 
 After READMEs are updated, synchronize:
@@ -262,7 +265,7 @@ After READMEs are updated, synchronize:
 **REQUIRED:** After completing oracle regeneration, transition to Part 4:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start
 ```
 
 **Timing**: Oracle regeneration happens AFTER all README waves complete in Part 1, and AFTER core documentation sync in Part 2. This ensures the Oracle captures the final state of all documentation.
@@ -287,7 +290,7 @@ This extracts content from all READMEs and CLAUDE.md into `.claude/agents/sbs-or
 **REQUIRED:** After achieving porcelain state and completing all work, close the epoch:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill --state-transition phase_end
+python3 -m sbs archive upload --trigger skill --state-transition phase_end
 ```
 
 This clears `global_state` to `null` and marks the epoch boundary.
@@ -306,7 +309,7 @@ Archive upload runs automatically during builds. If this skill is invoked after 
 
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-sbs archive upload --trigger skill
+python3 -m sbs archive upload --trigger skill
 ```
 
 ### Git Porcelain

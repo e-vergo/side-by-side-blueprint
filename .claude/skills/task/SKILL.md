@@ -32,7 +32,8 @@ Before doing ANYTHING else:
 Every phase change MUST execute:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"<phase>"}' \
   --state-transition phase_start
 ```
@@ -44,7 +45,8 @@ Phases: `alignment` → `planning` → `execution` → `finalization`
 Final archive call clears state:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --state-transition phase_end
 ```
 
@@ -63,7 +65,8 @@ Questions should cover:
 **REQUIRED:** After completing alignment, transition to planning:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"planning"}' \
   --state-transition phase_start
 ```
@@ -72,7 +75,9 @@ sbs archive upload --trigger skill \
 
 ## Phase 2: Planning
 
-User moves chat to plan mode. Claude presents:
+**Plan mode entry:** Either the user enters plan mode manually, or Claude calls `EnterPlanMode`. Both are valid - use whichever occurs first.
+
+Claude presents:
 1. Task breakdown into waves/agents
 2. Validator specifications per wave
 3. Success criteria mapped to ledger checks
@@ -96,7 +101,8 @@ Plans without gates are incomplete. Define appropriate gates based on task scope
 **REQUIRED:** After plan approval, transition to execution:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"execution"}' \
   --state-transition phase_start
 ```
@@ -120,7 +126,8 @@ Fully autonomous:
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"finalization"}' \
   --state-transition phase_start
 ```
@@ -169,7 +176,8 @@ User can:
 **REQUIRED:** After finalization completes, clear state:
 
 ```bash
-sbs archive upload --trigger skill \
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill \
   --state-transition phase_end
 ```
 
