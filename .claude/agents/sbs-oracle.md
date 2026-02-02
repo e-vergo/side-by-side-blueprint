@@ -195,6 +195,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | motivation: | `toolchain/Dress/README.md` | Connectivity (`findComponents`) |
 | multi-page chapter navigation | `toolchain/Runway/README.md` | Features |
 | myproject.chapter.module | `toolchain/Runway/README.md` | Module Reference Support |
+| naming: | `dev/storage/README.md` | Archive System |
 | never delete or replace a plan without explicit user direction. | `CLAUDE.md` | Planning Discipline |
 | no circular dependencies | `dev/scripts/README.md` | Design Principles |
 | no command handlers | `dev/scripts/sbs/core/README.md` | Design Principles |
@@ -379,6 +380,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | visual regression baseline | `toolchain/SBS-Test/README.md` | Purpose |
 | visual verification is mandatory for ui work. | `CLAUDE.md` | Visual Verification Requirement |
 | weakpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
+| what gets backed up: | `dev/storage/README.md` | iCloud Sync |
 | what it does: | `toolchain/Runway/README.md` | build (default) |
 | what runway does not do: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | what to explore: | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
