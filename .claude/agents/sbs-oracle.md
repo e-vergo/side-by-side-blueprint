@@ -24,29 +24,19 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | * proof toggle | `storage/*_proof_toggle.png` | Proof expanded state |
 | * theme toggle | `storage/*_theme_toggle.png` | Dark mode variant |
 | 6-status color model | `dev/markdowns/README.md` | Features |
+| 6-status color model: | `CLAUDE.md` | Quick Reference |
 | 6-status tracking | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | 8-dimensional quality scoring | `dev/markdowns/README.md` | Features |
-| >100 node optimizations | `CLAUDE.md` | Graph Layout Performance |
+| >100 node optimizations | `toolchain/Dress/README.md` | Performance Characteristics |
 | [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | [storage & tooling hub](../../dev/storage/readme.md) | `toolchain/SBS-Test/README.md` | Tooling & Archive System |
 | `@[blueprint]` attributes | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | absolute imports | `dev/scripts/README.md` | Design Principles |
-| action | `CLAUDE.md/action.yml` | GitHub Action (432 lines, 14 steps) |
-| action size | `CLAUDE.md` | CI/CD Architecture |
-| activity heatmap | `CLAUDE.md` | Visualizations |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | align | `dev/storage/README.md` | Creating Rubrics |
-| alignment (q&a) | `CLAUDE.md` | `/task` |
 | always use `python build.py` for builds | `CLAUDE.md` | Standards |
-| always use the python build script. never skip commits or pushes. | `CLAUDE.md` | Build Requirement |
-| architect/attribute | `CLAUDE.md/Architect/Attribute.lean` | `@[blueprint]` attribute with all options |
-| architect/basic | `CLAUDE.md/Architect/Basic.lean` | `Node`, `NodePart`, `NodeStatus` with manual `ToExpr` instance |
-| architect/collect used | `CLAUDE.md/Architect/CollectUsed.lean` | Dependency inference from expression trees |
-| archiveentry | `CLAUDE.md` | Archive Entries |
-| assets/blueprint | `CLAUDE.md/assets/blueprint.css` | Blueprint pages, sidebar, side-by-side |
-| assets/common | `CLAUDE.md/assets/common.css` | Design system, status dots, rainbow brackets |
-| assets/verso code | `CLAUDE.md/assets/verso-code.js` | Hovers, pan/zoom, modal handling |
+| archiveentry | `dev/storage/README.md` | Archive Entries |
 | at least | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | at most | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | attribution | `toolchain/Runway/README.md` | Runway |
@@ -66,68 +56,52 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | build & run | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | build and verify: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | build phases are standalone functions | `dev/scripts/sbs/build/README.md` | Design Notes |
-| build: | `CLAUDE.md` | Standard Workflow for Visual Changes |
+| build: | `CLAUDE.md` | Standard Workflow |
 | buildorchestrator | `dev/scripts/sbs/build/README.md` | Design Notes |
-| canonical reference: | `CLAUDE.md` | Archive System |
-| canonical status colors | `CLAUDE.md` | Dress (`toolchain/Dress/`) |
 | capture | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
-| capture/elab rules | `CLAUDE.md/Capture/ElabRules.lean` | elab_rules hooks for @[blueprint] declarations |
-| capture: | `CLAUDE.md` | Standard Workflow for Visual Changes |
+| capture: | `CLAUDE.md` | Standard Workflow |
 | categories | `dev/storage/README.md` | Rubric Structure |
 | centralized complexity | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
 | changed files list | `dev/storage/README.md` | What It Checks |
 | chapter pages | `toolchain/SBS-Test/README.md` | What to Inspect |
 | chapterinfo | `toolchain/Runway/README.md` | Module Architecture |
 | check results | `SBS-Test/checkResults.connected` | false (due to disconnected cycle) |
-| checking svg output: | `CLAUDE.md` | Graph Debugging Tips |
 | clone and rename: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | cmd.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | color source of truth | `toolchain/dress-blueprint-action/README.md` | 6-Status Color Model |
-| color source of truth: | `CLAUDE.md` | 6-Status Color Model |
+| color source of truth: | `CLAUDE.md` | Quick Reference |
 | complete feature coverage | `toolchain/SBS-Test/README.md` | Purpose |
 | complex analysis approach | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
-| complexity by phase: | `CLAUDE.md` | Graph Layout Performance |
-| concept index | `CLAUDE.md` | What the Oracle Knows |
+| concept index | `dev/storage/README.md` | What the Oracle Knows |
 | config | `toolchain/Runway/README.md` | Module Architecture |
 | configuration loading | `toolchain/Runway/README.md` | Processing Steps |
 | conftest.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | connectivity | `dev/markdowns/README.md` | Validation Features |
 | connectivity validation | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
-| connectivity: | `CLAUDE.md` | Validation Checks |
 | constraint: | `CLAUDE.md` | Orchestration Model |
 | containment search | `forks/subverso/README.md` | Identifier Resolution |
-| coordinate normalization pattern: | `CLAUDE.md` | Graph Debugging Tips |
 | core components: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| core documentation: | `CLAUDE.md` | Reference Documents |
 | core palette | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 | core responsibilities: | `toolchain/Dress/README.md` | Overview |
 | create | `dev/storage/README.md` | Creating Rubrics |
-| cross-repo impact | `CLAUDE.md` | What the Oracle Knows |
+| cross-repo impact | `dev/storage/README.md` | What the Oracle Knows |
 | css (embedded in `highlightingstyle`): | `forks/verso/README.md` | 3. Rainbow Bracket Highlighting (`src/verso/Verso/Code/Highlighted.lean`) |
 | current score: | `dev/storage/README.md` | Quality Scoring |
 | cycles | `dev/markdowns/README.md` | Validation Features |
-| cycles: | `CLAUDE.md` | Validation Checks |
 | dark/light theme toggle | `dev/markdowns/README.md` | Features |
 | dashboard | `toolchain/SBS-Test/README.md` | What to Inspect |
 | dashboard homepage | `toolchain/Runway/README.md` | Features |
 | dashboard stat discrepancies: | `toolchain/Runway/README.md` | Debugging Tips |
 | declarative rules | `dev/storage/README.md` | Auto-Tagging |
-| dep graph | `CLAUDE.md/DepGraph.lean` | Dependency graph page with modals |
 | dep graph node click * | `storage/dep_graph_node_click_*.png` | Node modal views |
 | dep graph zoom * | `storage/dep_graph_zoom_*.png` | Zoom in/out/fit states |
 | dependency graph | `toolchain/SBS-Test/README.md` | What to Inspect |
-| dependency inference: | `CLAUDE.md` | Key Technical Details |
 | depgraph.lean | `toolchain/Runway/README.md` | Key Module Details |
 | design/ | `dev/scripts/sbs/tests/README.md` | validators/ |
 | detailed references | `CLAUDE.md` | Reference Documents |
-| deterministic tests (50% weight): | `CLAUDE.md` | 8-Dimensional Test Suite (T1-T8) |
-| dev/scripts/sbs/tests/compliance/criteria | `CLAUDE.md/dev/scripts/sbs/tests/compliance/criteria.py` | Compliance criteria per page |
-| dev/scripts/sbs/tests/compliance/ledger ops | `CLAUDE.md/dev/scripts/sbs/tests/compliance/ledger_ops.py` | Ledger management |
-| dev/scripts/sbs/tests/compliance/mapping | `CLAUDE.md/dev/scripts/sbs/tests/compliance/mapping.py` | Repo->page change detection |
-| dev/scripts/sbs/tests/compliance/validate | `CLAUDE.md/dev/scripts/sbs/tests/compliance/validate.py` | Validation orchestration |
-| dev/storage/compliance ledger | `CLAUDE.md/dev/storage/compliance_ledger.json` | Persistent status |
-| dev/storage/compliance status | `CLAUDE.md/dev/storage/COMPLIANCE_STATUS.md` | Human-readable report |
-| dev/storage/readme | `CLAUDE.md/dev/storage/README.md` | Central CLI tooling documentation (capture, compliance, rubrics, archive) |
+| deterministic tests (50% weight): | `CLAUDE.md` | Quality Validation Framework |
+| dev/storage/compliance ledger | `SBS-Test/dev/storage/compliance_ledger.json` | Pass/fail status per page |
+| dev/storage/compliance status | `SBS-Test/dev/storage/COMPLIANCE_STATUS.md` | Human-readable status report |
 | dev/storage/unified ledger | `SBS-Test/dev/storage/unified_ledger.json` | Build metrics and timing |
 | do not | `dev/scripts/.pytest_cache/README.md` | pytest cache directory # |
 | document | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
@@ -140,46 +114,36 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | during ci | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | environment lookup with suffix matching | `forks/subverso/README.md` | Identifier Resolution |
 | execute | `dev/storage/README.md` | Creating Rubrics |
-| execution | `CLAUDE.md` | `/task` |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
-| expected layout times: | `CLAUDE.md` | Graph Layout Performance |
+| expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| file purpose map | `CLAUDE.md` | What the Oracle Knows |
-| finalization | `CLAUDE.md` | `/task` |
+| file purpose map | `dev/storage/README.md` | What the Oracle Knows |
 | finalize | `dev/storage/README.md` | Creating Rubrics |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
-| for lean software development (not proofs): | `CLAUDE.md` | MCP Tool Usage |
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | fork of [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect) | `forks/LeanArchitect/README.md` | LeanArchitect |
 | forward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
 | fully static | `toolchain/Runway/README.md` | Sidebar Navigation |
 | fullyproven | `dev/markdowns/README.md` | Validation Features |
 | general crystallographic restriction | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
-| general_crystallographic_restriction | `CLAUDE.md` | Repository Map |
 | git ops | `scripts/git_ops.py` | Git status, diff, and sync operations |
 | github action | `toolchain/dress-blueprint-action/README.md` | Overview |
-| gotchas | `CLAUDE.md` | What the Oracle Knows |
+| gotchas | `dev/storage/README.md` | What the Oracle Knows |
 | graceful degradation | `toolchain/Runway/README.md` | Design Principles |
 | graph | `toolchain/Runway/README.md` | Module Architecture |
 | graph layout | `toolchain/SBS-Test/README.md` | Testing Points |
 | graph structure: | `toolchain/SBS-Test/README.md` | StatusDemo.lean (14 nodes) |
-| graph/build | `CLAUDE.md/Graph/Build.lean` | Graph construction, validation, `Node.inferUses`, two-pass edge processing |
-| graph/layout | `CLAUDE.md/Graph/Layout.lean` | Sugiyama algorithm (~1500 lines), edge routing |
-| graph/svg | `CLAUDE.md/Graph/Svg.lean` | SVG generation, **canonical status colors** |
 | guiding principle: | `CLAUDE.md` | User Preferences |
 | hadamard factorization | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
-| heuristic tests (50% weight): | `CLAUDE.md` | 8-Dimensional Test Suite (T1-T8) |
+| heuristic tests (50% weight): | `CLAUDE.md` | Quality Validation Framework |
 | highlight contradictions immediately. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | highlighting accounts for 93-99% of total build time | `forks/subverso/README.md` | Fork Purpose |
 | highlightstate | `toolchain/Dress/README.md` | SubVerso Integration |
 | hover tooltips | `dev/markdowns/README.md` | Features |
 | how it works: | `toolchain/Runway/README.md` | Module Reference Support |
-| how-to patterns | `CLAUDE.md` | What the Oracle Knows |
+| how-to patterns | `dev/storage/README.md` | What the Oracle Knows |
 | html generation | `toolchain/Runway/README.md` | Processing Steps |
-| html render | `CLAUDE.md/HtmlRender.lean` | Verso HTML rendering wrapper with rainbow brackets |
-| icloud backup: | `CLAUDE.md` | Directory Structure |
-| id normalization: | `CLAUDE.md` | Key Technical Details |
 | if you act on a preference below and the user pushes back, say so explicitly. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | implementation: | `forks/verso/README.md` | 3. Rainbow Bracket Highlighting (`src/verso/Verso/Code/Highlighted.lean`) |
 | in progress | `toolchain/Runway/README.md` | Verification Badges |
@@ -191,49 +155,37 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | inputs consumed: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | interactive dependency graph | `toolchain/Runway/README.md` | Features |
 | javascript | `toolchain/dress-blueprint-action/README.md` | Overview |
-| javascript pan/zoom: | `CLAUDE.md` | Graph Debugging Tips |
-| key files: | `CLAUDE.md` | Visual Compliance (CLI) |
-| key properties: | `CLAUDE.md` | `/task` |
 | key results: | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | key theorems | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | lakefile | `SBS-Test/lakefile.toml` | Change `name = "SBSTest"` to your project name |
 | large-scale integration | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | large-scale integration example | `showcase/PrimeNumberTheoremAnd/README.md` | Side-by-Side Blueprint Integration |
 | latex parsing | `toolchain/Runway/README.md` | Processing Steps |
-| latex/parser | `CLAUDE.md/Latex/Parser.lean` | LaTeX parsing with O(n) string concatenation |
 | lean: | `forks/verso/README.md` | Dependencies |
 | leanarchitect | `CLAUDE.md` | Repository Map |
 | leanblueprint | `showcase/General_Crystallographic_Restriction/README.md` | Attribution |
 | ledger | `scripts/ledger.py` | Build metrics and unified ledger data structures |
-| less relevant: | `CLAUDE.md` | MCP Tool Usage |
 | live demo: | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
 | live site | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | live site: | `toolchain/SBS-Test/README.md` | SBS-Test |
-| loc trends | `CLAUDE.md` | Visualizations |
-| local ground truth: | `CLAUDE.md` | Directory Structure |
 | location: | `CLAUDE.md` | `/task` |
 | loop | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
-| main | `CLAUDE.md/Main.lean` | CLI: `extract_blueprint graph` |
 | main.lean | `toolchain/Runway/README.md` | Module Architecture |
-| make changes | `CLAUDE.md` | Standard Workflow for Visual Changes |
+| make changes | `CLAUDE.md` | Standard Workflow |
 | manifest | `toolchain/SBS-Test/README.md` | What to Inspect |
 | manifest generation | `toolchain/SBS-Test/README.md` | Testing Points |
 | manifest loading | `toolchain/Runway/README.md` | Processing Steps |
 | manifest-driven soundness | `toolchain/Runway/README.md` | Features |
-| manual `toexpr` instance: | `CLAUDE.md` | Key Technical Details |
-| manual status flags (3): | `CLAUDE.md` | `@[blueprint]` Attribute Options |
 | manual triggers only | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
 | math: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | mathjax compatibility | `toolchain/Runway/README.md` | Design Principles |
-| mathlib cache | `CLAUDE.md` | CI/CD Architecture |
+| mcp tool usage: | `CLAUDE.md` | Quick Reference |
 | mediumpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | messages | `toolchain/Runway/README.md` | Dashboard (index.html) |
-| metadata options (8): | `CLAUDE.md` | `@[blueprint]` Attribute Options |
 | metrics | `dev/storage/README.md` | Rubric Structure |
 | metricscore | `dev/storage/README.md` | Implementation |
 | minimal dependencies | `dev/scripts/sbs/core/README.md` | Design Principles |
 | module reference support | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
-| module reference support: | `CLAUDE.md` | Key Technical Details |
 | module references | `toolchain/Runway/README.md` | Features |
 | motivation: | `toolchain/Dress/README.md` | Connectivity (`findComponents`) |
 | multi-page chapter navigation | `toolchain/Runway/README.md` | Features |
@@ -245,8 +197,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | no github actions mathlib cache | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
 | node assignment | `toolchain/Runway/README.md` | Processing Steps |
 | nodeinfo | `toolchain/Runway/README.md` | Module Architecture |
-| nodepart | `CLAUDE.md` | LeanArchitect (`forks/LeanArchitect/`) |
-| nodestatus | `CLAUDE.md` | LeanArchitect (`forks/LeanArchitect/`) |
+| nodepart | `forks/LeanArchitect/README.md` | Key Files |
+| nodestatus | `forks/LeanArchitect/README.md` | Key Files |
 | nodetemplate | `toolchain/Runway/README.md` | Key Module Details |
 | non-invasive integration | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | not started | `toolchain/Runway/README.md` | Verification Badges |
@@ -260,14 +212,13 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | original repositories: | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | outputs generated: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | pan/zoom implementation | `toolchain/dress-blueprint-action/README.md` | verso-code.js (490 lines) |
-| paper | `CLAUDE.md/Paper.lean` | Paper rendering, `PaperMetadata` extraction |
+| paper | `Runway/paper.pdf` | Compiled PDF (if LaTeX compiler available) |
 | paper (html and pdf) | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
 | paper generation | `toolchain/Runway/README.md` | Features |
-| paper metadata extraction: | `CLAUDE.md` | Key Technical Details |
 | paper tex | `Runway/paper_tex.html` | MathJax-rendered paper with verification badges |
 | paper-specific: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | paper.lean | `toolchain/Runway/README.md` | Key Module Details |
-| papermetadata | `CLAUDE.md` | Runway (`toolchain/Runway/`) |
+| papermetadata | `toolchain/Runway/README.md` | Module Architecture |
 | papernodeinfo | `toolchain/Runway/README.md` | Key Module Details |
 | papernodeinfoext | `toolchain/Runway/README.md` | Key Module Details |
 | parent project: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
@@ -275,20 +226,13 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | pdf compilation | `toolchain/Runway/README.md` | Features |
 | pdf tex | `Runway/pdf_tex.html` | PDF viewer page with embedded PDF |
 | pdf/paper generation | `dev/markdowns/README.md` | Features |
-| per-repository documentation: | `CLAUDE.md` | Reference Documents |
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
-| phase 1: per-declaration capture | `CLAUDE.md` | Build Pipeline Phases |
-| phase 2: lake facet aggregation | `CLAUDE.md` | Build Pipeline Phases |
-| phase 3: manifest generation | `CLAUDE.md` | Build Pipeline Phases |
-| phase 4: site generation | `CLAUDE.md` | Build Pipeline Phases |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
-| planning | `CLAUDE.md` | `/task` |
 | practice introspection. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | preamble | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
-| primenumbertheoremand | `CLAUDE.md` | Repository Map |
+| primenumbertheoremand | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | priority order | `toolchain/SBS-Test/README.md` | Status Color Model |
-| priority order: | `CLAUDE.md` | 6-Status Color Model |
 | project leads: | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | project notes | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | proof dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
@@ -296,24 +240,22 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | python hooks | `dev/storage/README.md` | Auto-Tagging |
 | qualityscoreledger | `dev/storage/README.md` | Implementation |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
-| rainbow bracket highlighting: | `CLAUDE.md` | Key Technical Details |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| rebuild: | `CLAUDE.md` | Standard Workflow for Visual Changes |
+| rebuild and re-capture | `CLAUDE.md` | Standard Workflow |
+| rebuild: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | refer to: | `toolchain/SBS-Test/README.md` | Archive & Metrics |
 | registry.py | `dev/scripts/sbs/tests/README.md` | validators/ |
-| render | `CLAUDE.md/Render.lean` | Dashboard, side-by-side rendering |
 | render.lean | `toolchain/Runway/README.md` | Key Module Details |
 | renderm | `toolchain/Runway/README.md` | Module Architecture |
 | renderm monad | `toolchain/Runway/README.md` | Key Development Patterns |
 | replace demo content: | `toolchain/SBS-Test/README.md` | Using as a Template |
-| required: | `CLAUDE.md` | Output Locations |
+| required: | `CLAUDE.md` | Direct Build Script Usage |
 | requirements: | `toolchain/Runway/README.md` | Module Reference Support |
 | rubric | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubric.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubriccriterion | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubricevaluation | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | run from: | `dev/storage/README.md` | Quick Reference |
-| runs automatically | `CLAUDE.md` | Archive Upload |
 | runway | `CLAUDE.md` | Repository Map |
 | runway.json | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | runway/assets.lean | `toolchain/Runway/README.md` | Module Architecture |
@@ -339,10 +281,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | sbs toolchain | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | sbs-test | `CLAUDE.md` | Repository Map |
 | sbsblueprint | `forks/verso/README.md` | Fork Purpose |
-| score calculation: | `CLAUDE.md` | 8-Dimensional Test Suite (T1-T8) |
-| score tracking: | `CLAUDE.md` | 8-Dimensional Test Suite (T1-T8) |
 | scoring | `dev/storage/README.md` | Rubric Structure |
-| screenshot capture is the first reflex for any visual/css/layout issue. | `CLAUDE.md` | Visual Testing & Debugging |
+| screenshot capture is the first reflex for any visual/css/layout issue. | `CLAUDE.md` | Visual Testing |
 | screenshots: | `toolchain/SBS-Test/README.md` | Archive & Metrics |
 | sectioninfo | `toolchain/Runway/README.md` | Module Architecture |
 | security testing | `toolchain/SBS-Test/README.md` | Purpose |
@@ -358,9 +298,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | site output | `toolchain/SBS-Test/README.md` | Testing Points |
 | sitebuilder | `toolchain/Runway/README.md` | Module Architecture |
 | soundness guarantee: | `toolchain/Runway/README.md` | manifest.json Schema |
-| src/sub verso/highlighting/code | `CLAUDE.md/src/SubVerso/Highlighting/Code.lean` | Main highlighting with InfoTable indexing |
-| src/sub verso/highlighting/highlighted | `CLAUDE.md/src/SubVerso/Highlighting/Highlighted.lean` | Token.Kind, Highlighted types |
-| src/verso/verso/code/highlighted | `CLAUDE.md/src/verso/Verso/Code/Highlighted.lean` | Rainbow bracket rendering (`toHtmlRainbow`) |
 | statement dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
 | stats | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | status computation | `toolchain/SBS-Test/README.md` | Testing Points |
@@ -368,7 +305,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | string | `forks/LeanArchitect/README.md` | 8 Metadata Options |
 | subagent spawning: | `CLAUDE.md` | Agent Orchestration |
 | subverso | `CLAUDE.md` | Repository Map |
-| subverso infotable | `CLAUDE.md` | Key Technical Details |
 | subverso: | `forks/verso/README.md` | Dependencies |
 | template | `toolchain/Runway/README.md` | Key Module Details |
 | template for new projects | `toolchain/SBS-Test/README.md` | Purpose |
@@ -378,8 +314,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | test_ledger_health.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | text formatting: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | the core insight | `toolchain/dress-blueprint-action/README.md` | Motivation |
-| the sidebar is fully static. | `CLAUDE.md` | Sidebar Architecture |
-| theme | `CLAUDE.md/Theme.lean` | Page templates, sidebar, `buildModuleLookup`, `isBlueprintPage` |
+| theme | `toolchain/Runway/README.md` | Module Architecture |
 | theme templates | `toolchain/Runway/README.md` | Key Development Patterns |
 | theme toggle | `toolchain/Runway/README.md` | Features |
 | theme.lean | `toolchain/Runway/README.md` | Key Module Details |
@@ -392,20 +327,16 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | three parallel approaches: | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | timing breakdown | `toolchain/Dress/README.md` | Phase 1: Per-Declaration Capture (During Elaboration) |
 | timing metrics | `dev/scripts/sbs/build/README.md` | Design Notes |
-| timing trends | `CLAUDE.md` | Visualizations |
 | tippy themes | `toolchain/dress-blueprint-action/README.md` | verso-code.js (490 lines) |
-| toexpr | `CLAUDE.md` | Key Technical Details |
+| toexpr | `forks/LeanArchitect/README.md` | Key Files |
 | token efficiency: | `CLAUDE.md` | Agent Orchestration |
 | toolchain | `toolchain/dress-blueprint-action/README.md` | Related Repositories |
-| tooling hub: | `CLAUDE.md` | Reference Documents |
 | tooltip themes | `toolchain/dress-blueprint-action/README.md` | Status Dot Classes |
 | total css: 3,196 lines. | `toolchain/dress-blueprint-action/README.md` | File Organization |
 | total frontend assets: 3,805 lines | `toolchain/dress-blueprint-action/README.md` | Overview |
 | total javascript: 609 lines. | `toolchain/dress-blueprint-action/README.md` | JavaScript |
 | track | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | traversem | `toolchain/Runway/README.md` | Module Architecture |
-| trigger | `CLAUDE.md` | CI/CD Architecture |
-| two-pass edge processing | `CLAUDE.md` | Key Technical Details |
 | two-pass edge processing: | `toolchain/Dress/README.md` | Phase 3: Manifest Generation (CLI) |
 | uncommitted changes | `dev/storage/README.md` | What It Checks |
 | unpushed commits | `dev/storage/README.md` | What It Checks |
@@ -417,20 +348,18 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | uses `sbs.core.git_ops` | `dev/scripts/sbs/build/README.md` | Design Notes |
 | utils | `scripts/utils.py` | Logging, path utilities, git helpers, lakefile parsing |
 | validate | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
-| validate: | `CLAUDE.md` | Standard Workflow for Visual Changes |
+| validate: | `CLAUDE.md` | Standard Workflow |
 | validation checks | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | validation display | `toolchain/Runway/README.md` | Features |
 | validation testing | `toolchain/SBS-Test/README.md` | Purpose |
 | validationresult | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validator | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validators/ | `dev/scripts/sbs/tests/README.md` | pytest/ |
-| validators: | `CLAUDE.md` | `/task` |
 | verified | `toolchain/Runway/README.md` | Verification Badges |
 | verify: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | verso | `CLAUDE.md` | Repository Map |
 | verso integration | `toolchain/Runway/README.md` | Features |
 | versopaper | `forks/verso/README.md` | Fork Purpose |
-| viewbox centering issues: | `CLAUDE.md` | Graph Debugging Tips |
 | visual regression baseline | `toolchain/SBS-Test/README.md` | Purpose |
 | visual verification is mandatory for ui work. | `CLAUDE.md` | Visual Verification Requirement |
 | weakpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
@@ -442,7 +371,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | why immediate capture? | `toolchain/Dress/README.md` | Phase 1: Per-Declaration Capture (During Elaboration) |
 | why validation matters: | `toolchain/Dress/README.md` | Overview |
 | wiener-ikehara tauberian theorem | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
-| workflow size | `CLAUDE.md` | CI/CD Architecture |
 | workflow: | `CLAUDE.md` | `/task` |
 | zebra striping | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 
@@ -560,26 +488,10 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 
 | File | Purpose |
 |------|---------|
-| `.lake/build/dressed/{Module}/{label}/` | Artifacts |
-| `.lake/build/runway/` | Site |
-| `.lake/build/runway/manifest.json` | Manifest |
-| `ARCHITECTURE.md` | Detailed technical reference with data flow and performance analysis |
-| `Root (this file)` | Claude Code development guide |
-| `blueprint.css` | Blueprint pages: plasTeX base, sidebar, chapter layout, side-by-side, zebra striping |
-| `capture.json` | Metadata: timestamp, commit, viewport, page status |
-| `common.css` | Design system: CSS variables, theme toggle, status dots, Lean syntax, rainbow brackets |
-| `dep_graph.css` | Dependency graph: pan/zoom viewport, toolbar, legend, SVG nodes |
-| `dep_graph_ground_truth.txt` | Working dependency graph page with modals |
+| `Tooling hub` | CLI commands, validation, workflows |
 | `dev/markdowns/ARCHITECTURE.md` | Public architecture documentation |
 | `dev/markdowns/GOALS.md` | Project vision and design goals |
 | `dev/markdowns/README.md` | Public-facing project overview |
-| `dev/storage/{project}/archive/{timestamp}/` | Timestamped archives |
-| `dev/storage/{project}/latest/` | Current capture (overwritten each run) |
-| `motivation1.txt`, `motivation2.txt`, `motivation3.txt` | Original motivation notes (Tao incident, Zulip discussions) |
-| `paper.css` | Paper page: ar5iv-style academic layout, verification badges |
-| `plastex.js` | Theme toggle, TOC toggle, LaTeX proof expand/collapse |
-| `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML |
-| `verso-code.js` | Token binding, Tippy.js tooltips, proof sync, pan/zoom, modal handling |
 
 ### storage
 
@@ -612,22 +524,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 ---
 
 ## How-To Patterns
-
-<details>
-<summary><strong>Running Quality Tests</strong></summary>
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-
-</details>
-
-<details>
-<summary><strong>Running Checks</strong></summary>
-
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-
-</details>
 
 <details>
 <summary><strong>Debugging Tips</strong></summary>
@@ -696,8 +592,9 @@ python -m pytest sbs/tests/pytest -v
 
 ## Gotchas & Anti-Patterns
 
+- Verso LaTeX Export: Not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+- Dashboard Layout: Displays single-column layout without chapter panel sidebar. Intentional - controlled by `isBlueprintPage` returning `false` for dashboard.
 - Verso LaTeX Export: Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
-- Dashboard Layout: The dashboard displays a single-column layout without the chapter panel sidebar. This is intentional - controlled by `isBlueprintPage` in `Theme.lean` returning `false` when `currentSlug == none`.
 - Dashboard Layout: The dashboard displays a single-column layout without the chapter panel sidebar. This is intentional - the dashboard is not a blueprint chapter page.
 
 ---

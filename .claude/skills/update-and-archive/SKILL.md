@@ -28,6 +28,20 @@ Agents must read these before making changes:
 
 ---
 
+## Trigger Semantics
+
+The `sbs archive upload` command accepts a `--trigger` flag for provenance tracking:
+
+| Trigger | Source | Purpose |
+|---------|--------|---------|
+| `--trigger build` | Automatic from `build.py` | Marks entry as build-triggered |
+| `--trigger skill` | This skill (Part 4) | Marks entry as skill-triggered |
+| Manual (no flag) | User CLI invocation | Marks as manual |
+
+**Key**: Trigger affects metadata only, not behavior. Archive upload always does the same thing regardless of trigger source.
+
+---
+
 ## Part 0: README Staleness Check
 
 Run the staleness check to determine which repos need documentation updates:
@@ -101,7 +115,9 @@ After READMEs are updated, synchronize:
 
 ## Part 3: Oracle Regeneration
 
-After documentation updates, regenerate the Oracle:
+**Timing**: Oracle regeneration happens AFTER all README waves complete in Part 1, and AFTER core documentation sync in Part 2. This ensures the Oracle captures the final state of all documentation.
+
+Regenerate the Oracle:
 
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts

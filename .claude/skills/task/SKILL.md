@@ -78,6 +78,38 @@ Available validators:
 - `code-stats` - LOC and file counts (category: code)
 - `rubric` - Custom rubric evaluation with T1-T8 metrics (category: quality)
 
+### Validator to T1-T8 Mapping
+
+| Tests | Category | Type | Description |
+|-------|----------|------|-------------|
+| T1-T2 | CLI | Deterministic | CLI execution, ledger population |
+| T3-T4 | Dashboard | AI Vision | Dashboard clarity, toggle discoverability |
+| T5-T6 | Design | Deterministic | Status color match, CSS variable coverage |
+| T7-T8 | Polish | AI Vision | Jarring-free check, professional score |
+
+### Hybrid Compliance Pattern
+
+The compliance validation uses a bidirectional agent-script pattern:
+
+1. Agent runs `sbs compliance --project <name>`
+2. Script computes which pages need validation, generates prompts with screenshot paths
+3. Agent reads screenshots using vision capabilities, provides JSON validation response
+4. Script updates `compliance_ledger.json` with results
+
+**Why this pattern**: Scripts never call AI APIs. Agents never bypass scripts for state changes. This pattern satisfies both constraints while enabling AI-powered validation.
+
+### Rubric Invalidation
+
+Quality scores are automatically marked stale when relevant repos change:
+
+| Repo | Affects Scores |
+|------|---------------|
+| dress-blueprint-action | T5 (color match), T6 (CSS coverage), T7/T8 (visual) |
+| Runway | T3 (dashboard), T4 (toggles), T7/T8 (visual) |
+| Dress | T5 (color match), T7/T8 (visual) |
+
+The `REPO_SCORE_MAPPING` in `dev/scripts/sbs/tests/scoring/ledger.py` defines these relationships.
+
 ## Error Handling
 
 - Agent failure: retry once, then pause

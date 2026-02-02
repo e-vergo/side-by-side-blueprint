@@ -138,7 +138,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 
 | File | Purpose |
 |------|---------|
-| `action.yml` | GitHub Action (~465 lines, 14 steps) |
+| `action.yml` | GitHub Action (432 lines, 14 steps) |
 | `assets/common.css` | Design system: CSS variables, theme toggle, status dots, rainbow brackets |
 | `assets/blueprint.css` | Blueprint pages: sidebar, chapter layout, side-by-side displays, zebra striping |
 | `assets/paper.css` | Paper page: ar5iv-style academic layout |
