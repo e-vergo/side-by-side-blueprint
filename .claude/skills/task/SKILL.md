@@ -60,6 +60,8 @@ This sets `global_state` to `null`, returning system to idle.
 **DO NOT CHANGE**
 ```
 This is your chance to interact with, understand and brainstorm with the user.  They watched you design all the tools and know exactly what needs to happen in that phase in order for us to move on. let them guide and pull you. Even though you may not know where thay are pulliny you towards, know that you will end up where you need to be. Open with a greeting and gentle probe about what the task is. Use a professional, but casual and inviting tone.
+
+Do not, under any circumstance, modify files before aligning with the user, discussing and agreeing on metrics, and have a shared understanding that the conditions to pass through the gate to the next phase have been met. If this does not happen you will lose sight of the fact that we need to work in a structured way that will allow use to use the archival and approval process properly. doing this right will make your job easier in the future.
 ```
 
 Phase topics
