@@ -191,7 +191,6 @@ Side-by-Side-Blueprint/
 | Visual compliance testing | Complete |
 | Archive system with iCloud sync | Complete |
 | 8-dimensional quality scoring (T1-T8) | Complete |
-| Custom rubric system | Complete |
 
 ### Production Examples
 
@@ -265,7 +264,9 @@ For build commands, screenshot capture, compliance validation, archive managemen
 
 ## Related Documents
 
-- [README.md](README.md) - Project overview and getting started
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and build pipeline
-- [dev/storage/README.md](../storage/README.md) - Central tooling hub
-- [dev/.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference
+- [README.md](../living/README.md) - Agent-facing monorepo overview
+- [TAXONOMY.md](TAXONOMY.md) - Document classification system
+- [Archive_Orchestration_and_Agent_Harmony.md](Archive_Orchestration_and_Agent_Harmony.md) - Script-agent boundary, archive roles
+- [dev/storage/README.md](../../storage/README.md) - Central tooling hub
+- [dev/.refs/ARCHITECTURE.md](../../.refs/ARCHITECTURE.md) - Detailed technical reference

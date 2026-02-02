@@ -15,9 +15,9 @@ Update all documentation and achieve porcelain git state across all repos.
 Agents must read these before making changes:
 
 ```
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/ARCHITECTURE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/Archive_Orchestration_and_Agent_Harmony.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/README.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/permanent/ARCHITECTURE.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/permanent/Archive_Orchestration_and_Agent_Harmony.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/permanent/README.md
 ```
 
 ---
@@ -33,6 +33,92 @@ The `sbs archive upload` command accepts a `--trigger` flag for provenance track
 | Manual (no flag) | User CLI invocation | Marks as manual |
 
 **Key**: Trigger affects metadata only, not behavior. Archive upload always does the same thing regardless of trigger source.
+
+---
+
+## Substates
+
+The update-and-archive skill has four substates, tracked in the archive:
+
+| Substate | Description | Transition |
+|----------|-------------|------------|
+| `readme-wave` | Updating repository READMEs | → oracle-regen |
+| `oracle-regen` | Regenerating sbs-oracle.md | → porcelain |
+| `porcelain` | Ensuring clean git state | → archive-upload |
+| `archive-upload` | Creating archive entry | → (skill complete, epoch closed) |
+
+---
+
+## Epoch Semantics
+
+This skill closes epochs. An epoch is the set of archive entries between two `/update-and-archive` invocations.
+
+### Epoch Lifecycle
+
+1. **Epoch opens**: Implicitly, when work begins after previous epoch close
+2. **Entries accumulate**: Build entries (`trigger: "build"`), manual entries
+3. **Epoch closes**: When `/update-and-archive` runs, creating a skill-triggered entry
+
+### Epoch Summary
+
+The closing entry includes `epoch_summary`:
+```json
+{
+  "entries_in_epoch": 5,
+  "builds_in_epoch": 4,
+  "entry_ids": ["1234567890", "1234567891", ...]
+}
+```
+
+### Why Epochs Matter
+
+Epochs create natural boundaries for:
+- Documentation synchronization (READMEs updated at epoch close)
+- Data aggregation (trends computed per epoch)
+- State demarcation (what happened since last sync)
+
+---
+
+## Agent Model
+
+When `/update-and-archive` is invoked, it spawns a dedicated agent that runs autonomously to completion.
+
+### Why a Dedicated Agent
+
+This skill:
+- Has a well-defined, deterministic workflow (readme-wave → oracle-regen → porcelain → archive-upload)
+- Requires no supervision or decision-making from higher levels
+- Should not consume context from the orchestrating chat
+- Can run completely autonomously once invoked
+
+### Center Stage Execution
+
+The update-and-archive agent:
+- Becomes "center stage" for the duration of the skill
+- Manages its own substates via archive entries
+- Reports completion to the invoking context
+- Closes the current epoch upon successful completion
+
+### State Tracking
+
+Each substate transition creates an archive entry with:
+- `global_state`: `{skill: "update-and-archive", substate: <current_substate>}`
+- `state_transition`: "phase_start" or "phase_end"
+
+The final archive entry (substate: `archive-upload`) includes:
+- `trigger: "skill"`
+- `epoch_summary` with aggregated data from the epoch
+- Marks the epoch boundary
+
+### Invocation Contexts
+
+| Context | Behavior |
+|---------|----------|
+| End of `/task` (Phase 5) | Task agent spawns u&a agent, waits for completion |
+| Standalone invocation | Top-level spawns u&a agent directly |
+| Manual by user | Same as standalone |
+
+In all cases, the u&a agent runs autonomously - the invoking context does not orchestrate its internal steps.
 
 ---
 

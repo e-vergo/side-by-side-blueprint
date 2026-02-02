@@ -205,10 +205,6 @@ General-purpose agentic task execution with validation. Invoke manually.
 
 **Location:** `.claude/skills/task/SKILL.md`
 
-#### Grab-Bag Mode
-
-`/task --grab-bag` for ad-hoc improvement sessions with custom rubrics.
-
 ### `/update-and-archive`
 
 Documentation refresh and porcelain state. Runs automatically at end of `/task`.
@@ -223,7 +219,7 @@ For implementation details, file locations, and build internals, see:
 - [sbs-developer.md](.claude/agents/sbs-developer.md) - Implementation patterns and file locations
 - [sbs-oracle.md](.claude/agents/sbs-oracle.md) - Codebase knowledge (use Task tool with sbs-oracle agent to query)
 - [dev/storage/README.md](dev/storage/README.md) - CLI tooling documentation
-- [Archive_Orchestration_and_Agent_Harmony.md](dev/markdowns/Archive_Orchestration_and_Agent_Harmony.md) - Script-agent interaction patterns
+- [Archive_Orchestration_and_Agent_Harmony.md](dev/markdowns/permanent/Archive_Orchestration_and_Agent_Harmony.md) - Script-agent interaction patterns
 
 ### Quick Reference
 
@@ -266,9 +262,11 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `README.md` | `dev/markdowns/README.md` | Public-facing project overview |
-| `ARCHITECTURE.md` | `dev/markdowns/ARCHITECTURE.md` | Public architecture documentation |
-| `GOALS.md` | `dev/markdowns/GOALS.md` | Project vision and design goals |
+| `README.md` | `dev/markdowns/living/README.md` | Agent-facing monorepo overview |
+| `ARCHITECTURE.md` | `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components |
+| `GOALS.md` | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
+| `TAXONOMY.md` | `dev/markdowns/permanent/TAXONOMY.md` | Document classification system |
+| `Archive_Orchestration_and_Agent_Harmony.md` | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
 | `dev/storage/README.md` | Tooling hub | CLI commands, validation, workflows |
 
 **Detailed references** (in `dev/.refs/`): `ARCHITECTURE.md`, ground truth files, motivation notes.

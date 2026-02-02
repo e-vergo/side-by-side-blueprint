@@ -46,7 +46,6 @@ Commands:
   sync         Ensure all repos are synced (commit + push)
   versions     Show dependency versions across repos
   archive      Archive management commands
-  rubric       Rubric management commands
   oracle       Oracle management commands
 
 Examples:
@@ -57,7 +56,6 @@ Examples:
   sbs status                     # Show git status for all repos
   sbs inspect                    # Show build artifacts and manifest
   sbs sync -m "Fix bug"          # Commit and push all changes
-  sbs rubric list                # List all rubrics
   sbs oracle compile             # Compile Oracle from sources
   sbs readme-check               # Check which READMEs may need updating
         """,
@@ -467,117 +465,6 @@ Examples:
         help="Show what would be done without making changes",
     )
 
-    # --- rubric (command group) ---
-    rubric_parser = subparsers.add_parser(
-        "rubric",
-        help="Rubric management commands",
-        description="Create, view, evaluate, and manage quality rubrics.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Subcommands:
-  create       Create a new rubric from JSON or by name
-  show         Display a rubric in JSON or markdown format
-  list         List all rubrics with optional filtering
-  evaluate     Evaluate a rubric against current state
-  delete       Delete a rubric
-
-Examples:
-  sbs rubric list                              # List all rubrics
-  sbs rubric create --from-json rubric.json    # Create from JSON file
-  sbs rubric create --name "My Rubric"         # Create empty rubric
-  sbs rubric show my-rubric-id                 # Show rubric as markdown
-  sbs rubric show my-rubric-id --format json   # Show rubric as JSON
-  sbs rubric evaluate my-rubric-id             # Evaluate against SBSTest
-  sbs rubric delete my-rubric-id               # Delete (with confirmation)
-        """,
-    )
-    rubric_subparsers = rubric_parser.add_subparsers(
-        dest="rubric_command",
-        title="rubric commands",
-        metavar="<subcommand>",
-    )
-
-    # --- rubric create ---
-    rubric_create_parser = rubric_subparsers.add_parser(
-        "create",
-        help="Create a new rubric",
-        description="Create a new rubric from JSON file or with a name.",
-    )
-    rubric_create_parser.add_argument(
-        "--from-json",
-        metavar="FILE",
-        help="Create rubric from JSON file",
-    )
-    rubric_create_parser.add_argument(
-        "--name",
-        help="Rubric name (required if not using --from-json)",
-    )
-
-    # --- rubric show ---
-    rubric_show_parser = rubric_subparsers.add_parser(
-        "show",
-        help="Display a rubric",
-        description="Display a rubric in JSON or markdown format.",
-    )
-    rubric_show_parser.add_argument(
-        "rubric_id",
-        help="ID of the rubric to display",
-    )
-    rubric_show_parser.add_argument(
-        "--format",
-        choices=["json", "markdown"],
-        default="markdown",
-        help="Output format (default: markdown)",
-    )
-
-    # --- rubric list ---
-    rubric_list_parser = rubric_subparsers.add_parser(
-        "list",
-        help="List all rubrics",
-        description="List all rubrics with optional category filtering.",
-    )
-    rubric_list_parser.add_argument(
-        "--category",
-        help="Filter by category",
-    )
-
-    # --- rubric evaluate ---
-    rubric_evaluate_parser = rubric_subparsers.add_parser(
-        "evaluate",
-        help="Evaluate a rubric against current state",
-        description="Evaluate a rubric against a project's current state.",
-    )
-    rubric_evaluate_parser.add_argument(
-        "rubric_id",
-        help="ID of the rubric to evaluate",
-    )
-    rubric_evaluate_parser.add_argument(
-        "--project",
-        default="SBSTest",
-        help="Project to evaluate (default: SBSTest)",
-    )
-    rubric_evaluate_parser.add_argument(
-        "--save",
-        action="store_true",
-        help="Save evaluation results to archive",
-    )
-
-    # --- rubric delete ---
-    rubric_delete_parser = rubric_subparsers.add_parser(
-        "delete",
-        help="Delete a rubric",
-        description="Delete a rubric (prompts for confirmation unless --force).",
-    )
-    rubric_delete_parser.add_argument(
-        "rubric_id",
-        help="ID of the rubric to delete",
-    )
-    rubric_delete_parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Skip confirmation prompt",
-    )
-
     # --- oracle (command group) ---
     oracle_parser = subparsers.add_parser(
         "oracle",
@@ -904,10 +791,6 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "archive":
             from sbs.archive import cmd_archive
             return cmd_archive(args)
-
-        elif args.command == "rubric":
-            from sbs.tests.rubrics import cmd_rubric
-            return cmd_rubric(args)
 
         elif args.command == "oracle":
             return cmd_oracle(args)

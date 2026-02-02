@@ -336,7 +336,9 @@ These scripts wrap `python dev/scripts/build.py` with the correct working direct
 
 ## Related Documents
 
-- [README.md](README.md) - Project overview and getting started
 - [GOALS.md](GOALS.md) - Project vision and design goals
-- [dev/storage/README.md](../storage/README.md) - Central tooling hub
-- [dev/.refs/ARCHITECTURE.md](../.refs/ARCHITECTURE.md) - Detailed technical reference
+- [README.md](../living/README.md) - Agent-facing monorepo overview
+- [TAXONOMY.md](TAXONOMY.md) - Document classification system
+- [Archive_Orchestration_and_Agent_Harmony.md](Archive_Orchestration_and_Agent_Harmony.md) - Script-agent boundary, archive roles
+- [dev/storage/README.md](../../storage/README.md) - Central tooling hub
+- [dev/.refs/ARCHITECTURE.md](../../.refs/ARCHITECTURE.md) - Detailed technical reference

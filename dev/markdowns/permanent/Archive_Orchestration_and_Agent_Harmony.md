@@ -7,12 +7,17 @@ This document describes how scripts and agents interact in the Side-by-Side Blue
 ## Table of Contents
 
 1. [Design Principles](#design-principles)
-2. [Archive Workflow Diagrams](#archive-workflow-diagrams)
-3. [Trigger Semantics](#trigger-semantics)
-4. [Hybrid Compliance Pattern](#hybrid-compliance-pattern)
-5. [Validator to T1-T8 Mapping](#validator-to-t1-t8-mapping)
-6. [Rubric Lifecycle](#rubric-lifecycle)
-7. [File Responsibility Matrix](#file-responsibility-matrix)
+2. [Three Roles of Archive](#three-roles-of-archive)
+3. [State Machine Model](#state-machine-model)
+4. [Epoch Semantics](#epoch-semantics)
+5. [MCP Fork Philosophy](#mcp-fork-philosophy)
+6. [Context Injection Patterns](#context-injection-patterns)
+7. [Archive Workflow Diagrams](#archive-workflow-diagrams)
+8. [Trigger Semantics](#trigger-semantics)
+9. [Hybrid Compliance Pattern](#hybrid-compliance-pattern)
+10. [Validator to T1-T8 Mapping](#validator-to-t1-t8-mapping)
+11. [File Responsibility Matrix](#file-responsibility-matrix)
+12. [Schema Reference](#schema-reference)
 
 ---
 
@@ -91,6 +96,307 @@ The intersection is handled by:
 1. Script prepares work (captures screenshots, generates prompts)
 2. Agent makes AI decisions (vision analysis)
 3. Script (or agent) updates state (ledger)
+
+---
+
+## Three Roles of Archive
+
+The archive system serves as an **active orchestration substrate** with three distinct roles:
+
+### Role 1: Event Log
+
+The archive is an **append-only event log** with a regularized schema. Every significant event in the development process creates an entry.
+
+**Characteristics:**
+- Entries are immutable once created
+- Schema is consistent across all entry types
+- Source of truth for all project state
+- Enables reconstruction of project history
+
+**What gets logged:**
+- Build completions (trigger=build)
+- Skill invocations (trigger=skill)
+- Manual operations (trigger=manual)
+- State transitions (phase boundaries)
+
+### Role 2: State Machine
+
+The archive tracks **global state** and **state transitions**, functioning as a state machine for the development workflow.
+
+**State tracking:**
+- `global_state` in ArchiveIndex: Current skill and substate
+- `state_transition` in entries: Phase boundaries ("phase_start", "phase_end")
+- Epochs: Logical groupings closed by `/update-and-archive`
+
+**State machine properties:**
+- Single active skill at a time (sequential agent constraint)
+- Clear phase boundaries within skills
+- Epochs provide natural checkpoints
+
+### Role 3: Context Provider
+
+The archive enables **context injection** for agents, providing historical awareness without requiring agents to search.
+
+**Context provision:**
+- Query archive state before spawning agents
+- Build context from entries since phase started
+- Inject visual changes, quality trends, task plan into agent
+- Future: MCP tools for direct archive queries
+
+---
+
+## State Machine Model
+
+### Global State
+
+The `global_state` field in `ArchiveIndex` tracks the current workflow state:
+
+```python
+{
+    "skill": "task",           # Current skill name or null
+    "substate": "execution"    # Current phase within skill
+}
+```
+
+**When null:** No skill is active; system is idle.
+
+**When populated:** A skill is in progress; orchestrator is coordinating work.
+
+### State Transitions
+
+The `state_transition` field in `ArchiveEntry` marks phase boundaries:
+
+| Value | Meaning |
+|-------|---------|
+| `"phase_start"` | Beginning of a new phase |
+| `"phase_end"` | Completion of a phase |
+| `null` | Regular entry (not a boundary) |
+
+### Skill Substates
+
+Each skill has defined substates that form its internal workflow:
+
+**`/task` skill:**
+```
+alignment -> planning -> execution -> finalization
+```
+
+**`/update-and-archive` skill:**
+```
+readme-wave -> oracle-regen -> porcelain -> archive-upload
+```
+
+### State Transition Diagram
+
+```
+                    +---------------+
+                    |    IDLE       |
+                    | global_state  |
+                    |   = null      |
+                    +-------+-------+
+                            |
+            /task invocation|
+                            v
+                    +---------------+
+                    |  ALIGNMENT    |
+                    | skill: task   |
+                    | substate:     |
+                    |  alignment    |
+                    +-------+-------+
+                            |
+           user confirms Q&A|
+                            v
+                    +---------------+
+                    |  PLANNING     |
+                    | skill: task   |
+                    | substate:     |
+                    |  planning     |
+                    +-------+-------+
+                            |
+            plan approved   |
+                            v
+                    +---------------+
+                    |  EXECUTION    |
+                    | skill: task   |
+                    | substate:     |
+                    |  execution    |<--+
+                    +-------+-------+   |
+                            |           |
+                            +-----------+
+                            | agent cycles
+                            v
+                    +---------------+
+                    | FINALIZATION  |
+                    | skill: task   |
+                    | substate:     |
+                    | finalization  |
+                    +-------+-------+
+                            |
+          /update-and-archive
+                            v
+                    +---------------+
+                    | README-WAVE   |
+                    | skill: update |
+                    | -and-archive  |
+                    +-------+-------+
+                            |
+                            v
+                    +---------------+
+                    |    IDLE       |
+                    | global_state  |
+                    |   = null      |
+                    | epoch closed  |
+                    +---------------+
+```
+
+---
+
+## Epoch Semantics
+
+### Definition
+
+An **epoch** is a logical unit of work bounded by `/update-and-archive` invocations. Epochs have a 1:1 correspondence with skill completions.
+
+### Epoch Lifecycle
+
+```
+Epoch N starts (previous /update-and-archive completed)
+    |
+    +-- Build entries (trigger=build)
+    +-- Manual entries (trigger=manual)
+    +-- Skill-triggered entries (trigger=skill, state_transition=phase_start/end)
+    |
+    v
+/update-and-archive invoked
+    |
+    +-- README updates
+    +-- Oracle regeneration
+    +-- Porcelain git state
+    +-- Archive upload with epoch_summary
+    |
+    v
+Epoch N closes, Epoch N+1 begins
+```
+
+### Epoch Summary
+
+When an epoch closes, the final entry includes an `epoch_summary` with aggregated data:
+
+```python
+{
+    "epoch_number": 42,
+    "duration_hours": 3.5,
+    "entry_count": 12,
+    "builds": 4,
+    "skill_invocations": ["task"],
+    "quality_delta": {
+        "start": 89.5,
+        "end": 91.77,
+        "change": 2.27
+    },
+    "repos_changed": ["Dress", "Runway"],
+    "tags_applied": ["visual-improvement", "successful-build"]
+}
+```
+
+### Why Epochs Matter
+
+1. **Natural checkpoints**: Safe points for review and summary
+2. **Quality tracking**: Compare metrics across epochs
+3. **Context boundaries**: Clear separation between work units
+4. **Audit trail**: Traceable history of development
+
+---
+
+## MCP Fork Philosophy
+
+### sbs-lsp-mcp: Extending lean-lsp-mcp
+
+The planned `sbs-lsp-mcp` will be a fork of `lean-lsp-mcp` that extends it with SBS-specific capabilities while retaining all Lean proof-writing features.
+
+**Design principle:** General-purpose tools, not hyper-specific agents.
+
+### Retained Capabilities (from lean-lsp-mcp)
+
+All existing Lean tools remain available:
+- `lean_diagnostic_messages` - Compilation errors
+- `lean_hover_info` - Type signatures and docs
+- `lean_completions` - IDE autocompletions
+- `lean_goal` - Proof goals at position
+- `lean_file_outline` - Module structure
+- `lean_local_search` - Declaration search
+- `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
+
+### Added Capabilities (SBS-specific)
+
+New tools for archive and orchestration:
+
+| Tool | Purpose |
+|------|---------|
+| `sbs_oracle_query` | Query Oracle knowledge base |
+| `sbs_archive_state` | Get current global state and recent entries |
+| `sbs_context` | Build context for agent spawn |
+| `sbs_epoch_summary` | Get summary of current or previous epoch |
+
+### Why a Fork?
+
+1. **Single MCP server**: Agents connect to one server for both Lean and SBS tools
+2. **Shared state**: Archive context available alongside Lean capabilities
+3. **Clean integration**: No coordination between multiple MCP servers
+4. **Upstream potential**: SBS-specific tools could be generalized
+
+---
+
+## Context Injection Patterns
+
+### Agent Spawn Context
+
+When the orchestrator spawns an agent, it queries archive state and builds relevant context:
+
+```
++----------------+     +------------------+     +---------------+
+| Orchestrator   | --> | sbs_archive_     | --> | Context blob  |
+| prepares spawn |     | state query      |     | for agent     |
++----------------+     +------------------+     +---------------+
+                              |
+                              v
+                       +------------------+
+                       | Entries since    |
+                       | phase started    |
+                       +------------------+
+                              |
+                              v
+                       +------------------+
+                       | Visual changes,  |
+                       | quality trends,  |
+                       | task plan        |
+                       +------------------+
+```
+
+### What Gets Injected
+
+| Context Type | Source | Purpose |
+|--------------|--------|---------|
+| **Task plan** | Current `/task` state | What the agent should accomplish |
+| **Recent changes** | Entries since phase start | What's been done this session |
+| **Quality trends** | Quality ledger history | Whether things are improving |
+| **Visual baselines** | Screenshot hashes | What visual state to expect |
+| **Relevant oracle** | Oracle KB excerpts | Domain knowledge for task |
+
+### Context vs. Search
+
+**Context injection** provides agents with pre-computed, relevant information.
+**Search** requires agents to discover information themselves.
+
+**When to use context injection:**
+- Agent needs historical awareness
+- Information is predictable and bounded
+- Search would waste tokens
+
+**When to use search:**
+- Information needs are unpredictable
+- Codebase exploration required
+- Fresh/current state needed
 
 ---
 
@@ -205,23 +511,6 @@ manual CLI -------------+---- trigger=none -------+
 
 The `trigger` field in the entry records *how* it was created for later analysis.
 
-### Trigger in ArchiveEntry
-
-```python
-@dataclass
-class ArchiveEntry:
-    entry_id: str
-    created_at: str
-    project: str
-    trigger: str  # "build", "skill", or "manual"
-    build_run_id: Optional[str]
-    claude_data: Optional[dict]
-    repo_commits: dict[str, str]
-    quality_scores: Optional[dict]
-    auto_tags: list[str]
-    # ...
-```
-
 ---
 
 ## Hybrid Compliance Pattern
@@ -335,7 +624,6 @@ dev/scripts/sbs/tests/validators/
 +-- timing.py            # Build timing metrics
 +-- code_stats.py        # LOC and file counts
 +-- git_metrics.py       # Commit/diff tracking
-+-- rubric_validator.py  # Custom rubric evaluation
 +-- design/
     +-- color_match.py          # T5
     +-- variable_coverage.py    # T6
@@ -344,76 +632,6 @@ dev/scripts/sbs/tests/validators/
     +-- jarring_check.py        # T7
     +-- professional_score.py   # T8
     +-- css_parser.py           # Shared CSS parsing
-```
-
----
-
-## Rubric Lifecycle
-
-Rubrics enable custom quality metrics beyond the fixed T1-T8 tests.
-
-### Phase Diagram
-
-```
-+-------------------+     +-------------------+     +-------------------+
-| /task --grab-bag  | --> | Phase 1:          | --> | Phase 2:          |
-| invocation        |     | Brainstorm        |     | Metric Alignment  |
-+-------------------+     | (user-led)        |     | (formalize)       |
-                          +-------------------+     +-------------------+
-                                                            |
-                                                            v
-+-------------------+     +-------------------+     +-------------------+
-| Phase 6:          | <-- | Phase 5:          | <-- | Phase 3:          |
-| /update-and-      |     | Execution Loop    |     | Rubric Creation   |
-| archive           |     | (with grading)    |     | (save to storage) |
-+-------------------+     +-------------------+     +-------------------+
-         |                        ^
-         v                        |
-+-------------------+     +-------------------+
-| Archive entry     |     | Phase 4:          |
-| with rubric_id    |     | Plan Mode         |
-| and evaluation    |     | (task per metric) |
-+-------------------+     +-------------------+
-```
-
-### State Table
-
-| Phase | Trigger | What Happens |
-|-------|---------|--------------|
-| Creation | `/task --grab-bag` Phase 3 | User approves metrics, rubric saved to `dev/storage/rubrics/` |
-| Evaluation | Execution loop | Each metric evaluated, results tracked in memory |
-| Snapshot | Finalization | Evaluation results copied to archive entry |
-| Invalidation | Repo changes | Scores marked stale via `REPO_SCORE_MAPPING` |
-| Reuse | `/task --rubric <id>` | Load existing rubric for new evaluation |
-
-### Rubric Storage
-
-```
-dev/storage/rubrics/
-+-- index.json              # Registry of all rubrics
-+-- {rubric-id}.json        # Rubric definition
-+-- {rubric-id}.md          # Human-readable (auto-generated)
-+-- {rubric-id}_eval_*.json # Evaluation results (optional)
-```
-
-### Rubric Schema
-
-```json
-{
-  "id": "dashboard-ux-2025-01",
-  "name": "Dashboard UX Improvements",
-  "description": "Metrics from Jan 2025 grab-bag session",
-  "created_at": "2025-01-15T10:30:00Z",
-  "metrics": [
-    {
-      "id": "stat-readability",
-      "name": "Stats Panel Readability",
-      "threshold": 0.8,
-      "weight": 0.25,
-      "scoring_type": "percentage"
-    }
-  ]
-}
 ```
 
 ---
@@ -429,7 +647,7 @@ Each markdown file owns specific concerns and delegates to others.
 | [`CLAUDE.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md) | Orchestration model, user preferences, when to spawn agents, project context | sbs-developer.md for implementation, sbs-oracle.md for codebase Q&A |
 | [`.claude/agents/sbs-developer.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md) | Implementation details, file locations, patterns, MCP tool usage | (self-contained technical reference) |
 | [`.claude/agents/sbs-oracle.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-oracle.md) | Pre-compiled knowledge indices, concept map, file purpose map | (auto-generated from READMEs) |
-| [`.claude/skills/task/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md) | Workflow phases, validator specs, rubric lifecycle, grab-bag mode | (self-contained skill definition) |
+| [`.claude/skills/task/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md) | Workflow phases, validator specs, grab-bag mode | (self-contained skill definition) |
 | [`.claude/skills/update-and-archive/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/update-and-archive/SKILL.md) | README wave structure, archive triggers, Oracle regeneration, porcelain state | (self-contained skill definition) |
 | [`dev/storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/README.md) | CLI command reference, validator infrastructure, quality scoring | Repository READMEs for component details |
 
@@ -456,7 +674,6 @@ Each markdown file owns specific concerns and delegates to others.
 **task/SKILL.md** - Workflow definition:
 - Phase structure (alignment, planning, execution, finalization)
 - Validator specifications
-- Rubric integration
 - Error handling
 
 **update-and-archive/SKILL.md** - Finalization workflow:
@@ -490,6 +707,114 @@ CLAUDE.md
 
 ---
 
+## Schema Reference
+
+### ArchiveEntry Schema
+
+```python
+@dataclass
+class ArchiveEntry:
+    # Identity
+    entry_id: str                           # Unique ID (unix timestamp)
+    created_at: str                         # ISO timestamp
+
+    # Context
+    project: str                            # Project name
+    trigger: str                            # "build", "skill", or "manual"
+    build_run_id: Optional[str]             # Links to unified ledger
+
+    # State machine fields (NEW)
+    global_state: Optional[dict] = None     # {skill: str, substate: str}
+    state_transition: Optional[str] = None  # "phase_start", "phase_end", or null
+    epoch_summary: Optional[dict] = None    # Aggregated epoch data (on close)
+
+    # Session data
+    claude_data: Optional[dict]             # Extracted ~/.claude data
+    repo_commits: dict[str, str]            # Git commits at build time
+
+    # Quality
+    quality_scores: Optional[dict]          # T1-T8 scores
+
+    # Metadata
+    auto_tags: list[str]                    # Auto-applied tags
+    user_tags: list[str]                    # User-applied tags
+    notes: Optional[str]                    # User notes
+    screenshots: list[str]                  # Captured screenshots
+
+    # Sync status
+    synced_to_icloud: bool                  # iCloud sync status
+```
+
+### ArchiveIndex Schema
+
+```python
+@dataclass
+class ArchiveIndex:
+    # Index metadata
+    version: str                            # Schema version
+    last_updated: str                       # ISO timestamp
+
+    # State machine fields (NEW)
+    global_state: Optional[dict] = None     # Current {skill, substate} or null
+    last_epoch_entry: Optional[str] = None  # entry_id of last epoch close
+    current_epoch_number: int = 0           # Monotonically increasing
+
+    # Entry collection
+    entries: list[ArchiveEntry]             # All entries (append-only)
+
+    # Quick lookups
+    by_project: dict[str, list[str]]        # project -> entry_ids
+    by_tag: dict[str, list[str]]            # tag -> entry_ids
+```
+
+### Global State Values
+
+```python
+# When idle (no skill active)
+global_state = None
+
+# During /task skill
+global_state = {
+    "skill": "task",
+    "substate": "alignment"     # or "planning", "execution", "finalization"
+}
+
+# During /update-and-archive skill
+global_state = {
+    "skill": "update-and-archive",
+    "substate": "readme-wave"   # or "oracle-regen", "porcelain", "archive-upload"
+}
+```
+
+### Epoch Summary Structure
+
+```python
+epoch_summary = {
+    "epoch_number": 42,
+    "started_at": "2026-02-01T10:00:00Z",
+    "ended_at": "2026-02-01T13:30:00Z",
+    "duration_hours": 3.5,
+    "entry_count": 12,
+    "builds": {
+        "total": 4,
+        "successful": 3,
+        "failed": 1
+    },
+    "skill_invocations": ["task"],
+    "quality_delta": {
+        "start": 89.5,
+        "end": 91.77,
+        "change": 2.27
+    },
+    "repos_changed": ["Dress", "Runway"],
+    "files_modified": 23,
+    "lines_changed": 456,
+    "tags_applied": ["visual-improvement", "successful-build"]
+}
+```
+
+---
+
 ## Summary
 
 The script-agent boundary is the foundation of this system:
@@ -498,14 +823,12 @@ The script-agent boundary is the foundation of this system:
 2. **Agents own decisions** - They parse output and choose next steps
 3. **Hybrid patterns bridge the gap** - When AI is required for decisions that affect state
 
-The archive system demonstrates this:
-- `build.py` (script) calls `archive_upload()` (function)
-- The function modifies state without AI
-- Agents invoke `build.py`, not the internal functions
+The archive system now serves three roles:
 
-The compliance system is the exception that proves the rule:
-- Visual validation genuinely requires AI
-- Scripts prepare work, agents decide, scripts record
-- No other pattern would satisfy both design principles
+1. **Event Log** - Append-only truth store for all project events
+2. **State Machine** - Tracks workflow state with epochs and transitions
+3. **Context Provider** - Enables context injection for agent spawning
+
+These roles work together to create an **orchestration substrate** that agents can rely on for historical awareness and state tracking.
 
 This document serves as the canonical reference for understanding these interactions.

@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from sbs.core.utils import get_sbs_root, get_git_commit, log
+from sbs.core.utils import get_sbs_root, get_git_commit, log, ARCHIVE_DIR
 
 # Re-export core types for convenience
 from sbs.core.ledger import (
@@ -63,8 +63,8 @@ class ComplianceLedger:
 
 
 def get_archive_root() -> Path:
-    """Get path to archive directory (repo root level)."""
-    return get_sbs_root() / "archive"
+    """Get path to archive directory (dev/storage)."""
+    return ARCHIVE_DIR
 
 
 def get_images_dir() -> Path:

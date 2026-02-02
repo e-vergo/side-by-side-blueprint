@@ -49,6 +49,11 @@ class ArchiveEntry:
     quality_scores: Optional[dict] = None  # {overall: float, scores: {metric_id: {value, passed, stale}}}
     quality_delta: Optional[dict] = None  # Delta from previous entry if available
 
+    # State machine fields
+    global_state: Optional[dict] = None  # {skill: str, substate: str} or null when idle
+    state_transition: Optional[str] = None  # "phase_start" | "phase_end" | null
+    epoch_summary: Optional[dict] = None  # Computed on skill-triggered entries that close epochs
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -70,6 +75,9 @@ class ArchiveEntry:
             "trigger": self.trigger,
             "quality_scores": self.quality_scores,
             "quality_delta": self.quality_delta,
+            "global_state": self.global_state,
+            "state_transition": self.state_transition,
+            "epoch_summary": self.epoch_summary,
         }
 
     @classmethod
@@ -98,6 +106,9 @@ class ArchiveEntry:
             trigger=data.get("trigger", "manual"),
             quality_scores=data.get("quality_scores"),
             quality_delta=data.get("quality_delta"),
+            global_state=data.get("global_state"),
+            state_transition=data.get("state_transition"),
+            epoch_summary=data.get("epoch_summary"),
         )
 
 
@@ -105,11 +116,15 @@ class ArchiveEntry:
 class ArchiveIndex:
     """Index of all archive entries with lookup indices."""
 
-    version: str = "1.0"
+    version: str = "1.1"
     entries: dict[str, ArchiveEntry] = field(default_factory=dict)
     by_tag: dict[str, list[str]] = field(default_factory=dict)
     by_project: dict[str, list[str]] = field(default_factory=dict)
     latest_by_project: dict[str, str] = field(default_factory=dict)
+
+    # Global orchestration state
+    global_state: Optional[dict] = None  # Current {skill, substate} or null when idle
+    last_epoch_entry: Optional[str] = None  # Entry ID of last epoch close
 
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
@@ -119,6 +134,8 @@ class ArchiveIndex:
             "by_tag": self.by_tag,
             "by_project": self.by_project,
             "latest_by_project": self.latest_by_project,
+            "global_state": self.global_state,
+            "last_epoch_entry": self.last_epoch_entry,
         }
 
     @classmethod
@@ -133,6 +150,8 @@ class ArchiveIndex:
             by_tag=data.get("by_tag", {}),
             by_project=data.get("by_project", {}),
             latest_by_project=data.get("latest_by_project", {}),
+            global_state=data.get("global_state"),
+            last_epoch_entry=data.get("last_epoch_entry"),
         )
 
     def add_entry(self, entry: ArchiveEntry) -> None:

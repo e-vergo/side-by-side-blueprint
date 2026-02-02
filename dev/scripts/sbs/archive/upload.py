@@ -250,6 +250,9 @@ def archive_upload(
     build_success: Optional[bool] = None,
     build_duration_seconds: Optional[float] = None,
     repos_changed: Optional[list[str]] = None,
+    # State machine parameters
+    global_state: Optional[dict] = None,
+    state_transition: Optional[str] = None,
 ) -> dict:
     """
     Main archive upload function.
@@ -314,6 +317,8 @@ def archive_upload(
             build_run_id=build_run_id,
             claude_data=snapshot.to_dict(),
             trigger=trigger,
+            global_state=global_state,
+            state_transition=state_transition,
         )
         result["entry_id"] = entry_id
 
@@ -374,6 +379,33 @@ def archive_upload(
             log.dim(f"[dry-run] Would save entry {entry_id} to {index_path}")
         else:
             index = ArchiveIndex.load(index_path)
+
+            # Compute epoch_summary for skill-triggered entries (epoch close)
+            if trigger == "skill":
+                # Get entries since last epoch close
+                last_epoch_id = index.last_epoch_entry
+                epoch_entries = []
+                for eid, e in index.entries.items():
+                    if last_epoch_id is None or eid > last_epoch_id:
+                        if eid != entry.entry_id:  # Don't include self
+                            epoch_entries.append(e)
+
+                entry.epoch_summary = {
+                    "entries_in_epoch": len(epoch_entries),
+                    "builds_in_epoch": sum(1 for e in epoch_entries if e.trigger == "build"),
+                    "entry_ids": [e.entry_id for e in epoch_entries],
+                }
+
+                # Update index to mark this as the new epoch boundary
+                index.last_epoch_entry = entry.entry_id
+
+            # Update index global_state if state_transition indicates a change
+            if global_state is not None:
+                index.global_state = global_state
+            elif state_transition == "phase_end" and global_state is None:
+                # Clearing state (returning to idle)
+                index.global_state = None
+
             index.add_entry(entry)
             index.save(index_path)
 
