@@ -26,7 +26,10 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 | Spawns agents (one at a time) | Works within defined scope |
 | Synthesizes results | Reports outcomes |
 
-**Constraint:** Agents are spawned **sequentially, never in parallel**. This is intentional for this project.
+**Agent Parallelism:**
+- **Edit agents:** Only ONE agent with edit permissions at a time (architectural invariant)
+- **Read-only agents:** Multiple search/exploration agents may run in parallel
+- **Rule of thumb:** If agents might touch the same files, run sequentially
 
 ---
 
@@ -275,9 +278,8 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 | File | Location | Purpose |
 |------|----------|---------|
 | `README.md` | `dev/markdowns/living/README.md` | Agent-facing monorepo overview |
-| `ARCHITECTURE.md` | `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components |
+| `ARCHITECTURE.md` | `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components, document taxonomy |
 | `GOALS.md` | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
-| `TAXONOMY.md` | `dev/markdowns/permanent/TAXONOMY.md` | Document classification system |
 | `Archive_Orchestration_and_Agent_Harmony.md` | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
 | `dev/storage/README.md` | Tooling hub | CLI commands, validation, workflows |
 

@@ -133,8 +133,8 @@ sbs archive upload --trigger skill \
 
 Before transitioning to finalization:
 
-1. Run `sbs_validate_project` with validators specified in plan
-2. Run `sbs_run_tests` with specified filters
+1. Call `sbs_validate_project` MCP tool with validators specified in plan
+2. Call `sbs_run_tests` MCP tool with specified filters
 3. Compare results to gate thresholds defined in plan
 4. **If ANY gate fails:**
    - Do NOT proceed to finalization

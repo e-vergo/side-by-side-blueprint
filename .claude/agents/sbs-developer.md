@@ -61,6 +61,13 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | **Runway** | Site generation, HTML templates, dashboard, sidebar, paper/PDF | Graph layout, artifact capture |
 | **dress-blueprint-action** | CSS/JS assets, CI/CD workflows, GitHub Pages deployment | Lean code, rendering logic |
 
+## Agent Parallelism
+
+This agent has full edit permissions. Therefore:
+- Only one `sbs-developer` agent runs at a time (architectural invariant)
+- Multiple Explore agents can run in parallel alongside this agent
+- If spawning subagents, ensure no edit collisions
+
 ---
 
 ## Key Files by Repository
@@ -553,6 +560,35 @@ theorem ready_for_mathlib : ...
 - `lean_local_search` - Find declarations across repos
 
 **Less relevant** (proof-focused): `lean_goal`, `lean_multi_attempt`, `lean_leansearch`, `lean_loogle`
+
+---
+
+## SBS MCP Tools
+
+The sbs-lsp-mcp server provides 11 SBS-specific tools for orchestration and testing:
+
+**Orchestration:**
+| Tool | Use For |
+|------|---------|
+| `sbs_archive_state` | Check current global state and skill substate |
+| `sbs_context` | Build context for agent spawn |
+| `sbs_epoch_summary` | Get aggregated epoch data |
+| `sbs_search_entries` | Search archive entries by tag, project, or trigger |
+
+**Testing & Validation:**
+| Tool | Use For |
+|------|---------|
+| `sbs_run_tests` | Run pytest suite with optional filter |
+| `sbs_validate_project` | Run T1-T8 validators on a project |
+
+**Build & Visual:**
+| Tool | Use For |
+|------|---------|
+| `sbs_build_project` | Trigger full project build |
+| `sbs_serve_project` | Start/stop/check dev server |
+| `sbs_last_screenshot` | Get most recent screenshot for a page |
+| `sbs_visual_history` | View screenshot history across entries |
+| `sbs_oracle_query` | Query the compiled oracle knowledge base |
 
 ---
 

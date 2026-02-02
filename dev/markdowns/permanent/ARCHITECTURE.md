@@ -322,6 +322,10 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 
 For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../storage/README.md).
 
+### MCP Tools
+
+The `sbs-lsp-mcp` server (located at `forks/sbs-lsp-mcp/`) provides 29 tools: 18 Lean tools for proof development and 11 SBS tools for orchestration, testing, and archive management. See the server README for full documentation.
+
 ### One-Click Build Scripts
 
 From the monorepo root:
@@ -334,11 +338,60 @@ From the monorepo root:
 
 These scripts wrap `python dev/scripts/build.py` with the correct working directory.
 
+## Document Taxonomy
+
+Documentation is organized into three categories, each with distinct characteristics and update expectations.
+
+### Categories
+
+| Category | Location | Change Frequency | Meaning of Changes |
+|----------|----------|------------------|-------------------|
+| **Permanent** | `dev/markdowns/permanent/` | Months+ | Architectural shifts - changes affect agent behavior and assumptions |
+| **Living** | `dev/markdowns/living/` | Days to weeks | Progress updates - normal development activity |
+| **Generated** | Various locations | On source change | Informational - regenerate from source when needed |
+
+### Permanent Documents
+
+Architectural bedrock. Changes are significant events, not routine updates.
+
+| Document | Purpose |
+|----------|---------|
+| `ARCHITECTURE.md` | Build pipeline, component responsibilities, dependency chain |
+| `Archive_Orchestration_and_Agent_Harmony.md` | Script-agent boundary, archive roles, state machine model |
+| `GOALS.md` | Project vision, problem statement, target audience |
+
+### Living Documents
+
+Current state and evolving documentation. Changes are expected and normal.
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Meta-document for agents about monorepo purpose |
+| `MVP.md` | Current minimum viable product definition |
+
+### Generated Documents
+
+Auto-produced from code or other sources. Manual edits will be overwritten.
+
+| File | Source | Generator |
+|------|--------|-----------|
+| `.claude/agents/sbs-oracle.md` | All repository READMEs | `sbs oracle compile` |
+| `dev/storage/{project}/QUALITY_SCORE.md` | Validator results | Quality scoring system |
+| `dev/storage/COMPLIANCE_STATUS.md` | Compliance ledger | Compliance validation |
+
+### Decision Guide
+
+When creating or updating documentation:
+
+1. **Auto-generated from code?** -> Generated category (ensure regeneration pipeline exists)
+2. **Changes frequently with progress?** -> Living category (`dev/markdowns/living/`)
+3. **Fundamental architectural decision?** -> Permanent category (`dev/markdowns/permanent/`)
+4. **Reference for agents that should be stable?** -> Permanent category
+
 ## Related Documents
 
 - [GOALS.md](GOALS.md) - Project vision and design goals
 - [README.md](../living/README.md) - Agent-facing monorepo overview
-- [TAXONOMY.md](TAXONOMY.md) - Document classification system
 - [Archive_Orchestration_and_Agent_Harmony.md](Archive_Orchestration_and_Agent_Harmony.md) - Script-agent boundary, archive roles
 - [dev/storage/README.md](../../storage/README.md) - Central tooling hub
 - [dev/.refs/ARCHITECTURE.md](../../.refs/ARCHITECTURE.md) - Detailed technical reference

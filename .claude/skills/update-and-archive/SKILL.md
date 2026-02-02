@@ -292,6 +292,8 @@ sbs archive upload --trigger skill --state-transition phase_end
 
 This clears `global_state` to `null` and marks the epoch boundary.
 
+**Epoch data:** Use the `sbs_epoch_summary` MCP tool to retrieve aggregated epoch data before closing if needed for reporting.
+
 ### Stale Detection
 
 Read `dev/storage/migrations.json`:
