@@ -491,3 +491,80 @@ class PRMergeResult(BaseModel):
     success: bool = Field(description="Whether merge succeeded")
     sha: Optional[str] = Field(None, description="Merge commit SHA")
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+# =============================================================================
+# Self-Improve Tools
+# =============================================================================
+
+
+class AnalysisFinding(BaseModel):
+    """Single improvement finding from archive analysis."""
+
+    pillar: str = Field(
+        description="One of: user_effectiveness, claude_execution, alignment_patterns, system_engineering"
+    )
+    category: str = Field(
+        description="Finding category (e.g., 'tool_usage', 'error_pattern', 'workflow')"
+    )
+    severity: str = Field(description="low, medium, high")
+    description: str = Field(description="What was observed")
+    recommendation: str = Field(description="Suggested improvement")
+    evidence: List[str] = Field(
+        default_factory=list,
+        description="Entry IDs or data supporting this finding",
+    )
+
+
+class AnalysisSummary(BaseModel):
+    """Summary of archive analysis for self-improvement."""
+
+    total_entries: int = Field(description="Total archive entries analyzed")
+    date_range: str = Field(description="Earliest to latest entry timestamp")
+    entries_by_trigger: Dict[str, int] = Field(description="Count by trigger type")
+    quality_metrics: Optional[Dict[str, float]] = Field(
+        None, description="Average quality scores"
+    )
+    most_common_tags: List[str] = Field(
+        default_factory=list, description="Top 10 tags"
+    )
+    projects_summary: Dict[str, int] = Field(
+        default_factory=dict, description="Entry count per project"
+    )
+    findings: List[AnalysisFinding] = Field(
+        default_factory=list, description="Improvement findings"
+    )
+
+
+class SelfImproveEntrySummary(BaseModel):
+    """Lightweight summary of an archive entry for self-improve tools."""
+
+    entry_id: str = Field(description="Entry ID")
+    created_at: str = Field(description="ISO timestamp")
+    project: str = Field(description="Project name")
+    trigger: str = Field(description="Trigger type")
+    notes: str = Field(default="", description="Entry notes")
+    tags: List[str] = Field(default_factory=list, description="All tags")
+    quality_score: Optional[float] = Field(
+        None, description="Overall quality score if available"
+    )
+
+
+class SelfImproveEntries(BaseModel):
+    """Entries since last self-improve invocation."""
+
+    last_self_improve_entry: Optional[str] = Field(
+        None, description="Entry ID of last self-improve"
+    )
+    last_self_improve_timestamp: Optional[str] = Field(
+        None, description="ISO timestamp"
+    )
+    entries_since: List[SelfImproveEntrySummary] = Field(
+        default_factory=list, description="Entries since last cycle"
+    )
+    count_by_trigger: Dict[str, int] = Field(
+        default_factory=dict, description="Count by trigger type"
+    )
+    count: int = Field(
+        default=0, description="Total count of entries since last self-improve"
+    )
