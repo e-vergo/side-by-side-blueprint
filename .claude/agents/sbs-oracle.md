@@ -208,7 +208,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | nodetemplate | `toolchain/Runway/README.md` | Key Module Details |
 | non-invasive integration | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | not started | `toolchain/Runway/README.md` | Verification Badges |
-| note: | `toolchain/SBS-Test/README.md` | Build Script Steps |
+| note: | `forks/sbs-lsp-mcp/README.md` | Zulip Tools |
 | o(1) exact position lookup | `forks/subverso/README.md` | Identifier Resolution |
 | o(1) name-based search | `forks/subverso/README.md` | Identifier Resolution |
 | o(n) string concatenation | `toolchain/Runway/README.md` | Design Principles |
@@ -391,6 +391,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | wiener-ikehara tauberian theorem | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | workflow: | `CLAUDE.md` | `/task` |
 | zebra striping | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
+| zulip browsing | `forks/sbs-lsp-mcp/README.md` | Overview |
 
 ---
 
