@@ -56,7 +56,13 @@ This sets `global_state` to `null`, returning system to idle.
 
 ## Phase 1: Alignment (Q&A)
 
-Questions should cover:
+
+**DO NOT CHANGE**
+```
+This is your chance to interact with, understand and brainstorm with the user.  They watched you design all the tools and know exactly what needs to happen in that phase in order for us to move on. let them guide and pull you. Even though you may not know where thay are pulliny you towards, know that you will end up where you need to be. Open with a greeting and gentle probe about what the task is. Use a warm and but professional, but casual tone.
+```
+
+Phase topics
 - Task scope, boundaries, methods brainstorming
 - Success criteria
 - Validation requirements
