@@ -360,6 +360,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | update imports: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | upstream dependencies: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | upstream: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
+| usage: | `CLAUDE.md` | `/log` |
 | user preferences: | `CLAUDE.md` | How This Document Works |
 | uses `sbs.core.git_ops` | `dev/scripts/sbs/build/README.md` | Design Notes |
 | utils | `scripts/utils.py` | Logging, path utilities, git helpers, lakefile parsing |
