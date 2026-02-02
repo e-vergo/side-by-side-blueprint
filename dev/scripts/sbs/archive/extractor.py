@@ -1,15 +1,27 @@
-"""Extract Claude Code interaction data from ~/.claude directory."""
+"""Extract Claude Code interaction data from ~/.claude directory.
+
+Enhanced to capture rich JSONL data including:
+- Thinking blocks (reasoning traces)
+- Token usage (cost analysis)
+- Message threading (parentUuid chains)
+- Full tool inputs/outputs
+- Session metadata from index
+"""
 
 from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
 import shutil
 
-from sbs.archive.session_data import SessionData, ToolCall, ClaudeDataSnapshot
+from sbs.archive.session_data import (
+    SessionData, ToolCall, ClaudeDataSnapshot,
+    ThinkingBlock, MessageUsage,
+)
 from sbs.core.utils import log
 
 # Constants
@@ -51,13 +63,16 @@ def parse_session_index(project_dir: Path) -> list[dict]:
         return []
 
 
-def parse_session_jsonl(session_path: Path) -> Optional[SessionData]:
+def parse_session_jsonl(session_path: Path, index_metadata: Optional[dict] = None) -> Optional[SessionData]:
     """Parse a session JSONL file into SessionData.
 
     Claude Code JSONL format:
     - Entries have `type` field: "user", "assistant", "system", "file-history-snapshot"
     - Messages have `message` object with `role`, `content`, etc.
     - Tool calls are in `message.content[]` with `type: "tool_use"`
+    - Thinking blocks are in `message.content[]` with `type: "thinking"`
+    - Token usage is in `message.usage`
+    - Message threading via `parentUuid` field
     """
     if not session_path.exists():
         return None
@@ -65,11 +80,22 @@ def parse_session_jsonl(session_path: Path) -> Optional[SessionData]:
     session_id = session_path.stem
     messages = []
     tool_calls = []
+    tool_results = {}  # Map tool_use_id -> result data
     files_read = set()
     files_written = set()
     files_edited = set()
     subagent_ids = set()
     plan_files = set()
+
+    # NEW: Rich data tracking
+    thinking_blocks = []
+    model_versions = set()
+    parent_uuid_chain = []
+    stop_reasons = []
+    total_input_tokens = 0
+    total_output_tokens = 0
+    cache_creation_tokens = 0
+    cache_read_tokens = 0
 
     started_at = None
     ended_at = None
@@ -99,56 +125,127 @@ def parse_session_jsonl(session_path: Path) -> Optional[SessionData]:
                         started_at = ts_str
                     ended_at = ts_str
 
+                # Track message threading
+                if entry.get("parentUuid"):
+                    parent_uuid_chain.append(entry["parentUuid"])
+
                 # Track messages (user and assistant entries)
                 if entry_type in ("user", "assistant"):
                     messages.append(entry)
 
-                    # Extract tool calls from assistant message content
+                    msg = entry.get("message", {})
+
+                    # Extract token usage from assistant messages
                     if entry_type == "assistant":
-                        msg = entry.get("message", {})
-                        content = msg.get("content", [])
-                        if isinstance(content, list):
-                            for item in content:
-                                if isinstance(item, dict) and item.get("type") == "tool_use":
-                                    tool_name = item.get("name", "unknown")
-                                    input_data = item.get("input", {})
+                        usage = msg.get("usage", {})
+                        if usage:
+                            total_input_tokens += usage.get("input_tokens", 0)
+                            total_output_tokens += usage.get("output_tokens", 0)
+                            cache_creation_tokens += usage.get("cache_creation_input_tokens", 0)
+                            cache_read_tokens += usage.get("cache_read_input_tokens", 0)
 
-                                    tool_call = ToolCall(
-                                        tool_name=tool_name,
-                                        timestamp=ts_str or "",
-                                        duration_ms=None,  # Not available in this format
-                                        success=True,  # Assume success; errors tracked separately
-                                        error=None,
-                                        input_summary=_truncate_input(input_data),
-                                    )
-                                    tool_calls.append(tool_call)
+                        # Track stop reason
+                        stop_reason = msg.get("stop_reason")
+                        if stop_reason:
+                            stop_reasons.append(stop_reason)
 
-                                    # Track file operations
-                                    if tool_name == "Read":
-                                        path = input_data.get("file_path") or input_data.get("path")
-                                        if path:
-                                            files_read.add(path)
-                                    elif tool_name == "Write":
-                                        path = input_data.get("file_path") or input_data.get("path")
-                                        if path:
-                                            files_written.add(path)
-                                    elif tool_name == "Edit":
-                                        path = input_data.get("file_path") or input_data.get("path")
-                                        if path:
-                                            files_edited.add(path)
-                                    elif tool_name == "Task":
-                                        # Track subagent spawns
-                                        subagent_ids.add(item.get("id", "unknown"))
+                        # Track model version
+                        model = msg.get("model")
+                        if model:
+                            model_versions.add(model)
+
+                    # Process message content
+                    content = msg.get("content", [])
+                    if isinstance(content, list):
+                        for item in content:
+                            if not isinstance(item, dict):
+                                continue
+
+                            item_type = item.get("type")
+
+                            # Extract thinking blocks
+                            if item_type == "thinking":
+                                thinking_text = item.get("thinking", "")
+                                signature = item.get("signature")
+                                if thinking_text:
+                                    thinking_blocks.append(ThinkingBlock(
+                                        content=thinking_text,
+                                        signature=signature,
+                                        timestamp=ts_str,
+                                    ))
+                                    # Model version from signature (signature encodes model info)
+                                    if signature:
+                                        model_versions.add(f"signature:{signature[:20]}...")
+
+                            # Extract tool_use
+                            elif item_type == "tool_use":
+                                tool_name = item.get("name", "unknown")
+                                tool_use_id = item.get("id")
+                                input_data = item.get("input", {})
+
+                                tool_call = ToolCall(
+                                    tool_name=tool_name,
+                                    timestamp=ts_str or "",
+                                    duration_ms=None,
+                                    success=True,  # Will update from tool_result
+                                    error=None,
+                                    input_summary=_truncate_input(input_data),
+                                    input_full=input_data,  # NEW: Full input
+                                    tool_use_id=tool_use_id,  # NEW: ID for linking
+                                )
+                                tool_calls.append(tool_call)
+
+                                # Track file operations
+                                if tool_name == "Read":
+                                    path = input_data.get("file_path") or input_data.get("path")
+                                    if path:
+                                        files_read.add(path)
+                                elif tool_name == "Write":
+                                    path = input_data.get("file_path") or input_data.get("path")
+                                    if path:
+                                        files_written.add(path)
+                                elif tool_name == "Edit":
+                                    path = input_data.get("file_path") or input_data.get("path")
+                                    if path:
+                                        files_edited.add(path)
+                                elif tool_name == "Task":
+                                    subagent_ids.add(tool_use_id or "unknown")
+
+                            # Extract tool_result
+                            elif item_type == "tool_result":
+                                tool_use_id = item.get("tool_use_id")
+                                if tool_use_id:
+                                    is_error = item.get("is_error", False)
+                                    result_content = item.get("content", "")
+                                    # Handle content that might be a list
+                                    if isinstance(result_content, list):
+                                        result_content = json.dumps(result_content)
+                                    elif not isinstance(result_content, str):
+                                        result_content = str(result_content)
+
+                                    tool_results[tool_use_id] = {
+                                        "content": result_content[:5000] if result_content else None,
+                                        "is_error": is_error,
+                                        "type": "error" if is_error else "text",
+                                    }
 
                 # Track plan file references in any entry
                 entry_str = json.dumps(entry)
                 if "plans/" in entry_str and ".md" in entry_str:
-                    # Look for plan file paths
-                    import re
                     plan_matches = re.findall(r'["\']([^"\']*plans/[^"\']+\.md)["\']', entry_str)
                     for match in plan_matches:
                         if match.endswith(".md"):
                             plan_files.add(match)
+
+        # Link tool_results back to tool_calls
+        for tc in tool_calls:
+            if tc.tool_use_id and tc.tool_use_id in tool_results:
+                result = tool_results[tc.tool_use_id]
+                tc.result_content = result.get("content")
+                tc.result_type = result.get("type")
+                tc.success = not result.get("is_error", False)
+                if result.get("is_error"):
+                    tc.error = result.get("content", "")[:500]  # Truncate error message
 
         # Count message types by entry type
         user_messages = sum(1 for m in messages if m.get("type") == "user")
@@ -156,6 +253,25 @@ def parse_session_jsonl(session_path: Path) -> Optional[SessionData]:
 
         # Get unique tools used
         tools_used = list(set(tc.tool_name for tc in tool_calls))
+
+        # Build message usage aggregate
+        message_usage = None
+        if total_input_tokens > 0 or total_output_tokens > 0:
+            message_usage = MessageUsage(
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                cache_creation_input_tokens=cache_creation_tokens,
+                cache_read_input_tokens=cache_read_tokens,
+            )
+
+        # Get session metadata from index
+        slug = None
+        first_prompt = None
+        session_summary = None
+        if index_metadata:
+            slug = index_metadata.get("slug")
+            first_prompt = index_metadata.get("firstPrompt")
+            session_summary = index_metadata.get("summary")
 
         return SessionData(
             session_id=session_id,
@@ -172,6 +288,15 @@ def parse_session_jsonl(session_path: Path) -> Optional[SessionData]:
             files_edited=list(files_edited),
             subagent_ids=list(subagent_ids),
             plan_files=list(plan_files),
+            # NEW: Rich data fields
+            slug=slug,
+            first_prompt=first_prompt,
+            session_summary=session_summary,
+            model_versions=list(model_versions),
+            thinking_blocks=thinking_blocks,
+            message_usage=message_usage,
+            parent_uuid_chain=parent_uuid_chain[:100],  # Limit chain length
+            stop_reasons=stop_reasons,
         )
 
     except IOError as e:
@@ -208,13 +333,16 @@ def extract_sessions(output_dir: Path) -> tuple[list[SessionData], list[str]]:
         # Find all session JSONL files
         for session_file in project_dir.glob("*.jsonl"):
             session_id = session_file.stem
-            session_data = parse_session_jsonl(session_file)
+
+            # Get index metadata for this session
+            index_metadata = index_by_id.get(session_id)
+
+            session_data = parse_session_jsonl(session_file, index_metadata)
 
             if session_data:
                 # Enrich with index metadata
-                if session_id in index_by_id:
-                    meta = index_by_id[session_id]
-                    session_data.project_path = meta.get("projectPath", "")
+                if index_metadata:
+                    session_data.project_path = index_metadata.get("projectPath", "")
 
                 sessions.append(session_data)
                 session_ids.append(session_id)
@@ -237,6 +365,11 @@ def extract_sessions(output_dir: Path) -> tuple[list[SessionData], list[str]]:
                 "ended_at": s.ended_at,
                 "message_count": s.message_count,
                 "tool_call_count": len(s.tool_calls),
+                # NEW: Rich data summary
+                "slug": s.slug,
+                "first_prompt": s.first_prompt[:100] + "..." if s.first_prompt and len(s.first_prompt) > 100 else s.first_prompt,
+                "thinking_block_count": len(s.thinking_blocks),
+                "total_tokens": (s.message_usage.input_tokens + s.message_usage.output_tokens) if s.message_usage else 0,
             }
             for s in sessions
         ],
@@ -278,24 +411,31 @@ def extract_tool_call_summary(sessions: list[SessionData], output_dir: Path) -> 
     total_calls = 0
     by_tool = {}
     errors = []
+    success_count = 0
+    error_count = 0
 
     for session in sessions:
         for tc in session.tool_calls:
             total_calls += 1
             by_tool[tc.tool_name] = by_tool.get(tc.tool_name, 0) + 1
+            if tc.success:
+                success_count += 1
+            else:
+                error_count += 1
             if tc.error:
                 errors.append({
                     "session_id": session.session_id,
                     "tool_name": tc.tool_name,
-                    "error": tc.error,
+                    "error": tc.error[:200] if tc.error else None,
                     "timestamp": tc.timestamp,
                 })
 
     summary = {
         "extracted_at": datetime.now().isoformat(),
         "total_calls": total_calls,
+        "success_count": success_count,
+        "error_count": error_count,
         "by_tool": dict(sorted(by_tool.items(), key=lambda x: -x[1])),
-        "error_count": len(errors),
         "recent_errors": errors[:20],  # Keep last 20 errors
     }
 
@@ -337,6 +477,25 @@ def extract_claude_data(output_dir: Path) -> ClaudeDataSnapshot:
     total_messages = sum(s.message_count for s in sessions)
     total_tool_calls = tool_summary["total_calls"]
 
+    # NEW: Aggregate rich data
+    total_input_tokens = 0
+    total_output_tokens = 0
+    cache_read_tokens = 0
+    cache_creation_tokens = 0
+    thinking_block_count = 0
+    model_versions_used = set()
+    unique_tools_used = set()
+
+    for s in sessions:
+        if s.message_usage:
+            total_input_tokens += s.message_usage.input_tokens
+            total_output_tokens += s.message_usage.output_tokens
+            cache_read_tokens += s.message_usage.cache_read_input_tokens
+            cache_creation_tokens += s.message_usage.cache_creation_input_tokens
+        thinking_block_count += len(s.thinking_blocks)
+        model_versions_used.update(s.model_versions)
+        unique_tools_used.update(s.tools_used)
+
     # Save extraction state
     state = {
         "last_extraction": datetime.now().isoformat(),
@@ -344,6 +503,14 @@ def extract_claude_data(output_dir: Path) -> ClaudeDataSnapshot:
         "plan_count": len(plan_files),
         "tool_call_count": total_tool_calls,
         "message_count": total_messages,
+        # NEW: Rich data stats
+        "total_input_tokens": total_input_tokens,
+        "total_output_tokens": total_output_tokens,
+        "cache_read_tokens": cache_read_tokens,
+        "cache_creation_tokens": cache_creation_tokens,
+        "thinking_block_count": thinking_block_count,
+        "model_versions_used": list(model_versions_used),
+        "unique_tools_used": list(unique_tools_used),
     }
     state_path = output_dir / "extraction_state.json"
     with open(state_path, "w") as f:
@@ -358,4 +525,12 @@ def extract_claude_data(output_dir: Path) -> ClaudeDataSnapshot:
         message_count=total_messages,
         files_modified=list(files_modified)[:100],  # Limit to 100 files
         extraction_timestamp=datetime.now().isoformat(),
+        # NEW: Rich data aggregates
+        total_input_tokens=total_input_tokens,
+        total_output_tokens=total_output_tokens,
+        cache_read_tokens=cache_read_tokens,
+        cache_creation_tokens=cache_creation_tokens,
+        thinking_block_count=thinking_block_count,
+        model_versions_used=list(model_versions_used),
+        unique_tools_used=list(unique_tools_used),
     )

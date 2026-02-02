@@ -79,11 +79,17 @@ def sync_entry(entry: ArchiveEntry, local_base: Path) -> bool:
             json.dump(entry.to_dict(), f, indent=2)
 
         # Copy screenshots if they exist
+        # Screenshots are stored in local_base/{project}/latest/ or local_base/{project}/archive/{timestamp}/
         screenshots_dir = entry_dir / "screenshots"
         screenshots_dir.mkdir(exist_ok=True)
 
+        project = entry.project or "SBSMonorepo"
         for screenshot in entry.screenshots:
-            local_screenshot = local_base / screenshot
+            # Try latest/ first (most common case)
+            local_screenshot = local_base / project / "latest" / screenshot
+            if not local_screenshot.exists():
+                # Try archive/{entry_id}/ as fallback (for historical entries)
+                local_screenshot = local_base / project / "archive" / entry.entry_id / screenshot
             if local_screenshot.exists():
                 dest = screenshots_dir / Path(screenshot).name
                 shutil.copy2(local_screenshot, dest)
@@ -274,13 +280,12 @@ def full_sync(local_base: Path, index: ArchiveIndex) -> dict:
                 result["success"] = False
 
     # Sync project screenshots
+    # Screenshots are stored directly in local_base/{project}/ (e.g., dev/storage/SBSTest/)
     for project in index.by_project.keys():
-        images_dir = local_base.parent / "images"
-        if images_dir.exists():
-            if sync_project_screenshots(project, images_dir):
-                result["synced"].append(f"{project}/")
-            else:
-                result["failed"].append(f"{project}/")
-                result["success"] = False
+        if sync_project_screenshots(project, local_base):
+            result["synced"].append(f"{project}/")
+        else:
+            result["failed"].append(f"{project}/")
+            result["success"] = False
 
     return result
