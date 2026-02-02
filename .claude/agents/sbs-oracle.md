@@ -231,6 +231,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | part of the [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) monorepo. | `toolchain/Dress/README.md` | Overview |
 | pdf compilation | `toolchain/Runway/README.md` | Features |
 | pdf tex | `Runway/pdf_tex.html` | PDF viewer page with embedded PDF |
+| per-session data: | `dev/storage/README.md` | Rich Data Extraction |
+| per-snapshot aggregates: | `dev/storage/README.md` | Rich Data Extraction |
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
