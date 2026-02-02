@@ -33,6 +33,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `state_transition` | `dev/storage/README.md` | State Machine Fields |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | absolute imports | `dev/scripts/README.md` | Design Principles |
+| agent parallelism: | `CLAUDE.md` | Orchestration Model |
 | agentic and project-specific development tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | agents | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
@@ -70,6 +71,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | chapter pages | `toolchain/SBS-Test/README.md` | What to Inspect |
 | chapterinfo | `toolchain/Runway/README.md` | Module Architecture |
 | check results | `SBS-Test/checkResults.connected` | false (due to disconnected cycle) |
+| cli commands | `dev/storage/README.md` | What test-catalog Shows |
 | clone and rename: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | cmd.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | color source of truth | `toolchain/dress-blueprint-action/README.md` | 6-Status Color Model |
@@ -81,7 +83,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | configuration loading | `toolchain/Runway/README.md` | Processing Steps |
 | conftest.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | connectivity validation | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
-| constraint: | `CLAUDE.md` | Orchestration Model |
 | containment search | `forks/subverso/README.md` | Identifier Resolution |
 | context generation | `forks/sbs-lsp-mcp/README.md` | Overview |
 | core components: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
@@ -114,9 +115,11 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dress dependency | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | dress-blueprint-action | `CLAUDE.md` | Repository Map |
 | during ci | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
+| edit agents: | `CLAUDE.md` | Orchestration Model |
 | environment lookup with suffix matching | `forks/subverso/README.md` | Identifier Resolution |
 | epoch | `dev/storage/README.md` | Epoch Semantics |
 | epoch summary structure: | `dev/storage/README.md` | Epoch Semantics |
+| evergreen | `dev/storage/README.md` | Test Organization System |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
@@ -182,6 +185,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | mathjax compatibility | `toolchain/Runway/README.md` | Design Principles |
 | mcp tool usage (via sbs-lsp-mcp): | `CLAUDE.md` | Quick Reference |
 | mcp tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
+| mcp tools (11) | `dev/storage/README.md` | What test-catalog Shows |
 | mediumpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | messages | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | metricscore | `dev/storage/README.md` | Implementation |
@@ -238,10 +242,12 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | project notes | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | proof dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
 | prototype status | `toolchain/Runway/README.md` | Runway |
+| pytest tests | `dev/storage/README.md` | What test-catalog Shows |
 | python hooks | `dev/storage/README.md` | Auto-Tagging |
 | qualityscoreledger | `dev/storage/README.md` | Implementation |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
+| read-only agents: | `CLAUDE.md` | Orchestration Model |
 | rebuild and re-capture | `CLAUDE.md` | Standard Workflow |
 | rebuild: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | refer to: | `toolchain/SBS-Test/README.md` | Archive & Metrics |
@@ -256,6 +262,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | rubric.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubriccriterion | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubricevaluation | `dev/scripts/sbs/tests/README.md` | rubrics/ |
+| rule of thumb: | `CLAUDE.md` | Orchestration Model |
 | run from: | `dev/storage/README.md` | Quick Reference |
 | runway | `CLAUDE.md` | Repository Map |
 | runway.json | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
@@ -288,7 +295,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | sectioninfo | `toolchain/Runway/README.md` | Module Architecture |
 | security testing | `toolchain/SBS-Test/README.md` | Purpose |
 | see: | `toolchain/SBS-Test/README.md` | Run compliance validation |
-| sequentially, never in parallel | `CLAUDE.md` | Orchestration Model |
 | side-by-side blueprint | `showcase/General_Crystallographic_Restriction/README.md` | Attribution |
 | side-by-side blueprint tool | `dev/markdowns/living/README.md` | 1. Tool Development |
 | side-by-side display | `toolchain/Runway/README.md` | Features |
@@ -312,6 +318,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | subverso: | `forks/verso/README.md` | Dependencies |
 | template | `toolchain/Runway/README.md` | Key Module Details |
 | template for new projects | `toolchain/SBS-Test/README.md` | Purpose |
+| temporary | `dev/storage/README.md` | Test Organization System |
 | terence tao | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | terence tao, january 2026 | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | test_cli.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
@@ -491,9 +498,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `Tooling hub` | CLI commands, validation, workflows |
 | `dev/markdowns/living/README.md` | Agent-facing monorepo overview |
 | `dev/markdowns/permanent/` | Script-agent boundary, archive roles |
-| `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components |
+| `dev/markdowns/permanent/ARCHITECTURE.md` | Build pipeline, components, document taxonomy |
 | `dev/markdowns/permanent/GOALS.md` | Project vision and design goals |
-| `dev/markdowns/permanent/TAXONOMY.md` | Document classification system |
 
 ### storage
 
