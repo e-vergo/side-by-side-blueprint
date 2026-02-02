@@ -328,3 +328,61 @@ class GraphStats(BaseModel):
     validation_messages: List[str] = Field(
         default_factory=list, description="Validation warnings/errors"
     )
+
+
+# =============================================================================
+# Zulip Tools
+# =============================================================================
+
+
+class ZulipMessage(BaseModel):
+    """A single Zulip message."""
+
+    id: int = Field(description="Message ID")
+    sender: str = Field(description="Sender display name")
+    content: str = Field(description="Message content (markdown)")
+    timestamp: str = Field(description="ISO timestamp")
+    reactions: List[str] = Field(default_factory=list, description="Emoji reactions")
+
+
+class ZulipSearchResult(BaseModel):
+    """Result from searching Zulip messages."""
+
+    messages: List[ZulipMessage] = Field(
+        default_factory=list, description="Matching messages"
+    )
+    total_count: int = Field(description="Total matches found")
+    query: str = Field(description="Search query used")
+    stream: Optional[str] = Field(None, description="Stream filter if applied")
+    topic: Optional[str] = Field(None, description="Topic filter if applied")
+    truncated: bool = Field(default=False, description="Whether results were truncated")
+
+
+class ZulipThreadResult(BaseModel):
+    """Result from fetching a Zulip thread."""
+
+    stream: str = Field(description="Stream name")
+    topic: str = Field(description="Topic name")
+    messages: List[ZulipMessage] = Field(
+        default_factory=list, description="Thread messages in chronological order"
+    )
+    message_count: int = Field(description="Total messages in thread")
+    participants: List[str] = Field(
+        default_factory=list, description="Unique participants"
+    )
+    first_message_date: Optional[str] = Field(None, description="Date of first message")
+    last_message_date: Optional[str] = Field(
+        None, description="Date of most recent message"
+    )
+
+
+class ZulipScreenshotResult(BaseModel):
+    """Result from capturing a Zulip screenshot."""
+
+    image_path: str = Field(description="Absolute path to screenshot file")
+    url: str = Field(description="URL that was captured")
+    captured_at: str = Field(description="ISO timestamp of capture")
+    hash: Optional[str] = Field(None, description="SHA256 hash prefix for comparison")
+    stream: Optional[str] = Field(None, description="Stream name if thread")
+    topic: Optional[str] = Field(None, description="Topic name if thread")
+    archived: bool = Field(default=False, description="Whether screenshot was archived")

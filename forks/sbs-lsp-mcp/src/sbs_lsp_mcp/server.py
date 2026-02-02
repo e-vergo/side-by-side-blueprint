@@ -121,12 +121,18 @@ class AppContext:
     lean_search_available: bool
     loogle_manager: LoogleManager | None = None
     loogle_local_available: bool = False
+    # Playwright browser for Zulip tools (lazy-initialized when ZULIP_ENABLED)
+    browser: "Browser | None" = None
+    browser_context: "BrowserContext | None" = None
 
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     loogle_manager: LoogleManager | None = None
     loogle_local_available = False
+    playwright_instance = None
+    browser = None
+    browser_context = None
 
     try:
         lean_project_path_str = os.environ.get("LEAN_PROJECT_PATH", "").strip()
@@ -148,6 +154,23 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
             else:
                 logger.warning("Local loogle installation failed, will use remote API")
 
+        # Initialize Playwright browser for Zulip tools (if enabled)
+        if os.environ.get("ZULIP_ENABLED", "").lower() in ("1", "true", "yes"):
+            try:
+                from playwright.async_api import async_playwright
+                logger.info("Zulip tools enabled, starting Playwright browser...")
+                playwright_instance = await async_playwright().start()
+                browser = await playwright_instance.chromium.launch(headless=True)
+                browser_context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="sbs-lsp-mcp/0.1 Zulip Browser"
+                )
+                logger.info("Playwright browser ready")
+            except ImportError:
+                logger.warning("Playwright not installed - Zulip tools disabled. Install with: pip install playwright && playwright install chromium")
+            except Exception as e:
+                logger.warning(f"Failed to start Playwright browser: {e}")
+
         context = AppContext(
             lean_project_path=lean_project_path,
             client=None,
@@ -157,10 +180,13 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
                 "leanfinder": [],
                 "lean_state_search": [],
                 "hammer_premise": [],
+                "zulip": [],
             },
             lean_search_available=_RG_AVAILABLE,
             loogle_manager=loogle_manager,
             loogle_local_available=loogle_local_available,
+            browser=browser,
+            browser_context=browser_context,
         )
         yield context
     finally:
@@ -168,6 +194,14 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 
         if context.client:
             context.client.close()
+
+        # Close Playwright resources
+        if browser_context:
+            await browser_context.close()
+        if browser:
+            await browser.close()
+        if playwright_instance:
+            await playwright_instance.stop()
 
         if loogle_manager:
             await loogle_manager.stop()
@@ -193,6 +227,15 @@ mcp = FastMCP(**mcp_kwargs)
 
 # Register SBS-specific tools
 register_sbs_tools(mcp)
+
+# Register Zulip browsing tools (if enabled)
+if os.environ.get("ZULIP_ENABLED", "").lower() in ("1", "true", "yes"):
+    try:
+        from sbs_lsp_mcp.zulip_tools import register_zulip_tools
+        register_zulip_tools(mcp)
+        logger.info("Zulip tools registered")
+    except ImportError:
+        logger.warning("zulip_tools module not found - Zulip tools disabled")
 
 
 def rate_limited(category: str, max_requests: int, per_seconds: int):

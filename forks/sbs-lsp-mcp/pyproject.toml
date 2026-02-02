@@ -34,6 +34,9 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
 ]
+zulip = [
+    "playwright>=1.40.0",
+]
 
 [project.scripts]
 sbs-lsp-mcp = "sbs_lsp_mcp:main"

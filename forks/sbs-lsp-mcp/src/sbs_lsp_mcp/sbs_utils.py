@@ -81,6 +81,7 @@ if TYPE_CHECKING:
 # Re-export for convenience
 SBS_ROOT = _SBS_ROOT
 ARCHIVE_DIR = _ARCHIVE_DIR  # Re-export from sbs.core.utils
+ZULIP_ARCHIVE_DIR = ARCHIVE_DIR / "zulip"
 
 
 # =============================================================================
@@ -320,6 +321,41 @@ def search_oracle(
     # Sort by relevance and limit
     results.sort(key=lambda x: x["relevance"], reverse=True)
     return results[:max_results]
+
+
+# =============================================================================
+# Filename Utilities
+# =============================================================================
+
+
+def sanitize_filename(name: str) -> str:
+    """Sanitize a string for use as filename.
+
+    Replaces non-alphanumeric characters with underscores, truncates to 100 chars.
+    """
+    return "".join(c if c.isalnum() or c in "-_" else "_" for c in name)[:100]
+
+
+# =============================================================================
+# Zulip Screenshot Utilities
+# =============================================================================
+
+
+def get_zulip_screenshot_path(stream: str, topic: str, latest: bool = True) -> Path:
+    """Get path for a Zulip thread screenshot.
+
+    Args:
+        stream: Zulip stream name
+        topic: Zulip topic name
+        latest: If True, return path in latest/; otherwise archive/
+
+    Returns:
+        Path to screenshot file
+    """
+    safe_name = sanitize_filename(f"thread_{stream}_{topic}")
+    if latest:
+        return ZULIP_ARCHIVE_DIR / "latest" / f"{safe_name}.png"
+    return ZULIP_ARCHIVE_DIR / "archive" / f"{safe_name}.png"
 
 
 # =============================================================================
