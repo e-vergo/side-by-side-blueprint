@@ -15,14 +15,8 @@ Update all documentation and achieve porcelain git state across all repos.
 Agents must read these before making changes:
 
 ```
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/ARCHITECTURE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation1.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation2.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation3.txt
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/.refs/motivation4.txt
 /Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/ARCHITECTURE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md
-/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/GOALS.md
+/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/Archive_Orchestration_and_Agent_Harmony.md
 /Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/README.md
 ```
 
