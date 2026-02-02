@@ -250,16 +250,30 @@ def cmd_archive_retroactive(args: argparse.Namespace) -> int:
 
 def cmd_archive_upload(args: argparse.Namespace) -> int:
     """Run archive upload."""
+    import json
     from .upload import archive_upload
 
     project = getattr(args, "project", None)
     trigger = getattr(args, "trigger", "manual")
     dry_run = getattr(args, "dry_run", False)
+    state_transition = getattr(args, "state_transition", None)
+
+    # Parse global_state JSON if provided
+    global_state = None
+    global_state_str = getattr(args, "global_state", None)
+    if global_state_str:
+        try:
+            global_state = json.loads(global_state_str)
+        except json.JSONDecodeError as e:
+            log.error(f"Invalid JSON for --global-state: {e}")
+            return 1
 
     result = archive_upload(
         project=project,
         trigger=trigger,
         dry_run=dry_run,
+        global_state=global_state,
+        state_transition=state_transition,
     )
 
     # Log summary

@@ -464,6 +464,15 @@ Examples:
         action="store_true",
         help="Show what would be done without making changes",
     )
+    archive_upload_parser.add_argument(
+        "--global-state",
+        help='JSON object for orchestration state, e.g. \'{"skill": "task", "substate": "execution"}\'',
+    )
+    archive_upload_parser.add_argument(
+        "--state-transition",
+        choices=["phase_start", "phase_end"],
+        help="State transition type (phase_start or phase_end)",
+    )
 
     # --- oracle (command group) ---
     oracle_parser = subparsers.add_parser(
