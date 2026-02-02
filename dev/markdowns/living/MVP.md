@@ -117,6 +117,48 @@ Professional presentation with clean aesthetics:
 
 ---
 
+## Showcase Repository Requirements
+
+The toolchain's credibility depends on compelling demonstrations. Each showcase serves a distinct purpose:
+
+### SBS-Test: Feature Completeness
+
+The test project must exercise every feature:
+- All 6 status colors represented (nodes in each state)
+- Both authoring modes (TeX and Verso documents)
+- Dependency graph with meaningful structure (not just linear)
+- Dashboard with populated stats, key theorems, messages
+- Paper generation (HTML and PDF)
+- All interactive features (hovers, toggles, modals, zoom/pan)
+- Edge cases: multi-paragraph proofs, complex LaTeX, nested structures
+
+**Criterion:** A developer can point to SBS-Test to answer "does feature X work?"
+
+### GCR: Polished Showcase
+
+A complete, professional example:
+- Finished mathematical content (complete proof, no `sorry`)
+- Full blueprint document with proper narrative
+- Complete academic paper (HTML and PDF)
+- All metadata populated (authors, abstract, references)
+- Visual polish appropriate for public demonstration
+
+**Criterion:** GCR is what we show to potential users. It must look finished.
+
+### PNT: Scale Validation
+
+Integration stress test and existence proof:
+- 500+ nodes rendering correctly
+- Build completes in reasonable time
+- All interactive features remain responsive at scale
+- Dependency graph performance acceptable (zoom/pan/click must not lag significantly)
+- No visual degradation (graph legible, navigation works)
+- Demonstrates compatibility with real-world, in-progress projects
+
+**Criterion:** "If it works on PNT, it works." Undeniable artifact for credibility with the formal verification community. (PNT is maintained by Terence Tao and Alex Kontorovich—high-profile validation.)
+
+---
+
 ## What MVP Does NOT Include
 
 - Automatic synchronization with upstream mathlib changes
