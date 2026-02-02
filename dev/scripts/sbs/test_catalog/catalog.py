@@ -284,45 +284,157 @@ def format_catalog(catalog: TestCatalog) -> str:
     """
     lines: list[str] = []
 
-    lines.append("=== SBS Test Catalog ===")
+    # Header
+    lines.append("")
+    lines.append("  SBS Test Catalog")
+    lines.append("  " + "=" * 50)
     lines.append("")
 
-    # MCP Tools
-    lines.append(f"MCP Tools ({len(catalog.mcp_tools)}):")
+    # -------------------------------------------------------------------------
+    # MCP Tools - grouped by category
+    # -------------------------------------------------------------------------
+    lines.append("  MCP TOOLS")
+    lines.append("  " + "-" * 50)
+    lines.append("")
+
+    # Group by category
+    categories: dict[str, list[MCPTool]] = {}
     for tool in catalog.mcp_tools:
-        status = "[+]" if tool.plugged_in else "[-]"
-        read_only = "Read-only" if tool.read_only else "Read-write"
-        lines.append(f"  {status} {tool.name:<25} {tool.category:<15} {read_only}")
+        if tool.category not in categories:
+            categories[tool.category] = []
+        categories[tool.category].append(tool)
+
+    # Define category order and descriptions
+    category_order = ["Orchestration", "Testing", "Build", "Investigation"]
+    category_desc = {
+        "Orchestration": "Session state and context",
+        "Testing": "Validation and quality checks",
+        "Build": "Project compilation",
+        "Investigation": "Screenshots and history",
+    }
+
+    for category in category_order:
+        if category not in categories:
+            continue
+        tools = categories[category]
+        desc = category_desc.get(category, "")
+        lines.append(f"  {category}")
+        if desc:
+            lines.append(f"  {desc}")
+        lines.append("")
+        for tool in tools:
+            rw_marker = "RO" if tool.read_only else "RW"
+            status = "+" if tool.plugged_in else "-"
+            lines.append(f"    [{status}] {tool.name:<28} {rw_marker}")
+        lines.append("")
+
+    # -------------------------------------------------------------------------
+    # Pytest Tests - summary by tier with file breakdown
+    # -------------------------------------------------------------------------
+    lines.append("  PYTEST TESTS")
+    lines.append("  " + "-" * 50)
     lines.append("")
 
-    # Pytest Tests
     tier_counts = {"evergreen": 0, "dev": 0, "temporary": 0, "unmarked": 0}
     for test in catalog.pytest_tests:
         tier_counts[test.tier] = tier_counts.get(test.tier, 0) + 1
 
-    lines.append(f"Pytest Tests ({len(catalog.pytest_tests)}):")
-    lines.append(f"  Evergreen: {tier_counts['evergreen']}")
-    lines.append(f"  Dev: {tier_counts['dev']}")
-    lines.append(f"  Temporary: {tier_counts['temporary']}")
-    lines.append(f"  Unmarked: {tier_counts['unmarked']}")
+    # Tier summary with visual bar
+    total = len(catalog.pytest_tests)
+    lines.append(f"  Total: {total} tests")
     lines.append("")
 
-    # Show first 10 tests
-    shown = 0
+    tier_symbols = {
+        "evergreen": "*",  # stable
+        "dev": "~",  # in development
+        "temporary": "?",  # temporary
+        "unmarked": "-",  # needs classification
+    }
+    tier_desc = {
+        "evergreen": "Stable, always run",
+        "dev": "In development",
+        "temporary": "Temporary/experimental",
+        "unmarked": "Needs tier marker",
+    }
+
+    for tier in ["evergreen", "dev", "temporary", "unmarked"]:
+        count = tier_counts[tier]
+        if count == 0 and tier in ("dev", "temporary", "unmarked"):
+            continue  # Skip empty non-evergreen tiers
+        pct = (count / total * 100) if total > 0 else 0
+        symbol = tier_symbols[tier]
+        desc = tier_desc[tier]
+        lines.append(f"    [{symbol}] {tier:<12} {count:>4}  ({pct:5.1f}%)  {desc}")
+
+    lines.append("")
+
+    # Group tests by file for compact display
+    files: dict[str, list[PytestTest]] = {}
     for test in catalog.pytest_tests:
-        if shown >= 10:
-            remaining = len(catalog.pytest_tests) - shown
-            lines.append(f"  ... and {remaining} more tests")
-            break
-        lines.append(f"  [{test.tier}] {test.name}")
-        shown += 1
+        if test.file not in files:
+            files[test.file] = []
+        files[test.file].append(test)
+
+    lines.append("  By file:")
     lines.append("")
 
-    # CLI Commands
-    lines.append(f"CLI Commands ({len(catalog.cli_commands)}):")
-    for cmd in catalog.cli_commands:
-        status = "[+]" if cmd.available else "[-]"
-        lines.append(f"  {status} {cmd.name}")
+    # Sort files by path for consistent ordering
+    for file_path in sorted(files.keys()):
+        tests = files[file_path]
+        # Get predominant tier for the file
+        file_tiers = {}
+        for t in tests:
+            file_tiers[t.tier] = file_tiers.get(t.tier, 0) + 1
+        main_tier = max(file_tiers, key=lambda k: file_tiers[k])
+        symbol = tier_symbols[main_tier]
+
+        # Shorten path for display
+        short_path = file_path.replace("sbs/tests/pytest/", "")
+        lines.append(f"    [{symbol}] {short_path:<40} {len(tests):>3} tests")
+
+    lines.append("")
+
+    # -------------------------------------------------------------------------
+    # CLI Commands - grouped by function
+    # -------------------------------------------------------------------------
+    lines.append("  CLI COMMANDS")
+    lines.append("  " + "-" * 50)
+    lines.append("")
+
+    # Group commands logically
+    cmd_groups = {
+        "Visual Testing": ["capture", "compare", "history", "compliance"],
+        "Validation": ["validate", "validate-all", "inspect"],
+        "Repository": ["status", "diff", "sync", "versions"],
+        "Archive": ["archive list", "archive tag", "archive note", "archive show",
+                    "archive charts", "archive sync", "archive upload"],
+        "Utilities": ["oracle compile", "readme-check", "test-catalog"],
+    }
+
+    # Build command lookup
+    cmd_lookup = {cmd.name.replace("sbs ", ""): cmd for cmd in catalog.cli_commands}
+
+    for group_name, cmd_names in cmd_groups.items():
+        group_cmds = [cmd_lookup[name] for name in cmd_names if name in cmd_lookup]
+        if not group_cmds:
+            continue
+
+        lines.append(f"  {group_name}")
+        lines.append("")
+        for cmd in group_cmds:
+            status = "+" if cmd.available else "-"
+            # Extract just the subcommand part for display
+            short_name = cmd.name.replace("sbs ", "")
+            lines.append(f"    [{status}] {short_name:<20} {cmd.description}")
+        lines.append("")
+
+    # -------------------------------------------------------------------------
+    # Summary footer
+    # -------------------------------------------------------------------------
+    lines.append("  " + "=" * 50)
+    lines.append(f"  {len(catalog.mcp_tools)} MCP tools | "
+                 f"{len(catalog.pytest_tests)} tests | "
+                 f"{len(catalog.cli_commands)} CLI commands")
     lines.append("")
 
     return "\n".join(lines)

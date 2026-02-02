@@ -768,19 +768,39 @@ def cmd_validate_all(args: argparse.Namespace) -> int:
 
 def cmd_test_catalog(args: argparse.Namespace) -> int:
     """Handle test-catalog command."""
+    from datetime import datetime
     from pathlib import Path
     from sbs.test_catalog import build_catalog, format_catalog, format_catalog_json
 
     # Find scripts dir: cli.py is at dev/scripts/sbs/cli.py (2 levels up to dev/scripts)
     scripts_dir = Path(__file__).resolve().parent.parent
+    # Find repo root: cli.py is at dev/scripts/sbs/cli.py (4 levels up)
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent
 
     tier_filter = getattr(args, "tier", None)
     catalog = build_catalog(scripts_dir, tier_filter)
 
     if args.json:
-        print(format_catalog_json(catalog))
+        output = format_catalog_json(catalog)
+        print(output)
     else:
-        print(format_catalog(catalog))
+        output = format_catalog(catalog)
+        print(output)
+
+        # Write to fixed file location (only for human-readable output)
+        catalog_path = repo_root / "dev" / "storage" / "TEST_CATALOG.md"
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        md_content = f"""# SBS Test Catalog
+
+> Auto-generated on {timestamp}
+> Run `sbs test-catalog` to regenerate
+
+```
+{output}
+```
+"""
+        catalog_path.write_text(md_content, encoding="utf-8")
+        log.info(f"Written to: {catalog_path}")
 
     return 0
 
