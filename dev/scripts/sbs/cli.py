@@ -34,24 +34,26 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  capture     Capture screenshots of generated site
-  compare     Compare latest screenshots to previous capture
-  history     List capture history for a project
-  inspect     Show build state, artifact locations, manifest contents
-  validate    Run validation checks on generated site
-  compliance  Visual compliance validation loop
-  status      Show git status across all repos
-  diff        Show changes across all repos
-  sync        Ensure all repos are synced (commit + push)
-  versions    Show dependency versions across repos
-  archive     Archive management commands
-  rubric      Rubric management commands
-  oracle      Oracle management commands
+  capture      Capture screenshots of generated site
+  compare      Compare latest screenshots to previous capture
+  history      List capture history for a project
+  inspect      Show build state, artifact locations, manifest contents
+  validate     Run validation checks on generated site
+  compliance   Visual compliance validation loop
+  validate-all Run compliance + quality score evaluation
+  status       Show git status across all repos
+  diff         Show changes across all repos
+  sync         Ensure all repos are synced (commit + push)
+  versions     Show dependency versions across repos
+  archive      Archive management commands
+  rubric       Rubric management commands
+  oracle       Oracle management commands
 
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
   sbs compare                    # Compare latest to most recent archive
   sbs compliance                 # Run visual compliance check
+  sbs validate-all               # Run compliance + quality scores
   sbs status                     # Show git status for all repos
   sbs inspect                    # Show build artifacts and manifest
   sbs sync -m "Fix bug"          # Commit and push all changes
@@ -635,6 +637,29 @@ Examples:
         help="Output as JSON",
     )
 
+    # --- validate-all ---
+    validate_all_parser = subparsers.add_parser(
+        "validate-all",
+        help="Run compliance + quality score evaluation",
+        description="Unified validation: runs compliance check and reports quality score status.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Combines compliance validation with quality score tracking:
+1. Runs compliance check (or reports current status)
+2. Checks quality scores for staleness
+3. Reports which metrics need re-evaluation
+4. Shows combined validation status
+
+Examples:
+  sbs validate-all                     # Check all validation status
+  sbs validate-all --project SBSTest   # Check for specific project
+        """,
+    )
+    validate_all_parser.add_argument(
+        "--project",
+        help="Project name (default: detect from runway.json)",
+    )
+
     return parser
 
 
@@ -703,6 +728,116 @@ def cmd_readme_check(args: argparse.Namespace) -> int:
         print(format_report(statuses))
 
     return 0
+
+
+def cmd_validate_all(args: argparse.Namespace) -> int:
+    """Handle validate-all command: compliance + quality scores."""
+    from pathlib import Path
+    from sbs.core.utils import detect_project
+
+    # Detect project
+    if args.project:
+        project_name = args.project
+    else:
+        project_name, _ = detect_project()
+
+    log.header(f"Unified Validation: {project_name}")
+
+    # 1. Check compliance status
+    log.info("Checking compliance status...")
+    try:
+        from sbs.tests.compliance.ledger_ops import load_ledger as load_compliance_ledger, is_fully_compliant
+        compliance_ledger = load_compliance_ledger()
+
+        if compliance_ledger.project == project_name:
+            compliant = is_fully_compliant(compliance_ledger)
+            summary = compliance_ledger.summary
+            log.info(f"Compliance: {summary.compliance_percent:.1f}% ({summary.passed}/{summary.total_checks} passed)")
+            if not compliant:
+                log.warning(f"  {summary.failed} pages need attention")
+        else:
+            log.info(f"No compliance data for {project_name}")
+            compliant = False
+    except Exception as e:
+        log.warning(f"Could not load compliance ledger: {e}")
+        compliant = False
+
+    print()
+
+    # 2. Check quality scores
+    log.info("Checking quality scores...")
+    try:
+        from sbs.tests.scoring import (
+            load_ledger as load_quality_ledger,
+            get_stale_metrics,
+            get_pending_metrics,
+            compute_metrics_to_evaluate,
+        )
+
+        quality_ledger = load_quality_ledger(project_name)
+        stale = get_stale_metrics(quality_ledger)
+        pending = get_pending_metrics(quality_ledger)
+
+        log.info(f"Overall quality score: {quality_ledger.overall_score:.2f}%")
+
+        if stale:
+            log.warning(f"Stale metrics ({len(stale)}): {', '.join(stale)}")
+
+        if pending:
+            log.warning(f"Pending metrics ({len(pending)}): {', '.join(pending)}")
+
+        # Show individual scores
+        print()
+        log.info("Quality Metrics:")
+        weights = {
+            "t1-cli-execution": ("CLI Execution", 10),
+            "t2-ledger-population": ("Ledger Population", 10),
+            "t3-dashboard-clarity": ("Dashboard Clarity", 10),
+            "t4-toggle-discoverability": ("Toggle Discoverability", 10),
+            "t5-color-match": ("Status Color Match", 15),
+            "t6-css-coverage": ("CSS Variable Coverage", 15),
+            "t7-jarring": ("Jarring-Free Check", 15),
+            "t8-professional": ("Professional Score", 15),
+        }
+
+        for metric_id in sorted(weights.keys()):
+            name, weight = weights[metric_id]
+            score = quality_ledger.scores.get(metric_id)
+            if score:
+                status = "STALE" if score.stale else ("PASS" if score.passed else "FAIL")
+                print(f"  {metric_id}: {score.value:.1f} ({status}) - {name}")
+            else:
+                print(f"  {metric_id}: - (pending) - {name}")
+
+    except Exception as e:
+        log.warning(f"Could not load quality ledger: {e}")
+        pending = []
+        stale = []
+
+    print()
+
+    # 3. Summary
+    log.header("Validation Summary")
+
+    all_valid = compliant and not pending and not stale
+
+    if all_valid:
+        log.success("All validations passing")
+        return 0
+    else:
+        if not compliant:
+            log.warning("Compliance: needs attention")
+        else:
+            log.success("Compliance: passing")
+
+        if pending:
+            log.warning(f"Quality: {len(pending)} metrics need evaluation")
+        elif stale:
+            log.warning(f"Quality: {len(stale)} metrics are stale")
+        else:
+            log.success("Quality: all metrics current")
+
+        return 1
 
 
 # =============================================================================
@@ -779,6 +914,9 @@ def main(argv: list[str] | None = None) -> int:
 
         elif args.command == "readme-check":
             return cmd_readme_check(args)
+
+        elif args.command == "validate-all":
+            return cmd_validate_all(args)
 
         else:
             log.error(f"Unknown command: {args.command}")

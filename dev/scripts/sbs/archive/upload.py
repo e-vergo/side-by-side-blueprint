@@ -187,6 +187,61 @@ def collect_repo_commits() -> dict[str, str]:
     return commits
 
 
+def _load_quality_scores(project: str, index_path: Path) -> tuple[Optional[dict], Optional[dict]]:
+    """Load quality scores and compute delta from previous entry.
+
+    Args:
+        project: Project name
+        index_path: Path to archive index for finding previous entry
+
+    Returns:
+        (quality_scores_dict, delta_dict) or (None, None) if unavailable
+    """
+    try:
+        from sbs.tests.scoring import load_ledger as load_quality_ledger
+
+        ledger = load_quality_ledger(project)
+
+        if not ledger.scores:
+            return None, None
+
+        # Build quality scores snapshot
+        scores_dict = {}
+        for metric_id, score in ledger.scores.items():
+            scores_dict[metric_id] = {
+                "value": score.value,
+                "passed": score.passed,
+                "stale": score.stale,
+            }
+
+        quality_scores = {
+            "overall": ledger.overall_score,
+            "scores": scores_dict,
+            "evaluated_at": ledger.last_evaluated,
+        }
+
+        # Compute delta from previous entry
+        delta = None
+        try:
+            index = ArchiveIndex.load(index_path)
+            previous = index.get_latest_entry(project)
+
+            if previous and previous.quality_scores:
+                prev_overall = previous.quality_scores.get("overall", 0.0)
+                delta = {
+                    "overall": round(ledger.overall_score - prev_overall, 2),
+                    "previous_overall": prev_overall,
+                }
+        except Exception:
+            pass  # Delta is optional
+
+        return quality_scores, delta
+
+    except Exception as e:
+        log.warning(f"Could not load quality scores: {e}")
+        return None, None
+
+
 def archive_upload(
     project: Optional[str] = None,
     build_run_id: Optional[str] = None,
@@ -247,6 +302,9 @@ def archive_upload(
         result["sessions_extracted"] = len(snapshot.session_ids)
         result["plans_extracted"] = len(snapshot.plan_files)
 
+        # Define index path early (needed for quality score delta computation)
+        index_path = ARCHIVE_DIR / "archive_index.json"
+
         # 2. Create ArchiveEntry
         entry_id = str(int(time.time()))
         entry = ArchiveEntry(
@@ -258,6 +316,14 @@ def archive_upload(
             trigger=trigger,
         )
         result["entry_id"] = entry_id
+
+        # 2.5 Include quality scores
+        log.info("Loading quality scores...")
+        quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+        entry.quality_scores = quality_scores
+        entry.quality_delta = quality_delta
+        if quality_scores:
+            result["quality_score"] = quality_scores.get("overall", 0.0)
 
         # 3. Collect repo commits
         log.info("Collecting repo commits...")
@@ -302,7 +368,7 @@ def archive_upload(
 
         # 5. Save to archive index
         log.info("Saving to archive index...")
-        index_path = ARCHIVE_DIR / "archive_index.json"
+        # index_path already defined above
 
         if dry_run:
             log.dim(f"[dry-run] Would save entry {entry_id} to {index_path}")

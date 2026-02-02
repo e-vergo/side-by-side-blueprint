@@ -671,9 +671,9 @@ The skill runs `sbs readme-check --json` at the start to determine which repos h
 
 ## Custom Skills
 
-### `/execute`
+### `/task`
 
-General-purpose agentic task execution with validation. Invoke manually via `/execute`.
+General-purpose agentic task execution with validation. Invoke manually via `/task`.
 
 **Workflow:**
 1. **Alignment (Q&A)** - Claude asks clarifying questions until user signals "ready to plan"
@@ -692,7 +692,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 - `code-stats` - LOC and file counts
 - `rubric` - Custom rubric evaluation
 
-**Location:** `.claude/skills/execute/SKILL.md`
+**Location:** `.claude/skills/task/SKILL.md`
 
 **Key properties:**
 - `disable-model-invocation: true` - Manual trigger only
@@ -701,7 +701,7 @@ General-purpose agentic task execution with validation. Invoke manually via `/ex
 
 #### Grab-Bag Mode
 
-Invoke with `/execute --grab-bag` for ad-hoc improvement sessions:
+Invoke with `/task --grab-bag` for ad-hoc improvement sessions:
 1. Brainstorm (user-led)
 2. Metric alignment
 3. Rubric creation

@@ -37,7 +37,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | activity heatmap | `CLAUDE.md` | Visualizations |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | align | `dev/storage/README.md` | Creating Rubrics |
-| alignment (q&a) | `CLAUDE.md` | `/execute` |
+| alignment (q&a) | `CLAUDE.md` | `/task` |
 | always use `python build.py` for builds | `CLAUDE.md` | Standards |
 | always use the python build script. never skip commits or pushes. | `CLAUDE.md` | Build Requirement |
 | architect/attribute | `CLAUDE.md/Architect/Attribute.lean` | `@[blueprint]` attribute with all options |
@@ -140,13 +140,13 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | during ci | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | environment lookup with suffix matching | `forks/subverso/README.md` | Identifier Resolution |
 | execute | `dev/storage/README.md` | Creating Rubrics |
-| execution | `CLAUDE.md` | `/execute` |
+| execution | `CLAUDE.md` | `/task` |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
 | expected layout times: | `CLAUDE.md` | Graph Layout Performance |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | file purpose map | `CLAUDE.md` | What the Oracle Knows |
-| finalization | `CLAUDE.md` | `/execute` |
+| finalization | `CLAUDE.md` | `/task` |
 | finalize | `dev/storage/README.md` | Creating Rubrics |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
 | for lean software development (not proofs): | `CLAUDE.md` | MCP Tool Usage |
@@ -193,7 +193,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | javascript | `toolchain/dress-blueprint-action/README.md` | Overview |
 | javascript pan/zoom: | `CLAUDE.md` | Graph Debugging Tips |
 | key files: | `CLAUDE.md` | Visual Compliance (CLI) |
-| key properties: | `CLAUDE.md` | `/execute` |
+| key properties: | `CLAUDE.md` | `/task` |
 | key results: | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | key theorems | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | lakefile | `SBS-Test/lakefile.toml` | Change `name = "SBSTest"` to your project name |
@@ -211,7 +211,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | live site: | `toolchain/SBS-Test/README.md` | SBS-Test |
 | loc trends | `CLAUDE.md` | Visualizations |
 | local ground truth: | `CLAUDE.md` | Directory Structure |
-| location: | `CLAUDE.md` | `/execute` |
+| location: | `CLAUDE.md` | `/task` |
 | loop | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | main | `CLAUDE.md/Main.lean` | CLI: `extract_blueprint graph` |
 | main.lean | `toolchain/Runway/README.md` | Module Architecture |
@@ -230,6 +230,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | messages | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | metadata options (8): | `CLAUDE.md` | `@[blueprint]` Attribute Options |
 | metrics | `dev/storage/README.md` | Rubric Structure |
+| metricscore | `dev/storage/README.md` | Implementation |
 | minimal dependencies | `dev/scripts/sbs/core/README.md` | Design Principles |
 | module reference support | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | module reference support: | `CLAUDE.md` | Key Technical Details |
@@ -282,7 +283,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | phase 4: site generation | `CLAUDE.md` | Build Pipeline Phases |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
-| planning | `CLAUDE.md` | `/execute` |
+| planning | `CLAUDE.md` | `/task` |
 | practice introspection. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | preamble | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
 | primenumbertheoremand | `CLAUDE.md` | Repository Map |
@@ -293,6 +294,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | proof dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
 | prototype status | `toolchain/Runway/README.md` | Runway |
 | python hooks | `dev/storage/README.md` | Auto-Tagging |
+| qualityscoreledger | `dev/storage/README.md` | Implementation |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
 | rainbow bracket highlighting: | `CLAUDE.md` | Key Technical Details |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
@@ -422,7 +424,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | validationresult | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validator | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validators/ | `dev/scripts/sbs/tests/README.md` | pytest/ |
-| validators: | `CLAUDE.md` | `/execute` |
+| validators: | `CLAUDE.md` | `/task` |
 | verified | `toolchain/Runway/README.md` | Verification Badges |
 | verify: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | verso | `CLAUDE.md` | Repository Map |
@@ -441,7 +443,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | why validation matters: | `toolchain/Dress/README.md` | Overview |
 | wiener-ikehara tauberian theorem | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | workflow size | `CLAUDE.md` | CI/CD Architecture |
-| workflow: | `CLAUDE.md` | `/execute` |
+| workflow: | `CLAUDE.md` | `/task` |
 | zebra striping | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 
 ---
@@ -579,6 +581,13 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `side_by_side_blueprint_ground_truth.txt` | Working Python leanblueprint HTML |
 | `verso-code.js` | Token binding, Tippy.js tooltips, proof sync, pan/zoom, modal handling |
 
+### storage
+
+| File | Purpose |
+|------|---------|
+| `ledger.py` | `QualityScoreLedger`, `MetricScore`, persistence |
+| `reset.py` | Repo-change detection, metric invalidation |
+
 ### subverso
 
 | File | Purpose |
@@ -643,7 +652,7 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 <details>
 <summary><strong>Creating Rubrics</strong></summary>
 
-Rubrics are typically created during `/execute --grab-bag` sessions:
+Rubrics are typically created during `/task --grab-bag` sessions:
 
 1. **Brainstorm** improvements with user
 2. **Align** on measurable metrics
@@ -651,7 +660,7 @@ Rubrics are typically created during `/execute --grab-bag` sessions:
 4. **Execute** tasks with rubric-based validation
 5. **Finalize** with evaluation summary
 
-See `.claude/skills/execute/SKILL.md` for the full grab-bag workflow.
+See `.claude/skills/task/SKILL.md` for the full grab-bag workflow.
 
 ---
 

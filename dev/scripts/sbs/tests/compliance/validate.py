@@ -31,6 +31,11 @@ from sbs.tests.compliance.ledger_ops import (
     is_fully_compliant,
     initialize_ledger,
     mark_pages_for_revalidation,
+    start_run,
+    record_screenshots,
+    record_validation_agent,
+    record_iteration,
+    finalize_run,
 )
 from sbs.tests.compliance.mapping import (
     compute_pages_to_validate,
@@ -327,6 +332,16 @@ def run_compliance_check(config: ComplianceConfig) -> ComplianceLedger:
         config.force_full,
     )
 
+    # Start run statistics tracking
+    project_commit = current_commits.get(config.project_name, "unknown")
+    start_run(ledger, config.project_name, project_commit)
+
+    # Record screenshot counts
+    all_screenshots = get_all_screenshot_paths(config.project_name)
+    interactive_count = sum(1 for p in all_screenshots if "_" in p.stem and p.stem != "dep_graph")
+    static_count = len(all_screenshots) - interactive_count
+    record_screenshots(ledger, static_count, interactive_count)
+
     # Filter to specific page if requested
     if config.specific_page:
         if config.specific_page in pages_to_validate:
@@ -460,6 +475,9 @@ def cmd_compliance(args) -> int:
         pages = get_pages_needing_validation(ledger)
 
         if pages:
+            # Record that validation agents will be spawned for these pages
+            record_validation_agent(ledger, len(pages))
+
             print("## Pages Requiring Validation")
             print()
             print("Use AI vision analysis to validate these pages:")
@@ -475,6 +493,10 @@ def cmd_compliance(args) -> int:
                 print()
                 print("-" * 50)
                 print()
+
+        # Finalize run statistics before checking compliance
+        finalize_run(ledger)
+        save_ledger(ledger)
 
         # Check if fully compliant
         if is_fully_compliant(ledger):

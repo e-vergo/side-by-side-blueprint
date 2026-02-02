@@ -4,16 +4,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from sbs.tests.rubrics.rubric import Rubric, RubricIndex, RubricEvaluation
+from sbs.tests.validators.base import ValidationContext
 from sbs.core.utils import ARCHIVE_DIR, log
 
 
 # Rubrics are stored in archive/rubrics/
 RUBRICS_DIR = ARCHIVE_DIR / "rubrics"
 INDEX_PATH = RUBRICS_DIR / "index.json"
+
+# Project roots for known projects
+PROJECT_ROOTS = {
+    "SBSTest": "toolchain/SBS-Test",
+    "GCR": "showcase/General_Crystallographic_Restriction",
+    "PNT": "showcase/PrimeNumberTheoremAnd",
+}
 
 
 def cmd_rubric(args: argparse.Namespace) -> int:
@@ -137,8 +147,40 @@ def cmd_rubric_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _get_repo_root() -> Path:
+    """Get the SBS monorepo root directory."""
+    # This file is at dev/scripts/sbs/tests/rubrics/cmd.py
+    return Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+
+
+def _get_project_root(project: str, repo_root: Path) -> Optional[Path]:
+    """Get the project root directory for a known project."""
+    if project in PROJECT_ROOTS:
+        project_path = repo_root / PROJECT_ROOTS[project]
+        if project_path.exists():
+            return project_path
+    return None
+
+
+def _get_git_commit(directory: Path) -> str:
+    """Get the current git commit hash for a directory."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()[:12]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown"
+
+
 def cmd_rubric_evaluate(args: argparse.Namespace) -> int:
-    """Evaluate a rubric against current state."""
+    """Evaluate a rubric against current state using real validators."""
+    from sbs.tests.validators.rubric_validator import RubricValidator
+
     rubric_path = RUBRICS_DIR / f"{args.rubric_id}.json"
     if not rubric_path.exists():
         log.error(f"Rubric not found: {args.rubric_id}")
@@ -151,19 +193,73 @@ def cmd_rubric_evaluate(args: argparse.Namespace) -> int:
     log.info(f"Project: {args.project}")
     log.info(f"Metrics: {len(rubric.metrics)}")
 
-    # Create empty evaluation (actual evaluation would use validators)
-    evaluation = RubricEvaluation(
-        rubric_id=rubric.id,
-        evaluated_at=datetime.now().isoformat(),
-        evaluator="manual",
-        results={},
-        overall_score=0.0,
-        passed=False,
-        findings=["Evaluation not yet implemented - run validators manually"],
+    # Build validation context
+    repo_root = _get_repo_root()
+    project_root = _get_project_root(args.project, repo_root)
+
+    if not project_root:
+        log.warning(f"Unknown project '{args.project}', using repo root")
+        project_root = repo_root
+
+    commit = _get_git_commit(project_root)
+
+    # Check for screenshots directory
+    screenshots_dir = repo_root / "dev" / "storage" / args.project / "latest"
+    if not screenshots_dir.exists():
+        log.warning(f"Screenshots directory not found: {screenshots_dir}")
+        log.info("AI-based validators will require screenshots. Run 'sbs capture' first.")
+        screenshots_dir = None
+
+    # Build site directory path
+    site_dir = project_root / ".lake" / "build" / "runway"
+    if not site_dir.exists():
+        site_dir = None
+
+    context = ValidationContext(
+        project=args.project,
+        project_root=project_root,
+        commit=commit,
+        screenshots_dir=screenshots_dir,
+        site_dir=site_dir,
+        extra={},
     )
 
+    # Create and configure the rubric validator
+    validator = RubricValidator()
+    validator.set_rubric(rubric)
+
+    # Run evaluation
+    log.info("Running validators...")
     print()
+
+    result = validator.validate(context)
+    evaluation = validator.get_evaluation()
+
+    if not evaluation:
+        log.error("Evaluation failed - no results produced")
+        return 1
+
+    # Display results
     print(evaluation.to_markdown(rubric))
+
+    # Summary
+    print()
+    if result.passed:
+        log.success(f"Overall: PASSED ({evaluation.overall_score:.1%})")
+    else:
+        log.error(f"Overall: FAILED ({evaluation.overall_score:.1%})")
+
+    # Show per-metric summary
+    print()
+    log.header("Metric Summary")
+    for metric in rubric.metrics:
+        metric_result = evaluation.results.get(metric.id)
+        if metric_result:
+            status = "PASS" if metric_result.passed else "FAIL"
+            status_color = "\033[32m" if metric_result.passed else "\033[31m"
+            print(f"  {status_color}{status}\033[0m  {metric.name}: {metric_result.value:.2f}")
+        else:
+            print(f"  \033[33mSKIP\033[0m  {metric.name}: not evaluated")
 
     if args.save:
         RUBRICS_DIR.mkdir(parents=True, exist_ok=True)
@@ -173,7 +269,7 @@ def cmd_rubric_evaluate(args: argparse.Namespace) -> int:
             json.dump(evaluation.to_dict(), f, indent=2)
         log.success(f"Saved evaluation to: {eval_path}")
 
-    return 0
+    return 0 if result.passed else 1
 
 
 def cmd_rubric_delete(args: argparse.Namespace) -> int:

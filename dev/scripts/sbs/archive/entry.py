@@ -45,6 +45,10 @@ class ArchiveEntry:
     auto_tags: list[str] = field(default_factory=list)  # Tags from rules/hooks
     trigger: str = "manual"  # "build", "manual", "skill"
 
+    # Quality scores snapshot
+    quality_scores: Optional[dict] = None  # {overall: float, scores: {metric_id: {value, passed, stale}}}
+    quality_delta: Optional[dict] = None  # Delta from previous entry if available
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -64,6 +68,8 @@ class ArchiveEntry:
             "claude_data": self.claude_data,
             "auto_tags": self.auto_tags,
             "trigger": self.trigger,
+            "quality_scores": self.quality_scores,
+            "quality_delta": self.quality_delta,
         }
 
     @classmethod
@@ -90,6 +96,8 @@ class ArchiveEntry:
             claude_data=data.get("claude_data"),
             auto_tags=data.get("auto_tags", []),
             trigger=data.get("trigger", "manual"),
+            quality_scores=data.get("quality_scores"),
+            quality_delta=data.get("quality_delta"),
         )
 
 

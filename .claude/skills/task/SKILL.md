@@ -1,15 +1,15 @@
 ---
-name: execute
+name: task
 description: General-purpose agentic task execution with validation
 disable-model-invocation: true
 version: 2.0.0
 ---
 
-# /execute - Agentic Task Workflow
+# /task - Agentic Task Workflow
 
 ## Invocation
 
-User triggers `/execute` with a task description.
+User triggers `/task` with a task description.
 
 ## Phase 1: Alignment (Q&A)
 
@@ -57,7 +57,7 @@ Invoke `/update-and-archive` as the final step. This:
 2. Synchronizes core documentation (ARCHITECTURE.md, CLAUDE.md, GOALS.md, README.md)
 3. Ensures documentation reflects the changes made during execution
 
-This phase cannot be skipped. The `/execute` skill is considered incomplete until `/update-and-archive` completes successfully.
+This phase cannot be skipped. The `/task` skill is considered incomplete until `/update-and-archive` completes successfully.
 
 ## Validators
 
@@ -76,6 +76,7 @@ Available validators:
 - `timing` - Build phase timing metrics (category: timing)
 - `git-metrics` - Commit/diff tracking (category: git)
 - `code-stats` - LOC and file counts (category: code)
+- `rubric` - Custom rubric evaluation with T1-T8 metrics (category: quality)
 
 ## Error Handling
 
@@ -95,6 +96,17 @@ After completion:
 
 All builds must go through `python build.py` (never skip commits/pushes). The unified ledger at `dev/storage/unified_ledger.json` tracks all metrics across builds.
 
+**Combined validation command:**
+```bash
+# Run combined compliance + quality check
+sbs validate-all --project SBSTest
+```
+
+**Quality score ledger:**
+- Location: `dev/storage/{project}/quality_ledger.json`
+- Intelligent invalidation: repo changes mark affected scores stale
+- Tracks T1-T8 metrics with pass/fail status and weights
+
 To run validators programmatically:
 ```python
 from sbs.validators import discover_validators, registry, ValidationContext
@@ -112,7 +124,7 @@ A variant workflow for ad-hoc improvement sessions where scope emerges from brai
 
 ### Invocation
 
-`/execute --grab-bag` or `/execute grab-bag`
+`/task --grab-bag` or `/task grab-bag`
 
 ### Collaboration Style
 
@@ -222,13 +234,13 @@ Rubrics persist beyond sessions:
 |--------|---------|
 | View rubric | `sbs rubric show <id>` |
 | List all | `sbs rubric list` |
-| Reuse rubric | `/execute --rubric <id>` |
+| Reuse rubric | `/task --rubric <id>` |
 | Evolve rubric | Copy JSON, modify, create new |
 
 ### Example Workflow
 
 ```
-User: /execute grab-bag
+User: /task grab-bag
 Claude: What areas would you like to explore for improvements?
 
 User: I've been thinking about the dashboard... [brainstorm]

@@ -3,6 +3,14 @@
 Evaluates a project against a user-defined rubric, producing a weighted overall
 score based on individual metric results. The rubric must be loaded before
 validation can proceed.
+
+Metric IDs are mapped to validators via METRIC_VALIDATOR_MAP. Supported metrics:
+- t3-dashboard-clarity: AI-based dashboard clarity check
+- t4-toggle-discoverability: AI-based toggle findability check
+- t5-color-match: Deterministic status color verification
+- t6-css-coverage: Deterministic CSS variable coverage
+- t7-jarring: AI-based jarring element detection
+- t8-professional: AI-based professional polish assessment
 """
 
 from __future__ import annotations
@@ -11,10 +19,10 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from .base import BaseValidator, ValidationContext, ValidatorResult
-from .registry import register_validator
+from .registry import register_validator, registry, discover_validators
 
 if TYPE_CHECKING:
     from sbs.tests.rubrics.rubric import MetricResult, Rubric, RubricEvaluation, RubricMetric
@@ -23,6 +31,33 @@ log = logging.getLogger(__name__)
 
 # Default paths
 RUBRICS_DIR = Path(__file__).parent.parent.parent.parent / "storage" / "rubrics"
+
+
+# =============================================================================
+# Metric to Validator Mapping
+# =============================================================================
+
+# Maps rubric metric IDs to validator names in the registry.
+# Deterministic validators (T5, T6) run directly.
+# AI-based validators (T3, T4, T7, T8) require ai_responses in context.extra.
+METRIC_VALIDATOR_MAP: dict[str, str] = {
+    # Deterministic validators
+    "t5-color-match": "status-color-match",
+    "t6-css-coverage": "css-variable-coverage",
+    # AI-based validators
+    "t3-dashboard-clarity": "dashboard-clarity",
+    "t4-toggle-discoverability": "toggle-discoverability",
+    "t7-jarring": "jarring-check",
+    "t8-professional": "professional-score",
+}
+
+# Validators that require AI responses to produce real results
+AI_VALIDATORS = {
+    "dashboard-clarity",
+    "toggle-discoverability",
+    "jarring-check",
+    "professional-score",
+}
 
 
 @register_validator
@@ -151,10 +186,12 @@ class RubricValidator(BaseValidator):
     def _evaluate_metric(
         self, metric: RubricMetric, context: ValidationContext
     ) -> MetricResult:
-        """Evaluate a single metric.
+        """Evaluate a single metric by dispatching to the appropriate validator.
 
-        This is a placeholder implementation. In practice, each metric would
-        need custom evaluation logic or delegate to specific validators.
+        Looks up the validator for this metric in METRIC_VALIDATOR_MAP and
+        invokes it. For AI-based validators, checks if ai_responses are
+        provided in context.extra; if not, returns a result indicating
+        AI evaluation is needed.
 
         Args:
             metric: The metric to evaluate
@@ -165,21 +202,131 @@ class RubricValidator(BaseValidator):
         """
         from sbs.tests.rubrics.rubric import MetricResult
 
-        # Placeholder: try to find a matching validator
-        # In real usage, metrics would map to specific validator logic
         log.debug(f"Evaluating metric: {metric.id}")
 
-        # Default: return a placeholder result indicating manual evaluation needed
+        # Look up validator for this metric
+        validator_name = METRIC_VALIDATOR_MAP.get(metric.id)
+
+        if not validator_name:
+            # No validator mapped for this metric
+            return MetricResult(
+                metric_id=metric.id,
+                value=0.0,
+                passed=False,
+                findings=[
+                    f"No validator mapped for metric '{metric.id}'. "
+                    f"Available metrics: {', '.join(sorted(METRIC_VALIDATOR_MAP.keys()))}"
+                ],
+                evaluated_at=datetime.now().isoformat(),
+            )
+
+        # Ensure validators are discovered
+        if validator_name not in registry:
+            discover_validators()
+
+        # Get the validator
+        validator = registry.get(validator_name)
+        if not validator:
+            return MetricResult(
+                metric_id=metric.id,
+                value=0.0,
+                passed=False,
+                findings=[
+                    f"Validator '{validator_name}' not found in registry. "
+                    f"Available validators: {', '.join(registry.list_names())}"
+                ],
+                evaluated_at=datetime.now().isoformat(),
+            )
+
+        # Check if this is an AI validator without responses
+        if validator_name in AI_VALIDATORS:
+            ai_responses = context.extra.get("ai_responses")
+            if not ai_responses:
+                return MetricResult(
+                    metric_id=metric.id,
+                    value=0.0,
+                    passed=False,
+                    findings=[
+                        f"AI validator '{validator_name}' requires ai_responses in context. "
+                        "Run with --interactive or provide AI responses manually."
+                    ],
+                    evaluated_at=datetime.now().isoformat(),
+                )
+
+        # Run the validator
+        try:
+            result = validator.validate(context)
+        except Exception as e:
+            log.exception(f"Validator {validator_name} raised exception")
+            return MetricResult(
+                metric_id=metric.id,
+                value=0.0,
+                passed=False,
+                findings=[f"Validator error: {e}"],
+                evaluated_at=datetime.now().isoformat(),
+            )
+
+        # Extract score from validator result
+        # Different validators report scores differently
+        value = self._extract_score(validator_name, result, metric)
+        passed = result.passed if metric.scoring_type == "pass_fail" else value >= metric.threshold
+
         return MetricResult(
             metric_id=metric.id,
-            value=0.0,
-            passed=False,
-            findings=[
-                f"Metric '{metric.name}' requires manual evaluation "
-                "or specific validator integration"
-            ],
+            value=value,
+            passed=passed,
+            findings=result.findings,
             evaluated_at=datetime.now().isoformat(),
         )
+
+    def _extract_score(
+        self, validator_name: str, result: ValidatorResult, metric: RubricMetric
+    ) -> float:
+        """Extract a normalized score from a validator result.
+
+        Different validators report their results in different ways.
+        This method normalizes them to a 0.0-1.0 scale.
+
+        Args:
+            validator_name: Name of the validator
+            result: The validator result
+            metric: The metric being evaluated (for scoring_type)
+
+        Returns:
+            Normalized score between 0.0 and 1.0
+        """
+        # For pass/fail metrics, return 1.0 for pass, 0.0 for fail
+        if metric.scoring_type == "pass_fail":
+            return 1.0 if result.passed else 0.0
+
+        # Check metrics dict for specific score fields
+        metrics = result.metrics
+
+        # CSS variable coverage returns "coverage"
+        if "coverage" in metrics:
+            return float(metrics["coverage"])
+
+        # Color match returns colors_matched / colors_checked
+        if "colors_matched" in metrics and "colors_checked" in metrics:
+            checked = metrics["colors_checked"]
+            if checked > 0:
+                return float(metrics["colors_matched"]) / float(checked)
+            return 1.0 if result.passed else 0.0
+
+        # AI validators return confidence or questions_passed/questions_total
+        if "confidence" in metrics:
+            # For AI validators, use passed status * confidence
+            if result.passed:
+                return float(metrics.get("confidence", 1.0))
+            return 0.0
+
+        if "questions_passed" in metrics and "questions_total" in metrics:
+            total = metrics["questions_total"]
+            if total > 0:
+                return float(metrics["questions_passed"]) / float(total)
+
+        # Default: binary based on passed
+        return 1.0 if result.passed else 0.0
 
     def get_evaluation(self) -> Optional[RubricEvaluation]:
         """Get the most recent evaluation as a RubricEvaluation object.

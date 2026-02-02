@@ -392,11 +392,10 @@ class CSSVariableCoverageValidator(BaseValidator):
         css_dir = context.extra.get("css_dir")
         if css_dir is None:
             # Default to dress-blueprint-action/assets
-            css_dir = (
-                Path(__file__).parent.parent.parent.parent.parent.parent
-                / "dress-blueprint-action"
-                / "assets"
-            )
+            # This file: dev/scripts/sbs/tests/validators/design/variable_coverage.py
+            # Repo root: 7 parents up
+            repo_root = Path(__file__).parent.parent.parent.parent.parent.parent.parent
+            css_dir = repo_root / "toolchain" / "dress-blueprint-action" / "assets"
         elif isinstance(css_dir, str):
             css_dir = Path(css_dir)
 
