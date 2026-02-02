@@ -484,6 +484,11 @@ Examples:
         type=str,
         help="Comma-separated list of GitHub issue numbers to link (e.g., '42,57')",
     )
+    archive_upload_parser.add_argument(
+        "--pr-number",
+        type=str,
+        help="Comma-separated list of PR numbers to link (e.g., '42,57')",
+    )
 
     # --- oracle (command group) ---
     oracle_parser = subparsers.add_parser(

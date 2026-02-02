@@ -60,6 +60,9 @@ class ArchiveEntry:
     # GitHub issue references
     issue_refs: list[str] = field(default_factory=list)  # Issue numbers, e.g., ["42", "57"]
 
+    # PR references
+    pr_refs: list[int] = field(default_factory=list)  # PR numbers, e.g., [42, 57]
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -86,6 +89,7 @@ class ArchiveEntry:
             "epoch_summary": self.epoch_summary,
             "gate_validation": self.gate_validation,
             "issue_refs": self.issue_refs,
+            "pr_refs": self.pr_refs,
         }
 
     @classmethod
@@ -119,6 +123,7 @@ class ArchiveEntry:
             epoch_summary=data.get("epoch_summary"),
             gate_validation=data.get("gate_validation"),
             issue_refs=data.get("issue_refs", []),
+            pr_refs=data.get("pr_refs", []),
         )
 
 

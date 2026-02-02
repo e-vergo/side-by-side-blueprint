@@ -56,6 +56,7 @@ python3 -m sbs archive upload --trigger skill \
   --global-state '{"skill":"task","substate":"<phase>"}' \
   --state-transition phase_start \
   --issue-refs <comma-separated-issue-numbers>  # If issue-driven
+  --pr-number <pr-number>  # If PR-based (after plan approval)
 ```
 
 Phases: `alignment` → `planning` → `execution` → `finalization`
@@ -139,19 +140,62 @@ python3 -m sbs archive upload --trigger skill \
 
 ---
 
+## PR Creation (After Plan Approval)
+
+**When plan is approved and before transitioning to execution:**
+
+1. **Create feature branch:**
+   ```bash
+   # Via branch_ops.py or direct git commands
+   git checkout main && git pull
+   git checkout -b task/<issue-or-id>-<slug>
+   git push -u origin task/<issue-or-id>-<slug>
+   ```
+
+2. **Create PR via MCP:**
+   ```
+   sbs_pr_create(
+       title="<task title>",
+       body="## Summary\n<brief description>\n\n## Plan\nSee plan file in branch.\n\n## Test Plan\n- [ ] Validators pass\n- [ ] Tests pass",
+       base="main",
+       draft=False
+   )
+   ```
+
+   The PR will automatically include:
+   - `ai-authored` label
+   - Attribution footer
+
+3. **Record PR number in archive transition:**
+   ```bash
+   python3 -m sbs archive upload --trigger skill \
+     --global-state '{"skill":"task","substate":"execution"}' \
+     --state-transition phase_start \
+     --pr-number <pr_number>
+   ```
+
+**Branch naming convention:**
+- Issue-driven: `task/<issue>-<slug>` (e.g., `task/1-verso-pdf-fix`)
+- Freeform: `task/<slug>` (e.g., `task/pr-workflow-integration`)
+
+---
+
 ## Phase 3: Execution
+
+**All work happens on the feature branch, not main.**
 
 Fully autonomous:
 1. Execute agents sequentially (one at a time) for code changes
-2. **Exception: Documentation-only waves** - Agents can run in parallel when:
+2. **All commits go to the feature branch**
+3. **Exception: Documentation-only waves** - Agents can run in parallel when:
    - No code is being modified (only README/docs)
    - No collision risk between agents
    - Spawn all wave agents in a SINGLE message with multiple Task tool calls
-3. After each agent/wave, run specified validators
-4. If validation fails:
+4. After each agent/wave, run specified validators
+5. If validation fails:
    - Retry failed agent once
    - If retry fails, pause for re-approval
-5. Continue until all agents complete
+6. Continue until all agents complete
 
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
@@ -201,7 +245,19 @@ User can:
 1. Run full validation suite
 2. Update unified ledger
 3. Generate summary report
-4. Commit final state
+4. **If gates pass:**
+   - Merge PR via `sbs_pr_merge` MCP tool (squash strategy)
+   - Feature branch is automatically deleted
+5. Commit final state
+
+**PR Merge:**
+```
+sbs_pr_merge(
+    number=<pr_number>,
+    strategy="squash",
+    delete_branch=True
+)
+```
 
 **REQUIRED:** After finalization completes, clear state:
 
@@ -244,6 +300,22 @@ Invoke `/update-and-archive` as the final step. This:
 3. Ensures documentation reflects the changes made during execution
 
 This phase cannot be skipped. The `/task` skill is considered incomplete until `/update-and-archive` completes successfully.
+
+---
+
+## Repo Strategy
+
+Not all repos use PRs. The strategy depends on repo type:
+
+| Category | Strategy | Repos |
+|----------|----------|-------|
+| Main | PR required | Side-By-Side-Blueprint |
+| Toolchain | PR required | Dress, Runway, SBS-Test, dress-blueprint-action |
+| Showcase | PR required | GCR, PNT |
+| Forks | Direct commits | verso, subverso, LeanArchitect, sbs-lsp-mcp |
+| Storage | Direct commits | dev/storage |
+
+**Multi-repo changes:** Submodule changes are committed directly to their repos. The main repo PR captures the submodule pointer bumps.
 
 ---
 

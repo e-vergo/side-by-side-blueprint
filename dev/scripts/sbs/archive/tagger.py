@@ -217,6 +217,7 @@ def build_tagging_context(
         "screenshot_count": len(entry.screenshots),
         "repo_count": len(entry.repo_commits),
         "issue_refs": entry.issue_refs,
+        "pr_refs": entry.pr_refs,
     }
 
     # Add build context

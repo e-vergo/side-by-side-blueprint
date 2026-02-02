@@ -250,6 +250,8 @@ def archive_upload(
     force: bool = False,
     # Issue references
     issue_refs: Optional[list[str]] = None,
+    # PR references
+    pr_refs: Optional[list[int]] = None,
 ) -> dict:
     """
     Main archive upload function.
@@ -317,6 +319,7 @@ def archive_upload(
             global_state=global_state,
             state_transition=state_transition,
             issue_refs=issue_refs or [],
+            pr_refs=pr_refs or [],
         )
         result["entry_id"] = entry_id
 

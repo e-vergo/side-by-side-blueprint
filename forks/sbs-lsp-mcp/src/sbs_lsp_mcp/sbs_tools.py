@@ -28,6 +28,7 @@ from .sbs_models import (
     ContextResult,
     EpochSummaryResult,
     GitHubIssue,
+    GitHubPullRequest,
     HistoryEntry,
     IssueCloseResult,
     IssueCreateResult,
@@ -36,6 +37,10 @@ from .sbs_models import (
     OracleConcept,
     OracleMatch,
     OracleQueryResult,
+    PRCreateResult,
+    PRGetResult,
+    PRListResult,
+    PRMergeResult,
     SBSBuildResult,
     SBSValidationResult,
     ScreenshotResult,
@@ -1676,6 +1681,417 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return IssueCloseResult(
                 success=False,
+                error=str(e),
+            )
+
+    # =========================================================================
+    # GitHub Pull Request Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sbs_pr_create",
+        annotations=ToolAnnotations(
+            title="SBS PR Create",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_pr_create(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="PR title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="PR body/description"),
+        ] = None,
+        base: Annotated[
+            str,
+            Field(description="Base branch (default: main)"),
+        ] = "main",
+        draft: Annotated[
+            bool,
+            Field(description="Create as draft PR"),
+        ] = False,
+    ) -> PRCreateResult:
+        """Create a new GitHub pull request in the SBS repository.
+
+        Creates a PR in e-vergo/Side-By-Side-Blueprint from the current branch.
+
+        Examples:
+        - sbs_pr_create(title="Add feature X")
+        - sbs_pr_create(title="Fix bug", body="Details here", draft=True)
+        """
+        # Attribution footer for AI transparency
+        attribution = "\n\n---\n🤖 Generated with [Claude Code](https://claude.ai/code)"
+        full_body = (body or "") + attribution
+
+        cmd = [
+            "gh", "pr", "create",
+            "--repo", GITHUB_REPO,
+            "--title", title,
+            "--body", full_body,
+            "--base", base,
+            "--label", "ai-authored",
+        ]
+
+        if draft:
+            cmd.append("--draft")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRCreateResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    error=result.stderr.strip() or "Failed to create PR",
+                )
+
+            # Parse URL from output (e.g., "https://github.com/e-vergo/Side-By-Side-Blueprint/pull/123")
+            url = result.stdout.strip()
+            number = None
+            if url and "/pull/" in url:
+                try:
+                    number = int(url.split("/pull/")[-1])
+                except ValueError:
+                    pass
+
+            return PRCreateResult(
+                success=True,
+                number=number,
+                url=url,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_pr_list",
+        annotations=ToolAnnotations(
+            title="SBS PR List",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_pr_list(
+        ctx: Context,
+        state: Annotated[
+            Optional[str],
+            Field(description="PR state filter: open, closed, merged, or all (default: open)"),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="Filter by label"),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description="Maximum PRs to return", ge=1),
+        ] = 20,
+    ) -> PRListResult:
+        """List GitHub pull requests from the SBS repository.
+
+        Lists PRs from e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sbs_pr_list()  # Open PRs
+        - sbs_pr_list(state="closed", limit=10)
+        - sbs_pr_list(label="ai-authored")
+        """
+        cmd = [
+            "gh", "pr", "list",
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,baseRefName,headRefName,isDraft,createdAt",
+            "--limit", str(limit),
+        ]
+
+        if state:
+            cmd.extend(["--state", state])
+        if label:
+            cmd.extend(["--label", label])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRListResult(
+                    pull_requests=[],
+                    total=0,
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return PRListResult(
+                    pull_requests=[],
+                    total=0,
+                )
+
+            pull_requests = []
+            for item in data:
+                # Extract label names from label objects
+                label_names = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                pull_requests.append(
+                    GitHubPullRequest(
+                        number=item.get("number", 0),
+                        title=item.get("title", ""),
+                        state=item.get("state", ""),
+                        labels=label_names,
+                        url=item.get("url", ""),
+                        body=item.get("body"),
+                        base_branch=item.get("baseRefName", ""),
+                        head_branch=item.get("headRefName", ""),
+                        draft=item.get("isDraft", False),
+                        mergeable=None,  # Not available in list view
+                        created_at=item.get("createdAt"),
+                    )
+                )
+
+            return PRListResult(
+                pull_requests=pull_requests,
+                total=len(pull_requests),
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRListResult(
+                pull_requests=[],
+                total=0,
+            )
+        except Exception:
+            return PRListResult(
+                pull_requests=[],
+                total=0,
+            )
+
+    @mcp.tool(
+        "sbs_pr_get",
+        annotations=ToolAnnotations(
+            title="SBS PR Get",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_pr_get(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="PR number to fetch"),
+        ],
+    ) -> PRGetResult:
+        """Get details of a specific GitHub pull request.
+
+        Fetches a single PR from e-vergo/Side-By-Side-Blueprint by number.
+
+        Examples:
+        - sbs_pr_get(number=123)
+        """
+        cmd = [
+            "gh", "pr", "view", str(number),
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,baseRefName,headRefName,isDraft,mergeable,createdAt",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRGetResult(
+                    success=False,
+                    pull_request=None,
+                    error=result.stderr.strip() or f"PR #{number} not found",
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return PRGetResult(
+                    success=False,
+                    pull_request=None,
+                    error="Failed to parse PR data",
+                )
+
+            # Extract label names from label objects
+            label_names = []
+            for lbl in data.get("labels", []):
+                if isinstance(lbl, dict):
+                    label_names.append(lbl.get("name", ""))
+                elif isinstance(lbl, str):
+                    label_names.append(lbl)
+
+            # Handle mergeable - can be null, "MERGEABLE", "CONFLICTING", etc.
+            mergeable_raw = data.get("mergeable")
+            mergeable = None
+            if mergeable_raw == "MERGEABLE":
+                mergeable = True
+            elif mergeable_raw == "CONFLICTING":
+                mergeable = False
+            # Leave as None for UNKNOWN or null
+
+            pull_request = GitHubPullRequest(
+                number=data.get("number", 0),
+                title=data.get("title", ""),
+                state=data.get("state", ""),
+                labels=label_names,
+                url=data.get("url", ""),
+                body=data.get("body"),
+                base_branch=data.get("baseRefName", ""),
+                head_branch=data.get("headRefName", ""),
+                draft=data.get("isDraft", False),
+                mergeable=mergeable,
+                created_at=data.get("createdAt"),
+            )
+
+            return PRGetResult(
+                success=True,
+                pull_request=pull_request,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRGetResult(
+                success=False,
+                pull_request=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRGetResult(
+                success=False,
+                pull_request=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_pr_merge",
+        annotations=ToolAnnotations(
+            title="SBS PR Merge",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_pr_merge(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="PR number to merge"),
+        ],
+        strategy: Annotated[
+            str,
+            Field(description="Merge strategy: squash, rebase, or merge (default: squash)"),
+        ] = "squash",
+        delete_branch: Annotated[
+            bool,
+            Field(description="Delete branch after merge"),
+        ] = True,
+    ) -> PRMergeResult:
+        """Merge a GitHub pull request in the SBS repository.
+
+        Merges a PR in e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sbs_pr_merge(number=123)
+        - sbs_pr_merge(number=123, strategy="rebase", delete_branch=False)
+        """
+        cmd = ["gh", "pr", "merge", str(number), "--repo", GITHUB_REPO]
+
+        # Add merge strategy flag
+        if strategy == "squash":
+            cmd.append("--squash")
+        elif strategy == "rebase":
+            cmd.append("--rebase")
+        elif strategy == "merge":
+            cmd.append("--merge")
+        else:
+            # Default to squash for unknown strategies
+            cmd.append("--squash")
+
+        if delete_branch:
+            cmd.append("--delete-branch")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRMergeResult(
+                    success=False,
+                    sha=None,
+                    error=result.stderr.strip() or f"Failed to merge PR #{number}",
+                )
+
+            # Try to extract merge commit SHA from output
+            # Output might contain something like "Merged pull request #123"
+            # or include the commit SHA
+            output = result.stdout.strip()
+            sha = None
+
+            # Look for SHA pattern (40 hex characters)
+            import re
+            sha_match = re.search(r'\b([0-9a-f]{40})\b', output)
+            if sha_match:
+                sha = sha_match.group(1)
+
+            return PRMergeResult(
+                success=True,
+                sha=sha,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRMergeResult(
+                success=False,
+                sha=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRMergeResult(
+                success=False,
+                sha=None,
                 error=str(e),
             )
 

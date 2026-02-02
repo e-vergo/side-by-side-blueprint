@@ -18,6 +18,73 @@ from sbs.core.utils import (
     git_diff_stat,
     log,
 )
+from sbs.core.branch_ops import (
+    get_current_branch,
+    is_on_feature_branch,
+    is_on_main,
+)
+
+
+# =============================================================================
+# Repo PR Strategy
+# =============================================================================
+
+# Repo PR strategy - which repos require PRs vs direct commits
+REPO_PR_STRATEGY = {
+    # Main repo - requires PRs
+    ".": "pr_required",
+
+    # Toolchain - requires PRs
+    "toolchain/Dress": "pr_required",
+    "toolchain/Runway": "pr_required",
+    "toolchain/SBS-Test": "pr_required",
+    "toolchain/dress-blueprint-action": "pr_required",
+
+    # Showcase - requires PRs
+    "showcase/General_Crystallographic_Restriction": "pr_required",
+    "showcase/PrimeNumberTheoremAnd": "pr_required",
+
+    # Forks - direct commits (tracking upstream)
+    "forks/verso": "direct",
+    "forks/subverso": "direct",
+    "forks/LeanArchitect": "direct",
+    "forks/sbs-lsp-mcp": "direct",
+
+    # Storage - direct commits (data only)
+    "dev/storage": "direct",
+}
+
+
+def get_repo_strategy(repo_path: str) -> str:
+    """Get the PR strategy for a repo.
+
+    Args:
+        repo_path: Relative path to repo from monorepo root
+
+    Returns:
+        "pr_required" or "direct"
+    """
+    # Normalize path
+    if repo_path.endswith("/"):
+        repo_path = repo_path[:-1]
+    if repo_path == "":
+        repo_path = "."
+
+    return REPO_PR_STRATEGY.get(repo_path, "direct")
+
+
+def should_use_pr(repo_path: str) -> bool:
+    """Check if a repo should use PRs.
+
+    Returns True if:
+    - Repo strategy is "pr_required" AND
+    - We're on a feature branch
+
+    If we're on main, we don't create PRs (commits go directly).
+    """
+    if get_repo_strategy(repo_path) != "pr_required":
+        return False
+    return is_on_feature_branch()
 
 
 # =============================================================================
@@ -68,6 +135,14 @@ def sync_repo(repo_path: Path, message: str = "Auto-commit from sbs sync") -> di
 
     Returns dict with: success, committed, pushed, error
     """
+    # Log current branch context
+    branch = get_current_branch()
+    if branch:
+        if is_on_feature_branch():
+            log.dim(f"On feature branch: {branch} (commits go to branch)")
+        else:
+            log.dim(f"On main branch: {branch} (commits go directly)")
+
     result = {
         "path": repo_path,
         "success": True,

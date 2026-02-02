@@ -434,3 +434,60 @@ class IssueCloseResult(BaseModel):
 
     success: bool = Field(description="Whether close succeeded")
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+# =============================================================================
+# GitHub Pull Request Tools
+# =============================================================================
+
+
+class GitHubPullRequest(BaseModel):
+    """A GitHub pull request."""
+
+    number: int = Field(description="PR number")
+    title: str = Field(description="PR title")
+    state: str = Field(description="PR state: open, closed, or merged")
+    labels: List[str] = Field(default_factory=list, description="PR labels")
+    url: str = Field(description="PR URL")
+    body: Optional[str] = Field(None, description="PR body/description")
+    base_branch: str = Field(description="Base branch (e.g., main)")
+    head_branch: str = Field(description="Head branch (feature branch)")
+    draft: bool = Field(default=False, description="Whether PR is a draft")
+    mergeable: Optional[bool] = Field(None, description="Whether PR can be merged")
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+
+
+class PRCreateResult(BaseModel):
+    """Result from creating a PR."""
+
+    success: bool = Field(description="Whether creation succeeded")
+    number: Optional[int] = Field(None, description="New PR number")
+    url: Optional[str] = Field(None, description="New PR URL")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class PRListResult(BaseModel):
+    """Result from listing PRs."""
+
+    pull_requests: List[GitHubPullRequest] = Field(
+        default_factory=list, description="List of PRs"
+    )
+    total: int = Field(description="Total count of PRs returned")
+
+
+class PRGetResult(BaseModel):
+    """Result from getting a single PR."""
+
+    success: bool = Field(description="Whether fetch succeeded")
+    pull_request: Optional[GitHubPullRequest] = Field(
+        None, description="The PR if found"
+    )
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class PRMergeResult(BaseModel):
+    """Result from merging a PR."""
+
+    success: bool = Field(description="Whether merge succeeded")
+    sha: Optional[str] = Field(None, description="Merge commit SHA")
+    error: Optional[str] = Field(None, description="Error message if failed")
