@@ -207,6 +207,8 @@ General-purpose agentic task execution with validation. Invoke manually.
 
 **Workflow:** Alignment (Q&A) -> Planning -> Execution -> Finalization -> /update-and-archive
 
+**PR Integration:** Creates a PR at plan approval (for configured repos), merges at finalization. Tracks PR numbers in archive entries.
+
 Accepts issue numbers: `/task #42` loads issue context and prompts to close on completion.
 
 **Location:** `.claude/skills/task/SKILL.md`
@@ -268,6 +270,10 @@ For implementation details, file locations, and build internals, see:
 | `sbs_run_tests` | Run pytest suite |
 | `sbs_validate_project` | Run T1-T8 validators |
 | `sbs_build_project` | Trigger project build |
+| `sbs_pr_create` | Create PR for task branch |
+| `sbs_pr_list` | List open PRs |
+| `sbs_pr_get` | Get PR details |
+| `sbs_pr_merge` | Merge PR to main |
 
 ---
 
