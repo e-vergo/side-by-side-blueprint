@@ -359,7 +359,7 @@ def archive_upload(
         quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
 
         # Run validators if requested or auto-validate for build triggers
-        should_validate = validate or (trigger == "build" and not quality_scores)
+        should_validate = validate or (trigger == "build")
         if should_validate:
             log.info("Running validators...")
             try:
