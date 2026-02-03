@@ -43,6 +43,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | at least | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | at most | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | attribution | `toolchain/Runway/README.md` | Runway |
+| automated handling: | `CLAUDE.md` | Submodule Commit Workflow |
 | automatic dependency inference | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | backward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
 | base.py | `dev/scripts/sbs/tests/README.md` | validators/ |
@@ -75,6 +76,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | cmd.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | color source of truth | `toolchain/dress-blueprint-action/README.md` | 6-Status Color Model |
 | color source of truth: | `CLAUDE.md` | Quick Reference |
+| commit inside the submodule: | `CLAUDE.md` | Submodule Commit Workflow |
 | complete feature coverage | `toolchain/SBS-Test/README.md` | Purpose |
 | complex analysis approach | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | concept index | `dev/storage/README.md` | What the Oracle Knows |
@@ -182,6 +184,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | manifest loading | `toolchain/Runway/README.md` | Processing Steps |
 | manifest-driven soundness | `toolchain/Runway/README.md` | Features |
 | manual triggers only | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
+| manual workflow: | `CLAUDE.md` | Submodule Commit Workflow |
 | math: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | mathjax compatibility | `toolchain/Runway/README.md` | Design Principles |
 | mcp tool usage (via sbs-lsp-mcp): | `CLAUDE.md` | Quick Reference |
@@ -359,6 +362,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | unpushed commits | `dev/storage/README.md` | What It Checks |
 | update configuration: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | update imports: | `toolchain/SBS-Test/README.md` | Using as a Template |
+| update parent repo: | `CLAUDE.md` | Submodule Commit Workflow |
 | upstream dependencies: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | upstream: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
 | usage: | `CLAUDE.md` | `/oracle` |
