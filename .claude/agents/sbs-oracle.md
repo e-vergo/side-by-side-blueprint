@@ -79,6 +79,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | complex analysis approach | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | concept index | `dev/storage/README.md` | What the Oracle Knows |
 | config | `toolchain/Runway/README.md` | Module Architecture |
+| configurable arguments: | `CLAUDE.md` | Oracle-First Approach |
 | configuration loading | `toolchain/Runway/README.md` | Processing Steps |
 | conftest.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | connectivity validation | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
@@ -132,6 +133,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | general crystallographic restriction | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | git ops | `scripts/git_ops.py` | Git status, diff, and sync operations |
 | github action | `toolchain/dress-blueprint-action/README.md` | Overview |
+| goal: | `CLAUDE.md` | Aggressive Delegation |
 | gotchas | `dev/storage/README.md` | What the Oracle Knows |
 | graceful degradation | `toolchain/Runway/README.md` | Design Principles |
 | graph | `toolchain/Runway/README.md` | Module Architecture |
