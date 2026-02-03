@@ -117,12 +117,12 @@ class TestSchemaConsistency:
         assert isinstance(entry.screenshots, list)
         assert isinstance(entry.repo_commits, dict)
         assert isinstance(entry.global_state, dict)
-        assert entry.state_transition in ("phase_start", "phase_end", None)
+        assert entry.state_transition in ("phase_start", "phase_end", "handoff", None)
         assert entry.trigger in ("build", "skill", "manual", None)
 
     def test_state_fields_valid_enum_values(self):
         """State transition and trigger must be valid enum values."""
-        valid_transitions = ["phase_start", "phase_end", None]
+        valid_transitions = ["phase_start", "phase_end", "handoff", None]
         valid_triggers = ["build", "skill", "manual", None]
 
         for transition in valid_transitions:
@@ -372,6 +372,153 @@ class TestEpochSemantics:
 
         assert "entries_in_epoch" in entry.epoch_summary
         assert isinstance(entry.epoch_summary["entries_in_epoch"], int)
+
+
+# =============================================================================
+# Skill Handoff Tests
+# =============================================================================
+
+
+@pytest.mark.evergreen
+class TestSkillHandoff:
+    """Handoff atomically ends one skill and starts another."""
+
+    def test_handoff_entry_has_correct_state_transition(self):
+        """Handoff entry should have state_transition='handoff'."""
+        entry = ArchiveEntry(
+            entry_id="handoff_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        assert entry.state_transition == "handoff"
+        assert entry.global_state["skill"] == "update-and-archive"
+
+    def test_handoff_updates_index_global_state(self, temp_archive_dir: Path):
+        """After handoff, index global_state should reflect the incoming skill."""
+        index = ArchiveIndex()
+
+        # Set initial state (task in finalization)
+        index.global_state = {"skill": "task", "substate": "finalization"}
+
+        # Create handoff entry
+        entry = ArchiveEntry(
+            entry_id="handoff_entry",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        index.add_entry(entry)
+
+        # Simulate what upload.py does for handoff
+        index.global_state = entry.global_state
+
+        assert index.global_state["skill"] == "update-and-archive"
+        assert index.global_state["substate"] == "readme-wave"
+
+        # Verify persistence
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+        loaded = ArchiveIndex.load(index_path)
+        assert loaded.global_state == {"skill": "update-and-archive", "substate": "readme-wave"}
+
+    def test_handoff_is_not_idle(self, temp_archive_dir: Path):
+        """Handoff should NOT clear global_state to null (unlike phase_end)."""
+        index = ArchiveIndex()
+        index.global_state = {"skill": "task", "substate": "finalization"}
+
+        entry = ArchiveEntry(
+            entry_id="handoff_not_idle",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        index.add_entry(entry)
+        index.global_state = entry.global_state
+
+        # State should NOT be null
+        assert index.global_state is not None
+        assert index.global_state.get("skill") is not None
+
+    def test_handoff_serialization_roundtrip(self):
+        """Handoff entry should survive to_dict/from_dict roundtrip."""
+        original = ArchiveEntry(
+            entry_id="handoff_roundtrip",
+            created_at="2026-02-03T12:00:00Z",
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+
+        entry_dict = original.to_dict()
+        restored = ArchiveEntry.from_dict(entry_dict)
+
+        assert restored.state_transition == "handoff"
+        assert restored.global_state == {"skill": "update-and-archive", "substate": "readme-wave"}
+
+    def test_session_grouping_recognizes_handoff(self):
+        """_group_entries_by_skill_session should treat handoff as end+start.
+
+        This test requires the sbs_lsp_mcp package (lives in forks/sbs-lsp-mcp).
+        It is skipped if the package is not available on PYTHONPATH.
+        """
+        try:
+            from sbs_lsp_mcp.sbs_self_improve import _group_entries_by_skill_session
+        except ImportError:
+            pytest.skip("sbs_lsp_mcp not available on PYTHONPATH")
+
+        # Create a sequence: task alignment -> task execution -> handoff -> u&a readme-wave
+        entries = [
+            ArchiveEntry(
+                entry_id="1000",
+                created_at="2026-02-03T10:00:00",
+                project="TestProject",
+                global_state={"skill": "task", "substate": "alignment"},
+                state_transition="phase_start",
+            ),
+            ArchiveEntry(
+                entry_id="1001",
+                created_at="2026-02-03T10:30:00",
+                project="TestProject",
+                global_state={"skill": "task", "substate": "execution"},
+                state_transition="phase_start",
+            ),
+            ArchiveEntry(
+                entry_id="1002",
+                created_at="2026-02-03T11:00:00",
+                project="TestProject",
+                global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+                state_transition="handoff",
+            ),
+            ArchiveEntry(
+                entry_id="1003",
+                created_at="2026-02-03T11:30:00",
+                project="TestProject",
+                global_state={"skill": "update-and-archive", "substate": "oracle-regen"},
+                state_transition="phase_start",
+            ),
+        ]
+
+        sessions = _group_entries_by_skill_session(entries)
+
+        # Should have 2 sessions: task (completed) and update-and-archive
+        assert len(sessions) == 2
+
+        task_session = sessions[0]
+        assert task_session.skill == "task"
+        assert task_session.completed is True  # handoff marks it complete
+
+        ua_session = sessions[1]
+        assert ua_session.skill == "update-and-archive"
+        # The handoff entry starts the new session
+        assert ua_session.first_entry_id == "1002"
 
 
 # =============================================================================

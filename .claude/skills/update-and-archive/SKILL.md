@@ -46,9 +46,11 @@ Before doing ANY work:
 
 1. Call `sbs_archive_state()` via MCP
 2. Check `global_state` field:
-   - `null` → Fresh invocation, proceed
-   - `{skill: "update-and-archive", substate: X}` → Resume from substate X
+   - `null` → Fresh invocation, proceed (set state via phase_start)
+   - `{skill: "update-and-archive", substate: X}` → Resume from substate X (may have been started via handoff from `/task`)
    - `{skill: "other", ...}` → Error: state conflict, do NOT proceed
+
+**Handoff entry point:** When invoked at the end of `/task`, state is already set to `{skill: "update-and-archive", substate: "readme-wave"}` via `sbs_skill_handoff`. No additional phase_start is needed -- proceed directly to Part 0.
 
 ### Substate Transitions
 

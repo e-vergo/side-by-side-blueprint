@@ -960,3 +960,276 @@ class TestSelfImproveMCPTools:
         # and invocation_count >= 2, so a finding should be generated
         assert len(result.findings) >= 1
         assert result.findings[0].pillar == "claude_execution"
+
+
+# =============================================================================
+# AskUserQuestion Analysis (Issue #75)
+# =============================================================================
+
+
+@pytest.mark.dev
+class TestExtractAskUserQuestions:
+    """Tests for extract_ask_user_questions from extractor.py."""
+
+    def test_extract_from_empty_file(self, tmp_path: Path):
+        """Returns empty list for a file with no AskUserQuestion calls."""
+        session_file = tmp_path / "empty.jsonl"
+        session_file.write_text("")
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+        assert result == []
+
+    def test_extract_from_nonexistent_file(self, tmp_path: Path):
+        """Returns empty list for a nonexistent file."""
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(tmp_path / "does_not_exist.jsonl")
+        assert result == []
+
+    def test_extract_single_question(self, tmp_path: Path):
+        """Extracts a single AskUserQuestion interaction."""
+        import json as _json
+
+        lines = [
+            _json.dumps({
+                "type": "assistant",
+                "timestamp": 1700000000000,
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": "Let me ask about approach."},
+                        {
+                            "type": "tool_use",
+                            "id": "toolu_abc123",
+                            "name": "AskUserQuestion",
+                            "input": {
+                                "questions": [
+                                    {
+                                        "question": "Which approach?",
+                                        "header": "Approach",
+                                        "options": [
+                                            {"label": "Option A", "description": "First option"},
+                                            {"label": "Option B", "description": "Second option"},
+                                        ],
+                                        "multiSelect": False,
+                                    }
+                                ]
+                            },
+                        },
+                    ],
+                },
+            }),
+            _json.dumps({
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "toolu_abc123",
+                            "content": 'User has answered your questions: "Which approach?"="Option A". You can now continue with your task.',
+                        }
+                    ],
+                },
+            }),
+        ]
+
+        session_file = tmp_path / "test_session.jsonl"
+        session_file.write_text("\n".join(lines))
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+
+        assert len(result) == 1
+        interaction = result[0]
+        assert interaction["tool_use_id"] == "toolu_abc123"
+        assert len(interaction["questions"]) == 1
+        assert interaction["questions"][0]["question"] == "Which approach?"
+        assert interaction["answers"] == {"Which approach?": "Option A"}
+        assert interaction["context_before"] is not None
+        assert "approach" in interaction["context_before"].lower()
+
+    def test_extract_multiple_questions_single_call(self, tmp_path: Path):
+        """Extracts multiple questions from a single AskUserQuestion call."""
+        import json as _json
+
+        lines = [
+            _json.dumps({
+                "type": "assistant",
+                "timestamp": 1700000000000,
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "toolu_multi",
+                            "name": "AskUserQuestion",
+                            "input": {
+                                "questions": [
+                                    {"question": "Q1?", "header": "First"},
+                                    {"question": "Q2?", "header": "Second"},
+                                ]
+                            },
+                        }
+                    ],
+                },
+            }),
+            _json.dumps({
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "toolu_multi",
+                            "content": 'User has answered your questions: "Q1?"="Answer1", "Q2?"="Answer2". You can now continue with your task.',
+                        }
+                    ],
+                },
+            }),
+        ]
+
+        session_file = tmp_path / "test_multi.jsonl"
+        session_file.write_text("\n".join(lines))
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+
+        assert len(result) == 1
+        assert result[0]["answers"] == {"Q1?": "Answer1", "Q2?": "Answer2"}
+
+    def test_extract_ignores_other_tool_calls(self, tmp_path: Path):
+        """Only extracts AskUserQuestion, not other tool calls."""
+        import json as _json
+
+        lines = [
+            _json.dumps({
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "toolu_other",
+                            "name": "Bash",
+                            "input": {"command": "ls"},
+                        }
+                    ],
+                },
+            }),
+        ]
+
+        session_file = tmp_path / "test_other.jsonl"
+        session_file.write_text("\n".join(lines))
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+        assert result == []
+
+    def test_extract_handles_missing_tool_result(self, tmp_path: Path):
+        """Handles AskUserQuestion without a matching tool_result gracefully."""
+        import json as _json
+
+        lines = [
+            _json.dumps({
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "toolu_orphan",
+                            "name": "AskUserQuestion",
+                            "input": {
+                                "questions": [{"question": "Orphaned?"}]
+                            },
+                        }
+                    ],
+                },
+            }),
+        ]
+
+        session_file = tmp_path / "test_orphan.jsonl"
+        session_file.write_text("\n".join(lines))
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+
+        assert len(result) == 1
+        assert result[0]["answers"] == {}  # No answer found
+
+    def test_extract_handles_malformed_lines(self, tmp_path: Path):
+        """Handles malformed JSONL lines gracefully."""
+        session_file = tmp_path / "test_malformed.jsonl"
+        session_file.write_text("not json\n{}\n{invalid\n")
+
+        from sbs.archive.extractor import extract_ask_user_questions
+        result = extract_ask_user_questions(session_file)
+        assert result == []
+
+
+@pytest.mark.dev
+class TestParseAskUserAnswers:
+    """Tests for _parse_ask_user_answers helper."""
+
+    def test_parse_single_answer(self):
+        """Parses a single question=answer pair."""
+        from sbs.archive.extractor import _parse_ask_user_answers
+
+        text = 'User has answered your questions: "Which option?"="Option A". You can now continue with your task.'
+        result = _parse_ask_user_answers(text)
+        assert result == {"Which option?": "Option A"}
+
+    def test_parse_multiple_answers(self):
+        """Parses multiple question=answer pairs."""
+        from sbs.archive.extractor import _parse_ask_user_answers
+
+        text = 'User has answered your questions: "Q1"="A1", "Q2"="A2". You can now continue with your task.'
+        result = _parse_ask_user_answers(text)
+        assert result == {"Q1": "A1", "Q2": "A2"}
+
+    def test_parse_empty_string(self):
+        """Returns empty dict for empty string."""
+        from sbs.archive.extractor import _parse_ask_user_answers
+
+        assert _parse_ask_user_answers("") == {}
+        assert _parse_ask_user_answers("some random text") == {}
+
+    def test_parse_no_suffix(self):
+        """Handles answer text without the suffix marker."""
+        from sbs.archive.extractor import _parse_ask_user_answers
+
+        text = 'User has answered your questions: "Q"="A"'
+        result = _parse_ask_user_answers(text)
+        assert result == {"Q": "A"}
+
+
+@pytest.mark.dev
+class TestQuestionAnalysisMCPTools:
+    """Tests for sbs_question_analysis_impl and sbs_question_stats_impl."""
+
+    def test_question_analysis_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_question_analysis_impl returns QuestionAnalysisResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_question_analysis_impl()
+        assert hasattr(result, "interactions")
+        assert hasattr(result, "total_found")
+        assert hasattr(result, "sessions_searched")
+        assert isinstance(result.interactions, list)
+        assert isinstance(result.total_found, int)
+        assert isinstance(result.sessions_searched, int)
+
+    def test_question_stats_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_question_stats_impl returns QuestionStatsResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_question_stats_impl()
+        assert hasattr(result, "total_questions")
+        assert hasattr(result, "questions_by_skill")
+        assert hasattr(result, "questions_by_header")
+        assert hasattr(result, "most_common_options_selected")
+        assert hasattr(result, "multi_select_usage")
+        assert hasattr(result, "sessions_with_questions")
+        assert hasattr(result, "sessions_without_questions")
+        assert isinstance(result.total_questions, int)
+        assert isinstance(result.questions_by_skill, dict)
+        assert isinstance(result.sessions_with_questions, int)

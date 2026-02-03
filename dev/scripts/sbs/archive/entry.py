@@ -67,7 +67,7 @@ class ArchiveEntry:
 
     # State machine fields
     global_state: Optional[dict] = None  # {skill: str, substate: str} or null when idle
-    state_transition: Optional[str] = None  # "phase_start" | "phase_end" | null
+    state_transition: Optional[str] = None  # "phase_start" | "phase_end" | "handoff" | null
     epoch_summary: Optional[dict] = None  # Computed on skill-triggered entries that close epochs
 
     # Gate validation

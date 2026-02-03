@@ -280,6 +280,16 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
             log.error(f"Invalid JSON for --global-state: {e}")
             return 1
 
+    # Parse handoff_to JSON if provided
+    handoff_to = None
+    handoff_to_str = getattr(args, "handoff_to", None)
+    if handoff_to_str:
+        try:
+            handoff_to = json.loads(handoff_to_str)
+        except json.JSONDecodeError as e:
+            log.error(f"Invalid JSON for --handoff-to: {e}")
+            return 1
+
     validate = getattr(args, "validate", False)
 
     result = archive_upload(
@@ -291,6 +301,7 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
         issue_refs=issue_refs,
         pr_refs=pr_refs,
         validate=validate,
+        handoff_to=handoff_to,
     )
 
     # Log summary
