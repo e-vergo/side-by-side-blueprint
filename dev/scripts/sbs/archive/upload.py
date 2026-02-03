@@ -136,26 +136,41 @@ def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -
 
 
 def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
-    """
-    Ensure all repos are in porcelain (clean) state.
+    """Ensure all repos are in clean git state.
 
-    Commits and pushes any uncommitted changes.
+    Two-phase approach:
+    1. Scan all repos to identify which are dirty
+    2. Commit and push all dirty repos (submodules first, main repo last)
+
+    This avoids the 'chasing' pattern where committing one repo
+    (e.g., dev/storage) dirties another (main repo submodule pointer).
+    The main repo is committed last so it picks up all submodule pointer
+    changes in a single commit.
+
     Returns (success, list_of_failed_repos).
     """
     root = get_monorepo_root()
     failed = []
 
-    # Process main repo
-    if repo_is_dirty(root):
-        if not commit_and_push_repo(root, "chore: archive upload", dry_run):
-            failed.append("main")
-
-    # Process submodule repos
+    # Phase 1: Scan all repos to identify dirty ones
+    dirty_submodules = []
     for name, rel_path in REPO_PATHS.items():
         repo_path = root / rel_path
         if repo_path.exists() and repo_is_dirty(repo_path):
-            if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
-                failed.append(name)
+            dirty_submodules.append((name, repo_path))
+
+    main_dirty = repo_is_dirty(root)
+
+    # Phase 2: Commit and push all dirty submodule repos first
+    for name, repo_path in dirty_submodules:
+        if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
+            failed.append(name)
+
+    # Phase 3: Commit main repo last (picks up submodule pointer updates)
+    # Re-check since submodule commits may have dirtied the main repo
+    if main_dirty or repo_is_dirty(root):
+        if not commit_and_push_repo(root, "chore: archive upload", dry_run):
+            failed.append("main")
 
     return len(failed) == 0, failed
 
