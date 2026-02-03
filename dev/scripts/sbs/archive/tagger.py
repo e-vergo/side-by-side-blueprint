@@ -235,11 +235,12 @@ def build_tagging_context(
         context["files_modified"] = files_modified
         context["files_modified_count"] = len(files_modified)
 
-    # Add claude_data context if available
-    if entry.claude_data:
-        context["session_count"] = len(entry.claude_data.get("session_ids", []))
-        context["tool_call_count"] = entry.claude_data.get("tool_call_count", 0)
-        context["message_count"] = entry.claude_data.get("message_count", 0)
-        context["plan_count"] = len(entry.claude_data.get("plan_files", []))
+    # Add claude_data context if available (load from sidecar if needed)
+    claude_data = entry.claude_data or entry.load_claude_data()
+    if claude_data:
+        context["session_count"] = len(claude_data.get("session_ids", []))
+        context["tool_call_count"] = claude_data.get("tool_call_count", 0)
+        context["message_count"] = claude_data.get("message_count", 0)
+        context["plan_count"] = len(claude_data.get("plan_files", []))
 
     return context

@@ -384,7 +384,12 @@ class TestSerializationRoundtrip:
     """Entry serialization must be lossless."""
 
     def test_entry_roundtrip_preserves_all_fields(self):
-        """to_dict -> from_dict should preserve all fields."""
+        """to_dict -> from_dict should preserve all fields.
+
+        Note: claude_data is excluded from to_dict() by default (sidecar
+        compaction).  We test with include_claude_data=True to verify the
+        roundtrip still works, and separately verify the default path.
+        """
         original = ArchiveEntry(
             entry_id="roundtrip_test",
             created_at="2026-02-01T12:00:00Z",
@@ -411,8 +416,8 @@ class TestSerializationRoundtrip:
             added_at="2026-02-01T12:00:01Z",
         )
 
-        # Roundtrip
-        entry_dict = original.to_dict()
+        # Full roundtrip including claude_data
+        entry_dict = original.to_dict(include_claude_data=True)
         restored = ArchiveEntry.from_dict(entry_dict)
 
         # Verify all fields match
@@ -439,6 +444,20 @@ class TestSerializationRoundtrip:
         assert restored.epoch_summary == original.epoch_summary
         assert restored.gate_validation == original.gate_validation
         assert restored.added_at == original.added_at
+
+    def test_entry_roundtrip_default_excludes_claude_data(self):
+        """to_dict() default should NOT include claude_data (sidecar compaction)."""
+        entry = ArchiveEntry(
+            entry_id="compact_test",
+            created_at="2026-02-01T12:00:00Z",
+            project="TestProject",
+            claude_data={"sessions": 5},
+        )
+        entry_dict = entry.to_dict()
+        assert "claude_data" not in entry_dict
+
+        restored = ArchiveEntry.from_dict(entry_dict)
+        assert restored.claude_data is None
 
     def test_index_roundtrip_preserves_global_state(self, temp_archive_dir: Path):
         """ArchiveIndex roundtrip preserves global_state and last_epoch_entry."""
@@ -538,3 +557,98 @@ class TestIndexInvariants:
         assert "auto-tag" in index.by_tag
         assert "dual_tags" in index.by_tag["manual-tag"]
         assert "dual_tags" in index.by_tag["auto-tag"]
+
+
+# =============================================================================
+# Claude Data Sidecar Tests
+# =============================================================================
+
+
+@pytest.mark.evergreen
+class TestClaudeDataSidecar:
+    """claude_data should be extracted to sidecar files, not stored in the index."""
+
+    def test_save_flushes_claude_data_to_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """ArchiveIndex.save() should write claude_data to sidecar and clear in-memory."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        entry = ArchiveEntry(
+            entry_id="sidecar_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data={"sessions": 5, "tool_calls": 10},
+        )
+
+        index = ArchiveIndex()
+        index.add_entry(entry)
+
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        # In-memory claude_data should be None after save
+        assert entry.claude_data is None
+
+        # Sidecar file should exist with correct content
+        sidecar_path = temp_archive_dir / "archive_data" / "sidecar_test.json"
+        assert sidecar_path.exists()
+        with open(sidecar_path) as f:
+            sidecar_data = json.load(f)
+        assert sidecar_data == {"sessions": 5, "tool_calls": 10}
+
+        # Index file should NOT contain claude_data
+        with open(index_path) as f:
+            raw_index = json.load(f)
+        assert "claude_data" not in raw_index["entries"]["sidecar_test"]
+
+    def test_load_claude_data_from_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """load_claude_data() should read from sidecar when in-memory is None."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        # Write sidecar manually
+        sidecar_dir = temp_archive_dir / "archive_data"
+        sidecar_dir.mkdir(parents=True)
+        sidecar_path = sidecar_dir / "load_test.json"
+        with open(sidecar_path, "w") as f:
+            json.dump({"loaded": True}, f)
+
+        entry = ArchiveEntry(
+            entry_id="load_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data=None,
+        )
+
+        result = entry.load_claude_data()
+        assert result == {"loaded": True}
+        assert entry.claude_data == {"loaded": True}
+
+    def test_index_roundtrip_with_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """Save/load cycle should preserve claude_data via sidecar."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        entry = ArchiveEntry(
+            entry_id="roundtrip_sidecar",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data={"important": "data"},
+        )
+
+        index = ArchiveIndex()
+        index.add_entry(entry)
+
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        # Reload index
+        loaded_index = ArchiveIndex.load(index_path)
+        loaded_entry = loaded_index.entries["roundtrip_sidecar"]
+
+        # claude_data should be None in the loaded entry (not in index)
+        assert loaded_entry.claude_data is None
+
+        # But loading from sidecar should recover it
+        loaded = loaded_entry.load_claude_data()
+        assert loaded == {"important": "data"}
