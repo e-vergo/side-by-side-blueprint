@@ -662,3 +662,298 @@ class TestNewAnalysisFunctions:
         assert hasattr(result, "total_sessions_analyzed")
         assert hasattr(result, "effective_patterns")
         assert hasattr(result, "findings")
+
+
+# =============================================================================
+# Self-Improve MCP Tools (Issue #65)
+# =============================================================================
+
+
+@pytest.mark.dev
+class TestSelfImproveMCPTools:
+    """Tests for the 5 new self-improve MCP tools."""
+
+    # --- Structural tests (one per tool) ---
+
+    def test_skill_stats_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_skill_stats_impl returns SkillStatsResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_skill_stats_impl()
+        assert hasattr(result, "skills")
+        assert hasattr(result, "total_sessions")
+        assert hasattr(result, "findings")
+        assert hasattr(result, "summary")
+        assert isinstance(result.skills, dict)
+        assert isinstance(result.total_sessions, int)
+
+    def test_phase_transition_health_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_phase_transition_health_impl returns PhaseTransitionHealthResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_phase_transition_health_impl()
+        assert hasattr(result, "reports")
+        assert hasattr(result, "findings")
+        assert hasattr(result, "summary")
+        assert isinstance(result.reports, list)
+
+    def test_interruption_analysis_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_interruption_analysis_impl returns InterruptionAnalysisResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_interruption_analysis_impl()
+        assert hasattr(result, "events")
+        assert hasattr(result, "total_sessions_analyzed")
+        assert hasattr(result, "sessions_with_interruptions")
+        assert hasattr(result, "findings")
+        assert isinstance(result.events, list)
+
+    def test_gate_failures_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_gate_failures_impl returns GateFailureReport."""
+        module = _get_self_improve_module()
+        result = module.sbs_gate_failures_impl()
+        assert hasattr(result, "total_gate_checks")
+        assert hasattr(result, "total_failures")
+        assert hasattr(result, "failure_rate")
+        assert hasattr(result, "failures")
+        assert hasattr(result, "findings")
+
+    def test_tag_effectiveness_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_tag_effectiveness_impl returns TagEffectivenessResult."""
+        module = _get_self_improve_module()
+        result = module.sbs_tag_effectiveness_impl()
+        assert hasattr(result, "tags")
+        assert hasattr(result, "noisy_tags")
+        assert hasattr(result, "signal_tags")
+        assert hasattr(result, "findings")
+        assert isinstance(result.tags, list)
+
+    # --- Populated archive tests ---
+
+    def test_skill_stats_counts_completions(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Skill stats correctly count invocations and completions."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        # Session 1: complete task (phase_start alignment -> phase_start execution -> phase_end)
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101100000",
+            created_at="2024-01-01T10:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "alignment"},
+            state_transition="phase_start",
+        ))
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101110000",
+            created_at="2024-01-01T11:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "execution"},
+        ))
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101120000",
+            created_at="2024-01-01T12:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "finalization"},
+            state_transition="phase_end",
+        ))
+        # Session 2: incomplete task (phase_start only)
+        index.add_entry(ArchiveEntry(
+            entry_id="20240102100000",
+            created_at="2024-01-02T10:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "alignment"},
+            state_transition="phase_start",
+        ))
+        index.add_entry(ArchiveEntry(
+            entry_id="20240102110000",
+            created_at="2024-01-02T11:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "planning"},
+        ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_skill_stats_impl()
+        assert "task" in result.skills
+        task_stats = result.skills["task"]
+        assert task_stats.invocation_count == 2
+        assert task_stats.completion_count == 1
+
+    def test_phase_transition_detects_backward(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Phase transition health detects backward jumps."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        # Session with backward jump: alignment -> execution -> alignment
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101100000",
+            created_at="2024-01-01T10:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "alignment"},
+            state_transition="phase_start",
+        ))
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101110000",
+            created_at="2024-01-01T11:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "execution"},
+        ))
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101120000",
+            created_at="2024-01-01T12:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "alignment"},
+        ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_phase_transition_health_impl()
+        assert len(result.reports) > 0
+        task_report = [r for r in result.reports if r.skill == "task"]
+        assert len(task_report) == 1
+        assert task_report[0].backward_transitions >= 1
+
+    def test_interruption_detects_retry(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Interruption analysis detects retry patterns (>2 entries in same substate)."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        # Session with 3+ entries in same substate
+        for i in range(4):
+            index.add_entry(ArchiveEntry(
+                entry_id=f"2024010110{i:04d}",
+                created_at=f"2024-01-01T10:{i:02d}:00+00:00",
+                project="TestProject",
+                trigger="skill",
+                global_state={"skill": "task", "substate": "execution"},
+                state_transition="phase_start" if i == 0 else None,
+            ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_interruption_analysis_impl()
+        retry_events = [e for e in result.events if e.event_type == "retry"]
+        assert len(retry_events) >= 1
+
+    def test_gate_failures_detects_failure(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Gate failures analysis detects entries with gate_validation.passed == False."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101100000",
+            created_at="2024-01-01T10:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "execution"},
+            state_transition="phase_start",
+            gate_validation={"passed": False, "findings": ["T5 failed"]},
+        ))
+        # A passing entry for comparison
+        index.add_entry(ArchiveEntry(
+            entry_id="20240101110000",
+            created_at="2024-01-01T11:00:00+00:00",
+            project="TestProject",
+            trigger="skill",
+            global_state={"skill": "task", "substate": "execution"},
+            gate_validation={"passed": True, "findings": []},
+        ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_gate_failures_impl()
+        assert result.total_gate_checks == 2
+        assert result.total_failures == 1
+        assert len(result.failures) == 1
+        assert "T5 failed" in result.failures[0].gate_findings
+
+    def test_tag_effectiveness_classifies_noise(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """Tag effectiveness classifies high-frequency tags as noise."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        # Create 10 entries, one tag appears on 9+
+        for i in range(10):
+            auto_tags = ["ubiquitous_tag"]
+            if i < 2:
+                auto_tags.append("rare_tag")
+            index.add_entry(ArchiveEntry(
+                entry_id=f"2024010{i}100000",
+                created_at=f"2024-01-0{i + 1}T10:00:00+00:00" if i < 9 else "2024-01-10T10:00:00+00:00",
+                project="TestProject",
+                trigger="skill",
+                auto_tags=auto_tags,
+            ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_tag_effectiveness_impl()
+        assert "ubiquitous_tag" in result.noisy_tags
+
+    def test_as_findings_populates_findings(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
+        """as_findings=True populates the findings field on populated data."""
+        sbs_utils_module = sys.modules.get("sbs_lsp_mcp.sbs_utils")
+        if sbs_utils_module:
+            monkeypatch.setattr(sbs_utils_module, "ARCHIVE_DIR", mock_archive_dir)
+
+        module = _get_self_improve_module()
+
+        index = ArchiveIndex()
+        # Create 3 separate incomplete task sessions to trigger low completion rate finding.
+        # Each session: phase_start -> idle entry (breaks session) -> next session
+        for i in range(3):
+            # Start a task session
+            index.add_entry(ArchiveEntry(
+                entry_id=f"2024010{i}100000",
+                created_at=f"2024-01-0{i + 1}T10:00:00+00:00",
+                project="TestProject",
+                trigger="skill",
+                global_state={"skill": "task", "substate": "alignment"},
+                state_transition="phase_start",
+            ))
+            # Idle entry (no global_state) closes the session
+            index.add_entry(ArchiveEntry(
+                entry_id=f"2024010{i}110000",
+                created_at=f"2024-01-0{i + 1}T11:00:00+00:00",
+                project="TestProject",
+                trigger="manual",
+            ))
+
+        index_path = mock_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        result = module.sbs_skill_stats_impl(as_findings=True)
+        # With 3 invocations and 0 completions, completion_rate = 0 < 0.5
+        # and invocation_count >= 2, so a finding should be generated
+        assert len(result.findings) >= 1
+        assert result.findings[0].pillar == "claude_execution"

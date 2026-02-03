@@ -9,20 +9,776 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
 
+from dataclasses import dataclass, field as dc_field
+
 from .sbs_models import (
     AnalysisFinding,
     AnalysisSummary,
     ComparativeAnalysis,
     DiscriminatingFeature,
+    GateFailureEntry,
+    GateFailureReport,
+    InterruptionAnalysisResult,
+    InterruptionEvent,
+    PhaseTransitionHealthResult,
+    PhaseTransitionReport,
     SelfImproveEntries,
     SelfImproveEntrySummary,
+    SkillStatEntry,
+    SkillStatsResult,
     SuccessPattern,
     SuccessPatterns,
     SystemHealthMetric,
     SystemHealthReport,
+    TagEffectivenessEntry,
+    TagEffectivenessResult,
     UserPatternAnalysis,
 )
 from .sbs_utils import load_archive_index
+
+
+# =============================================================================
+# Shared Helpers for Self-Improve Tools
+# =============================================================================
+
+
+@dataclass
+class SkillSession:
+    """A contiguous session of a single skill invocation."""
+
+    skill: str
+    entries: list = dc_field(default_factory=list)
+    first_entry_id: str = ""
+    last_entry_id: str = ""
+    phases_visited: list = dc_field(default_factory=list)
+    completed: bool = False
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+
+
+SKILL_PHASE_ORDERS: dict[str, list[str]] = {
+    "task": ["alignment", "planning", "execution", "finalization"],
+    "self-improve": ["discovery", "selection", "dialogue", "logging", "archive"],
+}
+
+CORRECTION_KEYWORDS = [
+    "correction", "corrected", "redo", "retry", "revert",
+    "wrong", "mistake", "back to", "restart", "redirected",
+    "changed approach", "pivot", "scratch that",
+]
+
+
+def _group_entries_by_skill_session(entries: list) -> list[SkillSession]:
+    """Group archive entries into skill sessions.
+
+    A session starts with a phase_start entry and ends with a phase_end entry
+    or when a different skill appears.
+    """
+    sorted_entries = sorted(entries, key=lambda e: e.entry_id)
+    sessions: list[SkillSession] = []
+    current_session: Optional[SkillSession] = None
+
+    for entry in sorted_entries:
+        gs = entry.global_state or {}
+        skill = gs.get("skill")
+        substate = gs.get("substate", "")
+        st = entry.state_transition or ""
+
+        if not skill:
+            # No skill in this entry; close current session if open
+            if current_session is not None:
+                current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
+                current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
+                sessions.append(current_session)
+                current_session = None
+            continue
+
+        # New session start: phase_start with no current session or different skill
+        if st == "phase_start" and (current_session is None or current_session.skill != skill):
+            # Close previous session
+            if current_session is not None:
+                current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
+                current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
+                sessions.append(current_session)
+
+            current_session = SkillSession(
+                skill=skill,
+                entries=[entry],
+                first_entry_id=entry.entry_id,
+                phases_visited=[substate] if substate else [],
+                start_time=entry.created_at,
+            )
+            continue
+
+        # Same skill as current session
+        if current_session is not None and current_session.skill == skill:
+            current_session.entries.append(entry)
+            if substate and (not current_session.phases_visited or current_session.phases_visited[-1] != substate):
+                current_session.phases_visited.append(substate)
+
+            # Check for phase_end
+            if st == "phase_end":
+                current_session.completed = True
+                current_session.last_entry_id = entry.entry_id
+                current_session.end_time = entry.created_at
+                sessions.append(current_session)
+                current_session = None
+            continue
+
+        # Different skill than current session
+        if current_session is not None:
+            current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
+            current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
+            sessions.append(current_session)
+
+        current_session = SkillSession(
+            skill=skill,
+            entries=[entry],
+            first_entry_id=entry.entry_id,
+            phases_visited=[substate] if substate else [],
+            start_time=entry.created_at,
+        )
+
+    # Close any remaining session
+    if current_session is not None:
+        current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
+        current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
+        sessions.append(current_session)
+
+    return sessions
+
+
+def _compute_session_duration(session: SkillSession) -> Optional[float]:
+    """Compute duration of a session in seconds from ISO timestamps."""
+    if not session.start_time or not session.end_time:
+        return None
+    try:
+        start = datetime.fromisoformat(session.start_time.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(session.end_time.replace("Z", "+00:00"))
+        return (end - start).total_seconds()
+    except (ValueError, TypeError):
+        return None
+
+
+def _detect_backward_transitions(
+    session: SkillSession, expected_order: list[str]
+) -> list[tuple[str, str, str]]:
+    """Detect backward phase transitions within a session.
+
+    Returns list of (entry_id, from_phase, to_phase) tuples.
+    """
+    backward = []
+    prev_phase: Optional[str] = None
+    prev_entry_id: Optional[str] = None
+
+    for entry in session.entries:
+        gs = entry.global_state or {}
+        substate = gs.get("substate", "")
+        if not substate:
+            continue
+
+        if prev_phase and substate != prev_phase:
+            try:
+                prev_idx = expected_order.index(prev_phase)
+                curr_idx = expected_order.index(substate)
+                if curr_idx < prev_idx:
+                    backward.append((entry.entry_id, prev_phase, substate))
+            except ValueError:
+                pass  # Phase not in expected order
+
+        prev_phase = substate
+        prev_entry_id = entry.entry_id
+
+    return backward
+
+
+def _detect_skipped_phases(
+    session: SkillSession, expected_order: list[str]
+) -> list[str]:
+    """Detect phases that were skipped in a session.
+
+    A phase is skipped if it's in the expected order between two phases
+    that were visited but was not visited itself.
+    """
+    visited = set(session.phases_visited)
+    if not visited:
+        return []
+
+    # Find the range of visited phases in expected_order
+    visited_indices = []
+    for phase in session.phases_visited:
+        try:
+            visited_indices.append(expected_order.index(phase))
+        except ValueError:
+            continue
+
+    if len(visited_indices) < 2:
+        return []
+
+    min_idx = min(visited_indices)
+    max_idx = max(visited_indices)
+
+    skipped = []
+    for i in range(min_idx, max_idx + 1):
+        if i < len(expected_order) and expected_order[i] not in visited:
+            skipped.append(expected_order[i])
+
+    return skipped
+
+
+# =============================================================================
+# New Self-Improve Tool Implementations
+# =============================================================================
+
+
+def sbs_skill_stats_impl(as_findings: bool = False) -> SkillStatsResult:
+    """Get per-skill lifecycle metrics.
+
+    Returns invocation count, completion rate, duration, and failure modes
+    for each skill type.
+    """
+    from collections import Counter
+
+    index = load_archive_index()
+    if not index.entries:
+        return SkillStatsResult(summary="No archive entries found.")
+
+    entries = list(index.entries.values())
+    sessions = _group_entries_by_skill_session(entries)
+
+    if not sessions:
+        return SkillStatsResult(
+            total_sessions=0,
+            summary="No skill sessions found in archive.",
+        )
+
+    # Group sessions by skill
+    by_skill: dict[str, list[SkillSession]] = {}
+    for session in sessions:
+        by_skill.setdefault(session.skill, []).append(session)
+
+    skills: dict[str, SkillStatEntry] = {}
+    for skill_name, skill_sessions in by_skill.items():
+        invocations = len(skill_sessions)
+        completions = sum(1 for s in skill_sessions if s.completed)
+        rate = completions / invocations if invocations > 0 else 0.0
+
+        # Average duration
+        durations = [_compute_session_duration(s) for s in skill_sessions]
+        valid_durations = [d for d in durations if d is not None]
+        avg_duration = (
+            sum(valid_durations) / len(valid_durations) if valid_durations else None
+        )
+
+        # Average entries per session
+        total_entries = sum(len(s.entries) for s in skill_sessions)
+        avg_entries = total_entries / invocations if invocations > 0 else 0.0
+
+        # Failure modes from incomplete sessions
+        failure_substates: Counter = Counter()
+        failure_tags: Counter = Counter()
+        for s in skill_sessions:
+            if not s.completed and s.entries:
+                last_entry = s.entries[-1]
+                gs = last_entry.global_state or {}
+                sub = gs.get("substate", "")
+                if sub:
+                    failure_substates[sub] += 1
+                for tag in (last_entry.tags or []) + (last_entry.auto_tags or []):
+                    failure_tags[tag] += 1
+
+        skills[skill_name] = SkillStatEntry(
+            skill=skill_name,
+            invocation_count=invocations,
+            completion_count=completions,
+            completion_rate=round(rate, 3),
+            avg_duration_seconds=round(avg_duration, 1) if avg_duration is not None else None,
+            avg_entries_per_session=round(avg_entries, 1),
+            common_failure_substates=[s for s, _ in failure_substates.most_common(3)],
+            common_failure_tags=[t for t, _ in failure_tags.most_common(5)],
+        )
+
+    findings: list[AnalysisFinding] = []
+    if as_findings:
+        for skill_name, stat in skills.items():
+            if stat.completion_rate < 0.5 and stat.invocation_count >= 2:
+                findings.append(AnalysisFinding(
+                    pillar="claude_execution",
+                    category="skill_lifecycle",
+                    severity="medium",
+                    description=f"Skill '{skill_name}' has low completion rate: {stat.completion_rate:.0%} ({stat.completion_count}/{stat.invocation_count})",
+                    recommendation=f"Investigate common failure substates: {stat.common_failure_substates}",
+                    evidence=[],
+                ))
+
+    return SkillStatsResult(
+        skills=skills,
+        total_sessions=len(sessions),
+        findings=findings,
+        summary=f"Analyzed {len(sessions)} sessions across {len(skills)} skill types.",
+    )
+
+
+def sbs_phase_transition_health_impl(
+    as_findings: bool = False,
+) -> PhaseTransitionHealthResult:
+    """Analyze phase transition patterns.
+
+    Detects backward transitions, skipped phases, and time-in-phase distribution.
+    """
+    index = load_archive_index()
+    if not index.entries:
+        return PhaseTransitionHealthResult(summary="No archive entries found.")
+
+    entries = list(index.entries.values())
+    sessions = _group_entries_by_skill_session(entries)
+
+    if not sessions:
+        return PhaseTransitionHealthResult(
+            summary="No skill sessions found in archive.",
+        )
+
+    # Group sessions by skill
+    by_skill: dict[str, list[SkillSession]] = {}
+    for session in sessions:
+        by_skill.setdefault(session.skill, []).append(session)
+
+    reports: list[PhaseTransitionReport] = []
+    for skill_name, skill_sessions in by_skill.items():
+        expected = SKILL_PHASE_ORDERS.get(skill_name, [])
+
+        total_backward = 0
+        all_backward_details: list[dict[str, str]] = []
+        all_skipped: dict[str, int] = {}
+
+        # Compute time-in-phase aggregates
+        phase_times: dict[str, list[float]] = {}
+
+        for session in skill_sessions:
+            # Backward transitions
+            backward = _detect_backward_transitions(session, expected)
+            total_backward += len(backward)
+            for entry_id, from_p, to_p in backward:
+                all_backward_details.append({
+                    "entry_id": entry_id,
+                    "from": from_p,
+                    "to": to_p,
+                })
+
+            # Skipped phases
+            skipped = _detect_skipped_phases(session, expected)
+            for phase in skipped:
+                all_skipped[phase] = all_skipped.get(phase, 0) + 1
+
+            # Time-in-phase: compute from consecutive entries with same substate
+            prev_phase = None
+            prev_time = None
+            for entry in session.entries:
+                gs = entry.global_state or {}
+                substate = gs.get("substate", "")
+                if not substate:
+                    continue
+                try:
+                    entry_time = datetime.fromisoformat(
+                        entry.created_at.replace("Z", "+00:00")
+                    )
+                except (ValueError, TypeError):
+                    continue
+
+                if prev_phase and prev_phase != substate and prev_time:
+                    delta = (entry_time - prev_time).total_seconds()
+                    phase_times.setdefault(prev_phase, []).append(delta)
+
+                if substate != prev_phase:
+                    prev_time = entry_time
+                prev_phase = substate
+
+        # Average time-in-phase
+        avg_time: dict[str, float] = {}
+        for phase, times in phase_times.items():
+            if times:
+                avg_time[phase] = round(sum(times) / len(times), 1)
+
+        reports.append(PhaseTransitionReport(
+            skill=skill_name,
+            expected_sequence=expected,
+            total_sessions=len(skill_sessions),
+            backward_transitions=total_backward,
+            backward_details=all_backward_details[:20],
+            skipped_phases=all_skipped,
+            time_in_phase=avg_time,
+        ))
+
+    findings: list[AnalysisFinding] = []
+    if as_findings:
+        for report in reports:
+            if report.total_sessions > 0 and report.backward_transitions > 0:
+                rate = report.backward_transitions / report.total_sessions
+                if rate > 0.3:
+                    findings.append(AnalysisFinding(
+                        pillar="alignment_patterns",
+                        category="phase_transition",
+                        severity="medium",
+                        description=f"Skill '{report.skill}' has high backward transition rate: {rate:.0%}",
+                        recommendation="Investigate causes of phase regressions",
+                        evidence=[d["entry_id"] for d in report.backward_details[:5]],
+                    ))
+
+    return PhaseTransitionHealthResult(
+        reports=reports,
+        findings=findings,
+        summary=f"Analyzed {len(sessions)} sessions across {len(reports)} skill types.",
+    )
+
+
+def sbs_interruption_analysis_impl(
+    as_findings: bool = False,
+) -> InterruptionAnalysisResult:
+    """Detect user corrections and redirections in session data.
+
+    Identifies backward transitions, retries, and correction keywords.
+    """
+    index = load_archive_index()
+    if not index.entries:
+        return InterruptionAnalysisResult(summary="No archive entries found.")
+
+    entries = list(index.entries.values())
+    sessions = _group_entries_by_skill_session(entries)
+
+    if not sessions:
+        return InterruptionAnalysisResult(
+            summary="No skill sessions found in archive.",
+        )
+
+    events: list[InterruptionEvent] = []
+    sessions_with_interruptions = 0
+
+    for session in sessions:
+        session_had_interruption = False
+        expected = SKILL_PHASE_ORDERS.get(session.skill, [])
+
+        # 1. Backward transitions
+        backward = _detect_backward_transitions(session, expected)
+        for entry_id, from_p, to_p in backward:
+            events.append(InterruptionEvent(
+                entry_id=entry_id,
+                skill=session.skill,
+                event_type="backward_transition",
+                from_phase=from_p,
+                to_phase=to_p,
+                context=f"Phase went backward from '{from_p}' to '{to_p}'",
+            ))
+            session_had_interruption = True
+
+        # 2. Retries: substate appears >2 times
+        from collections import Counter
+        substate_counts: Counter = Counter()
+        for entry in session.entries:
+            gs = entry.global_state or {}
+            sub = gs.get("substate", "")
+            if sub:
+                substate_counts[sub] += 1
+
+        for sub, count in substate_counts.items():
+            if count > 2:
+                events.append(InterruptionEvent(
+                    entry_id=session.first_entry_id,
+                    skill=session.skill,
+                    event_type="retry",
+                    from_phase=sub,
+                    to_phase=sub,
+                    context=f"Substate '{sub}' appeared {count} times (possible retry pattern)",
+                ))
+                session_had_interruption = True
+
+        # 3. Correction keywords in notes
+        for entry in session.entries:
+            notes = (entry.notes or "").lower()
+            if notes:
+                for keyword in CORRECTION_KEYWORDS:
+                    if keyword in notes:
+                        events.append(InterruptionEvent(
+                            entry_id=entry.entry_id,
+                            skill=session.skill,
+                            event_type="correction_keyword",
+                            context=f"Correction keyword '{keyword}' found in notes",
+                        ))
+                        session_had_interruption = True
+                        break  # One event per entry
+
+        # 4. High churn: entry_count > 2 * len(phases_visited)
+        num_phases = max(len(session.phases_visited), 1)
+        if len(session.entries) > 2 * num_phases and len(session.entries) > 4:
+            events.append(InterruptionEvent(
+                entry_id=session.first_entry_id,
+                skill=session.skill,
+                event_type="high_entry_count",
+                context=f"{len(session.entries)} entries for {num_phases} phases (ratio: {len(session.entries)/num_phases:.1f}x)",
+            ))
+            session_had_interruption = True
+
+        if session_had_interruption:
+            sessions_with_interruptions += 1
+
+    findings: list[AnalysisFinding] = []
+    if as_findings and sessions:
+        interrupt_rate = sessions_with_interruptions / len(sessions)
+        if interrupt_rate > 0.3:
+            findings.append(AnalysisFinding(
+                pillar="user_effectiveness",
+                category="interruption",
+                severity="medium",
+                description=f"{sessions_with_interruptions}/{len(sessions)} sessions had interruptions ({interrupt_rate:.0%})",
+                recommendation="Review common interruption types and address root causes",
+                evidence=[e.entry_id for e in events[:5]],
+            ))
+
+    return InterruptionAnalysisResult(
+        events=events,
+        total_sessions_analyzed=len(sessions),
+        sessions_with_interruptions=sessions_with_interruptions,
+        findings=findings,
+        summary=f"Found {len(events)} interruption events across {len(sessions)} sessions ({sessions_with_interruptions} had interruptions).",
+    )
+
+
+def sbs_gate_failures_impl(as_findings: bool = False) -> GateFailureReport:
+    """Analyze gate validation failures.
+
+    Reports failure rates, override patterns, and common failure types.
+    """
+    index = load_archive_index()
+    if not index.entries:
+        return GateFailureReport(summary="No archive entries found.")
+
+    entries = list(index.entries.values())
+    sessions = _group_entries_by_skill_session(entries)
+
+    # Find all entries with gate_validation
+    gate_entries = [e for e in entries if e.gate_validation is not None]
+    if not gate_entries:
+        return GateFailureReport(
+            total_gate_checks=0,
+            summary="No gate validation entries found in archive.",
+        )
+
+    total_checks = len(gate_entries)
+    failures: list[GateFailureEntry] = []
+    override_count = 0
+
+    # Build a set of entry_ids per session for override detection
+    session_entries_map: dict[str, SkillSession] = {}
+    for session in sessions:
+        for entry in session.entries:
+            session_entries_map[entry.entry_id] = session
+
+    from collections import Counter
+    finding_counts: Counter = Counter()
+
+    for entry in gate_entries:
+        gv = entry.gate_validation or {}
+        passed = gv.get("passed", True)
+        if not passed:
+            gs = entry.global_state or {}
+            gate_findings_list = gv.get("findings", [])
+            for f in gate_findings_list:
+                finding_counts[f] += 1
+
+            # Check for override: did a later entry in same session advance to next phase?
+            continued = False
+            session = session_entries_map.get(entry.entry_id)
+            if session:
+                current_substate = gs.get("substate", "")
+                expected = SKILL_PHASE_ORDERS.get(gs.get("skill", ""), [])
+                # Check if any later entry in session has a different (forward) phase
+                found_entry = False
+                for se in session.entries:
+                    if se.entry_id == entry.entry_id:
+                        found_entry = True
+                        continue
+                    if found_entry:
+                        se_gs = se.global_state or {}
+                        se_sub = se_gs.get("substate", "")
+                        if se_sub and se_sub != current_substate:
+                            try:
+                                if expected.index(se_sub) > expected.index(current_substate):
+                                    continued = True
+                                    break
+                            except ValueError:
+                                pass
+
+            if continued:
+                override_count += 1
+
+            failures.append(GateFailureEntry(
+                entry_id=entry.entry_id,
+                skill=gs.get("skill"),
+                substate=gs.get("substate"),
+                gate_findings=gate_findings_list,
+                continued=continued,
+            ))
+
+    failure_rate = len(failures) / total_checks if total_checks > 0 else 0.0
+    common_findings_list = [f for f, _ in finding_counts.most_common(10)]
+
+    findings: list[AnalysisFinding] = []
+    if as_findings:
+        if failure_rate > 0.3:
+            findings.append(AnalysisFinding(
+                pillar="claude_execution",
+                category="gate_validation",
+                severity="high",
+                description=f"High gate failure rate: {failure_rate:.0%} ({len(failures)}/{total_checks})",
+                recommendation="Review common gate findings and address recurring issues",
+                evidence=[f.entry_id for f in failures[:5]],
+            ))
+        if override_count > 0:
+            findings.append(AnalysisFinding(
+                pillar="alignment_patterns",
+                category="gate_override",
+                severity="medium",
+                description=f"{override_count} gate failures were overridden (task continued despite failure)",
+                recommendation="Evaluate whether gate checks are too strict or if overrides indicate quality risks",
+                evidence=[f.entry_id for f in failures if f.continued][:5],
+            ))
+
+    return GateFailureReport(
+        total_gate_checks=total_checks,
+        total_failures=len(failures),
+        failure_rate=round(failure_rate, 3),
+        failures=failures,
+        override_count=override_count,
+        common_findings=common_findings_list,
+        findings=findings,
+        summary=f"{len(failures)} gate failures out of {total_checks} checks ({failure_rate:.0%}). {override_count} overrides.",
+    )
+
+
+def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessResult:
+    """Analyze auto-tag signal-to-noise ratio.
+
+    Identifies noisy tags and tags correlated with actual problems.
+    """
+    from collections import Counter
+
+    index = load_archive_index()
+    if not index.entries:
+        return TagEffectivenessResult(summary="No archive entries found.")
+
+    entries = list(index.entries.values())
+    total_entries = len(entries)
+
+    if total_entries == 0:
+        return TagEffectivenessResult(summary="No entries to analyze.")
+
+    sessions = _group_entries_by_skill_session(entries)
+
+    # Collect all auto_tags with frequency
+    tag_freq: Counter = Counter()
+    for entry in entries:
+        for tag in entry.auto_tags or []:
+            tag_freq[tag] += 1
+
+    if not tag_freq:
+        return TagEffectivenessResult(
+            summary="No auto-tags found in archive entries.",
+        )
+
+    # Build sets of entry_ids involved in problems
+    gate_failure_ids: set[str] = set()
+    for entry in entries:
+        gv = entry.gate_validation or {}
+        if gv and not gv.get("passed", True):
+            gate_failure_ids.add(entry.entry_id)
+
+    backward_ids: set[str] = set()
+    for session in sessions:
+        expected = SKILL_PHASE_ORDERS.get(session.skill, [])
+        backward = _detect_backward_transitions(session, expected)
+        for entry_id, _, _ in backward:
+            backward_ids.add(entry_id)
+
+    error_note_ids: set[str] = set()
+    error_keywords = ["error", "fail", "bug", "broken", "crash", "exception"]
+    for entry in entries:
+        notes = (entry.notes or "").lower()
+        if any(kw in notes for kw in error_keywords):
+            error_note_ids.add(entry.entry_id)
+
+    # Per-tag analysis
+    tag_entries: list[TagEffectivenessEntry] = []
+    noisy_tags: list[str] = []
+    signal_tags: list[str] = []
+
+    for tag, freq in tag_freq.most_common():
+        freq_pct = freq / total_entries
+
+        # Count co-occurrences
+        co_gate = 0
+        co_backward = 0
+        co_error = 0
+        for entry in entries:
+            if tag in (entry.auto_tags or []):
+                if entry.entry_id in gate_failure_ids:
+                    co_gate += 1
+                if entry.entry_id in backward_ids:
+                    co_backward += 1
+                if entry.entry_id in error_note_ids:
+                    co_error += 1
+
+        # signal_score = sum(co_occurrences) / (frequency * 3)
+        signal_score = (co_gate + co_backward + co_error) / (freq * 3) if freq > 0 else 0.0
+        signal_score = min(signal_score, 1.0)
+
+        # Classify
+        if freq_pct > 0.8:
+            classification = "noise"
+            noisy_tags.append(tag)
+        elif signal_score > 0.3:
+            classification = "signal"
+            signal_tags.append(tag)
+        else:
+            classification = "neutral"
+
+        tag_entries.append(TagEffectivenessEntry(
+            tag=tag,
+            frequency=freq,
+            frequency_pct=round(freq_pct, 3),
+            co_occurs_with_gate_failure=co_gate,
+            co_occurs_with_backward_transition=co_backward,
+            co_occurs_with_error_notes=co_error,
+            signal_score=round(signal_score, 3),
+            classification=classification,
+        ))
+
+    findings: list[AnalysisFinding] = []
+    if as_findings:
+        if noisy_tags:
+            findings.append(AnalysisFinding(
+                pillar="system_engineering",
+                category="tagging",
+                severity="medium",
+                description=f"Noisy tags (>80% frequency, low signal): {', '.join(noisy_tags)}",
+                recommendation="Consider raising thresholds or removing these auto-tags",
+                evidence=[],
+            ))
+        if signal_tags:
+            findings.append(AnalysisFinding(
+                pillar="system_engineering",
+                category="tagging",
+                severity="low",
+                description=f"Signal tags (correlated with problems): {', '.join(signal_tags)}",
+                recommendation="These tags are effective problem indicators; preserve and leverage them",
+                evidence=[],
+            ))
+
+    return TagEffectivenessResult(
+        tags=tag_entries,
+        noisy_tags=noisy_tags,
+        signal_tags=signal_tags,
+        findings=findings,
+        summary=f"Analyzed {len(tag_freq)} auto-tags: {len(noisy_tags)} noisy, {len(signal_tags)} signal.",
+    )
 
 
 def sbs_analysis_summary_impl() -> AnalysisSummary:

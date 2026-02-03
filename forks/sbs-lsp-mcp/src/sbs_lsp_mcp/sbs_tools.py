@@ -2393,6 +2393,101 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         result = sbs_user_patterns_impl()
         return result.model_dump_json(indent=2)
 
+    @mcp.tool(
+        "sbs_skill_stats",
+        annotations=ToolAnnotations(
+            title="SBS Skill Stats",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_stats(ctx: Context, as_findings: bool = False) -> str:
+        """Get per-skill lifecycle metrics.
+
+        Returns invocation count, completion rate, duration, and failure modes
+        for each skill type. Use during self-improve for Pillar 2.
+        """
+        from .sbs_self_improve import sbs_skill_stats_impl
+        result = sbs_skill_stats_impl(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_phase_transition_health",
+        annotations=ToolAnnotations(
+            title="SBS Phase Transition Health",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_phase_transition_health(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze phase transition patterns.
+
+        Detects backward transitions, skipped phases, and time-in-phase
+        distribution. Use during self-improve for Pillar 2 and 3.
+        """
+        from .sbs_self_improve import sbs_phase_transition_health_impl
+        result = sbs_phase_transition_health_impl(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_interruption_analysis",
+        annotations=ToolAnnotations(
+            title="SBS Interruption Analysis",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_interruption_analysis(ctx: Context, as_findings: bool = False) -> str:
+        """Detect user corrections and redirections.
+
+        Identifies backward transitions, retries, and correction keywords
+        in session data. Use during self-improve for Pillar 1 and 3.
+        """
+        from .sbs_self_improve import sbs_interruption_analysis_impl
+        result = sbs_interruption_analysis_impl(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_gate_failures",
+        annotations=ToolAnnotations(
+            title="SBS Gate Failures",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_gate_failures(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze gate validation failures.
+
+        Reports failure rates, override patterns, and common failure types.
+        Use during self-improve for Pillar 4.
+        """
+        from .sbs_self_improve import sbs_gate_failures_impl
+        result = sbs_gate_failures_impl(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_tag_effectiveness",
+        annotations=ToolAnnotations(
+            title="SBS Tag Effectiveness",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_tag_effectiveness(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze auto-tag signal-to-noise ratio.
+
+        Identifies noisy tags and tags correlated with actual problems.
+        Use during self-improve for Pillar 4.
+        """
+        from .sbs_self_improve import sbs_tag_effectiveness_impl
+        result = sbs_tag_effectiveness_impl(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
     # =========================================================================
     # Skill Management Tools
     # =========================================================================

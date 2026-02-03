@@ -703,6 +703,146 @@ class UserPatternAnalysis(BaseModel):
     )
 
 
+# --- Interruption Analysis ---
+
+
+class InterruptionEvent(BaseModel):
+    """A single interruption event detected in a skill session."""
+
+    entry_id: str = Field(description="Entry where interruption was detected")
+    skill: str = Field(description="Skill that was interrupted")
+    event_type: str = Field(
+        description="Type: backward_transition, retry, correction_keyword, high_entry_count"
+    )
+    from_phase: Optional[str] = Field(None, description="Phase before interruption")
+    to_phase: Optional[str] = Field(None, description="Phase after interruption")
+    context: str = Field(description="Human-readable description")
+
+
+class InterruptionAnalysisResult(BaseModel):
+    """Result from interruption analysis across skill sessions."""
+
+    events: List[InterruptionEvent] = Field(default_factory=list)
+    total_sessions_analyzed: int = Field(default=0)
+    sessions_with_interruptions: int = Field(default=0)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(default="")
+
+
+# --- Skill Stats ---
+
+
+class SkillStatEntry(BaseModel):
+    """Statistics for a single skill type."""
+
+    skill: str = Field(description="Skill name")
+    invocation_count: int = Field(default=0)
+    completion_count: int = Field(default=0)
+    completion_rate: float = Field(default=0.0)
+    avg_duration_seconds: Optional[float] = Field(None)
+    avg_entries_per_session: float = Field(default=0.0)
+    common_failure_substates: List[str] = Field(default_factory=list)
+    common_failure_tags: List[str] = Field(default_factory=list)
+
+
+class SkillStatsResult(BaseModel):
+    """Per-skill lifecycle metrics."""
+
+    skills: Dict[str, SkillStatEntry] = Field(default_factory=dict)
+    total_sessions: int = Field(default=0)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(default="")
+
+
+# --- Phase Transition Health ---
+
+
+class PhaseTransitionReport(BaseModel):
+    """Phase transition health report for a single skill."""
+
+    skill: str = Field(description="Skill name")
+    expected_sequence: List[str] = Field(default_factory=list)
+    total_sessions: int = Field(default=0)
+    backward_transitions: int = Field(default=0)
+    backward_details: List[Dict[str, str]] = Field(
+        default_factory=list, description="entry_id, from, to"
+    )
+    skipped_phases: Dict[str, int] = Field(
+        default_factory=dict, description="Phase -> skip count"
+    )
+    time_in_phase: Dict[str, float] = Field(
+        default_factory=dict, description="Phase -> avg seconds"
+    )
+
+
+class PhaseTransitionHealthResult(BaseModel):
+    """Phase transition health analysis across all skills."""
+
+    reports: List[PhaseTransitionReport] = Field(default_factory=list)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(default="")
+
+
+# --- Gate Failures ---
+
+
+class GateFailureEntry(BaseModel):
+    """A single gate validation failure."""
+
+    entry_id: str = Field(description="Entry where gate failed")
+    skill: Optional[str] = Field(None)
+    substate: Optional[str] = Field(None)
+    gate_findings: List[str] = Field(
+        default_factory=list, description="Gate validation findings"
+    )
+    continued: bool = Field(
+        default=False, description="Whether task continued despite failure"
+    )
+
+
+class GateFailureReport(BaseModel):
+    """Analysis of gate validation failures."""
+
+    total_gate_checks: int = Field(default=0)
+    total_failures: int = Field(default=0)
+    failure_rate: float = Field(default=0.0)
+    failures: List[GateFailureEntry] = Field(default_factory=list)
+    override_count: int = Field(default=0)
+    common_findings: List[str] = Field(default_factory=list)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(default="")
+
+
+# --- Tag Effectiveness ---
+
+
+class TagEffectivenessEntry(BaseModel):
+    """Effectiveness analysis for a single auto-tag."""
+
+    tag: str = Field(description="Auto-tag name")
+    frequency: int = Field(default=0)
+    frequency_pct: float = Field(default=0.0)
+    co_occurs_with_gate_failure: int = Field(default=0)
+    co_occurs_with_backward_transition: int = Field(default=0)
+    co_occurs_with_error_notes: int = Field(default=0)
+    signal_score: float = Field(
+        default=0.0, description="0-1: higher = more correlated with problems"
+    )
+    classification: str = Field(
+        default="neutral", description="signal, noise, or neutral"
+    )
+
+
+class TagEffectivenessResult(BaseModel):
+    """Analysis of auto-tag signal-to-noise ratio."""
+
+    tags: List[TagEffectivenessEntry] = Field(default_factory=list)
+    noisy_tags: List[str] = Field(default_factory=list)
+    signal_tags: List[str] = Field(default_factory=list)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(default="")
+
+
 # =============================================================================
 # Skill Management Tools
 # =============================================================================
