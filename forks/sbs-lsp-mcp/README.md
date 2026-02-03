@@ -1,6 +1,6 @@
 # sbs-lsp-mcp
 
-SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 14 SBS-specific tools (including 3 Zulip browsing tools) while preserving all 18 Lean proof-writing capabilities.
+SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 35 SBS-specific tools and 3 Zulip browsing tools while preserving all 18 Lean proof-writing capabilities.
 
 ## Overview
 
@@ -12,6 +12,9 @@ This package extends the upstream lean-lsp-mcp with SBS-specific tools for:
 - **Testing tools**: Run pytest suites and T1-T8 validators
 - **Build tools**: Trigger project builds and manage dev servers
 - **Investigation tools**: View screenshots, visual history, and search archive entries
+- **GitHub integration**: Create, list, get, close issues and manage pull requests
+- **Self-improve analysis**: Mine session patterns, analyze skill lifecycle, detect interruptions
+- **Skill management**: Start, transition, and end skill sessions with global state tracking
 - **Zulip browsing**: Search and browse Leanprover Zulip anonymously via browser automation
 
 ## Installation
@@ -73,7 +76,7 @@ Or if globally installed:
 }
 ```
 
-## Tools (32 Total)
+## Tools (56 Total)
 
 ### Lean Tools (18)
 
@@ -100,7 +103,9 @@ All upstream Lean tools are preserved for proof-writing workflows:
 | `lean_hammer_premise` | Get premises for automation |
 | `lean_profile_proof` | Profile theorem performance |
 
-### SBS Tools (11)
+### SBS Tools (35)
+
+#### Core (11)
 
 Tools for Side-by-Side Blueprint development workflows:
 
@@ -117,6 +122,52 @@ Tools for Side-by-Side Blueprint development workflows:
 | `sbs_last_screenshot` | Get latest screenshot for a page |
 | `sbs_visual_history` | View screenshot history |
 | `sbs_search_entries` | Search archive entries |
+
+#### GitHub Issues (5)
+
+| Tool | Description |
+|------|-------------|
+| `sbs_issue_create` | Create a new issue in e-vergo/Side-By-Side-Blueprint |
+| `sbs_issue_list` | List issues with state/label filters |
+| `sbs_issue_get` | Get details of a specific issue by number |
+| `sbs_issue_close` | Close an issue with optional comment |
+| `sbs_issue_summary` | Aggregate statistics for all open issues |
+
+#### GitHub PRs (4)
+
+| Tool | Description |
+|------|-------------|
+| `sbs_pr_create` | Create a pull request from the current branch |
+| `sbs_pr_list` | List PRs with state/label filters |
+| `sbs_pr_get` | Get details of a specific PR by number |
+| `sbs_pr_merge` | Merge a PR (squash/rebase/merge strategies) |
+
+#### Self-Improve Analysis (11)
+
+Tools for mining session data and analyzing agent behavior. The first 6 provide foundational analysis; the last 5 (added in [#65](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/65)) add targeted diagnostics for skill lifecycle, phase transitions, interruptions, gate failures, and tag noise.
+
+| Tool | Description |
+|------|-------------|
+| `sbs_analysis_summary` | Aggregate archive statistics (entries, triggers, quality, tags) |
+| `sbs_entries_since_self_improve` | All entries since last self-improve invocation |
+| `sbs_successful_sessions` | Mine sessions with completed tasks and high quality |
+| `sbs_comparative_analysis` | Compare approved vs rejected plans |
+| `sbs_system_health` | Build metrics, quality coverage, archive friction |
+| `sbs_user_patterns` | Alignment efficiency and communication patterns |
+| `sbs_skill_stats` | Per-skill invocation count, completion rate, duration |
+| `sbs_phase_transition_health` | Detect backward transitions and skipped phases |
+| `sbs_interruption_analysis` | Detect user corrections and redirections |
+| `sbs_gate_failures` | Gate failure rates, overrides, and common failure types |
+| `sbs_tag_effectiveness` | Auto-tag signal-to-noise ratio analysis |
+
+#### Skill Management (4)
+
+| Tool | Description |
+|------|-------------|
+| `sbs_skill_status` | Check active skill, phase, and whether a new skill can start |
+| `sbs_skill_start` | Claim global state for a skill session |
+| `sbs_skill_transition` | Move to a new phase within the active skill |
+| `sbs_skill_end` | Release global state, ending the skill session |
 
 ### Zulip Tools (3)
 
