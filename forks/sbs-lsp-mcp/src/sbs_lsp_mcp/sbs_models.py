@@ -454,7 +454,8 @@ class IssueSummaryResult(BaseModel):
     """Analytical summary of open GitHub issues.
 
     Groups issues by type (bug/feature/idea) and area (sbs/devtools/misc),
-    with a full listing sorted by age.
+    with a full listing sorted by age. Also provides by_dimension grouping
+    across all taxonomy dimensions.
     """
 
     total_open: int = Field(description="Total number of open issues")
@@ -465,6 +466,13 @@ class IssueSummaryResult(BaseModel):
     by_area: Dict[str, List[int]] = Field(
         default_factory=dict,
         description="Issue numbers grouped by area label (sbs, devtools, misc, unlabeled)",
+    )
+    by_dimension: Dict[str, Dict[str, List[int]]] = Field(
+        default_factory=dict,
+        description=(
+            "Issue numbers grouped by taxonomy dimension, then by label. "
+            "E.g. {'origin': {'origin:user': [1,2]}, 'friction': {'friction:slow-feedback': [3]}}"
+        ),
     )
     issues: List[IssueSummaryItem] = Field(
         default_factory=list,
