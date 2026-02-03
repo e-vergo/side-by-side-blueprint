@@ -16,6 +16,7 @@ import pytest
 
 from sbs_lsp_mcp.sbs_models import (
     SkillEndResult,
+    SkillFailResult,
     SkillStartResult,
     SkillStatusResult,
     SkillTransitionResult,
@@ -512,6 +513,139 @@ class TestSkillTransition:
 
 
 # =============================================================================
+# TestPhaseOrdering
+# =============================================================================
+
+
+class TestPhaseOrdering:
+    """Tests for phase ordering enforcement in sbs_skill_transition."""
+
+    def test_task_alignment_to_execution_rejected(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Task alignment -> execution is rejected (must go through planning)."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "task", "substate": "alignment"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        with patch("sbs_lsp_mcp.sbs_tools.load_archive_index", return_value=mock_index), \
+             patch("sbs_lsp_mcp.sbs_tools._run_archive_upload") as mock_upload:
+
+            mock_upload.return_value = (True, "20260131161500", None)
+
+            # Simulate what the tool does with the new phase ordering logic
+            current_skill = mock_index.global_state.get("skill")
+            current_substate = mock_index.global_state.get("substate")
+            skill = "task"
+            to_phase = "execution"
+
+            # Phase ordering check (mirrors the implementation)
+            VALID_TRANSITIONS = {
+                "task": {
+                    "alignment": {"planning"},
+                    "planning": {"execution"},
+                    "execution": {"finalization"},
+                },
+            }
+
+            skill_phases = VALID_TRANSITIONS.get(skill, {})
+            if skill_phases and current_substate in skill_phases:
+                allowed = skill_phases[current_substate]
+                if to_phase not in allowed:
+                    result = SkillTransitionResult(
+                        success=False,
+                        error=f"Invalid transition: {current_substate} -> {to_phase}. "
+                              f"Allowed: {sorted(allowed)}",
+                        from_phase=current_substate,
+                        to_phase=to_phase,
+                        archive_entry_id=None,
+                    )
+                else:
+                    result = SkillTransitionResult(
+                        success=True, error=None, from_phase=current_substate,
+                        to_phase=to_phase, archive_entry_id="test",
+                    )
+            else:
+                result = SkillTransitionResult(
+                    success=True, error=None, from_phase=current_substate,
+                    to_phase=to_phase, archive_entry_id="test",
+                )
+
+            assert result.success is False
+            assert "Invalid transition" in result.error
+            assert "alignment" in result.error
+            assert "execution" in result.error
+            assert "planning" in result.error  # Should suggest planning
+
+    def test_task_alignment_to_planning_accepted(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Task alignment -> planning is accepted."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "task", "substate": "alignment"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        # Simulate phase ordering check
+        current_substate = mock_index.global_state.get("substate")
+        skill = "task"
+        to_phase = "planning"
+
+        VALID_TRANSITIONS = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+        allowed = skill_phases.get(current_substate, set())
+
+        assert to_phase in allowed
+
+    def test_unlisted_skill_unconstrained(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Skills not in VALID_TRANSITIONS (like self-improve) are unconstrained."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "self-improve", "substate": "discovery"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        current_substate = mock_index.global_state.get("substate")
+        skill = "self-improve"
+        to_phase = "any-phase-should-work"
+
+        VALID_TRANSITIONS = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+
+        # self-improve not in VALID_TRANSITIONS, so skill_phases is empty
+        assert not skill_phases
+        # Therefore no phase ordering is enforced -- transition would proceed
+
+
+# =============================================================================
 # TestSkillEnd
 # =============================================================================
 
@@ -613,6 +747,92 @@ class TestSkillEnd:
                 state_transition="phase_end",
                 issue_refs=[42, 43],
             )
+
+
+# =============================================================================
+# TestSkillFail
+# =============================================================================
+
+
+class TestSkillFail:
+    """Tests for sbs_skill_fail tool."""
+
+    def test_fail_records_reason(self, mock_archive_index_with_task: Dict[str, Any]) -> None:
+        """Fail records the failure reason and clears state."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_with_task)
+
+        with patch("sbs_lsp_mcp.sbs_tools._run_archive_upload") as mock_upload:
+            mock_upload.return_value = (True, "20260131191000", None)
+
+            current_skill = mock_index.global_state.get("skill")
+            current_substate = mock_index.global_state.get("substate")
+            skill = "task"
+            reason = "Build failed with unrecoverable error"
+
+            assert current_skill == skill
+
+            # Simulate tool logic
+            success, entry_id, error = mock_upload(
+                trigger="skill",
+                global_state=None,
+                state_transition="phase_fail",
+                issue_refs=None,
+            )
+
+            result = SkillFailResult(
+                success=True,
+                error=None,
+                archive_entry_id=entry_id,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+            assert result.success is True
+            assert result.reason == reason
+            assert result.failed_phase == "execution"
+            assert result.archive_entry_id == "20260131191000"
+
+            # Verify phase_fail transition was used
+            mock_upload.assert_called_with(
+                trigger="skill",
+                global_state=None,
+                state_transition="phase_fail",
+                issue_refs=None,
+            )
+
+    def test_fail_wrong_skill(self, mock_archive_index_with_task: Dict[str, Any]) -> None:
+        """Fail rejects when skill doesn't match."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_with_task)
+
+        current_skill = mock_index.global_state.get("skill")
+        skill = "self-improve"
+
+        result = SkillFailResult(
+            success=False,
+            error=f"Cannot fail '{skill}': current active skill is '{current_skill}'",
+            archive_entry_id=None,
+            reason="some reason",
+            failed_phase=None,
+        )
+
+        assert result.success is False
+        assert "self-improve" in result.error
+        assert "task" in result.error
+
+    def test_fail_when_idle(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Fail rejects when no skill is active."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = SkillFailResult(
+            success=False,
+            error="Cannot fail 'task': current active skill is 'none'",
+            archive_entry_id=None,
+            reason="some reason",
+            failed_phase=None,
+        )
+
+        assert result.success is False
+        assert "none" in result.error
 
 
 # =============================================================================

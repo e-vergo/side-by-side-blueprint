@@ -5,6 +5,7 @@ from __future__ import annotations
 import fnmatch
 import importlib.util
 import sys
+import types
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -214,13 +215,25 @@ class TaggingEngine:
             return []
 
         try:
-            # Load module dynamically
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
+            # Register hooks directory as a package so relative imports work
+            hooks_pkg_name = "tagging_hooks"
+            if hooks_pkg_name not in sys.modules:
+                hooks_pkg = types.ModuleType(hooks_pkg_name)
+                hooks_pkg.__path__ = [str(self.hooks_dir)]
+                hooks_pkg.__package__ = hooks_pkg_name
+                sys.modules[hooks_pkg_name] = hooks_pkg
+
+            # Load module with package-qualified name
+            qualified_name = f"{hooks_pkg_name}.{module_name}"
+            spec = importlib.util.spec_from_file_location(
+                qualified_name, module_path, submodule_search_locations=[]
+            )
             if spec is None or spec.loader is None:
                 return []
 
             module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
+            module.__package__ = hooks_pkg_name
+            sys.modules[qualified_name] = module
             spec.loader.exec_module(module)
 
             # Get and call the function

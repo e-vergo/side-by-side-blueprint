@@ -61,6 +61,7 @@ from .sbs_models import (
     SelfImproveEntrySummary,
     ServeResult,
     SkillEndResult,
+    SkillFailResult,
     SkillHandoffResult,
     SkillStartResult,
     SkillStatusResult,
@@ -3010,6 +3011,34 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 archive_entry_id=None,
             )
 
+        # Phase ordering enforcement
+        VALID_TRANSITIONS: Dict[str, Dict[str, set]] = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+            "update-and-archive": {
+                "retrospective": {"readme-wave"},
+                "readme-wave": {"oracle-regen"},
+                "oracle-regen": {"porcelain"},
+                "porcelain": {"archive-upload"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+        if skill_phases and current_substate in skill_phases:
+            allowed = skill_phases[current_substate]
+            if to_phase not in allowed:
+                return SkillTransitionResult(
+                    success=False,
+                    error=f"Invalid transition: {current_substate} -> {to_phase}. "
+                          f"Allowed: {sorted(allowed)}",
+                    from_phase=current_substate,
+                    to_phase=to_phase,
+                    archive_entry_id=None,
+                )
+
         # Prepare new state
         new_state = {
             "skill": skill,
@@ -3106,6 +3135,92 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             success=True,
             error=None,
             archive_entry_id=entry_id,
+        )
+
+    @mcp.tool(
+        "sbs_skill_fail",
+        annotations=ToolAnnotations(
+            title="Record Skill Failure",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_fail(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        reason: Annotated[
+            str,
+            Field(description="Why the skill failed"),
+        ],
+        work_preserved: Annotated[
+            Optional[Dict[str, Any]],
+            Field(description="What partial work was preserved (e.g., branch, commits)"),
+        ] = None,
+        recovery_hint: Annotated[
+            Optional[str],
+            Field(description="Suggested recovery action"),
+        ] = None,
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers to associate"),
+        ] = None,
+    ) -> SkillFailResult:
+        """Record a skill failure and release the global state.
+
+        Similar to sbs_skill_end but records the failure reason and uses
+        phase_fail state_transition instead of phase_end.
+
+        Args:
+            skill: Name of the skill (must match current active skill)
+            reason: Why the skill failed
+            work_preserved: Optional dict describing preserved partial work
+            recovery_hint: Optional suggestion for recovery
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillFailResult with success, reason, and failed_phase
+        """
+        # Check current state
+        index = load_archive_index()
+        current_skill = index.global_state.get("skill") if index.global_state else None
+        current_substate = index.global_state.get("substate") if index.global_state else None
+
+        if current_skill != skill:
+            return SkillFailResult(
+                success=False,
+                error=f"Cannot fail '{skill}': current active skill is '{current_skill or 'none'}'",
+                archive_entry_id=None,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+        # Run archive upload with phase_fail to clear state
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None,  # Clear the state
+            state_transition="phase_fail",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillFailResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+        return SkillFailResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+            reason=reason,
+            failed_phase=current_substate,
         )
 
     @mcp.tool(
@@ -3223,7 +3338,7 @@ def _run_archive_upload(
     Args:
         trigger: Trigger type for the archive entry
         global_state: New global state to set (None to clear)
-        state_transition: Either "phase_start", "phase_end", or "handoff"
+        state_transition: Either "phase_start", "phase_end", "phase_fail", or "handoff"
         issue_refs: List of GitHub issue numbers to associate
         handoff_to: For handoff transitions, the incoming skill state
 

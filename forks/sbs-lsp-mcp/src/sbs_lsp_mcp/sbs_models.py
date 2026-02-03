@@ -828,6 +828,9 @@ class TagEffectivenessEntry(BaseModel):
     """Effectiveness analysis for a single auto-tag."""
 
     tag: str = Field(description="Auto-tag name")
+    tag_era: str = Field(
+        default="v2", description="'legacy' (pre-v2.0, no colon) or 'v2' (colon-delimited)"
+    )
     frequency: int = Field(default=0)
     frequency_pct: float = Field(default=0.0)
     co_occurs_with_gate_failure: int = Field(default=0)
@@ -972,6 +975,20 @@ class SkillEndResult(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
     archive_entry_id: Optional[str] = Field(
         None, description="Entry ID from archive upload"
+    )
+
+
+class SkillFailResult(BaseModel):
+    """Result of recording a skill failure."""
+
+    success: bool = Field(description="Whether the failure was recorded")
+    error: Optional[str] = Field(None, description="Error if recording failed")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID from archive upload"
+    )
+    reason: str = Field(description="Why the skill failed")
+    failed_phase: Optional[str] = Field(
+        None, description="Phase that was active when failure occurred"
     )
 
 
