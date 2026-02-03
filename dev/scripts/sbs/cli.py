@@ -448,6 +448,7 @@ Examples:
   sbs archive upload --dry-run          # Preview without making changes
   sbs archive upload --project SBSTest  # Associate with specific project
   sbs archive upload --trigger build    # Mark as build-triggered
+  sbs archive upload --validate             # Upload with validator run
         """,
     )
     archive_upload_parser.add_argument(
@@ -483,6 +484,11 @@ Examples:
         "--pr-number",
         type=str,
         help="Comma-separated list of PR numbers to link (e.g., '42,57')",
+    )
+    archive_upload_parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Run validators and attach quality scores to the archive entry",
     )
 
     # --- oracle (command group) ---
