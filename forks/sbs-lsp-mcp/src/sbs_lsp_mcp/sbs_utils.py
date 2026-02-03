@@ -219,7 +219,13 @@ def parse_oracle_sections(content: str) -> Dict[str, Any]:
 
 
 def search_oracle(
-    sections: Dict[str, Any], query: str, max_results: int = 10
+    sections: Dict[str, Any],
+    query: str,
+    max_results: int = 10,
+    result_type: str = "all",
+    scope: Optional[str] = None,
+    min_relevance: float = 0.0,
+    fuzzy: bool = False,
 ) -> List[Dict[str, Any]]:
     """Search the parsed oracle for matches.
 
@@ -227,96 +233,154 @@ def search_oracle(
         sections: Parsed oracle sections from parse_oracle_sections().
         query: Search query string.
         max_results: Maximum number of results to return.
+        result_type: Filter results: 'files', 'concepts', or 'all'.
+        scope: Limit to repo/section, e.g. 'Dress', 'Runway'.
+        min_relevance: Minimum relevance score (0.0-1.0).
+        fuzzy: Enable fuzzy matching for typos.
 
     Returns:
         List of matches with file, context, and relevance score.
     """
+    import difflib
+
     query_lower = query.lower()
     query_words = query_lower.split()
     results: List[Dict[str, Any]] = []
     seen_files: set = set()  # Deduplicate file results
 
-    # Search in file map (direct path match)
-    for path, info in sections["file_map"].items():
-        if query_lower in path.lower():
-            if path not in seen_files:
-                seen_files.add(path)
-                concept = info.get("concept", "")
-                notes = info.get("notes", "")
-                context = f"Found in section: {info['section']}"
-                if concept:
-                    context = f"{concept} -> {context}"
-                if notes:
-                    context += f" ({notes})"
-                results.append(
-                    {
-                        "file": path,
-                        "lines": None,
-                        "context": context,
-                        "relevance": 1.0 if query_lower == path.lower() else 0.7,
-                    }
-                )
+    def matches_scope(path: str, section: str) -> bool:
+        """Check if result matches the scope filter."""
+        if scope is None:
+            return True
+        scope_lower = scope.lower()
+        return scope_lower in path.lower() or scope_lower in section.lower()
 
-    # Search in concepts (table rows from oracle)
-    for concept in sections["concept_index"]:
-        name = concept.get("name", "").lower()
-        location = concept.get("location", "")
-        notes = concept.get("notes", "").lower()
-        section = concept.get("section", "")
+    def fuzzy_match(text: str, query: str) -> bool:
+        """Check for fuzzy match using difflib."""
+        if not fuzzy:
+            return False
+        # Get close matches for the query against words in text
+        text_words = text.lower().split()
+        # Also check path components
+        text_words.extend(text.lower().replace("/", " ").replace(".", " ").split())
+        matches = difflib.get_close_matches(query.lower(), text_words, n=1, cutoff=0.6)
+        return len(matches) > 0
 
-        # Check if query matches concept name, notes, or location
-        relevance = 0.0
-        if query_lower in name:
-            relevance = 0.9 if query_lower == name else 0.8
-        elif any(word in name for word in query_words):
-            relevance = 0.7
-        elif query_lower in notes:
-            relevance = 0.6
-        elif any(word in notes for word in query_words):
-            relevance = 0.5
+    # Search in file map (direct path match) - skip if result_type is 'concepts'
+    if result_type in ("all", "files"):
+        for path, info in sections["file_map"].items():
+            section = info.get("section", "")
+            if not matches_scope(path, section):
+                continue
 
-        if relevance > 0:
-            # If location is a file path, add as file match
-            if location and ("/" in location or location.endswith((".lean", ".py", ".md"))):
-                if location not in seen_files:
-                    seen_files.add(location)
+            is_match = query_lower in path.lower()
+            is_fuzzy_match = False if is_match else fuzzy_match(path, query_lower)
+
+            if is_match or is_fuzzy_match:
+                if path not in seen_files:
+                    seen_files.add(path)
+                    concept = info.get("concept", "")
+                    notes = info.get("notes", "")
+                    context = f"Found in section: {section}"
+                    if concept:
+                        context = f"{concept} -> {context}"
+                    if notes:
+                        context += f" ({notes})"
+                    relevance = 1.0 if query_lower == path.lower() else (0.5 if is_fuzzy_match else 0.7)
                     results.append(
                         {
-                            "file": location,
+                            "file": path,
                             "lines": None,
-                            "context": f"Concept '{concept.get('name', '')}' in {section}" + (f" ({notes})" if notes else ""),
+                            "context": context,
                             "relevance": relevance,
+                            "section": section,
                         }
                     )
-            else:
-                # Add as concept match
-                results.append(
-                    {
-                        "file": "",
-                        "lines": None,
-                        "context": f"Concept '{concept.get('name', '')}' at '{location}' in section: {section}",
-                        "relevance": relevance,
-                    }
-                )
 
-    # Search in section content (fallback for things not in tables)
-    for section_name, section_content in sections.get("sections", {}).items():
-        if query_lower in section_content.lower():
-            # Find the line with the match
-            for i, line in enumerate(section_content.split("\n")):
-                if query_lower in line.lower():
-                    # Skip table rows (already handled above)
-                    if line.strip().startswith("|"):
-                        continue
+    # Search in concepts (table rows from oracle) - skip if result_type is 'files'
+    if result_type in ("all", "concepts"):
+        for concept in sections["concept_index"]:
+            name = concept.get("name", "").lower()
+            location = concept.get("location", "")
+            notes = concept.get("notes", "").lower()
+            section = concept.get("section", "")
+
+            if not matches_scope(location, section):
+                continue
+
+            # Check if query matches concept name, notes, or location
+            relevance = 0.0
+            if query_lower in name:
+                relevance = 0.9 if query_lower == name else 0.8
+            elif any(word in name for word in query_words):
+                relevance = 0.7
+            elif query_lower in notes:
+                relevance = 0.6
+            elif any(word in notes for word in query_words):
+                relevance = 0.5
+            elif fuzzy and fuzzy_match(name + " " + notes, query_lower):
+                relevance = 0.4
+
+            if relevance > 0:
+                # If location is a file path, add as file match
+                if location and ("/" in location or location.endswith((".lean", ".py", ".md"))):
+                    if location not in seen_files:
+                        seen_files.add(location)
+                        results.append(
+                            {
+                                "file": location,
+                                "lines": None,
+                                "context": f"Concept '{concept.get('name', '')}' in {section}" + (f" ({notes})" if notes else ""),
+                                "relevance": relevance,
+                                "section": section,
+                            }
+                        )
+                else:
+                    # Add as concept match
                     results.append(
                         {
                             "file": "",
                             "lines": None,
-                            "context": f"In section '{section_name}': {line[:100]}...",
-                            "relevance": 0.4,
+                            "context": f"Concept '{concept.get('name', '')}' at '{location}' in section: {section}",
+                            "relevance": relevance,
+                            "section": section,
                         }
                     )
-                    break
+
+    # Search in section content (fallback for things not in tables) - only if result_type allows
+    if result_type in ("all", "concepts"):
+        for section_name, section_content in sections.get("sections", {}).items():
+            if scope and scope.lower() not in section_name.lower():
+                continue
+
+            is_match = query_lower in section_content.lower()
+            is_fuzzy_match = False if is_match else (fuzzy and fuzzy_match(section_content[:500], query_lower))
+
+            if is_match or is_fuzzy_match:
+                # Find the line with the match
+                for i, line in enumerate(section_content.split("\n")):
+                    line_match = query_lower in line.lower()
+                    line_fuzzy = False if line_match else (fuzzy and fuzzy_match(line, query_lower))
+
+                    if line_match or line_fuzzy:
+                        # Skip table rows (already handled above)
+                        if line.strip().startswith("|"):
+                            continue
+                        relevance = 0.4 if line_match else 0.3
+                        results.append(
+                            {
+                                "file": "",
+                                "lines": None,
+                                "context": f"In section '{section_name}': {line[:100]}...",
+                                "relevance": relevance,
+                                "section": section_name,
+                            }
+                        )
+                        break
+
+    # Filter by minimum relevance
+    if min_relevance > 0:
+        results = [r for r in results if r["relevance"] >= min_relevance]
 
     # Sort by relevance and limit
     results.sort(key=lambda x: x["relevance"], reverse=True)

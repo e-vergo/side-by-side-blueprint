@@ -45,6 +45,45 @@ REPO_PAGE_MAPPING: dict[str, list[str]] = {
     "SBS-Test": ["ALL"],
 }
 
+# Maps repo names to validators that should run when repo changes
+REPO_VALIDATOR_MAPPING: dict[str, list[str]] = {
+    # CSS/JS changes need color and visual checks
+    "dress-blueprint-action": ["T5", "T6", "T7", "T8"],
+
+    # Graph layout affects visual display
+    "Dress": ["T3", "T5", "T6"],
+
+    # Template changes affect all visual
+    "Runway": ["T3", "T4", "T5", "T6", "T7", "T8"],
+
+    # LeanArchitect affects status indicators
+    "LeanArchitect": ["T5"],
+
+    # Highlighting affects visual
+    "subverso": ["T7", "T8"],
+    "verso": ["T7", "T8"],
+
+    # Test project changes - full validation
+    "SBS-Test": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
+    "GCR": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
+    "PNT": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
+}
+
+
+def get_validators_for_changes(changed_repos: list[str]) -> list[str]:
+    """Determine which validators to run based on changed repos.
+
+    Args:
+        changed_repos: List of repo names that have changes
+
+    Returns:
+        Sorted list of validator IDs (T1-T8) that should run
+    """
+    validators = set()
+    for repo in changed_repos:
+        validators.update(REPO_VALIDATOR_MAPPING.get(repo, []))
+    return sorted(validators, key=lambda x: int(x[1:]))  # Sort T1-T8 numerically
+
 # All known pages
 ALL_PAGES = [
     "dashboard",

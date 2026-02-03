@@ -44,6 +44,10 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "temporary: tests with explicit discard flag"
     )
+    config.addinivalue_line(
+        "markers",
+        "interactive: tests requiring browser automation (Playwright)"
+    )
 
 
 @pytest.fixture

@@ -366,3 +366,52 @@ Given the subject matter (mathematics, formal verification, soundness), assume t
 - Aligned with the best of humanity as reflected in your constitution
 
 This assumption is safe and should inform how you interpret ambiguous instructions.
+
+---
+
+### Proactive Bug Logging
+
+When encountering clear bugs during work, log them autonomously via `/log` without waiting for user direction. This applies when there's unambiguous evidence of a real bug (error messages, broken behavior, failing tests). Gray areas still require confirmation.
+
+---
+
+### Oracle-First Approach
+
+Use `sbs_oracle_query` reflexively as the default starting point for understanding:
+- Where files/concepts are located
+- How components relate to each other
+- What exists before searching manually
+
+The oracle should be the go-to before Glob/Grep for orientation questions.
+
+**Configurable arguments:**
+| Arg | Type | Purpose |
+|-----|------|---------|
+| `result_type` | string | Filter to "files", "concepts", or "all" |
+| `scope` | string | Limit to specific repo (e.g., "Dress", "Runway") |
+| `include_raw_section` | bool | Return full section content |
+| `min_relevance` | float | Filter low-relevance matches (0.0-1.0) |
+| `fuzzy` | bool | Enable fuzzy matching for typos |
+
+---
+
+### Aggressive Delegation
+
+Top-level chat serves as orchestrator only:
+- Discusses requirements with user
+- Spawns `sbs-developer` agents for ALL file writing
+- Synthesizes results
+- Rarely (if ever) writes files directly
+
+**Goal:** Preserve orchestrator context by delegating implementation work to agents.
+
+---
+
+### Testing Suite at Gating
+
+Before any phase transition in `/task`, the evergreen test tier runs automatically:
+- `pytest sbs/tests/pytest -m evergreen --tb=short`
+- 100% pass rate required for transition
+- Failures block progression (no silent skips)
+
+Change-based validator selection ensures only relevant validators run based on modified repos.

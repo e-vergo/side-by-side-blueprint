@@ -512,3 +512,102 @@ class TestQualityGateEvaluation:
 
         # Should have findings regardless of success
         assert isinstance(result.findings, list)
+
+
+# =============================================================================
+# Tier Filtering Tests
+# =============================================================================
+
+
+@pytest.mark.evergreen
+class TestTierFiltering:
+    """Tests for test tier filtering in gate evaluation."""
+
+    @patch("sbs.archive.gates.subprocess.run")
+    def test_evergreen_tier_adds_marker(self, mock_run):
+        """evaluate_test_gate with tier='evergreen' passes -m evergreen."""
+        mock_run.return_value = MagicMock(
+            stdout="10 passed",
+            stderr="",
+            returncode=0,
+        )
+
+        gate = GateDefinition(tests="all_pass")
+        evaluate_test_gate(gate, tier="evergreen")
+
+        # Verify -m evergreen was in the command
+        call_args = mock_run.call_args[0][0]
+        assert "-m" in call_args
+        idx = call_args.index("-m")
+        assert call_args[idx + 1] == "evergreen"
+
+    @patch("sbs.archive.gates.subprocess.run")
+    def test_all_tier_no_marker(self, mock_run):
+        """evaluate_test_gate with tier='all' runs without marker filter."""
+        mock_run.return_value = MagicMock(
+            stdout="10 passed",
+            stderr="",
+            returncode=0,
+        )
+
+        gate = GateDefinition(tests="all_pass")
+        evaluate_test_gate(gate, tier="all")
+
+        # Verify -m was NOT in the command
+        call_args = mock_run.call_args[0][0]
+        assert "-m" not in call_args
+
+    @patch("sbs.archive.gates.subprocess.run")
+    def test_dev_tier_adds_marker(self, mock_run):
+        """evaluate_test_gate with tier='dev' passes -m dev."""
+        mock_run.return_value = MagicMock(
+            stdout="5 passed",
+            stderr="",
+            returncode=0,
+        )
+
+        gate = GateDefinition(tests="all_pass")
+        evaluate_test_gate(gate, tier="dev")
+
+        call_args = mock_run.call_args[0][0]
+        assert "-m" in call_args
+        idx = call_args.index("-m")
+        assert call_args[idx + 1] == "dev"
+
+    def test_gate_definition_default_tier(self):
+        """GateDefinition defaults to evergreen tier."""
+        gate = GateDefinition()
+        assert gate.test_tier == "evergreen"
+
+    def test_gate_definition_custom_tier(self):
+        """GateDefinition stores custom tier."""
+        gate = GateDefinition(test_tier="all")
+        assert gate.test_tier == "all"
+
+    def test_parse_gates_with_tier(self):
+        """parse_gates_from_plan parses test_tier field."""
+        plan_content = """
+```yaml
+gates:
+  tests: all_pass
+  test_tier: dev
+```
+"""
+        gate = parse_gates_from_plan(plan_content)
+
+        assert gate is not None
+        assert gate.tests == "all_pass"
+        assert gate.test_tier == "dev"
+
+    def test_parse_gates_default_tier(self):
+        """parse_gates_from_plan defaults to evergreen when tier not specified."""
+        plan_content = """
+```yaml
+gates:
+  tests: all_pass
+```
+"""
+        gate = parse_gates_from_plan(plan_content)
+
+        assert gate is not None
+        assert gate.test_tier == "evergreen"

@@ -19,6 +19,7 @@ import yaml
 class GateDefinition:
     """Gate requirements parsed from a plan file."""
     tests: Optional[str] = None  # "all_pass" or threshold like ">=0.9"
+    test_tier: str = "evergreen"  # "evergreen", "dev", "interactive", "all"
     quality: dict[str, str] = field(default_factory=dict)  # {"T5": ">=0.8", "T6": ">=0.9"}
     regression: Optional[str] = None  # ">= 0"
 
@@ -55,6 +56,7 @@ def parse_gates_from_plan(plan_content: str) -> Optional[GateDefinition]:
                 gates_data = data['gates']
                 return GateDefinition(
                     tests=gates_data.get('tests'),
+                    test_tier=gates_data.get('test_tier', 'evergreen'),
                     quality=gates_data.get('quality', {}),
                     regression=gates_data.get('regression'),
                 )
@@ -78,8 +80,12 @@ def find_active_plan() -> Optional[Path]:
     return max(plan_files, key=lambda p: p.stat().st_mtime)
 
 
-def evaluate_test_gate(gate: GateDefinition) -> GateResult:
+def evaluate_test_gate(gate: GateDefinition, tier: str = "evergreen") -> GateResult:
     """Run tests and check against gate threshold.
+
+    Args:
+        gate: Gate definition with tests threshold
+        tier: Test tier to run: "evergreen", "dev", "interactive", "all" (default: evergreen)
 
     Returns GateResult with pass/fail and findings.
     """
@@ -92,8 +98,14 @@ def evaluate_test_gate(gate: GateDefinition) -> GateResult:
     if not Path(pytest_path).exists():
         pytest_path = "pytest"  # Fall back to PATH
 
+    cmd = [pytest_path, "sbs/tests/pytest", "-q", "--tb=no"]
+
+    # Add tier filter unless "all"
+    if tier != "all":
+        cmd.extend(["-m", tier])
+
     result = subprocess.run(
-        [pytest_path, "sbs/tests/pytest", "-q", "--tb=no"],
+        cmd,
         cwd=scripts_dir,
         capture_output=True,
         text=True,
@@ -241,8 +253,8 @@ def check_gates(project: str = "SBSTest", force: bool = False) -> GateResult:
     all_findings = [f"Checking gates from: {plan_path.name}"]
     all_passed = True
 
-    # Test gate
-    test_result = evaluate_test_gate(gate)
+    # Test gate (use tier from gate definition)
+    test_result = evaluate_test_gate(gate, tier=gate.test_tier)
     all_findings.extend(test_result.findings)
     if not test_result.passed:
         all_passed = False
