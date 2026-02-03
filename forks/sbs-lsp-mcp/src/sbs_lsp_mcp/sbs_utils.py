@@ -104,6 +104,37 @@ def get_archive_dir() -> Path:
 
 
 # =============================================================================
+# Sidecar Claude Data Loading
+# =============================================================================
+
+
+ARCHIVE_DATA_DIR = ARCHIVE_DIR / "archive_data"
+
+
+def load_entry_claude_data(entry_id: str) -> Optional[dict]:
+    """Load claude_data from a sidecar file for the given entry.
+
+    Sidecar files live at ``ARCHIVE_DIR/archive_data/<entry_id>.json``.
+
+    Args:
+        entry_id: The archive entry ID (unix timestamp string).
+
+    Returns:
+        The claude_data dict, or None if the sidecar file doesn't exist.
+    """
+    import json as _json
+
+    path = ARCHIVE_DATA_DIR / f"{entry_id}.json"
+    if not path.exists():
+        return None
+    try:
+        with open(path) as f:
+            return _json.load(f)
+    except Exception:
+        return None
+
+
+# =============================================================================
 # Oracle Loading and Parsing
 # =============================================================================
 
