@@ -30,6 +30,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | [storage & tooling hub](../../dev/storage/readme.md) | `toolchain/SBS-Test/README.md` | Tooling & Archive System |
 | `@[blueprint]` attributes | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | `global_state` | `dev/storage/README.md` | State Machine Fields |
+| `sbs archive upload` | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
 | `state_transition` | `dev/storage/README.md` | State Machine Fields |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | absolute imports | `dev/scripts/README.md` | Design Principles |
@@ -59,6 +60,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | build & run | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | build and verify: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | build phases are standalone functions | `dev/scripts/sbs/build/README.md` | Design Notes |
+| build scripts | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
 | build tools | `forks/sbs-lsp-mcp/README.md` | Overview |
 | build: | `CLAUDE.md` | Standard Workflow |
 | building the product | `dev/markdowns/living/README.md` | Why This Matters for Agents |
@@ -201,6 +203,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | myproject.chapter.module | `toolchain/Runway/README.md` | Module Reference Support |
 | naming: | `dev/storage/README.md` | Archive System |
 | never delete or replace a plan without explicit user direction. | `CLAUDE.md` | Planning Discipline |
+| new branches without upstream tracking | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
 | no circular dependencies | `dev/scripts/README.md` | Design Principles |
 | no command handlers | `dev/scripts/sbs/core/README.md` | Design Principles |
 | no duplicate code | `dev/scripts/sbs/build/README.md` | Design Notes |
