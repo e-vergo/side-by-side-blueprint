@@ -218,7 +218,7 @@ class TestPhaseTransitionOrdering:
 
     def test_update_archive_phases_in_order(self):
         """Update-and-archive phases should follow defined order."""
-        valid_phases = ["readme-wave", "oracle-regen", "porcelain", "archive-upload"]
+        valid_phases = ["retrospective", "readme-wave", "oracle-regen", "porcelain", "archive-upload"]
 
         for i, phase in enumerate(valid_phases[:-1]):
             next_phase = valid_phases[i + 1]
@@ -307,7 +307,7 @@ class TestStateValueValidation:
 
     def test_known_substates_for_update_archive(self):
         """Update-and-archive skill has defined substates."""
-        ua_substates = ["readme-wave", "oracle-regen", "porcelain", "archive-upload"]
+        ua_substates = ["retrospective", "readme-wave", "oracle-regen", "porcelain", "archive-upload"]
 
         for substate in ua_substates:
             state = {"skill": "update-and-archive", "substate": substate}

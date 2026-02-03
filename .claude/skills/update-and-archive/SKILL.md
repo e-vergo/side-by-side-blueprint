@@ -50,7 +50,7 @@ Before doing ANY work:
    - `{skill: "update-and-archive", substate: X}` → Resume from substate X (may have been started via handoff from `/task`)
    - `{skill: "other", ...}` → Error: state conflict, do NOT proceed
 
-**Handoff entry point:** When invoked at the end of `/task`, state is already set to `{skill: "update-and-archive", substate: "readme-wave"}` via `sbs_skill_handoff`. No additional phase_start is needed -- proceed directly to Part 0.
+**Handoff entry point:** When invoked at the end of `/task`, state is already set to `{skill: "update-and-archive", substate: "retrospective"}` via `sbs_skill_handoff`. No additional phase_start is needed -- proceed directly to Part -1 (Session Retrospective).
 
 ### Substate Transitions
 
@@ -58,7 +58,8 @@ Each part transition MUST execute the corresponding archive call:
 
 | Transition | Command |
 |------------|---------|
-| Start | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start` |
+| Start | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"retrospective"}' --state-transition phase_start` |
+| Retro→Readme | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start` |
 | Part 1→2 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"oracle-regen"}' --state-transition phase_start` |
 | Part 2→3 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"porcelain"}' --state-transition phase_start` |
 | Part 3→4 | `python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"archive-upload"}' --state-transition phase_start` |
@@ -89,10 +90,11 @@ If context compacts mid-skill:
 
 ## Substates
 
-The update-and-archive skill has four substates, tracked in the archive:
+The update-and-archive skill has five substates, tracked in the archive:
 
 | Substate | Description | Transition |
 |----------|-------------|------------|
+| `retrospective` | Session retrospective analysis | → readme-wave |
 | `readme-wave` | Updating repository READMEs | → oracle-regen |
 | `oracle-regen` | Regenerating sbs-oracle.md | → porcelain |
 | `porcelain` | Ensuring clean git state | → archive-upload |
@@ -137,7 +139,7 @@ When `/update-and-archive` is invoked, it spawns a dedicated agent that runs aut
 ### Why a Dedicated Agent
 
 This skill:
-- Has a well-defined, deterministic workflow (readme-wave → oracle-regen → porcelain → archive-upload)
+- Has a well-defined, deterministic workflow (retrospective → readme-wave → oracle-regen → porcelain → archive-upload)
 - Requires no supervision or decision-making from higher levels
 - Should not consume context from the orchestrating chat
 - Can run completely autonomously once invoked
@@ -173,13 +175,59 @@ In all cases, the u&a agent runs autonomously - the invoking context does not or
 
 ---
 
-## Part 0: README Staleness Check
+## Part -1: Session Retrospective
 
-**REQUIRED:** Before starting, record skill entry:
+**Timing:** Record start time. Include `timing: {phase: "retrospective", duration_s: <N>}` in archive entry notes for the transition.
+
+**Invocation timing:** Runs FIRST in the update-and-archive workflow, while context is hottest. The orchestrator spawns the retrospective agent with a detailed prompt containing session observations.
+
+**REQUIRED:** Before starting, record skill entry (skip if state already set via handoff):
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"retrospective"}' --state-transition phase_start
+```
+
+### 5 Analysis Dimensions
+
+1. **User Orchestration** -- How effectively did the user direct work? What patterns in their answers to questions? What questions did they have to answer repeatedly that could be pre-communicated?
+2. **Claude Alignment** -- Where did Claude misunderstand intent? What could Claude have asked earlier? What assumptions proved wrong?
+3. **System Design** -- What tooling friction was encountered? What MCP tools were missing or awkward? What automation should exist?
+4. **Plan Execution** -- How closely did execution follow the plan? Where did the plan need mid-flight adjustment? What was underestimated?
+5. **Meta-Observations** -- Observations about the archive system itself, the skill workflow, documentation quality, test coverage gaps.
+
+### Output
+
+- **Standalone markdown file:** `dev/storage/archive/retrospectives/<entry-id>.md`
+- **Summary included in archive entry notes** (key findings, 3-5 bullet points)
+
+### Methodology
+
+- The agent has access to the full conversation context at spawn time (compaction-immune)
+- Reads recent archive entries via `sbs_search_entries` or `sbs_context` for quantitative data
+- Examines user answer patterns, question frequency, correction patterns
+- Captures specific examples, not just summaries -- future `/self-improve` agents need concrete data
+
+### Transition
+
+After retrospective completes, transition to readme-wave:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
 python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start
 ```
+
+---
+
+## Part 0: README Staleness Check
+
+**Timing:** Record start time. Include `timing: {phase: "readme-wave", duration_s: <N>}` in archive entry notes for the transition.
+
+**REQUIRED:** Before starting, record skill entry (skip if already transitioned from retrospective):
+```bash
+cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
+python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-and-archive","substate":"readme-wave"}' --state-transition phase_start
+```
+
+**Conditional skip:** If `sbs readme-check --json` shows 0 repos changed AND no code changes were made during this session, skip Parts 0-1 entirely and transition directly to oracle-regen.
 
 Run the staleness check to determine which repos need documentation updates:
 
@@ -204,6 +252,8 @@ python3 -m sbs readme-check --json
 ---
 
 ## Part 1: README Updates
+
+**Timing:** Record start time. Include `timing: {phase: "readme-updates", duration_s: <N>}` in archive entry notes for the transition.
 
 **REQUIRED:** After completing Part 0 analysis, if READMEs need updates, this part executes. Upon completion of all README updates, transition to Part 2:
 ```bash
@@ -242,6 +292,8 @@ The orchestrator decides agent count based on git state:
 
 ## Part 2: Core Documentation
 
+**Timing:** Record start time. Include `timing: {phase: "core-docs", duration_s: <N>}` in archive entry notes for the transition.
+
 **REQUIRED:** After completing core documentation sync, transition to Part 3:
 ```bash
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
@@ -263,6 +315,10 @@ After READMEs are updated, synchronize:
 ---
 
 ## Part 3: Oracle Regeneration
+
+**Timing:** Record start time. Include `timing: {phase: "oracle-regen", duration_s: <N>}` in archive entry notes for the transition.
+
+**Conditional skip:** If `dev/storage/sbs-oracle.md` modification timestamp is more recent than the latest code change in any repo, skip oracle regeneration.
 
 **REQUIRED:** After completing oracle regeneration, transition to Part 4:
 ```bash
@@ -288,6 +344,8 @@ This extracts content from all READMEs and CLAUDE.md into `.claude/agents/sbs-or
 ---
 
 ## Part 4: Finalization
+
+**Timing:** Record start time. Include `timing: {phase: "finalization", duration_s: <N>}` in archive entry notes for the transition.
 
 **REQUIRED:** After achieving porcelain state and completing all work, close the epoch:
 ```bash
