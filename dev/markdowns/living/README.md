@@ -29,7 +29,7 @@ The active development environment for **agentic and project-specific developmen
 
 - **Archive system** - Event log, state machine, context provider
 - **Validators** - T1-T8 quality scoring, visual compliance
-- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (47 tools: 18 Lean + 29 SBS)
+- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (51 tools: 18 Lean + 33 SBS)
 - **Skills** - `/task`, `/update-and-archive` workflow definitions
 - **Agents** - `sbs-developer`, `sbs-oracle` agent specifications
 

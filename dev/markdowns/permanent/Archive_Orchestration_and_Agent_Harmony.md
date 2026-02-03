@@ -316,7 +316,7 @@ The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` 
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
 
-**Implementation:** 47 total tools (18 Lean + 29 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
+**Implementation:** 51 total tools (18 Lean + 33 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -337,6 +337,7 @@ Tools organized by category:
 |----------|-------|---------|
 | **Oracle** | `sbs_oracle_query` | Query compiled knowledge base |
 | **Archive** | `sbs_archive_state`, `sbs_context`, `sbs_epoch_summary`, `sbs_search_entries`, `sbs_analysis_summary`, `sbs_entries_since_self_improve` | State, context, and history |
+| **Self-Improve** | `sbs_successful_sessions`, `sbs_comparative_analysis`, `sbs_system_health`, `sbs_user_patterns` | Structured analysis for self-improvement |
 | **Testing** | `sbs_run_tests`, `sbs_validate_project` | Pytest and T1-T8 validators |
 | **Build** | `sbs_build_project`, `sbs_serve_project`, `sbs_last_screenshot`, `sbs_visual_history` | Build, serve, and visual checks |
 | **GitHub** | `sbs_issue_create`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management |
