@@ -7,6 +7,7 @@ This module contains SBS-specific MCP tools for:
 - Testing tools (sbs_run_tests, sbs_validate_project)
 - Build tools (sbs_build_project, sbs_serve_project)
 - Investigation tools (sbs_last_screenshot, sbs_visual_history, sbs_search_entries)
+- Inspect tools (sbs_inspect_project)
 - GitHub tools (sbs_issue_*, sbs_pr_*)
 - Self-improve tools (sbs_analysis_summary, sbs_entries_since_self_improve)
 - Skill management tools (sbs_skill_status, sbs_skill_start, sbs_skill_transition, sbs_skill_end)
@@ -35,6 +36,7 @@ from .sbs_models import (
     GitHubIssue,
     GitHubPullRequest,
     HistoryEntry,
+    InspectResult,
     IssueCloseResult,
     IssueCreateResult,
     IssueGetResult,
@@ -44,10 +46,13 @@ from .sbs_models import (
     OracleConcept,
     OracleMatch,
     OracleQueryResult,
+    PageInspection,
     PRCreateResult,
     PRGetResult,
     PRListResult,
     PRMergeResult,
+    QuestionAnalysisResult,
+    QuestionStatsResult,
     SBSBuildResult,
     SBSValidationResult,
     ScreenshotResult,
@@ -56,6 +61,7 @@ from .sbs_models import (
     SelfImproveEntrySummary,
     ServeResult,
     SkillEndResult,
+    SkillHandoffResult,
     SkillStartResult,
     SkillStatusResult,
     SkillTransitionResult,
@@ -1354,6 +1360,224 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         )
 
     # =========================================================================
+    # Inspect Tools
+    # =========================================================================
+
+    # Standard page names per project.  All projects share the core set;
+    # GCR adds paper_tex / pdf_tex, and Verso pages are discovered by
+    # checking for existing screenshots.
+    _CORE_PAGES = ["dashboard", "dep_graph", "chapter"]
+    _TEX_PAGES = ["paper_tex", "pdf_tex"]
+    _VERSO_PAGES = ["paper_verso", "blueprint_verso"]
+
+    _SUGGESTED_PROMPTS: Dict[str, str] = {
+        "dashboard": (
+            "Check: stats accuracy, key theorems display, navigation links, "
+            "overall layout, dark/light theme"
+        ),
+        "dep_graph": (
+            "Check: node colors match 6-status model, edges visible, "
+            "layout not overlapping, zoom/pan controls present"
+        ),
+        "paper_tex": (
+            "Check: LaTeX rendering quality, section numbering, references, "
+            "verification badges"
+        ),
+        "pdf_tex": "Check: PDF rendering, page breaks, margins, fonts",
+        "chapter": (
+            "Check: side-by-side display alignment, proof toggle functionality, "
+            "syntax highlighting, responsive behavior"
+        ),
+        "paper_verso": (
+            "Check: Verso markup rendering, theorem displays, navigation"
+        ),
+        "blueprint_verso": (
+            "Check: Verso markup rendering, leanNode displays, navigation"
+        ),
+    }
+
+    @mcp.tool(
+        "sbs_inspect_project",
+        annotations=ToolAnnotations(
+            title="Inspect project for visual QA",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_inspect_project(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name: SBSTest, GCR, or PNT"),
+        ],
+        pages: Annotated[
+            Optional[List[str]],
+            Field(description="Specific pages to inspect, or all if omitted"),
+        ] = None,
+        include_issue_context: Annotated[
+            bool,
+            Field(description="Load open+closed issues for context"),
+        ] = True,
+    ) -> InspectResult:
+        """Prepare comprehensive context for agent-driven visual QA.
+
+        Gathers screenshots, issue context, and quality baselines so a calling
+        agent can perform intelligent visual assessment.  Does NOT trigger
+        builds or captures -- reads existing data only.
+
+        Examples:
+        - sbs_inspect_project(project="SBSTest")
+        - sbs_inspect_project(project="GCR", pages=["dashboard", "dep_graph"])
+        - sbs_inspect_project(project="PNT", include_issue_context=False)
+        """
+        # --- normalise project name ---
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        # --- determine page list ---
+        if pages is not None:
+            page_list = pages
+        else:
+            # Start with core pages, then probe for optional pages
+            page_list = list(_CORE_PAGES)
+            # Add TeX pages if screenshots exist
+            for p in _TEX_PAGES:
+                if get_screenshot_path(normalized_project, p).exists():
+                    page_list.append(p)
+            # Add Verso pages if screenshots exist
+            for p in _VERSO_PAGES:
+                if get_screenshot_path(normalized_project, p).exists():
+                    page_list.append(p)
+
+        # --- gather page inspections ---
+        page_inspections: List[PageInspection] = []
+        pages_with_screenshots = 0
+
+        for page_name in page_list:
+            screenshot_path = get_screenshot_path(normalized_project, page_name)
+            exists = screenshot_path.exists()
+            if exists:
+                pages_with_screenshots += 1
+
+            page_inspections.append(
+                PageInspection(
+                    page_name=page_name,
+                    screenshot_path=str(screenshot_path) if exists else None,
+                    screenshot_exists=exists,
+                    suggested_prompt=_SUGGESTED_PROMPTS.get(page_name, ""),
+                )
+            )
+
+        # --- issue context ---
+        open_issues: List[Dict[str, Any]] = []
+        closed_issues: List[Dict[str, Any]] = []
+
+        if include_issue_context:
+            gh_repo = "e-vergo/Side-By-Side-Blueprint"
+
+            # Fetch open issues
+            try:
+                result = subprocess.run(
+                    [
+                        "gh", "issue", "list",
+                        "--repo", gh_repo,
+                        "--state", "open",
+                        "--json", "number,title,labels,body",
+                        "--limit", "50",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    for item in json.loads(result.stdout):
+                        label_names = []
+                        for lbl in item.get("labels", []):
+                            if isinstance(lbl, dict):
+                                label_names.append(lbl.get("name", ""))
+                            elif isinstance(lbl, str):
+                                label_names.append(lbl)
+                        body = item.get("body") or ""
+                        open_issues.append({
+                            "number": item.get("number", 0),
+                            "title": item.get("title", ""),
+                            "labels": label_names,
+                            "body_summary": body[:200],
+                        })
+            except (subprocess.TimeoutExpired, Exception):
+                pass
+
+            # Fetch recently closed issues (for regression awareness)
+            try:
+                result = subprocess.run(
+                    [
+                        "gh", "issue", "list",
+                        "--repo", gh_repo,
+                        "--state", "closed",
+                        "--json", "number,title,labels",
+                        "--limit", "20",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    for item in json.loads(result.stdout):
+                        label_names = []
+                        for lbl in item.get("labels", []):
+                            if isinstance(lbl, dict):
+                                label_names.append(lbl.get("name", ""))
+                            elif isinstance(lbl, str):
+                                label_names.append(lbl)
+                        closed_issues.append({
+                            "number": item.get("number", 0),
+                            "title": item.get("title", ""),
+                            "labels": label_names,
+                        })
+            except (subprocess.TimeoutExpired, Exception):
+                pass
+
+        # --- quality scores ---
+        quality_scores: Optional[Dict[str, Any]] = None
+        quality_ledger_path = (
+            SBS_ROOT / "dev" / "storage" / normalized_project / "quality_ledger.json"
+        )
+        if quality_ledger_path.exists():
+            try:
+                ledger_data = json.loads(quality_ledger_path.read_text())
+                scores_raw = ledger_data.get("scores", {})
+                quality_scores = {}
+                for metric_id, score_data in scores_raw.items():
+                    quality_scores[metric_id] = {
+                        "value": score_data.get("value"),
+                        "passed": score_data.get("passed"),
+                        "stale": score_data.get("stale", False),
+                        "findings": score_data.get("findings", []),
+                    }
+            except (json.JSONDecodeError, IOError):
+                pass
+
+        return InspectResult(
+            project=normalized_project,
+            pages=page_inspections,
+            open_issues=open_issues,
+            closed_issues=closed_issues,
+            quality_scores=quality_scores,
+            total_pages=len(page_inspections),
+            pages_with_screenshots=pages_with_screenshots,
+        )
+
+    # =========================================================================
     # GitHub Issue Tools
     # =========================================================================
 
@@ -2488,6 +2712,57 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         result = sbs_tag_effectiveness_impl(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
+    @mcp.tool(
+        "sbs_question_analysis",
+        annotations=ToolAnnotations(
+            title="Analyze AskUserQuestion interactions",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_question_analysis(
+        ctx: Context,
+        since: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter from")] = None,
+        until: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter until")] = None,
+        skill: Annotated[Optional[str], Field(description="Filter by active skill type")] = None,
+        limit: Annotated[int, Field(description="Maximum interactions to return")] = 50,
+    ) -> str:
+        """Extract and analyze AskUserQuestion interactions from Claude Code sessions.
+
+        Searches JSONL session files for AskUserQuestion tool calls,
+        links them with user answers, and correlates with archive state.
+        Use during self-improve for Pillar 1 (user effectiveness).
+        """
+        from .sbs_self_improve import sbs_question_analysis_impl
+        result = sbs_question_analysis_impl(
+            since=since, until=until, skill=skill, limit=limit
+        )
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_question_stats",
+        annotations=ToolAnnotations(
+            title="AskUserQuestion usage statistics",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_question_stats(
+        ctx: Context,
+        since: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter from")] = None,
+        until: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter until")] = None,
+    ) -> str:
+        """Aggregate statistics about AskUserQuestion usage patterns.
+
+        Returns question counts by skill, header, and most common options
+        selected. Use during self-improve for Pillar 1 (user effectiveness).
+        """
+        from .sbs_self_improve import sbs_question_stats_impl
+        result = sbs_question_stats_impl(since=since, until=until)
+        return result.model_dump_json(indent=2)
+
     # =========================================================================
     # Skill Management Tools
     # =========================================================================
@@ -2771,6 +3046,103 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             archive_entry_id=entry_id,
         )
 
+    @mcp.tool(
+        "sbs_skill_handoff",
+        annotations=ToolAnnotations(
+            title="Handoff between skills",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_handoff(
+        ctx: Context,
+        from_skill: Annotated[
+            str,
+            Field(description="Skill to end (must match current active skill)"),
+        ],
+        to_skill: Annotated[
+            str,
+            Field(description="New skill to start"),
+        ],
+        to_substate: Annotated[
+            str,
+            Field(description="Initial substate for new skill"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers"),
+        ] = None,
+    ) -> SkillHandoffResult:
+        """Atomically end one skill and start another.
+
+        Verifies that from_skill matches the current active skill, then creates
+        a single archive entry that simultaneously ends the outgoing skill and
+        starts the incoming skill. This prevents the 13% orphaned session rate
+        caused by separate phase_end + skill_start calls.
+
+        Args:
+            from_skill: Name of the skill to end (must match current active skill)
+            to_skill: Name of the new skill to start
+            to_substate: Initial phase/substate for the new skill
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillHandoffResult with success, from/to details, and archive_entry_id
+        """
+        # Check current state
+        index = load_archive_index()
+        current_skill = index.global_state.get("skill") if index.global_state else None
+        current_substate = index.global_state.get("substate") if index.global_state else None
+
+        if current_skill != from_skill:
+            return SkillHandoffResult(
+                success=False,
+                error=f"Cannot handoff from '{from_skill}': current active skill is '{current_skill or 'none'}'",
+                from_skill=from_skill,
+                from_phase=current_substate or "",
+                to_skill=to_skill,
+                to_substate=to_substate,
+                archive_entry_id=None,
+            )
+
+        # Prepare handoff state
+        handoff_to = {
+            "skill": to_skill,
+            "substate": to_substate,
+        }
+
+        # Run archive upload with handoff transition
+        # global_state is set to the incoming skill so the index picks it up
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=handoff_to,
+            state_transition="handoff",
+            issue_refs=issue_refs,
+            handoff_to=handoff_to,
+        )
+
+        if not success:
+            return SkillHandoffResult(
+                success=False,
+                error=error or "Archive upload failed during handoff",
+                from_skill=from_skill,
+                from_phase=current_substate or "",
+                to_skill=to_skill,
+                to_substate=to_substate,
+                archive_entry_id=None,
+            )
+
+        return SkillHandoffResult(
+            success=True,
+            error=None,
+            from_skill=from_skill,
+            from_phase=current_substate or "",
+            to_skill=to_skill,
+            to_substate=to_substate,
+            archive_entry_id=entry_id,
+        )
+
 
 # =============================================================================
 # Helper Functions
@@ -2782,14 +3154,16 @@ def _run_archive_upload(
     global_state: Optional[Dict[str, Any]] = None,
     state_transition: Optional[str] = None,
     issue_refs: Optional[List[int]] = None,
+    handoff_to: Optional[Dict[str, Any]] = None,
 ) -> tuple[bool, Optional[str], Optional[str]]:
     """Run sbs archive upload and return (success, entry_id, error).
 
     Args:
         trigger: Trigger type for the archive entry
         global_state: New global state to set (None to clear)
-        state_transition: Either "phase_start" or "phase_end"
+        state_transition: Either "phase_start", "phase_end", or "handoff"
         issue_refs: List of GitHub issue numbers to associate
+        handoff_to: For handoff transitions, the incoming skill state
 
     Returns:
         Tuple of (success, entry_id, error_message)
@@ -2804,6 +3178,8 @@ def _run_archive_upload(
         cmd.extend(["--state-transition", state_transition])
     if issue_refs:
         cmd.extend(["--issue-refs", ",".join(str(i) for i in issue_refs)])
+    if handoff_to:
+        cmd.extend(["--handoff-to", json.dumps(handoff_to)])
 
     try:
         result = subprocess.run(
