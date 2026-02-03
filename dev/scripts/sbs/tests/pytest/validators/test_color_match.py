@@ -30,6 +30,8 @@ from sbs.tests.validators.design.color_match import (
 )
 from sbs.tests.validators.base import ValidationContext
 
+from .base_test import ValidatorPropertiesTestMixin
+
 
 # =============================================================================
 # CSS Parser Tests
@@ -217,17 +219,10 @@ class TestExtractColorValues:
 
 @pytest.mark.evergreen
 class TestParseRealCommonCss:
-    """Tests that parse the actual common.css file."""
+    """Tests that parse the actual common.css file.
 
-    @pytest.fixture
-    def common_css_path(self) -> Path:
-        """Get path to the real common.css file."""
-        # Navigate from test file to common.css
-        # After move: sbs/tests/pytest/validators/test_color_match.py
-        # Need 6 parents to get to dev/, then go to toolchain/dress-blueprint-action
-        test_file = Path(__file__).resolve()
-        dev_dir = test_file.parent.parent.parent.parent.parent.parent
-        return dev_dir.parent / "toolchain" / "dress-blueprint-action" / "assets" / "common.css"
+    Uses shared common_css_path fixture from conftest.py.
+    """
 
     def test_file_exists(self, common_css_path: Path) -> None:
         """Verify common.css exists at expected location."""
@@ -250,6 +245,19 @@ class TestParseRealCommonCss:
 # =============================================================================
 # Status Color Validator Tests
 # =============================================================================
+
+
+@pytest.mark.evergreen
+class TestStatusColorValidatorProperties(ValidatorPropertiesTestMixin):
+    """Tests for validator name and category using mixin."""
+
+    validator_name = "status-color-match"
+    validator_category = "visual"
+
+    @pytest.fixture
+    def validator(self) -> StatusColorValidator:
+        """Create a StatusColorValidator instance."""
+        return StatusColorValidator()
 
 
 @pytest.mark.evergreen
@@ -434,11 +442,6 @@ class TestStatusColorValidator:
         assert result.metrics["colors_checked"] == 6
         # All colors should match (assuming CSS is correct)
         assert result.passed is True
-
-    def test_validator_properties(self, validator: StatusColorValidator) -> None:
-        """Verify validator name and category."""
-        assert validator.name == "status-color-match"
-        assert validator.category == "visual"
 
 
 @pytest.mark.evergreen

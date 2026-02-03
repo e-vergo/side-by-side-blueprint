@@ -26,6 +26,85 @@ from sbs.archive.entry import ArchiveEntry, ArchiveIndex
 
 
 # =============================================================================
+# Test Data Constants
+# =============================================================================
+
+# Shared test data for fixtures creating multiple entries
+# Format: (entry_id, project, tags, notes)
+MULTI_ENTRY_TEST_DATA: list[tuple[str, str, list[str], str]] = [
+    ("1700000001", "ProjectA", ["release"], "First entry"),
+    ("1700000002", "ProjectB", ["beta", "test"], "Second entry"),
+    ("1700000003", "ProjectA", ["dev"], "Third entry"),
+    ("1700000004", "ProjectC", [], "Fourth entry"),
+]
+
+
+# =============================================================================
+# Test Entry Factory
+# =============================================================================
+
+
+def _create_test_entry(
+    entry_id: str,
+    project: str = "TestProject",
+    tags: list[str] | None = None,
+    notes: str = "",
+    trigger: str = "manual",
+    screenshots: list[str] | None = None,
+    build_run_id: str | None = None,
+    repo_commits: dict[str, str] | None = None,
+) -> ArchiveEntry:
+    """Create a test archive entry with sensible defaults.
+
+    Args:
+        entry_id: Unique entry ID (timestamp format)
+        project: Project name
+        tags: Optional list of tags (defaults to empty list)
+        notes: Optional notes string
+        trigger: Trigger type (manual, build, skill)
+        screenshots: Optional list of screenshot filenames
+        build_run_id: Optional build run identifier
+        repo_commits: Optional dict of repo -> commit hash
+
+    Returns:
+        Configured ArchiveEntry instance
+    """
+    return ArchiveEntry(
+        entry_id=entry_id,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        project=project,
+        tags=tags or [],
+        notes=notes,
+        trigger=trigger,
+        screenshots=screenshots or [],
+        build_run_id=build_run_id,
+        repo_commits=repo_commits,
+    )
+
+
+def _create_test_archive(
+    archive_dir: Path,
+    entries: list[ArchiveEntry],
+) -> tuple[Path, ArchiveIndex]:
+    """Create an archive index with the given entries.
+
+    Args:
+        archive_dir: Directory to save the index
+        entries: List of entries to add
+
+    Returns:
+        Tuple of (index_path, index)
+    """
+    index = ArchiveIndex()
+    for entry in entries:
+        index.add_entry(entry)
+
+    index_path = archive_dir / "archive_index.json"
+    index.save(index_path)
+    return index_path, index
+
+
+# =============================================================================
 # Pytest Configuration
 # =============================================================================
 
@@ -78,27 +157,14 @@ def temp_archive_entry(temp_archive_dir: Path) -> tuple[Path, ArchiveEntry, Arch
 
     Returns (index_path, entry, index) tuple.
     """
-    # Create an entry with a known ID
-    entry_id = "1700000000"
-    entry = ArchiveEntry(
-        entry_id=entry_id,
-        created_at=datetime.now(timezone.utc).isoformat(),
+    entry = _create_test_entry(
+        entry_id="1700000000",
         project="TestProject",
         build_run_id="build_123",
-        notes="",
-        tags=[],
         screenshots=["dashboard.png", "dep_graph.png"],
         repo_commits={"SBS-Test": "abc123def"},
     )
-
-    # Create index and add entry
-    index = ArchiveIndex()
-    index.add_entry(entry)
-
-    # Save to temp directory
-    index_path = temp_archive_dir / "archive_index.json"
-    index.save(index_path)
-
+    index_path, index = _create_test_archive(temp_archive_dir, [entry])
     return index_path, entry, index
 
 
@@ -108,32 +174,11 @@ def archive_with_multiple_entries(temp_archive_dir: Path) -> tuple[Path, list[Ar
 
     Returns (index_path, entries, index) tuple.
     """
-    entries = []
-    index = ArchiveIndex()
-
-    # Create entries with different projects and tags
-    test_data = [
-        ("1700000001", "ProjectA", ["release"], "First entry"),
-        ("1700000002", "ProjectB", ["beta", "test"], "Second entry"),
-        ("1700000003", "ProjectA", ["dev"], "Third entry"),
-        ("1700000004", "ProjectC", [], "Fourth entry"),
+    entries = [
+        _create_test_entry(entry_id, project, tags, notes)
+        for entry_id, project, tags, notes in MULTI_ENTRY_TEST_DATA
     ]
-
-    for entry_id, project, tags, notes in test_data:
-        entry = ArchiveEntry(
-            entry_id=entry_id,
-            created_at=datetime.now(timezone.utc).isoformat(),
-            project=project,
-            tags=tags,
-            notes=notes,
-            screenshots=[],
-        )
-        entries.append(entry)
-        index.add_entry(entry)
-
-    index_path = temp_archive_dir / "archive_index.json"
-    index.save(index_path)
-
+    index_path, index = _create_test_archive(temp_archive_dir, entries)
     return index_path, entries, index
 
 
@@ -213,23 +258,14 @@ def cli_with_entry(temp_archive_dir: Path, monkeypatch: pytest.MonkeyPatch) -> t
 
     Returns (runner, entry) tuple.
     """
-    # Create the entry first
-    entry_id = "1700000000"
-    entry = ArchiveEntry(
-        entry_id=entry_id,
-        created_at=datetime.now(timezone.utc).isoformat(),
+    entry = _create_test_entry(
+        entry_id="1700000000",
         project="TestProject",
         build_run_id="build_123",
-        notes="",
-        tags=[],
         screenshots=["dashboard.png", "dep_graph.png"],
         repo_commits={"SBS-Test": "abc123def"},
     )
-
-    index = ArchiveIndex()
-    index.add_entry(entry)
-    index_path = temp_archive_dir / "archive_index.json"
-    index.save(index_path)
+    _create_test_archive(temp_archive_dir, [entry])
 
     runner = CLIRunner(temp_archive_dir, monkeypatch)
     return runner, entry
@@ -241,30 +277,11 @@ def cli_with_entries(temp_archive_dir: Path, monkeypatch: pytest.MonkeyPatch) ->
 
     Returns (runner, entries) tuple.
     """
-    entries = []
-    index = ArchiveIndex()
-
-    test_data = [
-        ("1700000001", "ProjectA", ["release"], "First entry"),
-        ("1700000002", "ProjectB", ["beta", "test"], "Second entry"),
-        ("1700000003", "ProjectA", ["dev"], "Third entry"),
-        ("1700000004", "ProjectC", [], "Fourth entry"),
+    entries = [
+        _create_test_entry(entry_id, project, tags, notes)
+        for entry_id, project, tags, notes in MULTI_ENTRY_TEST_DATA
     ]
-
-    for entry_id, project, tags, notes in test_data:
-        entry = ArchiveEntry(
-            entry_id=entry_id,
-            created_at=datetime.now(timezone.utc).isoformat(),
-            project=project,
-            tags=tags,
-            notes=notes,
-            screenshots=[],
-        )
-        entries.append(entry)
-        index.add_entry(entry)
-
-    index_path = temp_archive_dir / "archive_index.json"
-    index.save(index_path)
+    _create_test_archive(temp_archive_dir, entries)
 
     runner = CLIRunner(temp_archive_dir, monkeypatch)
     return runner, entries

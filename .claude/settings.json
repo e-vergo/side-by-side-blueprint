@@ -3,6 +3,12 @@
     "allow": [
       "Bash(.venv/bin/pip install:*)",
       "Bash(.venv/bin/playwright install:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(lake build:*)",
+      "Bash(lake build)"
     ]
   }
 }

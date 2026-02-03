@@ -8,6 +8,10 @@ Tests cover:
 - Fallback keyword parsing
 - All-pass and partial-pass scenarios
 - Per-question failure reporting
+
+Uses shared fixtures from conftest.py:
+- temp_screenshots_dir: Directory with dashboard.png, chapter.png, dep_graph.png
+- empty_screenshots_dir: Empty temporary directory
 """
 
 from __future__ import annotations
@@ -25,6 +29,8 @@ from sbs.tests.validators.design.dashboard_clarity import (
 )
 from sbs.tests.validators.base import ValidationContext
 
+from .base_test import ValidatorPropertiesTestMixin
+
 
 # =============================================================================
 # Fixtures
@@ -37,39 +43,22 @@ def validator() -> DashboardClarityValidator:
     return DashboardClarityValidator()
 
 
-@pytest.fixture
-def temp_screenshots_dir() -> Path:
-    """Create a temporary directory with dashboard screenshot."""
-    with tempfile.TemporaryDirectory(prefix="sbs_dashboard_test_") as tmpdir:
-        path = Path(tmpdir)
-        # Create mock dashboard screenshot
-        (path / "dashboard.png").touch()
-        yield path
-
-
-@pytest.fixture
-def empty_screenshots_dir() -> Path:
-    """Create an empty temporary directory."""
-    with tempfile.TemporaryDirectory(prefix="sbs_dashboard_empty_") as tmpdir:
-        yield Path(tmpdir)
-
-
 # =============================================================================
 # Validator Properties Tests
 # =============================================================================
 
 
 @pytest.mark.evergreen
-class TestValidatorProperties:
-    """Tests for validator name and category."""
+class TestValidatorProperties(ValidatorPropertiesTestMixin):
+    """Tests for validator name and category using mixin."""
 
-    def test_name(self, validator: DashboardClarityValidator) -> None:
-        """Verify validator name."""
-        assert validator.name == "dashboard-clarity"
+    validator_name = "dashboard-clarity"
+    validator_category = "visual"
 
-    def test_category(self, validator: DashboardClarityValidator) -> None:
-        """Verify validator category is visual."""
-        assert validator.category == "visual"
+    @pytest.fixture
+    def validator(self) -> DashboardClarityValidator:
+        """Create a DashboardClarityValidator instance."""
+        return DashboardClarityValidator()
 
 
 # =============================================================================

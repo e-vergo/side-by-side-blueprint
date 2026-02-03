@@ -13,11 +13,76 @@ Pass condition: All commands return exit code 0 and produce expected modificatio
 from __future__ import annotations
 
 from pathlib import Path
+from subprocess import CompletedProcess
 
 import pytest
 
 from sbs.archive.entry import ArchiveEntry, ArchiveIndex
 from .conftest import CLIRunner
+
+
+# ---------------------------------------------------------------------------
+# CLI Assertion Helpers
+# ---------------------------------------------------------------------------
+
+
+def assert_cli_success(result: CompletedProcess[str], msg: str = "") -> None:
+    """Assert CLI command succeeded (returncode 0).
+
+    Args:
+        result: CompletedProcess from subprocess.run
+        msg: Optional context for failure message
+    """
+    assert result.returncode == 0, (
+        f"{msg + ': ' if msg else ''}Command failed with returncode {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+
+
+def assert_cli_failure(result: CompletedProcess[str], msg: str = "") -> None:
+    """Assert CLI command failed (returncode != 0).
+
+    Args:
+        result: CompletedProcess from subprocess.run
+        msg: Optional context for failure message
+    """
+    assert result.returncode != 0, (
+        f"{msg + ': ' if msg else ''}Command should have failed but returned 0\n"
+        f"stdout: {result.stdout}"
+    )
+
+
+def assert_cli_contains(result: CompletedProcess[str], text: str, msg: str = "") -> None:
+    """Assert CLI output contains expected text.
+
+    Args:
+        result: CompletedProcess from subprocess.run
+        text: Text to find in stdout
+        msg: Optional context for failure message
+    """
+    assert text in result.stdout, (
+        f"{msg + ': ' if msg else ''}Expected '{text}' in output\n"
+        f"stdout: {result.stdout}"
+    )
+
+
+def assert_cli_not_contains(result: CompletedProcess[str], text: str, msg: str = "") -> None:
+    """Assert CLI output does not contain text.
+
+    Args:
+        result: CompletedProcess from subprocess.run
+        text: Text that should not appear in stdout
+        msg: Optional context for failure message
+    """
+    assert text not in result.stdout, (
+        f"{msg + ': ' if msg else ''}Unexpected '{text}' in output\n"
+        f"stdout: {result.stdout}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test Suite
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.evergreen
@@ -42,7 +107,7 @@ class TestArchiveCLI:
         result = runner.run(["archive", "tag", entry_id, "test-tag", "another-tag"])
 
         # Assert command succeeded
-        assert result.returncode == 0, f"Command failed with output: {result.stdout}"
+        assert_cli_success(result, "archive tag command")
 
         # Reload index and verify tags were added
         index_path = runner.archive_dir / "archive_index.json"
@@ -73,7 +138,7 @@ class TestArchiveCLI:
         # Run tag command twice
         for _ in range(2):
             result = runner.run(["archive", "tag", entry_id, "duplicate-tag"])
-            assert result.returncode == 0
+            assert_cli_success(result)
 
         # Verify tag only appears once
         index_path = runner.archive_dir / "archive_index.json"
@@ -96,7 +161,7 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "tag", "9999999999", "some-tag"])
 
-        assert result.returncode != 0, "Command should fail for nonexistent entry"
+        assert_cli_failure(result, "tagging nonexistent entry")
         assert "not found" in result.stdout.lower()
 
     def test_archive_note_adds_note(
@@ -114,7 +179,7 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "note", entry_id, "This is a test note"])
 
-        assert result.returncode == 0, f"Command failed with output: {result.stdout}"
+        assert_cli_success(result, "archive note command")
 
         # Reload index and verify note was added
         index_path = runner.archive_dir / "archive_index.json"
@@ -139,11 +204,11 @@ class TestArchiveCLI:
 
         # Set initial note
         result1 = runner.run(["archive", "note", entry_id, "First note"])
-        assert result1.returncode == 0
+        assert_cli_success(result1, "first note")
 
         # Overwrite with second note
         result2 = runner.run(["archive", "note", entry_id, "Second note"])
-        assert result2.returncode == 0
+        assert_cli_success(result2, "second note")
 
         index_path = runner.archive_dir / "archive_index.json"
         updated_index = ArchiveIndex.load(index_path)
@@ -161,7 +226,7 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "note", "9999999999", "some note"])
 
-        assert result.returncode != 0
+        assert_cli_failure(result, "noting nonexistent entry")
 
     def test_archive_list_returns_entries(
         self,
@@ -178,12 +243,12 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "list"])
 
-        assert result.returncode == 0, f"Command failed with output: {result.stdout}"
+        assert_cli_success(result, "archive list command")
 
         # Verify all entries appear in output
         for entry in entries:
-            assert entry.entry_id in result.stdout, f"Entry {entry.entry_id} not in list output"
-            assert entry.project in result.stdout, f"Project {entry.project} not in list output"
+            assert_cli_contains(result, entry.entry_id, f"entry {entry.entry_id}")
+            assert_cli_contains(result, entry.project, f"project {entry.project}")
 
     def test_archive_list_filter_by_project(
         self,
@@ -199,15 +264,15 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "list", "--project", "ProjectA"])
 
-        assert result.returncode == 0
+        assert_cli_success(result)
 
         # ProjectA entries should appear
-        assert "1700000001" in result.stdout
-        assert "1700000003" in result.stdout
+        assert_cli_contains(result, "1700000001", "ProjectA entry 1")
+        assert_cli_contains(result, "1700000003", "ProjectA entry 2")
 
         # Other project entries should not appear
-        assert "1700000002" not in result.stdout  # ProjectB
-        assert "1700000004" not in result.stdout  # ProjectC
+        assert_cli_not_contains(result, "1700000002", "ProjectB filtered out")
+        assert_cli_not_contains(result, "1700000004", "ProjectC filtered out")
 
     def test_archive_list_filter_by_tag(
         self,
@@ -222,15 +287,15 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "list", "--tag", "release"])
 
-        assert result.returncode == 0
+        assert_cli_success(result)
 
         # Only the entry with 'release' tag should appear
-        assert "1700000001" in result.stdout
+        assert_cli_contains(result, "1700000001", "release-tagged entry")
 
         # Entries without 'release' tag should not appear
-        assert "1700000002" not in result.stdout
-        assert "1700000003" not in result.stdout
-        assert "1700000004" not in result.stdout
+        assert_cli_not_contains(result, "1700000002", "non-release entry")
+        assert_cli_not_contains(result, "1700000003", "non-release entry")
+        assert_cli_not_contains(result, "1700000004", "non-release entry")
 
     def test_archive_list_empty_archive(
         self,
@@ -249,7 +314,7 @@ class TestArchiveCLI:
 
         result = cli_runner.run(["archive", "list"])
 
-        assert result.returncode == 0
+        assert_cli_success(result)
         # Should indicate no entries found (case insensitive check)
         assert "no entries" in result.stdout.lower()
 
@@ -270,13 +335,13 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "show", entry_id])
 
-        assert result.returncode == 0, f"Command failed with output: {result.stdout}"
+        assert_cli_success(result, "archive show command")
 
         # Verify key fields appear in output
-        assert entry_id in result.stdout
-        assert "TestProject" in result.stdout
-        assert "Screenshots" in result.stdout
-        assert "2" in result.stdout  # Number of screenshots
+        assert_cli_contains(result, entry_id, "entry ID")
+        assert_cli_contains(result, "TestProject", "project name")
+        assert_cli_contains(result, "Screenshots", "screenshots label")
+        assert_cli_contains(result, "2", "screenshot count")
 
     def test_archive_show_with_tags_and_notes(
         self,
@@ -288,17 +353,17 @@ class TestArchiveCLI:
 
         # Add tag and note first
         result1 = runner.run(["archive", "tag", entry_id, "show-test-tag"])
-        assert result1.returncode == 0
+        assert_cli_success(result1, "adding tag")
 
         result2 = runner.run(["archive", "note", entry_id, "Show test note"])
-        assert result2.returncode == 0
+        assert_cli_success(result2, "adding note")
 
         # Now show the entry
         result = runner.run(["archive", "show", entry_id])
 
-        assert result.returncode == 0
-        assert "show-test-tag" in result.stdout
-        assert "Show test note" in result.stdout
+        assert_cli_success(result)
+        assert_cli_contains(result, "show-test-tag", "tag in show output")
+        assert_cli_contains(result, "Show test note", "note in show output")
 
     def test_archive_show_nonexistent_entry_fails(
         self,
@@ -309,7 +374,7 @@ class TestArchiveCLI:
 
         result = runner.run(["archive", "show", "9999999999"])
 
-        assert result.returncode != 0
+        assert_cli_failure(result, "showing nonexistent entry")
 
     def test_archive_no_subcommand_shows_error(
         self,
@@ -323,6 +388,6 @@ class TestArchiveCLI:
         """
         result = cli_runner.run(["archive"])
 
-        assert result.returncode != 0
+        assert_cli_failure(result, "missing subcommand")
         # Should mention missing subcommand
         assert "subcommand" in result.stdout.lower()

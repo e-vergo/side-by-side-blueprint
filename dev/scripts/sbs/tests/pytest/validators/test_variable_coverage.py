@@ -25,6 +25,8 @@ from sbs.tests.validators.design.variable_coverage import (
 )
 from sbs.tests.validators.base import ValidationContext
 
+from .base_test import ValidatorPropertiesTestMixin
+
 
 # =============================================================================
 # Named Color Tests
@@ -239,6 +241,19 @@ class TestExtractColorUsages:
 
 
 @pytest.mark.evergreen
+class TestCSSVariableCoverageValidatorProperties(ValidatorPropertiesTestMixin):
+    """Tests for validator name and category using mixin."""
+
+    validator_name = "css-variable-coverage"
+    validator_category = "visual"
+
+    @pytest.fixture
+    def validator(self) -> CSSVariableCoverageValidator:
+        """Create a CSSVariableCoverageValidator instance."""
+        return CSSVariableCoverageValidator()
+
+
+@pytest.mark.evergreen
 class TestCSSVariableCoverageValidator:
     """Tests for the CSS variable coverage validator."""
 
@@ -253,11 +268,6 @@ class TestCSSVariableCoverageValidator:
         import tempfile
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
-
-    def test_validator_properties(self, validator: CSSVariableCoverageValidator) -> None:
-        """Verify validator name and category."""
-        assert validator.name == "css-variable-coverage"
-        assert validator.category == "visual"
 
     def test_perfect_coverage(self, validator: CSSVariableCoverageValidator, temp_css_dir: Path) -> None:
         """Verify 100% coverage when all colors use variables."""
@@ -501,17 +511,10 @@ class TestCSSVariableCoverageValidator:
 
 @pytest.mark.evergreen
 class TestWithRealCSSFiles:
-    """Tests that analyze the actual CSS files in dress-blueprint-action."""
+    """Tests that analyze the actual CSS files in dress-blueprint-action.
 
-    @pytest.fixture
-    def real_css_dir(self) -> Path:
-        """Get path to the real CSS directory."""
-        # Navigate from test file to CSS assets
-        # After move: sbs/tests/pytest/validators/test_variable_coverage.py
-        # Need 6 parents to get to dev/, then go up to monorepo and into toolchain
-        test_file = Path(__file__).resolve()
-        dev_dir = test_file.parent.parent.parent.parent.parent.parent
-        return dev_dir.parent / "toolchain" / "dress-blueprint-action" / "assets"
+    Uses shared real_css_dir fixture from conftest.py.
+    """
 
     @pytest.fixture
     def validator(self) -> CSSVariableCoverageValidator:
