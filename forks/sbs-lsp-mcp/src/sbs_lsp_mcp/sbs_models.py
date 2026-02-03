@@ -7,7 +7,7 @@ This module contains models for SBS MCP tools organized by category:
 - Build tools: BuildResult, ServeResult
 - Visual tools: ScreenshotResult, VisualHistoryResult
 - Search tools: SearchResult
-- GitHub tools: GitHubIssue, GitHubPullRequest, Issue/PR Create/List/Get/Close/Merge results
+- GitHub tools: GitHubIssue, GitHubPullRequest, Issue/PR Create/List/Get/Close/Summary/Merge results
 - Zulip tools: ZulipMessage, ZulipSearchResult, ZulipThreadResult, ZulipScreenshotResult
 - Self-improve tools: AnalysisSummary, SelfImproveEntries
 - Skill management tools: SkillStatusResult, SkillStartResult, SkillTransitionResult, SkillEndResult
@@ -438,6 +438,45 @@ class IssueCloseResult(BaseModel):
 
     success: bool = Field(description="Whether close succeeded")
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class IssueSummaryItem(BaseModel):
+    """A single issue in the summary listing."""
+
+    number: int = Field(description="Issue number")
+    title: str = Field(description="Issue title")
+    labels: List[str] = Field(default_factory=list, description="Issue labels")
+    age_days: int = Field(description="Age in days since creation")
+    url: str = Field(description="Issue URL")
+
+
+class IssueSummaryResult(BaseModel):
+    """Analytical summary of open GitHub issues.
+
+    Groups issues by type (bug/feature/idea) and area (sbs/devtools/misc),
+    with a full listing sorted by age.
+    """
+
+    total_open: int = Field(description="Total number of open issues")
+    by_type: Dict[str, List[int]] = Field(
+        default_factory=dict,
+        description="Issue numbers grouped by type label (bug, feature, idea, unlabeled)",
+    )
+    by_area: Dict[str, List[int]] = Field(
+        default_factory=dict,
+        description="Issue numbers grouped by area label (sbs, devtools, misc, unlabeled)",
+    )
+    issues: List[IssueSummaryItem] = Field(
+        default_factory=list,
+        description="All open issues sorted by age (oldest first)",
+    )
+    oldest_age_days: Optional[int] = Field(
+        None, description="Age of the oldest open issue in days"
+    )
+    newest_age_days: Optional[int] = Field(
+        None, description="Age of the newest open issue in days"
+    )
+    error: Optional[str] = Field(None, description="Error message if fetch failed")
 
 
 # =============================================================================
