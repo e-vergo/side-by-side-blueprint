@@ -105,6 +105,11 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         ctx: Context,
         query: Annotated[str, Field(description="Natural language query to search oracle")],
         max_results: Annotated[int, Field(description="Maximum results to return", ge=1)] = 10,
+        result_type: Annotated[str, Field(description="Filter results: 'files', 'concepts', or 'all'")] = "all",
+        scope: Annotated[Optional[str], Field(description="Limit to repo/section, e.g. 'Dress', 'Runway'")] = None,
+        include_raw_section: Annotated[bool, Field(description="Include full section content for exact matches")] = False,
+        min_relevance: Annotated[float, Field(description="Minimum relevance score (0.0-1.0)", ge=0.0, le=1.0)] = 0.0,
+        fuzzy: Annotated[bool, Field(description="Enable fuzzy matching for typos")] = False,
     ) -> OracleQueryResult:
         """Query the SBS Oracle for file locations and concept information.
 
@@ -127,8 +132,16 @@ def register_sbs_tools(mcp: FastMCP) -> None:
 
         sections = parse_oracle_sections(content)
 
-        # Search for matches
-        raw_matches = search_oracle(sections, query, max_results)
+        # Search for matches with new filter parameters
+        raw_matches = search_oracle(
+            sections,
+            query,
+            max_results,
+            result_type=result_type,
+            scope=scope,
+            min_relevance=min_relevance,
+            fuzzy=fuzzy,
+        )
 
         # Convert to model objects
         matches: List[OracleMatch] = []
@@ -156,13 +169,14 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                         section = context_str.split("in section: ")[-1] if "in section: " in context_str else ""
                         concepts.append(OracleConcept(name=name, section=section))
 
-        # Check for exact section match
+        # Check for exact section match (only if include_raw_section is True)
         raw_section = None
-        query_lower = query.lower()
-        for section_name, section_content in sections.get("sections", {}).items():
-            if query_lower in section_name.lower():
-                raw_section = f"## {section_name}\n{section_content}"
-                break
+        if include_raw_section:
+            query_lower = query.lower()
+            for section_name, section_content in sections.get("sections", {}).items():
+                if query_lower in section_name.lower():
+                    raw_section = f"## {section_name}\n{section_content}"
+                    break
 
         return OracleQueryResult(
             matches=matches,
