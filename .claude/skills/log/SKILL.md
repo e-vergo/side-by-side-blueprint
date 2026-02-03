@@ -18,6 +18,8 @@ Rapidly capture bugs, features, and ideas as GitHub issues without breaking flow
 | `/log <text>` | Parse text, infer type from keywords, confirm/fill gaps |
 | `/log --bug\|--feature\|--idea <text>` | Explicit type, text becomes title |
 | `/log --bug --body "details" <title>` | Explicit everything, create immediately |
+| `/log --area sbs <text>` | Explicit area, infer type from text |
+| `/log --area devtools --feature <text>` | Explicit area and type |
 
 ---
 
@@ -37,6 +39,20 @@ When type is not explicit, scan the input for these keywords:
 
 **Default:** If no keywords match, ask the user.
 
+### Area Inference from Keywords
+
+When area is not explicit, scan the input for these keywords:
+
+| Area | Keywords |
+|------|----------|
+| **sbs** | "lean", "verso", "blueprint", "dress", "runway", "graph", "pdf", "paper", "toolchain", "status", "color", "theme", "chapter", "declaration" |
+| **devtools** | "mcp", "archive", "skill", "hook", "tag", "session", "claude", "self-improve", "oracle", "agent", "cli", "test", "validator" |
+| **misc** | (default if no area keywords match) |
+
+**Priority:** If multiple areas match, use the first keyword found (left-to-right scan).
+
+**Default:** If no area keywords match, default to `misc` without asking.
+
 ### Title Extraction
 
 - If `--body` provided: remaining text after flags is the title
@@ -47,21 +63,23 @@ When type is not explicit, scan the input for these keywords:
 
 ## Workflow
 
-1. **Parse input** for title, body, and type flags
+1. **Parse input** for title, body, type flags, and area flags
 2. **Infer type** from keywords if not explicit
 3. **If type unclear:** Ask user with options:
    - [B] Bug - Something is broken
    - [F] Feature - New functionality
    - [I] Idea - Something to consider
-4. **If title missing:** Ask "What would you like to log?"
-5. **Create issue** via `sbs_issue_create` MCP tool:
+4. **Infer area** from keywords if not explicit (default: misc)
+5. **If title missing:** Ask "What would you like to log?"
+6. **Create issue** via `sbs_issue_create` MCP tool:
    - `title`: The issue title
    - `body`: Optional description (empty string if none)
    - `label`: One of "bug", "feature", "idea"
-6. **On success:**
+   - `area`: One of "sbs", "devtools", "misc"
+7. **On success:**
    - Archive with `issue_refs` populated
-   - Report issue number and URL to user
-7. **On failure:**
+   - Report issue number, URL, and labels to user
+8. **On failure:**
    - Report error to user
    - Do NOT archive failed attempts
 
@@ -151,12 +169,20 @@ Claude: Created idea issue #45: "Tooltips for graph nodes"
 
 The skill uses these GitHub labels (should exist in repo):
 
+**Type labels:**
 - `bug` - Something isn't working
 - `feature` - New feature or request
 - `idea` - Idea or suggestion for consideration
+
+**Area labels:**
+- `area:sbs` - Core SBS toolchain (Lean, Blueprint, Verso)
+- `area:devtools` - Development tools (MCP, archive, skills, Claude Code)
+- `area:misc` - Miscellaneous
+
+**Attribution:**
 - `ai-authored` - **Always applied** to indicate AI authorship
 
-If a type label doesn't exist, the issue will still be created but without that label.
+If a label doesn't exist, the issue will still be created but without that label.
 
 ---
 

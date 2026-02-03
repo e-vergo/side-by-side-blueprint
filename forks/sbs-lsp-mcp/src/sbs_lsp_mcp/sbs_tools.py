@@ -1371,6 +1371,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Examples:
         - sbs_issue_create(title="Bug in graph layout")
         - sbs_issue_create(title="Add dark mode", body="Details here", label="feature")
+        - sbs_issue_create(title="Fix Verso export", label="bug", area="sbs")
         """
         # Attribution footer for AI transparency
         attribution = "\n\n---\n🤖 Created with [Claude Code](https://claude.ai/code)"
