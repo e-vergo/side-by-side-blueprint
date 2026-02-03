@@ -870,12 +870,18 @@ The archive system provides comprehensive build tracking, iCloud sync, session a
 
 ### Directory Structure
 
+The archive uses a **compacted index + sidecar** architecture. The `archive_index.json` contains lightweight entry metadata (~1.1MB), while bulky `claude_data` fields are extracted to per-entry sidecar files in `claude_data/entries/`. This reduced the index from 114MB to 1.1MB, enabling fast MCP queries.
+
 ```
 dev/storage/
   unified_ledger.json     # Build metrics and timing (single source of truth)
   lifetime_stats.json     # Cross-run aggregates
-  archive_index.json      # Entry index with tags
+  archive_index.json      # Entry index with tags (compacted, ~1.1MB)
   compliance_ledger.json  # Compliance tracking
+  claude_data/
+    entries/              # Sidecar files: {entry_id}_claude_data.json
+    sessions/             # Extracted session logs
+    plans/                # Extracted plan files
   rubrics/                # Quality rubrics
     index.json            # Rubric registry
     {id}.json             # Rubric definitions

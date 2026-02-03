@@ -316,7 +316,7 @@ The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` 
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
 
-**Implementation:** 51 total tools (18 Lean + 33 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
+**Implementation:** 55 total tools (18 Lean + 37 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -329,7 +329,7 @@ All existing Lean tools remain available:
 - `lean_local_search` - Declaration search
 - `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
 
-### Added Capabilities (29 SBS-specific Tools)
+### Added Capabilities (37 SBS-specific Tools)
 
 Tools organized by category:
 
@@ -337,11 +337,12 @@ Tools organized by category:
 |----------|-------|---------|
 | **Oracle** | `sbs_oracle_query` | Query compiled knowledge base |
 | **Archive** | `sbs_archive_state`, `sbs_context`, `sbs_epoch_summary`, `sbs_search_entries`, `sbs_analysis_summary`, `sbs_entries_since_self_improve` | State, context, and history |
-| **Self-Improve** | `sbs_successful_sessions`, `sbs_comparative_analysis`, `sbs_system_health`, `sbs_user_patterns` | Structured analysis for self-improvement |
+| **Self-Improve** | `sbs_successful_sessions`, `sbs_comparative_analysis`, `sbs_system_health`, `sbs_user_patterns`, `sbs_skill_stats`, `sbs_phase_transition_health`, `sbs_interruption_analysis`, `sbs_gate_failures`, `sbs_tag_effectiveness` | Structured analysis for self-improvement |
 | **Testing** | `sbs_run_tests`, `sbs_validate_project` | Pytest and T1-T8 validators |
-| **Build** | `sbs_build_project`, `sbs_serve_project`, `sbs_last_screenshot`, `sbs_visual_history` | Build, serve, and visual checks |
+| **Build** | `sbs_build_project`, `sbs_serve_project`, `sbs_last_screenshot`, `sbs_visual_history`, `sbs_inspect_project` | Build, serve, visual checks, and QA context |
 | **GitHub** | `sbs_issue_create`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management |
-| **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end` | Skill state machine |
+| **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end`, `sbs_skill_handoff` | Skill state machine (including atomic handoffs) |
+| **Questions** | `sbs_question_analysis`, `sbs_question_stats` | AskUserQuestion interaction analysis |
 | **Zulip** | `zulip_search`, `zulip_fetch_thread`, `zulip_screenshot` | Lean Zulip integration |
 
 ### Why a Fork?
@@ -720,6 +721,8 @@ CLAUDE.md
 
 ### ArchiveEntry Schema
 
+**Compacted index + sidecar architecture:** The `claude_data` field is extracted to per-entry sidecar files at `dev/storage/claude_data/entries/{entry_id}_claude_data.json`. The index stores `claude_data: null` for compacted entries, reducing index size from 114MB to ~1.1MB.
+
 ```python
 @dataclass
 class ArchiveEntry:
@@ -732,13 +735,13 @@ class ArchiveEntry:
     trigger: str                            # "build", "skill", or "manual"
     build_run_id: Optional[str]             # Links to unified ledger
 
-    # State machine fields (NEW)
+    # State machine fields
     global_state: Optional[dict] = None     # {skill: str, substate: str}
     state_transition: Optional[str] = None  # "phase_start", "phase_end", or null
     epoch_summary: Optional[dict] = None    # Aggregated epoch data (on close)
 
-    # Session data
-    claude_data: Optional[dict]             # Extracted ~/.claude data
+    # Session data (compacted to sidecar files)
+    claude_data: Optional[dict]             # null in index; full data in sidecar
     repo_commits: dict[str, str]            # Git commits at build time
 
     # Quality
