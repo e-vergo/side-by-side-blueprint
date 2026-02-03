@@ -47,7 +47,6 @@ sbs compare --baseline 2024-01-15
 | `paper_tex` | Paper [TeX] |
 | `pdf_tex` | PDF [TeX] |
 | `paper_verso` | Paper [Verso] |
-| `pdf_verso` | PDF [Verso] |
 | `blueprint_verso` | Blueprint [Verso] |
 | `chapter` | First chapter page |
 
