@@ -121,6 +121,7 @@ Every plan MUST include a `gates:` section in YAML format:
 ```yaml
 gates:
   tests: all_pass | <threshold>    # Test requirements
+  test_tier: evergreen             # Optional: evergreen, dev, interactive, all (default: evergreen)
   quality:                          # Quality score requirements
     T5: >= 0.8
     T6: >= 0.9
@@ -128,6 +129,14 @@ gates:
 ```
 
 Plans without gates are incomplete. Define appropriate gates based on task scope.
+
+**Test Tiers:**
+- `evergreen`: Tests marked with `@pytest.mark.evergreen` - fast, reliable, always run
+- `dev`: Development tests - may be slower or require specific setup
+- `interactive`: Tests requiring interactive validation
+- `all`: Run all tests regardless of tier
+
+**Change-based Validator Selection:** The system automatically determines which T1-T8 validators to run based on which repos have changed. For example, CSS changes trigger T5/T6/T7/T8 validators.
 
 **REQUIRED:** After plan approval, transition to execution:
 
