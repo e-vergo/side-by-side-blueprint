@@ -312,6 +312,11 @@ All analysis is organized across four pillars:
 | `sbs_comparative_analysis` | Approved vs rejected plans, discriminating features | 2, 3 |
 | `sbs_system_health` | Build metrics, quality coverage, tag noise | 4 |
 | `sbs_user_patterns` | Alignment efficiency, issue-driven patterns | 1 |
+| `sbs_skill_stats` | Per-skill lifecycle metrics (count, rate, duration, failures) | 1, 2 |
+| `sbs_phase_transition_health` | Phase transition patterns and anomalies | 2, 3 |
+| `sbs_interruption_analysis` | User correction/redirection detection | 1, 3 |
+| `sbs_gate_failures` | Gate validation failure analysis | 4 |
+| `sbs_tag_effectiveness` | Auto-tag signal-to-noise ratio | 4 |
 
 ### Search Tools
 
