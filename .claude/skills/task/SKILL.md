@@ -278,11 +278,11 @@ Use the `sbs_skill_handoff` MCP tool to atomically end the task skill and start 
 sbs_skill_handoff(
     from_skill="task",
     to_skill="update-and-archive",
-    to_substate="readme-wave"
+    to_substate="retrospective"
 )
 ```
 
-This creates a single archive entry that simultaneously ends `/task` and starts `/update-and-archive`, preventing orphaned skill sessions. The old pattern of separate `phase_end` + `skill_start` calls is still supported but is not recommended.
+This creates a single archive entry that simultaneously ends `/task` and starts `/update-and-archive`, preventing orphaned skill sessions. The retrospective runs first while context is hot, then readmes, oracle, porcelain. The old pattern of separate `phase_end` + `skill_start` calls is still supported but is not recommended.
 
 ---
 
@@ -311,10 +311,11 @@ If this task was linked to GitHub issue(s):
 
 **Execution is NOT complete until this phase runs.**
 
-Invoke `/update-and-archive` as the final step. The handoff in Phase 4 already started this skill atomically via `sbs_skill_handoff`. The update-and-archive agent:
-1. Refreshes all repository READMEs in parallel waves
-2. Synchronizes core documentation (ARCHITECTURE.md, CLAUDE.md, GOALS.md, README.md)
-3. Ensures documentation reflects the changes made during execution
+Invoke `/update-and-archive` as the final step. The handoff in Phase 4 already started this skill atomically via `sbs_skill_handoff` with substate `"retrospective"`. The update-and-archive agent:
+1. Runs session retrospective while context is hot (5 analysis dimensions)
+2. Refreshes all repository READMEs in parallel waves
+3. Synchronizes core documentation (ARCHITECTURE.md, CLAUDE.md, GOALS.md, README.md)
+4. Ensures documentation reflects the changes made during execution
 
 This phase cannot be skipped. The `/task` skill is considered incomplete until `/update-and-archive` completes successfully.
 
