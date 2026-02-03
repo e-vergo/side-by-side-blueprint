@@ -76,6 +76,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | cli commands | `dev/storage/README.md` | What test-catalog Shows |
 | clone and rename: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | cmd.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
+| colon-delimited hierarchical format | `dev/storage/README.md` | Agent-State Tag Taxonomy (v2.0) |
 | color source of truth | `toolchain/dress-blueprint-action/README.md` | 6-Status Color Model |
 | color source of truth: | `CLAUDE.md` | Quick Reference |
 | commit inside the submodule: | `CLAUDE.md` | Submodule Commit Workflow |
@@ -100,6 +101,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dashboard stat discrepancies: | `toolchain/Runway/README.md` | Debugging Tips |
 | debug | `forks/sbs-lsp-mcp/README.md` | Environment Variables |
 | declarative rules | `dev/storage/README.md` | Auto-Tagging |
+| default: | `CLAUDE.md` | Orchestration Model |
 | dep graph node click * | `storage/dep_graph_node_click_*.png` | Node modal views |
 | dep graph zoom * | `storage/dep_graph_zoom_*.png` | Zoom in/out/fit states |
 | dependency graph | `toolchain/SBS-Test/README.md` | What to Inspect |
@@ -123,6 +125,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | epoch | `dev/storage/README.md` | Epoch Semantics |
 | epoch summary structure: | `dev/storage/README.md` | Epoch Semantics |
 | evergreen | `dev/storage/README.md` | Test Organization System |
+| exception: | `CLAUDE.md` | Orchestration Model |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
@@ -236,6 +239,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | papermetadata | `toolchain/Runway/README.md` | Module Architecture |
 | papernodeinfo | `toolchain/Runway/README.md` | Key Module Details |
 | papernodeinfoext | `toolchain/Runway/README.md` | Key Module Details |
+| parallel spawning (execution phase only): | `CLAUDE.md` | Spawning Protocol |
 | parent project: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
 | part of the [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) monorepo. | `toolchain/Dress/README.md` | Overview |
 | pdf compilation | `toolchain/Runway/README.md` | Features |
@@ -243,6 +247,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | per-session data: | `dev/storage/README.md` | Rich Data Extraction |
 | per-snapshot aggregates: | `dev/storage/README.md` | Rich Data Extraction |
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
+| phase-aware agent concurrency: | `CLAUDE.md` | Orchestration Model |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
 | pr integration: | `CLAUDE.md` | `/task` |
@@ -312,7 +317,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | side-by-side display issues: | `toolchain/Runway/README.md` | Debugging Tips |
 | sidebar not showing: | `toolchain/Runway/README.md` | Debugging Tips |
 | simplified per-project workflows | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
-| single agent architecture: | `CLAUDE.md` | Orchestration Model |
 | single command, single purpose | `dev/scripts/README.md` | Design Principles |
 | site building | `toolchain/Runway/README.md` | Processing Steps |
 | site output | `toolchain/SBS-Test/README.md` | Testing Points |
@@ -526,8 +530,17 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 
 | File | Purpose |
 |------|---------|
+| `dev/scripts/sbs/labels/__init__.py` | Taxonomy loader, validator, color lookup |
+| `dev/scripts/sbs/labels/sync.py` | GitHub label sync (create/update, never delete) |
+| `dev/scripts/sbs/tests/pytest/test_taxonomy.py` | Taxonomy tests (evergreen tier) |
+| `dev/storage/labels/taxonomy.yaml` | Canonical taxonomy definition |
 | `ledger.py` | `QualityScoreLedger`, `MetricScore`, persistence |
 | `reset.py` | Repo-change detection, metric invalidation |
+| `tagging/agent_state_taxonomy.yaml` | Canonical taxonomy definition (16 dimensions, ~128 tags) |
+| `tagging/hooks/outcome_tagger.py` | Outcome classification hook |
+| `tagging/hooks/session_profiler.py` | Session behavioral profiling hook |
+| `tagging/hooks/signal_detector.py` | Anomaly detection hook |
+| `tagging/rules.yaml` | 50 declarative rules mapping fields to tags |
 
 ### subverso
 
