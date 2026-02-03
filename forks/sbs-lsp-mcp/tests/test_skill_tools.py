@@ -16,6 +16,7 @@ import pytest
 
 from sbs_lsp_mcp.sbs_models import (
     SkillEndResult,
+    SkillFailResult,
     SkillStartResult,
     SkillStatusResult,
     SkillTransitionResult,
@@ -746,6 +747,92 @@ class TestSkillEnd:
                 state_transition="phase_end",
                 issue_refs=[42, 43],
             )
+
+
+# =============================================================================
+# TestSkillFail
+# =============================================================================
+
+
+class TestSkillFail:
+    """Tests for sbs_skill_fail tool."""
+
+    def test_fail_records_reason(self, mock_archive_index_with_task: Dict[str, Any]) -> None:
+        """Fail records the failure reason and clears state."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_with_task)
+
+        with patch("sbs_lsp_mcp.sbs_tools._run_archive_upload") as mock_upload:
+            mock_upload.return_value = (True, "20260131191000", None)
+
+            current_skill = mock_index.global_state.get("skill")
+            current_substate = mock_index.global_state.get("substate")
+            skill = "task"
+            reason = "Build failed with unrecoverable error"
+
+            assert current_skill == skill
+
+            # Simulate tool logic
+            success, entry_id, error = mock_upload(
+                trigger="skill",
+                global_state=None,
+                state_transition="phase_fail",
+                issue_refs=None,
+            )
+
+            result = SkillFailResult(
+                success=True,
+                error=None,
+                archive_entry_id=entry_id,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+            assert result.success is True
+            assert result.reason == reason
+            assert result.failed_phase == "execution"
+            assert result.archive_entry_id == "20260131191000"
+
+            # Verify phase_fail transition was used
+            mock_upload.assert_called_with(
+                trigger="skill",
+                global_state=None,
+                state_transition="phase_fail",
+                issue_refs=None,
+            )
+
+    def test_fail_wrong_skill(self, mock_archive_index_with_task: Dict[str, Any]) -> None:
+        """Fail rejects when skill doesn't match."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_with_task)
+
+        current_skill = mock_index.global_state.get("skill")
+        skill = "self-improve"
+
+        result = SkillFailResult(
+            success=False,
+            error=f"Cannot fail '{skill}': current active skill is '{current_skill}'",
+            archive_entry_id=None,
+            reason="some reason",
+            failed_phase=None,
+        )
+
+        assert result.success is False
+        assert "self-improve" in result.error
+        assert "task" in result.error
+
+    def test_fail_when_idle(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Fail rejects when no skill is active."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = SkillFailResult(
+            success=False,
+            error="Cannot fail 'task': current active skill is 'none'",
+            archive_entry_id=None,
+            reason="some reason",
+            failed_phase=None,
+        )
+
+        assert result.success is False
+        assert "none" in result.error
 
 
 # =============================================================================

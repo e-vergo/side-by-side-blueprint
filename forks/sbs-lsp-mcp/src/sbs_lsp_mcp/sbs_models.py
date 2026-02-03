@@ -975,6 +975,20 @@ class SkillEndResult(BaseModel):
     )
 
 
+class SkillFailResult(BaseModel):
+    """Result of recording a skill failure."""
+
+    success: bool = Field(description="Whether the failure was recorded")
+    error: Optional[str] = Field(None, description="Error if recording failed")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID from archive upload"
+    )
+    reason: str = Field(description="Why the skill failed")
+    failed_phase: Optional[str] = Field(
+        None, description="Phase that was active when failure occurred"
+    )
+
+
 class SkillHandoffResult(BaseModel):
     """Result of sbs_skill_handoff operation."""
 
