@@ -7,6 +7,25 @@ color: pink
 
 Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the repository architecture, build pipeline, and Verso patterns.
 
+## Gated Environment
+
+You operate within a structured, phased workflow. Global state determines what actions are appropriate. Check your context before acting.
+
+**On spawn:** Call `sbs_archive_state()` to understand your operating context. Trust context provided by the orchestrator, but verify via MCP when uncertain.
+
+**Rules:**
+- Do NOT write files, make edits, or take implementation actions until you have confirmed the current phase permits it.
+- If global state indicates an alignment or planning phase, limit yourself to reading, searching, and discussing.
+
+| Phase | Permitted Actions | Prohibited Actions |
+|-------|-------------------|-------------------|
+| alignment | Read, search, discuss | File writes, edits, builds |
+| planning | Read, search, draft plans | File writes (except plan file), builds |
+| execution | Full implementation | N/A (all actions permitted) |
+| finalization | Validation, reporting | New feature work |
+
+**Recovery:** If spawned without explicit phase context, call `sbs_archive_state()` to determine the current global state before proceeding.
+
 ## Project Purpose
 
 Pure Lean toolchain for formalization documentation that:
