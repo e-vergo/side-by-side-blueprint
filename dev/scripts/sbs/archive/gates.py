@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -92,13 +93,10 @@ def evaluate_test_gate(gate: GateDefinition, tier: str = "evergreen") -> GateRes
     if gate.tests is None:
         return GateResult(passed=True, findings=["No test gate defined"])
 
-    # Run pytest via subprocess - use homebrew pytest directly
+    # Run pytest via subprocess
     scripts_dir = Path(__file__).parent.parent.parent
-    pytest_path = "/opt/homebrew/bin/pytest"
-    if not Path(pytest_path).exists():
-        pytest_path = "pytest"  # Fall back to PATH
 
-    cmd = [pytest_path, "sbs/tests/pytest", "-q", "--tb=no"]
+    cmd = [sys.executable, "-m", "pytest", "sbs/tests/pytest", "-q", "--tb=no"]
 
     # Add tier filter unless "all"
     if tier != "all":
@@ -154,14 +152,11 @@ def evaluate_quality_gate(gate: GateDefinition, project: str = "SBSTest") -> Gat
     if not gate.quality:
         return GateResult(passed=True, findings=["No quality gate defined"])
 
-    # Run validators via subprocess - use homebrew python for sbs module
+    # Run validators via subprocess
     scripts_dir = Path(__file__).parent.parent.parent
-    python_path = "/opt/homebrew/bin/python3"
-    if not Path(python_path).exists():
-        python_path = "python3"  # Fall back to PATH
 
     result = subprocess.run(
-        [python_path, "-m", "sbs", "validate-all", "--project", project],
+        [sys.executable, "-m", "sbs", "validate-all", "--project", project],
         cwd=scripts_dir,
         capture_output=True,
         text=True,
@@ -207,7 +202,8 @@ def evaluate_quality_gate(gate: GateDefinition, project: str = "SBSTest") -> Gat
             score_data = ledger.scores.get(metric_id)
 
             if score_data is None:
-                findings.append(f"Quality gate {validator} skipped: no score available")
+                all_passed = False
+                findings.append(f"Quality gate {validator} FAILED: no score available (metric not measured)")
                 continue
 
             score = score_data.value
@@ -225,19 +221,15 @@ def evaluate_quality_gate(gate: GateDefinition, project: str = "SBSTest") -> Gat
     return GateResult(passed=all_passed, findings=findings)
 
 
-def check_gates(project: str = "SBSTest", force: bool = False) -> GateResult:
+def check_gates(project: str = "SBSTest") -> GateResult:
     """Run all gate checks for the active plan.
 
     Args:
         project: Project name for quality validation
-        force: If True, return passed=True regardless of actual results
 
     Returns:
         Combined GateResult from all checks
     """
-    if force:
-        return GateResult(passed=True, findings=["Gates bypassed with --force flag"])
-
     # Find and parse active plan
     plan_path = find_active_plan()
     if not plan_path:

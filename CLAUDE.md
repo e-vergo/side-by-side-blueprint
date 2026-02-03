@@ -159,6 +159,29 @@ Spawn an agent for:
 4. Test with SBS-Test or GCR
 5. Run `sbs compliance` to verify visual correctness
 
+### Submodule Commit Workflow
+
+Changes to submodule repos (verso, subverso, LeanArchitect, dress-blueprint-action, etc.) follow a two-step commit pattern:
+
+1. **Commit inside the submodule:** Navigate to the submodule directory, stage, commit, and push changes
+2. **Update parent repo:** The parent repo detects the new submodule commit (shows as `modified: <path> (new commits)`) and needs its own commit to update the pointer
+
+**Automated handling:** `sbs archive upload` runs `ensure_porcelain()` which automatically detects dirty submodules, commits them, then commits the parent repo last to capture all pointer updates.
+
+**Manual workflow:**
+```bash
+# 1. Make changes in submodule
+cd toolchain/dress-blueprint-action
+git add -A && git commit -m "fix: description" && git push
+
+# 2. Update parent repo pointer
+cd ../..
+git add toolchain/dress-blueprint-action
+git commit -m "chore: update dress-blueprint-action submodule" && git push
+```
+
+This is inherent to git submodule architecture. The `ensure_porcelain()` function handles this automatically during archive uploads by committing submodules first, then the main repo.
+
 ---
 
 ## Standards

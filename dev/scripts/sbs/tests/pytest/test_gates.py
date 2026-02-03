@@ -282,21 +282,12 @@ class TestTestGateEvaluation:
 class TestGateEnforcement:
     """Gate enforcement in upload flow."""
 
-    def test_force_flag_bypasses_gate(self):
-        """--force should bypass all gate checks."""
-        result = check_gates(force=True)
-
-        assert result.passed is True
-        assert any(
-            "bypass" in f.lower() or "force" in f.lower() for f in result.findings
-        )
-
     @patch("sbs.archive.gates.find_active_plan")
     def test_no_plan_skips_gates(self, mock_find_plan):
         """No active plan should skip gates (permissive)."""
         mock_find_plan.return_value = None
 
-        result = check_gates(force=False)
+        result = check_gates()
 
         assert result.passed is True
         assert any("no" in f.lower() and "plan" in f.lower() for f in result.findings)
@@ -308,17 +299,30 @@ class TestGateEnforcement:
         plan_file.write_text("# Plan without gates")
         mock_find_plan.return_value = plan_file
 
-        result = check_gates(force=False)
+        result = check_gates()
 
         assert result.passed is True
         assert any("no gates" in f.lower() or "skip" in f.lower() for f in result.findings)
 
-    def test_gate_result_includes_findings(self):
-        """Gate results should always include explanatory findings."""
-        result = check_gates(force=True)
+    def test_missing_score_fails_quality_gate(self):
+        """Quality gate fails when score data is missing."""
+        gate = GateDefinition(quality={"T5": ">= 0.8"})
 
-        assert isinstance(result.findings, list)
-        assert len(result.findings) > 0
+        # Mock the ledger to return None for the requested metric
+        mock_ledger = MagicMock()
+        mock_ledger.scores = {}  # Empty scores dict - T5 will be None
+
+        with patch("sbs.archive.gates.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                stdout="", stderr="", returncode=0,
+            )
+            with patch("sbs.archive.gates.load_quality_ledger", create=True):
+                # Patch the import inside evaluate_quality_gate
+                with patch("sbs.tests.scoring.load_ledger", return_value=mock_ledger):
+                    result = evaluate_quality_gate(gate, project="TestProject")
+
+        assert result.passed is False
+        assert any("failed" in f.lower() and "no score" in f.lower() for f in result.findings)
 
 
 # =============================================================================
@@ -447,7 +451,7 @@ gates:
         mock_test.return_value = GateResult(passed=True, findings=["Tests passed"])
         mock_quality.return_value = GateResult(passed=True, findings=["Quality OK"])
 
-        result = check_gates(force=False)
+        result = check_gates()
 
         assert result.passed is True
         assert any("tests" in f.lower() for f in result.findings)
@@ -473,7 +477,7 @@ gates:
         mock_test.return_value = GateResult(passed=False, findings=["Tests failed"])
         mock_quality.return_value = GateResult(passed=True, findings=["Quality OK"])
 
-        result = check_gates(force=False)
+        result = check_gates()
 
         assert result.passed is False
 
@@ -535,11 +539,14 @@ class TestTierFiltering:
         gate = GateDefinition(tests="all_pass")
         evaluate_test_gate(gate, tier="evergreen")
 
-        # Verify -m evergreen was in the command
+        # Command is [sys.executable, "-m", "pytest", ..., "-m", "evergreen"]
+        # Find the tier marker -m (after the pytest args, not the module -m)
         call_args = mock_run.call_args[0][0]
-        assert "-m" in call_args
-        idx = call_args.index("-m")
-        assert call_args[idx + 1] == "evergreen"
+        # Find all -m indices, the tier one comes after "pytest"
+        m_indices = [i for i, a in enumerate(call_args) if a == "-m"]
+        # The first -m is for "python -m pytest", the second is for the tier marker
+        assert len(m_indices) >= 2, f"Expected at least 2 -m flags, got {m_indices} in {call_args}"
+        assert call_args[m_indices[1] + 1] == "evergreen"
 
     @patch("sbs.archive.gates.subprocess.run")
     def test_all_tier_no_marker(self, mock_run):
@@ -553,9 +560,11 @@ class TestTierFiltering:
         gate = GateDefinition(tests="all_pass")
         evaluate_test_gate(gate, tier="all")
 
-        # Verify -m was NOT in the command
+        # Command is [sys.executable, "-m", "pytest", ...] with no tier -m
         call_args = mock_run.call_args[0][0]
-        assert "-m" not in call_args
+        m_indices = [i for i, a in enumerate(call_args) if a == "-m"]
+        # Only one -m (for "python -m pytest"), no tier marker
+        assert len(m_indices) == 1, f"Expected exactly 1 -m flag, got {m_indices} in {call_args}"
 
     @patch("sbs.archive.gates.subprocess.run")
     def test_dev_tier_adds_marker(self, mock_run):
@@ -570,9 +579,9 @@ class TestTierFiltering:
         evaluate_test_gate(gate, tier="dev")
 
         call_args = mock_run.call_args[0][0]
-        assert "-m" in call_args
-        idx = call_args.index("-m")
-        assert call_args[idx + 1] == "dev"
+        m_indices = [i for i, a in enumerate(call_args) if a == "-m"]
+        assert len(m_indices) >= 2, f"Expected at least 2 -m flags, got {m_indices} in {call_args}"
+        assert call_args[m_indices[1] + 1] == "dev"
 
     def test_gate_definition_default_tier(self):
         """GateDefinition defaults to evergreen tier."""

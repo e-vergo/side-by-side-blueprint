@@ -79,6 +79,17 @@ python3 -m sbs archive upload --trigger skill \
 3. Generate list of potential improvements
 4. Score findings by impact and actionability
 
+### Per-Pillar Minimum Requirement
+
+Discovery is **not complete** until at least 1 finding exists for each pillar:
+- [ ] Pillar 1 (User Effectiveness): Use `sbs_user_patterns()` + `sbs_successful_sessions()`
+- [ ] Pillar 2 (Claude Execution): Use `sbs_successful_sessions()` + `sbs_comparative_analysis()`
+- [ ] Pillar 3 (Alignment Patterns): Use `sbs_comparative_analysis()`
+- [ ] Pillar 4 (System Engineering): Use `sbs_system_health()`
+
+If a pillar genuinely has zero findings after querying all relevant tools, document the absence explicitly:
+"Pillar X: No findings. Queried [tool names]. Archive data insufficient for this pillar."
+
 ### Output
 
 A structured list of findings, each with:
@@ -290,6 +301,17 @@ All analysis is organized across four pillars:
 | `sbs_search_entries` | Query entries by tag, project, or trigger |
 | `sbs_epoch_summary` | Get aggregated epoch statistics |
 | `sbs_context` | Build context blocks for analysis |
+
+### Analysis Tools
+
+| Tool | Use For | Pillars |
+|------|---------|---------|
+| `sbs_analysis_summary` | Overall archive statistics and basic findings | All |
+| `sbs_entries_since_self_improve` | Entries since last self-improve cycle | All |
+| `sbs_successful_sessions` | Mine completed tasks, clean execution, high quality | 1, 2 |
+| `sbs_comparative_analysis` | Approved vs rejected plans, discriminating features | 2, 3 |
+| `sbs_system_health` | Build metrics, quality coverage, tag noise | 4 |
+| `sbs_user_patterns` | Alignment efficiency, issue-driven patterns | 1 |
 
 ### Search Tools
 

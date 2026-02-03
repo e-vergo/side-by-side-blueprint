@@ -158,6 +158,7 @@ python3 -m sbs archive upload --trigger skill \
    # Via branch_ops.py or direct git commands
    git checkout main && git pull
    git checkout -b task/<issue-or-id>-<slug>
+   git commit --allow-empty -m "chore: initialize task branch"
    git push -u origin task/<issue-or-id>-<slug>
    ```
 

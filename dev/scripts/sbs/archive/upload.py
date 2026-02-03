@@ -13,8 +13,9 @@ Provides a single `sbs archive upload` command that:
 from __future__ import annotations
 
 import subprocess
+import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -135,26 +136,41 @@ def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -
 
 
 def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
-    """
-    Ensure all repos are in porcelain (clean) state.
+    """Ensure all repos are in clean git state.
 
-    Commits and pushes any uncommitted changes.
+    Two-phase approach:
+    1. Scan all repos to identify which are dirty
+    2. Commit and push all dirty repos (submodules first, main repo last)
+
+    This avoids the 'chasing' pattern where committing one repo
+    (e.g., dev/storage) dirties another (main repo submodule pointer).
+    The main repo is committed last so it picks up all submodule pointer
+    changes in a single commit.
+
     Returns (success, list_of_failed_repos).
     """
     root = get_monorepo_root()
     failed = []
 
-    # Process main repo
-    if repo_is_dirty(root):
-        if not commit_and_push_repo(root, "chore: archive upload", dry_run):
-            failed.append("main")
-
-    # Process submodule repos
+    # Phase 1: Scan all repos to identify dirty ones
+    dirty_submodules = []
     for name, rel_path in REPO_PATHS.items():
         repo_path = root / rel_path
         if repo_path.exists() and repo_is_dirty(repo_path):
-            if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
-                failed.append(name)
+            dirty_submodules.append((name, repo_path))
+
+    main_dirty = repo_is_dirty(root)
+
+    # Phase 2: Commit and push all dirty submodule repos first
+    for name, repo_path in dirty_submodules:
+        if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
+            failed.append(name)
+
+    # Phase 3: Commit main repo last (picks up submodule pointer updates)
+    # Re-check since submodule commits may have dirtied the main repo
+    if main_dirty or repo_is_dirty(root):
+        if not commit_and_push_repo(root, "chore: archive upload", dry_run):
+            failed.append("main")
 
     return len(failed) == 0, failed
 
@@ -246,8 +262,6 @@ def archive_upload(
     # State machine parameters
     global_state: Optional[dict] = None,
     state_transition: Optional[str] = None,
-    # Gate validation
-    force: bool = False,
     # Issue references
     issue_refs: Optional[list[str]] = None,
     # PR references
@@ -323,9 +337,25 @@ def archive_upload(
         )
         result["entry_id"] = entry_id
 
+        # 2.1 Set added_at timestamp
+        entry.added_at = datetime.now(timezone.utc).isoformat()
+
         # 2.5 Include quality scores
         log.info("Loading quality scores...")
         quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+
+        if trigger == "build" and not quality_scores:
+            log.info("Auto-running T5+T6 validators for build entry...")
+            try:
+                subprocess.run(
+                    [sys.executable, "-m", "sbs", "validate-all", "--project", project or "SBSTest"],
+                    cwd=str(Path(__file__).parent.parent.parent),
+                    capture_output=True, timeout=120
+                )
+                quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+            except Exception as e:
+                log.warning(f"Auto-validation failed: {e}")
+
         entry.quality_scores = quality_scores
         entry.quality_delta = quality_delta
         if quality_scores:
@@ -380,14 +410,13 @@ def archive_upload(
             global_state.get("substate") == "finalization"):
 
             log.info("Checking gates before finalization...")
-            gate_result = check_gates(project=project or "SBSTest", force=force)
+            gate_result = check_gates(project=project or "SBSTest")
 
             for finding in gate_result.findings:
                 log.dim(f"  {finding}")
 
             if not gate_result.passed:
                 log.error("[BLOCKED] Gate validation failed - transition blocked")
-                log.warning("Use --force to bypass gate validation")
                 return {
                     "success": False,
                     "error": "Gate validation failed",

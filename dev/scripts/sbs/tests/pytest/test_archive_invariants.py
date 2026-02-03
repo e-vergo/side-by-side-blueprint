@@ -408,6 +408,7 @@ class TestSerializationRoundtrip:
             state_transition="phase_start",
             epoch_summary={"entries_in_epoch": 10},
             gate_validation={"passed": True, "findings": ["All gates passed"]},
+            added_at="2026-02-01T12:00:01Z",
         )
 
         # Roundtrip
@@ -437,6 +438,7 @@ class TestSerializationRoundtrip:
         assert restored.state_transition == original.state_transition
         assert restored.epoch_summary == original.epoch_summary
         assert restored.gate_validation == original.gate_validation
+        assert restored.added_at == original.added_at
 
     def test_index_roundtrip_preserves_global_state(self, temp_archive_dir: Path):
         """ArchiveIndex roundtrip preserves global_state and last_epoch_entry."""
