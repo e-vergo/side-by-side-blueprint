@@ -77,6 +77,30 @@ class SiteArtifacts:
                 self._css = ""
         return self._css
 
+    @property
+    def all_css(self) -> dict[str, str]:
+        """Load all CSS files from assets directory, keyed by filename."""
+        css_files: dict[str, str] = {}
+        assets_dir = self.runway_dir / "assets"
+        if assets_dir.exists():
+            for css_path in assets_dir.glob("*.css"):
+                css_files[css_path.name] = css_path.read_text()
+        return css_files
+
+    @property
+    def js_assets(self) -> dict[str, str]:
+        """Load all JS files from assets directory, keyed by filename."""
+        js_files: dict[str, str] = {}
+        assets_dir = self.runway_dir / "assets"
+        if assets_dir.exists():
+            for js_path in assets_dir.glob("*.js"):
+                js_files[js_path.name] = js_path.read_text()
+        return js_files
+
+    @property
+    def assets_dir(self) -> Path:
+        return self.runway_dir / "assets"
+
     def get_page(self, name: str) -> str:
         """Get HTML content for a page by name."""
         if name not in self._pages:

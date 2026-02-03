@@ -1,7 +1,8 @@
 """
-CI/CD Tests (88-95)
+CI/CD Tests (88-95) + Extended CI/CD Tests (179-186)
 
-Verifies GitHub Action and deployment configuration.
+Verifies GitHub Action configuration, expected inputs, and
+deployed asset structure.
 """
 
 from __future__ import annotations
@@ -95,3 +96,79 @@ class TestGitHubAction:
         runs = data.get("runs", {})
         steps = runs.get("steps", [])
         assert len(steps) > 5, "Action should have multiple steps"
+
+
+# =========================================================================
+# Extended: Action Input Coverage
+# =========================================================================
+
+
+@pytest.mark.evergreen
+class TestActionInputs:
+    """Tests for documented action inputs."""
+
+    @pytest.fixture(autouse=True)
+    def _load_action(self):
+        """Load action.yml data."""
+        action_file = ACTION_PATH / "action.yml"
+        if not action_file.exists():
+            pytest.skip("action.yml not found")
+        self.action_data = yaml.safe_load(action_file.read_text())
+        self.inputs = self.action_data.get("inputs", {})
+
+    def test_lean_version_input(self):
+        """179. Action has lean-version input."""
+        assert "lean-version" in self.inputs, \
+            "Action should have lean-version input"
+
+    def test_docgen4_mode_input(self):
+        """180. Action has docgen4-mode input."""
+        assert "docgen4-mode" in self.inputs, \
+            "Action should have docgen4-mode input"
+
+    def test_deploy_pages_input(self):
+        """181. Action has deploy-pages input."""
+        assert "deploy-pages" in self.inputs, \
+            "Action should have deploy-pages input"
+
+    def test_all_four_documented_inputs_present(self):
+        """182. All 4 documented inputs exist."""
+        expected = ["project-directory", "lean-version", "docgen4-mode", "deploy-pages"]
+        for input_name in expected:
+            assert input_name in self.inputs, \
+                f"Documented input '{input_name}' missing from action.yml"
+
+    def test_inputs_have_descriptions(self):
+        """183. All inputs have description fields."""
+        for name, config in self.inputs.items():
+            assert "description" in config, \
+                f"Input '{name}' should have a description"
+
+
+# =========================================================================
+# Extended: Action Assets
+# =========================================================================
+
+
+@pytest.mark.evergreen
+class TestActionAssets:
+    """Tests that CI/CD action includes all required assets."""
+
+    ASSETS_DIR = ACTION_PATH / "assets"
+
+    def test_assets_dir_exists(self):
+        """184. Assets directory exists in action repo."""
+        assert self.ASSETS_DIR.exists(), \
+            "dress-blueprint-action/assets/ should exist"
+
+    def test_assets_has_all_css(self):
+        """185. Action assets include all 4 CSS files."""
+        for name in ["common.css", "blueprint.css", "paper.css", "dep_graph.css"]:
+            path = self.ASSETS_DIR / name
+            assert path.exists(), f"Action assets missing CSS: {name}"
+
+    def test_assets_has_all_js(self):
+        """186. Action assets include both JS files."""
+        for name in ["plastex.js", "verso-code.js"]:
+            path = self.ASSETS_DIR / name
+            assert path.exists(), f"Action assets missing JS: {name}"
