@@ -1,0 +1,27 @@
+{
+  "page": "chapter",
+  "discovered_at": "2026-02-03T03:54:32.228503",
+  "interactions": [
+    {
+      "id": "theme_toggle",
+      "selector": "#theme-toggle, .theme-toggle",
+      "type": "click",
+      "count": 1,
+      "sample_count": 1
+    },
+    {
+      "id": "proof_toggle",
+      "selector": ".proof_heading, .expand-proof",
+      "type": "click",
+      "count": 28,
+      "sample_count": 1
+    },
+    {
+      "id": "hover_token",
+      "selector": ".hl.lean .token",
+      "type": "hover",
+      "count": 2006,
+      "sample_count": 1
+    }
+  ]
+}
