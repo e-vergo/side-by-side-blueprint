@@ -620,3 +620,45 @@ class TestEntriesSinceReturnsCount:
 
         assert result.last_self_improve_entry is None
         assert result.count == 3
+
+
+# =============================================================================
+# New Analysis Functions (Issues #22-#26)
+# =============================================================================
+
+
+@pytest.mark.dev
+class TestNewAnalysisFunctions:
+    """Tests for new self-improve analysis MCP tools."""
+
+    def test_successful_sessions_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_successful_sessions_impl returns SuccessPatterns."""
+        module = _get_self_improve_module()
+        result = module.sbs_successful_sessions_impl()
+        assert hasattr(result, "patterns")
+        assert hasattr(result, "total_sessions_analyzed")
+        assert isinstance(result.patterns, list)
+
+    def test_comparative_analysis_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_comparative_analysis_impl returns ComparativeAnalysis."""
+        module = _get_self_improve_module()
+        result = module.sbs_comparative_analysis_impl()
+        assert hasattr(result, "approved_count")
+        assert hasattr(result, "rejected_count")
+        assert hasattr(result, "features")
+
+    def test_system_health_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_system_health_impl returns SystemHealthReport."""
+        module = _get_self_improve_module()
+        result = module.sbs_system_health_impl()
+        assert hasattr(result, "build_metrics")
+        assert hasattr(result, "findings")
+        assert hasattr(result, "overall_health")
+
+    def test_user_patterns_returns_structured_data(self, mock_archive_dir: Path):
+        """sbs_user_patterns_impl returns UserPatternAnalysis."""
+        module = _get_self_improve_module()
+        result = module.sbs_user_patterns_impl()
+        assert hasattr(result, "total_sessions_analyzed")
+        assert hasattr(result, "effective_patterns")
+        assert hasattr(result, "findings")

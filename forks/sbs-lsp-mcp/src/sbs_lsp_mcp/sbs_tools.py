@@ -2317,6 +2317,82 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         from .sbs_self_improve import sbs_entries_since_self_improve_impl
         return sbs_entries_since_self_improve_impl()
 
+    @mcp.tool(
+        "sbs_successful_sessions",
+        annotations=ToolAnnotations(
+            title="SBS Successful Sessions",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_successful_sessions(ctx: Context) -> str:
+        """Mine successful interaction patterns from archive data.
+
+        Identifies sessions with completed tasks, clean execution (few auto-tags),
+        and high quality scores. Use during self-improve discovery for Pillar 1 & 2.
+        """
+        from .sbs_self_improve import sbs_successful_sessions_impl
+        result = sbs_successful_sessions_impl()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_comparative_analysis",
+        annotations=ToolAnnotations(
+            title="SBS Comparative Analysis",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_comparative_analysis(ctx: Context) -> str:
+        """Compare approved vs rejected plans from archive data.
+
+        Groups planning phase entries by outcome (reached execution or not),
+        identifies discriminating features. Use during self-improve for Pillar 3.
+        """
+        from .sbs_self_improve import sbs_comparative_analysis_impl
+        result = sbs_comparative_analysis_impl()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_system_health",
+        annotations=ToolAnnotations(
+            title="SBS System Health",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_system_health(ctx: Context) -> str:
+        """Analyze system engineering health from archive data.
+
+        Reports build metrics, quality score coverage, auto-tag noise levels,
+        and archive friction. Use during self-improve for Pillar 4.
+        """
+        from .sbs_self_improve import sbs_system_health_impl
+        result = sbs_system_health_impl()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sbs_user_patterns",
+        annotations=ToolAnnotations(
+            title="SBS User Patterns",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_user_patterns(ctx: Context) -> str:
+        """Analyze user communication patterns from archive data.
+
+        Examines alignment efficiency, issue-driven vs freeform task patterns,
+        and communication effectiveness. Use during self-improve for Pillar 1.
+        """
+        from .sbs_self_improve import sbs_user_patterns_impl
+        result = sbs_user_patterns_impl()
+        return result.model_dump_json(indent=2)
+
     # =========================================================================
     # Skill Management Tools
     # =========================================================================

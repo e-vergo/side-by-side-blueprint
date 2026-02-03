@@ -613,6 +613,96 @@ class SelfImproveEntries(BaseModel):
     )
 
 
+class SuccessPattern(BaseModel):
+    """A successful interaction pattern identified from archive analysis."""
+
+    pattern_type: str = Field(
+        description="Type: completed_task, clean_execution, high_quality"
+    )
+    description: str = Field(description="What makes this pattern successful")
+    evidence: List[str] = Field(
+        default_factory=list, description="Supporting entry IDs"
+    )
+    frequency: int = Field(default=0, description="How often this pattern occurs")
+
+
+class SuccessPatterns(BaseModel):
+    """Result from success mining analysis."""
+
+    patterns: List[SuccessPattern] = Field(default_factory=list)
+    total_sessions_analyzed: int = Field(default=0)
+    summary: str = Field(
+        default="", description="Overall success pattern summary"
+    )
+
+
+class DiscriminatingFeature(BaseModel):
+    """A feature that discriminates approved from rejected plans."""
+
+    feature: str = Field(
+        description="Feature name (e.g., plan_size, question_count)"
+    )
+    approved_value: str = Field(
+        description="Typical value in approved plans"
+    )
+    rejected_value: str = Field(
+        description="Typical value in rejected plans"
+    )
+    confidence: str = Field(
+        default="low", description="Confidence level: low, medium, high"
+    )
+
+
+class ComparativeAnalysis(BaseModel):
+    """Comparative analysis of approved vs rejected plans/proposals."""
+
+    approved_count: int = Field(default=0)
+    rejected_count: int = Field(default=0)
+    features: List[DiscriminatingFeature] = Field(default_factory=list)
+    summary: str = Field(
+        default="", description="Key takeaways from comparison"
+    )
+
+
+class SystemHealthMetric(BaseModel):
+    """A single system health measurement."""
+
+    metric: str = Field(description="Metric name")
+    value: float = Field(description="Current value")
+    trend: str = Field(
+        default="stable", description="Trend: improving, stable, degrading"
+    )
+    details: str = Field(default="", description="Additional context")
+
+
+class SystemHealthReport(BaseModel):
+    """System engineering health report from archive analysis."""
+
+    build_metrics: List[SystemHealthMetric] = Field(default_factory=list)
+    tool_error_rates: Dict[str, float] = Field(default_factory=dict)
+    archive_friction: Dict[str, Any] = Field(default_factory=dict)
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    overall_health: str = Field(
+        default="unknown",
+        description="Overall: healthy, warning, degraded",
+    )
+
+
+class UserPatternAnalysis(BaseModel):
+    """Analysis of user communication patterns correlated with session outcomes."""
+
+    total_sessions_analyzed: int = Field(default=0)
+    effective_patterns: List[str] = Field(
+        default_factory=list,
+        description="Patterns correlated with smooth sessions",
+    )
+    findings: List[AnalysisFinding] = Field(default_factory=list)
+    summary: str = Field(
+        default="",
+        description="Key observations about user communication",
+    )
+
+
 # =============================================================================
 # Skill Management Tools
 # =============================================================================
