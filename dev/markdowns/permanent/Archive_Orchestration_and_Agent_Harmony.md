@@ -316,7 +316,7 @@ The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` 
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
 
-**Implementation:** 29 total tools (18 Lean + 11 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
+**Implementation:** 47 total tools (18 Lean + 29 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -329,23 +329,19 @@ All existing Lean tools remain available:
 - `lean_local_search` - Declaration search
 - `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
 
-### Added Capabilities (11 SBS-specific Tools)
+### Added Capabilities (29 SBS-specific Tools)
 
-Tools for archive and orchestration:
+Tools organized by category:
 
-| Tool | Purpose |
-|------|---------|
-| `sbs_oracle_query` | Query Oracle knowledge base |
-| `sbs_archive_state` | Get current global state and recent entries |
-| `sbs_context` | Build context for agent spawn |
-| `sbs_epoch_summary` | Get summary of current or previous epoch |
-| `sbs_run_tests` | Run pytest suite |
-| `sbs_validate_project` | Run T1-T8 validators |
-| `sbs_build_project` | Trigger project build |
-| `sbs_serve_project` | Manage dev server |
-| `sbs_last_screenshot` | Get latest screenshot for a page |
-| `sbs_visual_history` | View screenshot history |
-| `sbs_search_entries` | Search archive entries |
+| Category | Tools | Purpose |
+|----------|-------|---------|
+| **Oracle** | `sbs_oracle_query` | Query compiled knowledge base |
+| **Archive** | `sbs_archive_state`, `sbs_context`, `sbs_epoch_summary`, `sbs_search_entries`, `sbs_analysis_summary`, `sbs_entries_since_self_improve` | State, context, and history |
+| **Testing** | `sbs_run_tests`, `sbs_validate_project` | Pytest and T1-T8 validators |
+| **Build** | `sbs_build_project`, `sbs_serve_project`, `sbs_last_screenshot`, `sbs_visual_history` | Build, serve, and visual checks |
+| **GitHub** | `sbs_issue_create`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management |
+| **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end` | Skill state machine |
+| **Zulip** | `zulip_search`, `zulip_fetch_thread`, `zulip_screenshot` | Lean Zulip integration |
 
 ### Why a Fork?
 

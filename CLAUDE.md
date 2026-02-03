@@ -52,7 +52,7 @@ Building tooling that:
 | `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
 | `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
 | `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
-| `forks/` | **sbs-lsp-mcp** | MCP server (29 tools: 18 Lean + 11 SBS) |
+| `forks/` | **sbs-lsp-mcp** | MCP server (47 tools: 18 Lean + 29 SBS) |
 | `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
 | `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
 | `toolchain/` | **SBS-Test** | Minimal test project (33 nodes) |
@@ -343,6 +343,14 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 - **Subagent spawning:** `sbs-developer.md` may spawn specialized subagents. Always use Opus 4.5; clones of the orchestrating agent are acceptable.
 - **Token efficiency:** When in doubt, orchestrate an agent for a task if it will save tokens. Period.
 
+### Doing Mode Detection
+
+When the orchestrator has executed 3+ Bash calls in sequence, recognize this as "doing mode":
+- User is actively working, not looking to delegate
+- Avoid spawning agents during these sequences
+- Wait for a natural pause before offering delegation
+- If you must suggest an agent, phrase as an offer: "Would you like me to delegate this?"
+
 ---
 
 ### Communication Format
@@ -354,6 +362,15 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 ### Planning Discipline
 
 - **Never delete or replace a plan without explicit user direction.** Default behavior is to update the current plan or append to it.
+
+---
+
+### Plan Size Guidelines
+
+- Keep plans under 10K characters when possible
+- If a plan exceeds 10K chars, consider splitting into phases
+- Comprehensive roadmaps: present as high-level overview + detailed first phase
+- User preference: focused, incremental plans over comprehensive documents
 
 ---
 
@@ -392,6 +409,15 @@ The oracle should be the go-to before Glob/Grep for orientation questions.
 | `include_raw_section` | bool | Return full section content |
 | `min_relevance` | float | Filter low-relevance matches (0.0-1.0) |
 | `fuzzy` | bool | Enable fuzzy matching for typos |
+
+---
+
+### macOS Platform Notes
+
+- Always use `python3` not `python` (macOS doesn't have `python` by default)
+- Avoid GNU-specific options: no `cat -A`, use `od -c` instead
+- Commands like `tree` aren't installed - use `find` or `ls -R` instead
+- Use `/opt/homebrew/bin/python3` for explicit homebrew path if needed
 
 ---
 

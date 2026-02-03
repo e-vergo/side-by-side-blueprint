@@ -39,6 +39,8 @@ from .sbs_models import (
     IssueCreateResult,
     IssueGetResult,
     IssueListResult,
+    IssueSummaryItem,
+    IssueSummaryResult,
     OracleConcept,
     OracleMatch,
     OracleQueryResult,
@@ -1713,6 +1715,148 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         except Exception as e:
             return IssueCloseResult(
                 success=False,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_issue_summary",
+        annotations=ToolAnnotations(
+            title="SBS Issue Summary",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_summary(
+        ctx: Context,
+    ) -> IssueSummaryResult:
+        """Get aggregate statistics for all open GitHub issues.
+
+        Returns summary statistics useful for prioritization:
+        - Total entries and date range
+        - Issues grouped by type (bug/feature/idea)
+        - Issues grouped by area (sbs/devtools/misc)
+        - Full listing sorted by age
+
+        Examples:
+        - sbs_issue_summary()
+        """
+        cmd = [
+            "gh", "issue", "list",
+            "--repo", GITHUB_REPO,
+            "--state", "open",
+            "--json", "number,title,labels,url,createdAt",
+            "--limit", "100",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueSummaryResult(
+                    total_open=0,
+                    error=result.stderr.strip() or "Failed to fetch issues",
+                )
+
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueSummaryResult(
+                    total_open=0,
+                    error="Failed to parse GitHub CLI output",
+                )
+
+            now = datetime.utcnow()
+            type_labels = {"bug", "feature", "idea"}
+            area_prefix = "area:"
+
+            by_type: Dict[str, List[int]] = {}
+            by_area: Dict[str, List[int]] = {}
+            items: List[IssueSummaryItem] = []
+
+            for item in data:
+                number = item.get("number", 0)
+                title = item.get("title", "")
+                url = item.get("url", "")
+                created_at = item.get("createdAt", "")
+
+                # Parse label names
+                label_names: List[str] = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                # Compute age
+                age_days = 0
+                if created_at:
+                    try:
+                        # GitHub returns ISO format like "2025-01-15T10:30:00Z"
+                        created = datetime.fromisoformat(
+                            created_at.replace("Z", "+00:00")
+                        )
+                        age_days = (now - created.replace(tzinfo=None)).days
+                    except (ValueError, TypeError):
+                        pass
+
+                items.append(
+                    IssueSummaryItem(
+                        number=number,
+                        title=title,
+                        labels=label_names,
+                        age_days=age_days,
+                        url=url,
+                    )
+                )
+
+                # Group by type
+                found_type = False
+                for lbl in label_names:
+                    if lbl in type_labels:
+                        by_type.setdefault(lbl, []).append(number)
+                        found_type = True
+                if not found_type:
+                    by_type.setdefault("unlabeled", []).append(number)
+
+                # Group by area
+                found_area = False
+                for lbl in label_names:
+                    if lbl.startswith(area_prefix):
+                        area_name = lbl[len(area_prefix):]
+                        by_area.setdefault(area_name, []).append(number)
+                        found_area = True
+                if not found_area:
+                    by_area.setdefault("unlabeled", []).append(number)
+
+            # Sort by age descending (oldest first)
+            items.sort(key=lambda x: x.age_days, reverse=True)
+
+            oldest = items[0].age_days if items else None
+            newest = items[-1].age_days if items else None
+
+            return IssueSummaryResult(
+                total_open=len(items),
+                by_type=by_type,
+                by_area=by_area,
+                issues=items,
+                oldest_age_days=oldest,
+                newest_age_days=newest,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueSummaryResult(
+                total_open=0,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueSummaryResult(
+                total_open=0,
                 error=str(e),
             )
 
