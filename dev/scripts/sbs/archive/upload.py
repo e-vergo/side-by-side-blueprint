@@ -13,8 +13,9 @@ Provides a single `sbs archive upload` command that:
 from __future__ import annotations
 
 import subprocess
+import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -246,8 +247,6 @@ def archive_upload(
     # State machine parameters
     global_state: Optional[dict] = None,
     state_transition: Optional[str] = None,
-    # Gate validation
-    force: bool = False,
     # Issue references
     issue_refs: Optional[list[str]] = None,
     # PR references
@@ -323,9 +322,25 @@ def archive_upload(
         )
         result["entry_id"] = entry_id
 
+        # 2.1 Set added_at timestamp
+        entry.added_at = datetime.now(timezone.utc).isoformat()
+
         # 2.5 Include quality scores
         log.info("Loading quality scores...")
         quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+
+        if trigger == "build" and not quality_scores:
+            log.info("Auto-running T5+T6 validators for build entry...")
+            try:
+                subprocess.run(
+                    [sys.executable, "-m", "sbs", "validate-all", "--project", project or "SBSTest"],
+                    cwd=str(Path(__file__).parent.parent.parent),
+                    capture_output=True, timeout=120
+                )
+                quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+            except Exception as e:
+                log.warning(f"Auto-validation failed: {e}")
+
         entry.quality_scores = quality_scores
         entry.quality_delta = quality_delta
         if quality_scores:
@@ -380,14 +395,13 @@ def archive_upload(
             global_state.get("substate") == "finalization"):
 
             log.info("Checking gates before finalization...")
-            gate_result = check_gates(project=project or "SBSTest", force=force)
+            gate_result = check_gates(project=project or "SBSTest")
 
             for finding in gate_result.findings:
                 log.dim(f"  {finding}")
 
             if not gate_result.passed:
                 log.error("[BLOCKED] Gate validation failed - transition blocked")
-                log.warning("Use --force to bypass gate validation")
                 return {
                     "success": False,
                     "error": "Gate validation failed",

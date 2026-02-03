@@ -173,7 +173,7 @@ def sbs_entries_since_self_improve_impl() -> SelfImproveEntries:
     for entry in sorted_entries:
         if entry.global_state and entry.global_state.get("skill") == "self-improve":
             last_self_improve_entry = entry.entry_id
-            last_self_improve_timestamp = entry.created_at
+            last_self_improve_timestamp = getattr(entry, 'added_at', None) or entry.created_at
             break
 
     # Get entries since the last self-improve (or all if no self-improve found)

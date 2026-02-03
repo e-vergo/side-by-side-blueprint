@@ -475,11 +475,6 @@ Examples:
         help="State transition type (phase_start or phase_end)",
     )
     archive_upload_parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force transition even if gate validation fails",
-    )
-    archive_upload_parser.add_argument(
         "--issue-refs",
         type=str,
         help="Comma-separated list of GitHub issue numbers to link (e.g., '42,57')",

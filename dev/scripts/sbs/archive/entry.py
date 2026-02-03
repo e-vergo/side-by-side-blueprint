@@ -63,6 +63,9 @@ class ArchiveEntry:
     # PR references
     pr_refs: list[int] = field(default_factory=list)  # PR numbers, e.g., [42, 57]
 
+    # Timestamp when entry was added to the archive (vs created_at which is logical time)
+    added_at: Optional[str] = None
+
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dict."""
         return {
@@ -90,6 +93,7 @@ class ArchiveEntry:
             "gate_validation": self.gate_validation,
             "issue_refs": self.issue_refs,
             "pr_refs": self.pr_refs,
+            "added_at": self.added_at,
         }
 
     @classmethod
@@ -124,6 +128,7 @@ class ArchiveEntry:
             gate_validation=data.get("gate_validation"),
             issue_refs=data.get("issue_refs", []),
             pr_refs=data.get("pr_refs", []),
+            added_at=data.get("added_at"),
         )
 
 
