@@ -202,7 +202,7 @@ Side-by-Side-Blueprint/
 
 ### Known Limitations
 
-- Verso LaTeX export not implemented (`pdf_verso` disabled)
+- Verso LaTeX export not implemented (`pdf_verso` removed from active surfaces; infrastructure preserved)
 - Dashboard is single-column layout (intentional)
 - Build time dominated by SubVerso highlighting (93-99%)
 

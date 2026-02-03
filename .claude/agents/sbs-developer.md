@@ -383,15 +383,14 @@ python3 -m sbs capture --project SBSTest
 python3 -m sbs capture --project SBSTest --interactive
 ```
 
-Captures 8 pages plus interactive states:
+Captures 7 pages plus interactive states:
 1. `dashboard` - Dashboard homepage
 2. `dep_graph` - Dependency graph
 3. `paper_tex` - Paper [TeX]
 4. `pdf_tex` - PDF [TeX]
 5. `paper_verso` - Paper [Verso]
-6. `pdf_verso` - PDF [Verso]
-7. `blueprint_verso` - Blueprint [Verso]
-8. `chapter` - First chapter page (auto-detected)
+6. `blueprint_verso` - Blueprint [Verso]
+7. `chapter` - First chapter page (auto-detected)
 
 Plus interactive states: theme toggles, zoom controls, node clicks, proof toggles.
 Pages that return HTTP 404 are skipped without error.
@@ -830,7 +829,7 @@ lake exe runway pdf runway.json    # Just PDF
 
 **Metadata** (`Paper.lean`): extracts `\title{}`, `\author{}`, `\begin{abstract}` from paper.tex
 
-**Note**: Verso LaTeX export is not implemented. `pdf_verso` is disabled. Use `paper_tex` and `pdf_tex` for paper generation.
+**Note**: Verso LaTeX export is not implemented. `pdf_verso` has been removed from active surfaces; Lean infrastructure preserved. Use `paper_tex` and `pdf_tex` for paper generation.
 
 ### Module Reference Support
 
@@ -985,7 +984,7 @@ JSON parsing handles legacy status values:
 
 ### Verso LaTeX Export
 
-Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly.
+Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved. Paper/PDF generation uses TeX sources directly.
 
 ### Dashboard Layout
 
