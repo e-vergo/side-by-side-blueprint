@@ -930,7 +930,8 @@ class TestSelfImproveMCPTools:
 
         index = ArchiveIndex()
         # Create 3 separate incomplete task sessions to trigger low completion rate finding.
-        # Each session: phase_start -> idle entry (breaks session) -> next session
+        # Each session is separated by a different-skill entry (which closes the previous
+        # task session). Null-state entries do NOT break sessions in the fixed algorithm.
         for i in range(3):
             # Start a task session
             index.add_entry(ArchiveEntry(
@@ -941,12 +942,14 @@ class TestSelfImproveMCPTools:
                 global_state={"skill": "task", "substate": "alignment"},
                 state_transition="phase_start",
             ))
-            # Idle entry (no global_state) closes the session
+            # Different-skill entry forces session boundary
             index.add_entry(ArchiveEntry(
                 entry_id=f"2024010{i}110000",
                 created_at=f"2024-01-0{i + 1}T11:00:00+00:00",
                 project="TestProject",
-                trigger="manual",
+                trigger="skill",
+                global_state={"skill": "log", "substate": "logging"},
+                state_transition="phase_start",
             ))
 
         index_path = mock_archive_dir / "archive_index.json"

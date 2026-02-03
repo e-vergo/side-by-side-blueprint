@@ -54,6 +54,7 @@ class SkillSession:
     completed: bool = False
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    last_substate: str = ""  # Where incomplete sessions stopped
 
 
 SKILL_PHASE_ORDERS: dict[str, list[str]] = {
@@ -73,63 +74,83 @@ def _group_entries_by_skill_session(entries: list) -> list[SkillSession]:
 
     A session starts with a phase_start entry and ends with a phase_end entry
     or when a different skill appears.
+
+    Key invariants:
+    - phase_end is checked FIRST (before global_state), because phase_end
+      entries have global_state=null after the skill clears its state.
+    - Null-state entries are absorbed silently into the current session;
+      they do NOT close it (prevents session fragmentation).
+    - last_substate tracks the most recent substate seen, so incomplete
+      sessions report where they stopped even if the final entry has null state.
     """
     sorted_entries = sorted(entries, key=lambda e: e.entry_id)
     sessions: list[SkillSession] = []
     current_session: Optional[SkillSession] = None
 
+    def _close_session(session: SkillSession) -> None:
+        """Finalize and append a session to the results list."""
+        if session.entries:
+            session.last_entry_id = session.entries[-1].entry_id
+            session.end_time = session.entries[-1].created_at
+        sessions.append(session)
+
     for entry in sorted_entries:
+        st = entry.state_transition or ""
+
+        # 1. Check state_transition FIRST: phase_end closes the current session
+        if st == "phase_end" and current_session is not None:
+            current_session.entries.append(entry)
+            current_session.completed = True
+            current_session.last_entry_id = entry.entry_id
+            current_session.end_time = entry.created_at
+            sessions.append(current_session)
+            current_session = None
+            continue
+
+        # 2. Extract skill from global_state
         gs = entry.global_state or {}
         skill = gs.get("skill")
         substate = gs.get("substate", "")
-        st = entry.state_transition or ""
 
+        # 3. No skill: absorb silently (do NOT close current session)
         if not skill:
-            # No skill in this entry; close current session if open
-            if current_session is not None:
-                current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
-                current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
-                sessions.append(current_session)
-                current_session = None
             continue
 
-        # New session start: phase_start with no current session or different skill
-        if st == "phase_start" and (current_session is None or current_session.skill != skill):
-            # Close previous session
-            if current_session is not None:
-                current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
-                current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
-                sessions.append(current_session)
-
-            current_session = SkillSession(
-                skill=skill,
-                entries=[entry],
-                first_entry_id=entry.entry_id,
-                phases_visited=[substate] if substate else [],
-                start_time=entry.created_at,
-            )
+        # 4. phase_start: start or continue a session
+        if st == "phase_start":
+            if current_session is not None and current_session.skill == skill:
+                # Same skill phase_start: add entry, track phase
+                current_session.entries.append(entry)
+                if substate and (not current_session.phases_visited or current_session.phases_visited[-1] != substate):
+                    current_session.phases_visited.append(substate)
+                if substate:
+                    current_session.last_substate = substate
+            else:
+                # Different skill or no current session: close current, start new
+                if current_session is not None:
+                    _close_session(current_session)
+                current_session = SkillSession(
+                    skill=skill,
+                    entries=[entry],
+                    first_entry_id=entry.entry_id,
+                    phases_visited=[substate] if substate else [],
+                    start_time=entry.created_at,
+                    last_substate=substate,
+                )
             continue
 
-        # Same skill as current session
+        # 5. Skill matches current session: add entry
         if current_session is not None and current_session.skill == skill:
             current_session.entries.append(entry)
             if substate and (not current_session.phases_visited or current_session.phases_visited[-1] != substate):
                 current_session.phases_visited.append(substate)
-
-            # Check for phase_end
-            if st == "phase_end":
-                current_session.completed = True
-                current_session.last_entry_id = entry.entry_id
-                current_session.end_time = entry.created_at
-                sessions.append(current_session)
-                current_session = None
+            if substate:
+                current_session.last_substate = substate
             continue
 
-        # Different skill than current session
+        # 6. Different skill than current session: close current, start new
         if current_session is not None:
-            current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
-            current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
-            sessions.append(current_session)
+            _close_session(current_session)
 
         current_session = SkillSession(
             skill=skill,
@@ -137,13 +158,12 @@ def _group_entries_by_skill_session(entries: list) -> list[SkillSession]:
             first_entry_id=entry.entry_id,
             phases_visited=[substate] if substate else [],
             start_time=entry.created_at,
+            last_substate=substate,
         )
 
     # Close any remaining session
     if current_session is not None:
-        current_session.last_entry_id = current_session.entries[-1].entry_id if current_session.entries else ""
-        current_session.end_time = current_session.entries[-1].created_at if current_session.entries else None
-        sessions.append(current_session)
+        _close_session(current_session)
 
     return sessions
 
@@ -279,11 +299,10 @@ def sbs_skill_stats_impl(as_findings: bool = False) -> SkillStatsResult:
         failure_tags: Counter = Counter()
         for s in skill_sessions:
             if not s.completed and s.entries:
-                last_entry = s.entries[-1]
-                gs = last_entry.global_state or {}
-                sub = gs.get("substate", "")
+                sub = s.last_substate  # Use session-tracked substate
                 if sub:
                     failure_substates[sub] += 1
+                last_entry = s.entries[-1]
                 for tag in (last_entry.tags or []) + (last_entry.auto_tags or []):
                     failure_tags[tag] += 1
 
