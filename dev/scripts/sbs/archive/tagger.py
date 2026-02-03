@@ -14,6 +14,51 @@ from sbs.archive.entry import ArchiveEntry
 from sbs.archive.session_data import SessionData
 from sbs.core.utils import log
 
+# ---------------------------------------------------------------------------
+# Agent-state taxonomy loader (cached)
+# ---------------------------------------------------------------------------
+
+_TAXONOMY_CACHE: Optional[dict[str, dict]] = None
+_TAXONOMY_PATH = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "tagging" / "agent_state_taxonomy.yaml"
+
+
+def load_agent_state_taxonomy(
+    path: Optional[Path] = None,
+) -> dict[str, dict]:
+    """Load and cache the agent-state taxonomy.
+
+    Returns a flat dict of ``{tag_name: {"description": str, "dimension": str}}``
+    for every tag defined in the taxonomy YAML.
+    """
+    global _TAXONOMY_CACHE
+    if _TAXONOMY_CACHE is not None:
+        return _TAXONOMY_CACHE
+
+    taxonomy_path = path or _TAXONOMY_PATH
+    if not taxonomy_path.exists():
+        raise FileNotFoundError(f"Agent-state taxonomy not found at {taxonomy_path}")
+
+    with open(taxonomy_path) as f:
+        data = yaml.safe_load(f)
+
+    result: dict[str, dict] = {}
+    for dim_name, dim_data in data.get("dimensions", {}).items():
+        for tag_entry in dim_data.get("tags", []):
+            tag_name = tag_entry["name"]
+            result[tag_name] = {
+                "description": tag_entry.get("description", ""),
+                "dimension": dim_name,
+            }
+
+    _TAXONOMY_CACHE = result
+    return result
+
+
+def _reset_taxonomy_cache() -> None:
+    """Reset the taxonomy cache (for testing)."""
+    global _TAXONOMY_CACHE
+    _TAXONOMY_CACHE = None
+
 
 class TaggingEngine:
     """
@@ -235,12 +280,47 @@ def build_tagging_context(
         context["files_modified"] = files_modified
         context["files_modified_count"] = len(files_modified)
 
-    # Add claude_data context if available (load from sidecar if needed)
+    # ---- State machine (from entry directly) ----
+    context["skill"] = entry.global_state.get("skill") if entry.global_state else None
+    context["substate"] = entry.global_state.get("substate") if entry.global_state else None
+    context["state_transition"] = entry.state_transition
+    context["has_epoch_summary"] = entry.epoch_summary is not None
+    context["gate_passed"] = entry.gate_validation.get("passed") if entry.gate_validation else None
+
+    # ---- Claude data (load from sidecar if needed) ----
     claude_data = entry.claude_data or entry.load_claude_data()
     if claude_data:
         context["session_count"] = len(claude_data.get("session_ids", []))
         context["tool_call_count"] = claude_data.get("tool_call_count", 0)
         context["message_count"] = claude_data.get("message_count", 0)
         context["plan_count"] = len(claude_data.get("plan_files", []))
+
+        # Token counts
+        context["total_input_tokens"] = claude_data.get("total_input_tokens", 0)
+        context["total_output_tokens"] = claude_data.get("total_output_tokens", 0)
+        context["total_tokens"] = context["total_input_tokens"] + context["total_output_tokens"]
+        context["cache_read_tokens"] = claude_data.get("cache_read_tokens", 0)
+
+        # Thinking and tool diversity
+        context["thinking_block_count"] = claude_data.get("thinking_block_count", 0)
+        context["unique_tools_count"] = len(claude_data.get("unique_tools_used", []))
+        context["model_versions"] = claude_data.get("model_versions_used", [])
+    else:
+        # Ensure token fields exist even without claude_data
+        context["total_input_tokens"] = 0
+        context["total_output_tokens"] = 0
+        context["total_tokens"] = 0
+        context["cache_read_tokens"] = 0
+        context["thinking_block_count"] = 0
+        context["unique_tools_count"] = 0
+        context["model_versions"] = []
+
+    # ---- Quality (from entry) ----
+    context["quality_overall"] = (
+        entry.quality_scores.get("overall") if entry.quality_scores else None
+    )
+    context["quality_delta"] = (
+        entry.quality_delta.get("overall") if entry.quality_delta else None
+    )
 
     return context
