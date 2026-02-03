@@ -137,6 +137,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | general crystallographic restriction | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | git ops | `scripts/git_ops.py` | Git status, diff, and sync operations |
 | github action | `toolchain/dress-blueprint-action/README.md` | Overview |
+| github integration | `forks/sbs-lsp-mcp/README.md` | Overview |
 | goal: | `CLAUDE.md` | Aggressive Delegation |
 | gotchas | `dev/storage/README.md` | What the Oracle Knows |
 | graceful degradation | `toolchain/Runway/README.md` | Design Principles |
@@ -304,6 +305,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | sectioninfo | `toolchain/Runway/README.md` | Module Architecture |
 | security testing | `toolchain/SBS-Test/README.md` | Purpose |
 | see: | `toolchain/SBS-Test/README.md` | Run compliance validation |
+| self-improve analysis | `forks/sbs-lsp-mcp/README.md` | Overview |
 | side-by-side blueprint | `showcase/General_Crystallographic_Restriction/README.md` | Attribution |
 | side-by-side blueprint tool | `dev/markdowns/living/README.md` | 1. Tool Development |
 | side-by-side display | `toolchain/Runway/README.md` | Features |
@@ -315,6 +317,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | site building | `toolchain/Runway/README.md` | Processing Steps |
 | site output | `toolchain/SBS-Test/README.md` | Testing Points |
 | sitebuilder | `toolchain/Runway/README.md` | Module Architecture |
+| skill management | `forks/sbs-lsp-mcp/README.md` | Overview |
 | skill substates: | `dev/storage/README.md` | State Machine Fields |
 | skills | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | soundness guarantee: | `toolchain/Runway/README.md` | manifest.json Schema |
