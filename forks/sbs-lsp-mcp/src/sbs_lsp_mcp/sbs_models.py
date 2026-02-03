@@ -568,3 +568,63 @@ class SelfImproveEntries(BaseModel):
     count: int = Field(
         default=0, description="Total count of entries since last self-improve"
     )
+
+
+# =============================================================================
+# Skill Management Tools
+# =============================================================================
+
+
+class SkillStatusResult(BaseModel):
+    """Result of sbs_skill_status query."""
+
+    active_skill: Optional[str] = Field(
+        None, description="Current skill: task, self-improve, update-and-archive, or null if idle"
+    )
+    substate: Optional[str] = Field(
+        None, description="Current phase within the skill"
+    )
+    can_start_new: bool = Field(
+        description="Whether a new skill can be started (true if idle)"
+    )
+    entries_in_phase: int = Field(
+        default=0, description="Archive entries since phase started"
+    )
+    phase_started_at: Optional[str] = Field(
+        None, description="ISO timestamp when phase started"
+    )
+
+
+class SkillStartResult(BaseModel):
+    """Result of sbs_skill_start operation."""
+
+    success: bool = Field(description="Whether the skill started successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID from archive upload"
+    )
+    global_state: Optional[Dict[str, Any]] = Field(
+        None, description="New global state after start"
+    )
+
+
+class SkillTransitionResult(BaseModel):
+    """Result of sbs_skill_transition operation."""
+
+    success: bool = Field(description="Whether the transition succeeded")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    from_phase: Optional[str] = Field(None, description="Previous phase")
+    to_phase: str = Field(description="New phase")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID from archive upload"
+    )
+
+
+class SkillEndResult(BaseModel):
+    """Result of sbs_skill_end operation."""
+
+    success: bool = Field(description="Whether the skill ended successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID from archive upload"
+    )
