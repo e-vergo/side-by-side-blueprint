@@ -304,6 +304,202 @@ def parse_session_jsonl(session_path: Path, index_metadata: Optional[dict] = Non
         return None
 
 
+def extract_ask_user_questions(session_path: Path) -> list[dict]:
+    """Extract AskUserQuestion interactions from a session JSONL file.
+
+    Reads the JSONL file line by line (no full-file load) and extracts
+    structured data about AskUserQuestion tool calls and their answers.
+
+    Returns list of dicts, each containing:
+    - tool_use_id: str, for linking question to answer
+    - timestamp: Optional[str], when the question was asked
+    - questions: list of question dicts (question, header, options, multiSelect)
+    - answers: dict mapping question text to selected answer(s)
+    - context_before: Optional[str], summary of preceding assistant text
+    """
+    if not session_path.exists():
+        return []
+
+    # Pass 1: Collect AskUserQuestion tool_use blocks and tool_result blocks
+    ask_blocks: list[dict] = []  # {tool_use_id, timestamp, questions_input, context_before}
+    tool_results: dict[str, str] = {}  # tool_use_id -> result content string
+    last_assistant_text = ""
+
+    try:
+        with open(session_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                entry_type = entry.get("type", "")
+                msg = entry.get("message", {})
+                content = msg.get("content", [])
+                if not isinstance(content, list):
+                    continue
+
+                # Extract timestamp
+                ts = entry.get("timestamp") or entry.get("time")
+                ts_str = None
+                if ts:
+                    if isinstance(ts, (int, float)):
+                        ts_str = datetime.fromtimestamp(ts / 1000).isoformat()
+                    else:
+                        ts_str = str(ts)
+
+                if entry_type == "assistant":
+                    # Track last plain text for context_before
+                    text_parts = []
+                    for item in content:
+                        if not isinstance(item, dict):
+                            continue
+                        if item.get("type") == "text":
+                            text_parts.append(item.get("text", ""))
+
+                    # Find AskUserQuestion tool_use blocks
+                    for item in content:
+                        if not isinstance(item, dict):
+                            continue
+                        if item.get("type") == "tool_use" and item.get("name") == "AskUserQuestion":
+                            tool_use_id = item.get("id", "")
+                            input_data = item.get("input", {})
+                            context = " ".join(text_parts)[:300] if text_parts else None
+                            ask_blocks.append({
+                                "tool_use_id": tool_use_id,
+                                "timestamp": ts_str,
+                                "questions_input": input_data.get("questions", []),
+                                "context_before": context,
+                            })
+
+                    if text_parts:
+                        last_assistant_text = " ".join(text_parts)
+
+                elif entry_type == "user":
+                    # Find tool_result blocks matching AskUserQuestion
+                    for item in content:
+                        if not isinstance(item, dict):
+                            continue
+                        if item.get("type") == "tool_result":
+                            tuid = item.get("tool_use_id", "")
+                            result_content = item.get("content", "")
+                            if isinstance(result_content, list):
+                                # Sometimes content is a list of text blocks
+                                parts = []
+                                for rc in result_content:
+                                    if isinstance(rc, dict):
+                                        parts.append(rc.get("text", ""))
+                                    elif isinstance(rc, str):
+                                        parts.append(rc)
+                                result_content = " ".join(parts)
+                            elif not isinstance(result_content, str):
+                                result_content = str(result_content)
+                            if tuid:
+                                tool_results[tuid] = result_content
+
+    except IOError as e:
+        log.warning(f"Failed to read session for AskUserQuestion extraction: {e}")
+        return []
+
+    # Link questions to answers
+    interactions = []
+    for block in ask_blocks:
+        tuid = block["tool_use_id"]
+        result_text = tool_results.get(tuid, "")
+        answers = _parse_ask_user_answers(result_text)
+
+        interactions.append({
+            "tool_use_id": tuid,
+            "timestamp": block["timestamp"],
+            "questions": block["questions_input"],
+            "answers": answers,
+            "context_before": block["context_before"],
+        })
+
+    return interactions
+
+
+def _parse_ask_user_answers(result_text: str) -> dict[str, str]:
+    """Parse the answer text from an AskUserQuestion tool_result.
+
+    The format is:
+    'User has answered your questions: "Q1"="A1", "Q2"="A2". You can now continue...'
+
+    Also handles:
+    'User has answered your questions: "Q1"="A1". You can now continue...'
+
+    Returns dict mapping question text to answer text.
+    """
+    answers: dict[str, str] = {}
+    if not result_text:
+        return answers
+
+    # Find the prefix and strip it
+    prefix = 'User has answered your questions: '
+    idx = result_text.find(prefix)
+    if idx == -1:
+        return answers
+
+    # Extract the Q=A portion (between prefix and ". You can now continue")
+    qa_start = idx + len(prefix)
+    suffix_marker = '. You can now continue'
+    suffix_idx = result_text.find(suffix_marker, qa_start)
+    if suffix_idx == -1:
+        qa_text = result_text[qa_start:]
+    else:
+        qa_text = result_text[qa_start:suffix_idx]
+
+    # Parse "Q"="A" pairs
+    # Pattern: "question text"="answer text"
+    # We need to handle commas inside quotes, so use a state machine approach
+    pos = 0
+    while pos < len(qa_text):
+        # Skip whitespace and commas
+        while pos < len(qa_text) and qa_text[pos] in (' ', ','):
+            pos += 1
+        if pos >= len(qa_text):
+            break
+
+        # Expect opening quote for question
+        if qa_text[pos] != '"':
+            break
+        pos += 1
+
+        # Read question text until closing quote
+        q_start = pos
+        while pos < len(qa_text) and qa_text[pos] != '"':
+            pos += 1
+        question = qa_text[q_start:pos]
+        if pos < len(qa_text):
+            pos += 1  # skip closing quote
+
+        # Expect = sign
+        if pos < len(qa_text) and qa_text[pos] == '=':
+            pos += 1
+        else:
+            break
+
+        # Expect opening quote for answer
+        if pos < len(qa_text) and qa_text[pos] == '"':
+            pos += 1
+            # Read answer text until closing quote
+            a_start = pos
+            while pos < len(qa_text) and qa_text[pos] != '"':
+                pos += 1
+            answer = qa_text[a_start:pos]
+            if pos < len(qa_text):
+                pos += 1  # skip closing quote
+        else:
+            break
+
+        answers[question] = answer
+
+    return answers
+
+
 def _truncate_input(input_data: dict, max_len: int = 200) -> Optional[str]:
     """Truncate input data for storage."""
     if not input_data:

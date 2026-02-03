@@ -472,8 +472,12 @@ Examples:
     )
     archive_upload_parser.add_argument(
         "--state-transition",
-        choices=["phase_start", "phase_end"],
-        help="State transition type (phase_start or phase_end)",
+        choices=["phase_start", "phase_end", "handoff"],
+        help="State transition type (phase_start, phase_end, or handoff)",
+    )
+    archive_upload_parser.add_argument(
+        "--handoff-to",
+        help='JSON object for incoming skill state during handoff, e.g. \'{"skill": "update-and-archive", "substate": "readme-wave"}\'',
     )
     archive_upload_parser.add_argument(
         "--issue-refs",

@@ -843,6 +843,70 @@ class TagEffectivenessResult(BaseModel):
     summary: str = Field(default="")
 
 
+# --- AskUserQuestion Analysis ---
+
+
+class QuestionInteraction(BaseModel):
+    """A single AskUserQuestion interaction from a Claude Code session."""
+
+    session_id: str = Field(description="Session ID where question occurred")
+    timestamp: Optional[str] = Field(None, description="When the question was asked")
+    questions: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Question dicts: {question, header, options, multiSelect}",
+    )
+    answers: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Mapping of question text to selected answer",
+    )
+    context_before: Optional[str] = Field(
+        None, description="What the assistant was doing before asking"
+    )
+    skill: Optional[str] = Field(
+        None, description="Active skill when question was asked"
+    )
+    substate: Optional[str] = Field(
+        None, description="Active substate when question was asked"
+    )
+
+
+class QuestionAnalysisResult(BaseModel):
+    """Result from sbs_question_analysis."""
+
+    interactions: List[QuestionInteraction] = Field(
+        default_factory=list, description="AskUserQuestion interactions found"
+    )
+    total_found: int = Field(default=0, description="Total interactions found")
+    sessions_searched: int = Field(
+        default=0, description="Number of sessions searched"
+    )
+
+
+class QuestionStatsResult(BaseModel):
+    """Result from sbs_question_stats."""
+
+    total_questions: int = Field(default=0, description="Total AskUserQuestion calls")
+    questions_by_skill: Dict[str, int] = Field(
+        default_factory=dict, description="Question count per active skill"
+    )
+    questions_by_header: Dict[str, int] = Field(
+        default_factory=dict, description="Question count per header text"
+    )
+    most_common_options_selected: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Most frequently selected options [{option, count}]",
+    )
+    multi_select_usage: int = Field(
+        default=0, description="How many questions used multiSelect"
+    )
+    sessions_with_questions: int = Field(
+        default=0, description="Sessions containing at least one AskUserQuestion"
+    )
+    sessions_without_questions: int = Field(
+        default=0, description="Sessions with no AskUserQuestion calls"
+    )
+
+
 # =============================================================================
 # Skill Management Tools
 # =============================================================================
@@ -900,4 +964,62 @@ class SkillEndResult(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
     archive_entry_id: Optional[str] = Field(
         None, description="Entry ID from archive upload"
+    )
+
+
+class SkillHandoffResult(BaseModel):
+    """Result of sbs_skill_handoff operation."""
+
+    success: bool = Field(description="Whether handoff succeeded")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    from_skill: str = Field(description="Skill that was ended")
+    from_phase: str = Field(description="Phase that was active when handoff occurred")
+    to_skill: str = Field(description="Skill that was started")
+    to_substate: str = Field(description="Initial substate of new skill")
+    archive_entry_id: Optional[str] = Field(
+        None, description="Entry ID recording the handoff"
+    )
+
+
+# =============================================================================
+# Inspect Tools
+# =============================================================================
+
+
+class PageInspection(BaseModel):
+    """Inspection data for a single page."""
+
+    page_name: str = Field(description="Page name (e.g., 'dashboard', 'dep_graph')")
+    screenshot_path: Optional[str] = Field(
+        None, description="Absolute path to screenshot file, if it exists"
+    )
+    screenshot_exists: bool = Field(
+        default=False, description="Whether a screenshot file was found"
+    )
+    suggested_prompt: str = Field(
+        default="", description="What to look for when evaluating this page"
+    )
+
+
+class InspectResult(BaseModel):
+    """Result from sbs_inspect_project."""
+
+    project: str = Field(description="Normalized project name")
+    pages: List[PageInspection] = Field(
+        default_factory=list, description="Inspection data per page"
+    )
+    open_issues: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Open issues: [{number, title, labels, body_summary}]",
+    )
+    closed_issues: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Recently closed issues: [{number, title, labels}]",
+    )
+    quality_scores: Optional[Dict[str, Any]] = Field(
+        None, description="Latest T1-T8 scores from quality_ledger.json"
+    )
+    total_pages: int = Field(default=0, description="Total pages inspected")
+    pages_with_screenshots: int = Field(
+        default=0, description="Pages that have screenshot files"
     )

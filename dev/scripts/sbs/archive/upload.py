@@ -268,6 +268,8 @@ def archive_upload(
     pr_refs: Optional[list[int]] = None,
     # Validation
     validate: bool = False,
+    # Handoff parameters
+    handoff_to: Optional[dict] = None,
 ) -> dict:
     """
     Main archive upload function.
@@ -325,6 +327,16 @@ def archive_upload(
 
         # 2. Create ArchiveEntry
         entry_id = str(int(time.time()))
+
+        # For handoff transitions, the entry's global_state is set to the
+        # incoming skill's state (handoff_to), so the archive index picks
+        # up the new skill as the active state. The state_transition field
+        # "handoff" signals that this entry simultaneously ends the outgoing
+        # skill and starts the incoming one.
+        effective_global_state = global_state
+        if state_transition == "handoff" and handoff_to:
+            effective_global_state = handoff_to
+
         entry = ArchiveEntry(
             entry_id=entry_id,
             created_at=datetime.now().isoformat(),
@@ -332,7 +344,7 @@ def archive_upload(
             build_run_id=build_run_id,
             claude_data=snapshot.to_dict(),
             trigger=trigger,
-            global_state=global_state,
+            global_state=effective_global_state,
             state_transition=state_transition,
             issue_refs=issue_refs or [],
             pr_refs=pr_refs or [],
@@ -474,7 +486,10 @@ def archive_upload(
                 index.last_epoch_entry = entry.entry_id
 
             # Update index global_state if state_transition indicates a change
-            if global_state is not None:
+            if state_transition == "handoff" and handoff_to:
+                # Handoff: atomically end outgoing skill and start incoming skill
+                index.global_state = handoff_to
+            elif global_state is not None:
                 index.global_state = global_state
             elif state_transition == "phase_end" and global_state is None:
                 # Clearing state (returning to idle)

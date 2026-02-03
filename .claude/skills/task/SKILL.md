@@ -269,13 +269,18 @@ sbs_pr_merge(
 )
 ```
 
-**REQUIRED:** After finalization completes, clear state:
+**REQUIRED:** After finalization completes, hand off to update-and-archive:
 
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-python3 -m sbs archive upload --trigger skill \
-  --state-transition phase_end
+Use the `sbs_skill_handoff` MCP tool to atomically end the task skill and start update-and-archive:
 ```
+sbs_skill_handoff(
+    from_skill="task",
+    to_skill="update-and-archive",
+    to_substate="readme-wave"
+)
+```
+
+This creates a single archive entry that simultaneously ends `/task` and starts `/update-and-archive`, preventing orphaned skill sessions. The old pattern of separate `phase_end` + `skill_start` calls is still supported but is not recommended.
 
 ---
 
@@ -304,7 +309,7 @@ If this task was linked to GitHub issue(s):
 
 **Execution is NOT complete until this phase runs.**
 
-Invoke `/update-and-archive` as the final step. This:
+Invoke `/update-and-archive` as the final step. The handoff in Phase 4 already started this skill atomically via `sbs_skill_handoff`. The update-and-archive agent:
 1. Refreshes all repository READMEs in parallel waves
 2. Synchronizes core documentation (ARCHITECTURE.md, CLAUDE.md, GOALS.md, README.md)
 3. Ensures documentation reflects the changes made during execution
@@ -386,9 +391,9 @@ The task skill has four substates, tracked in the archive:
 | `alignment` | Q&A phase, clarifying requirements | → planning |
 | `planning` | Designing implementation approach | → execution |
 | `execution` | Agents running, validators checking | → finalization |
-| `finalization` | Full validation, summary generation | → (triggers /update-and-archive) |
+| `finalization` | Full validation, summary generation | → (handoff to /update-and-archive) |
 
-Each substate transition archives state with `state_transition: "phase_start"` for the incoming phase. Only the final transition uses `phase_end` to clear global state.
+Each substate transition archives state with `state_transition: "phase_start"` for the incoming phase. The final transition uses `state_transition: "handoff"` via `sbs_skill_handoff` to atomically end the task and start update-and-archive.
 
 ---
 

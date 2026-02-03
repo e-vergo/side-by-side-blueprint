@@ -117,12 +117,12 @@ class TestSchemaConsistency:
         assert isinstance(entry.screenshots, list)
         assert isinstance(entry.repo_commits, dict)
         assert isinstance(entry.global_state, dict)
-        assert entry.state_transition in ("phase_start", "phase_end", None)
+        assert entry.state_transition in ("phase_start", "phase_end", "handoff", None)
         assert entry.trigger in ("build", "skill", "manual", None)
 
     def test_state_fields_valid_enum_values(self):
         """State transition and trigger must be valid enum values."""
-        valid_transitions = ["phase_start", "phase_end", None]
+        valid_transitions = ["phase_start", "phase_end", "handoff", None]
         valid_triggers = ["build", "skill", "manual", None]
 
         for transition in valid_transitions:
@@ -375,6 +375,153 @@ class TestEpochSemantics:
 
 
 # =============================================================================
+# Skill Handoff Tests
+# =============================================================================
+
+
+@pytest.mark.evergreen
+class TestSkillHandoff:
+    """Handoff atomically ends one skill and starts another."""
+
+    def test_handoff_entry_has_correct_state_transition(self):
+        """Handoff entry should have state_transition='handoff'."""
+        entry = ArchiveEntry(
+            entry_id="handoff_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        assert entry.state_transition == "handoff"
+        assert entry.global_state["skill"] == "update-and-archive"
+
+    def test_handoff_updates_index_global_state(self, temp_archive_dir: Path):
+        """After handoff, index global_state should reflect the incoming skill."""
+        index = ArchiveIndex()
+
+        # Set initial state (task in finalization)
+        index.global_state = {"skill": "task", "substate": "finalization"}
+
+        # Create handoff entry
+        entry = ArchiveEntry(
+            entry_id="handoff_entry",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        index.add_entry(entry)
+
+        # Simulate what upload.py does for handoff
+        index.global_state = entry.global_state
+
+        assert index.global_state["skill"] == "update-and-archive"
+        assert index.global_state["substate"] == "readme-wave"
+
+        # Verify persistence
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+        loaded = ArchiveIndex.load(index_path)
+        assert loaded.global_state == {"skill": "update-and-archive", "substate": "readme-wave"}
+
+    def test_handoff_is_not_idle(self, temp_archive_dir: Path):
+        """Handoff should NOT clear global_state to null (unlike phase_end)."""
+        index = ArchiveIndex()
+        index.global_state = {"skill": "task", "substate": "finalization"}
+
+        entry = ArchiveEntry(
+            entry_id="handoff_not_idle",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+        index.add_entry(entry)
+        index.global_state = entry.global_state
+
+        # State should NOT be null
+        assert index.global_state is not None
+        assert index.global_state.get("skill") is not None
+
+    def test_handoff_serialization_roundtrip(self):
+        """Handoff entry should survive to_dict/from_dict roundtrip."""
+        original = ArchiveEntry(
+            entry_id="handoff_roundtrip",
+            created_at="2026-02-03T12:00:00Z",
+            project="TestProject",
+            global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+            state_transition="handoff",
+            trigger="skill",
+        )
+
+        entry_dict = original.to_dict()
+        restored = ArchiveEntry.from_dict(entry_dict)
+
+        assert restored.state_transition == "handoff"
+        assert restored.global_state == {"skill": "update-and-archive", "substate": "readme-wave"}
+
+    def test_session_grouping_recognizes_handoff(self):
+        """_group_entries_by_skill_session should treat handoff as end+start.
+
+        This test requires the sbs_lsp_mcp package (lives in forks/sbs-lsp-mcp).
+        It is skipped if the package is not available on PYTHONPATH.
+        """
+        try:
+            from sbs_lsp_mcp.sbs_self_improve import _group_entries_by_skill_session
+        except ImportError:
+            pytest.skip("sbs_lsp_mcp not available on PYTHONPATH")
+
+        # Create a sequence: task alignment -> task execution -> handoff -> u&a readme-wave
+        entries = [
+            ArchiveEntry(
+                entry_id="1000",
+                created_at="2026-02-03T10:00:00",
+                project="TestProject",
+                global_state={"skill": "task", "substate": "alignment"},
+                state_transition="phase_start",
+            ),
+            ArchiveEntry(
+                entry_id="1001",
+                created_at="2026-02-03T10:30:00",
+                project="TestProject",
+                global_state={"skill": "task", "substate": "execution"},
+                state_transition="phase_start",
+            ),
+            ArchiveEntry(
+                entry_id="1002",
+                created_at="2026-02-03T11:00:00",
+                project="TestProject",
+                global_state={"skill": "update-and-archive", "substate": "readme-wave"},
+                state_transition="handoff",
+            ),
+            ArchiveEntry(
+                entry_id="1003",
+                created_at="2026-02-03T11:30:00",
+                project="TestProject",
+                global_state={"skill": "update-and-archive", "substate": "oracle-regen"},
+                state_transition="phase_start",
+            ),
+        ]
+
+        sessions = _group_entries_by_skill_session(entries)
+
+        # Should have 2 sessions: task (completed) and update-and-archive
+        assert len(sessions) == 2
+
+        task_session = sessions[0]
+        assert task_session.skill == "task"
+        assert task_session.completed is True  # handoff marks it complete
+
+        ua_session = sessions[1]
+        assert ua_session.skill == "update-and-archive"
+        # The handoff entry starts the new session
+        assert ua_session.first_entry_id == "1002"
+
+
+# =============================================================================
 # to_dict / from_dict Roundtrip Tests
 # =============================================================================
 
@@ -384,7 +531,12 @@ class TestSerializationRoundtrip:
     """Entry serialization must be lossless."""
 
     def test_entry_roundtrip_preserves_all_fields(self):
-        """to_dict -> from_dict should preserve all fields."""
+        """to_dict -> from_dict should preserve all fields.
+
+        Note: claude_data is excluded from to_dict() by default (sidecar
+        compaction).  We test with include_claude_data=True to verify the
+        roundtrip still works, and separately verify the default path.
+        """
         original = ArchiveEntry(
             entry_id="roundtrip_test",
             created_at="2026-02-01T12:00:00Z",
@@ -411,8 +563,8 @@ class TestSerializationRoundtrip:
             added_at="2026-02-01T12:00:01Z",
         )
 
-        # Roundtrip
-        entry_dict = original.to_dict()
+        # Full roundtrip including claude_data
+        entry_dict = original.to_dict(include_claude_data=True)
         restored = ArchiveEntry.from_dict(entry_dict)
 
         # Verify all fields match
@@ -439,6 +591,20 @@ class TestSerializationRoundtrip:
         assert restored.epoch_summary == original.epoch_summary
         assert restored.gate_validation == original.gate_validation
         assert restored.added_at == original.added_at
+
+    def test_entry_roundtrip_default_excludes_claude_data(self):
+        """to_dict() default should NOT include claude_data (sidecar compaction)."""
+        entry = ArchiveEntry(
+            entry_id="compact_test",
+            created_at="2026-02-01T12:00:00Z",
+            project="TestProject",
+            claude_data={"sessions": 5},
+        )
+        entry_dict = entry.to_dict()
+        assert "claude_data" not in entry_dict
+
+        restored = ArchiveEntry.from_dict(entry_dict)
+        assert restored.claude_data is None
 
     def test_index_roundtrip_preserves_global_state(self, temp_archive_dir: Path):
         """ArchiveIndex roundtrip preserves global_state and last_epoch_entry."""
@@ -538,3 +704,98 @@ class TestIndexInvariants:
         assert "auto-tag" in index.by_tag
         assert "dual_tags" in index.by_tag["manual-tag"]
         assert "dual_tags" in index.by_tag["auto-tag"]
+
+
+# =============================================================================
+# Claude Data Sidecar Tests
+# =============================================================================
+
+
+@pytest.mark.evergreen
+class TestClaudeDataSidecar:
+    """claude_data should be extracted to sidecar files, not stored in the index."""
+
+    def test_save_flushes_claude_data_to_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """ArchiveIndex.save() should write claude_data to sidecar and clear in-memory."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        entry = ArchiveEntry(
+            entry_id="sidecar_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data={"sessions": 5, "tool_calls": 10},
+        )
+
+        index = ArchiveIndex()
+        index.add_entry(entry)
+
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        # In-memory claude_data should be None after save
+        assert entry.claude_data is None
+
+        # Sidecar file should exist with correct content
+        sidecar_path = temp_archive_dir / "archive_data" / "sidecar_test.json"
+        assert sidecar_path.exists()
+        with open(sidecar_path) as f:
+            sidecar_data = json.load(f)
+        assert sidecar_data == {"sessions": 5, "tool_calls": 10}
+
+        # Index file should NOT contain claude_data
+        with open(index_path) as f:
+            raw_index = json.load(f)
+        assert "claude_data" not in raw_index["entries"]["sidecar_test"]
+
+    def test_load_claude_data_from_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """load_claude_data() should read from sidecar when in-memory is None."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        # Write sidecar manually
+        sidecar_dir = temp_archive_dir / "archive_data"
+        sidecar_dir.mkdir(parents=True)
+        sidecar_path = sidecar_dir / "load_test.json"
+        with open(sidecar_path, "w") as f:
+            json.dump({"loaded": True}, f)
+
+        entry = ArchiveEntry(
+            entry_id="load_test",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data=None,
+        )
+
+        result = entry.load_claude_data()
+        assert result == {"loaded": True}
+        assert entry.claude_data == {"loaded": True}
+
+    def test_index_roundtrip_with_sidecar(self, temp_archive_dir: Path, monkeypatch):
+        """Save/load cycle should preserve claude_data via sidecar."""
+        import sbs.archive.entry as entry_mod
+        monkeypatch.setattr(entry_mod, "_ARCHIVE_DATA_DIR", temp_archive_dir / "archive_data")
+
+        entry = ArchiveEntry(
+            entry_id="roundtrip_sidecar",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            project="TestProject",
+            claude_data={"important": "data"},
+        )
+
+        index = ArchiveIndex()
+        index.add_entry(entry)
+
+        index_path = temp_archive_dir / "archive_index.json"
+        index.save(index_path)
+
+        # Reload index
+        loaded_index = ArchiveIndex.load(index_path)
+        loaded_entry = loaded_index.entries["roundtrip_sidecar"]
+
+        # claude_data should be None in the loaded entry (not in index)
+        assert loaded_entry.claude_data is None
+
+        # But loading from sidecar should recover it
+        loaded = loaded_entry.load_claude_data()
+        assert loaded == {"important": "data"}

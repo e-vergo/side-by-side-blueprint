@@ -22,6 +22,9 @@ from .sbs_models import (
     InterruptionEvent,
     PhaseTransitionHealthResult,
     PhaseTransitionReport,
+    QuestionAnalysisResult,
+    QuestionInteraction,
+    QuestionStatsResult,
     SelfImproveEntries,
     SelfImproveEntrySummary,
     SkillStatEntry,
@@ -105,6 +108,30 @@ def _group_entries_by_skill_session(entries: list) -> list[SkillSession]:
             current_session.end_time = entry.created_at
             sessions.append(current_session)
             current_session = None
+            continue
+
+        # 1b. Handoff: closes the current session AND starts a new one atomically.
+        # The entry's global_state contains the incoming skill's state.
+        if st == "handoff" and current_session is not None:
+            # Close outgoing session
+            current_session.entries.append(entry)
+            current_session.completed = True
+            current_session.last_entry_id = entry.entry_id
+            current_session.end_time = entry.created_at
+            sessions.append(current_session)
+
+            # Start incoming session from the same entry
+            gs = entry.global_state or {}
+            new_skill = gs.get("skill", "")
+            new_substate = gs.get("substate", "")
+            current_session = SkillSession(
+                skill=new_skill,
+                entries=[entry],
+                first_entry_id=entry.entry_id,
+                phases_visited=[new_substate] if new_substate else [],
+                start_time=entry.created_at,
+                last_substate=new_substate,
+            )
             continue
 
         # 2. Extract skill from global_state
@@ -1295,4 +1322,202 @@ def sbs_user_patterns_impl() -> UserPatternAnalysis:
         effective_patterns=effective_patterns,
         findings=findings,
         summary=f"Analyzed {total_tasks} task sessions across {len(entries)} archive entries",
+    )
+
+
+# =============================================================================
+# AskUserQuestion Analysis (Issue #75)
+# =============================================================================
+
+
+def _get_session_jsonl_files() -> list[tuple[str, "Path"]]:
+    """Find all SBS session JSONL files.
+
+    Returns list of (session_id, path) tuples.
+    """
+    from pathlib import Path
+    from sbs.archive.extractor import get_sbs_project_dirs
+
+    results = []
+    for project_dir in get_sbs_project_dirs():
+        for session_file in project_dir.glob("*.jsonl"):
+            results.append((session_file.stem, session_file))
+    return results
+
+
+def _correlate_with_archive(
+    timestamp: Optional[str], index
+) -> tuple[Optional[str], Optional[str]]:
+    """Find the active skill/substate at a given timestamp from archive entries.
+
+    Returns (skill, substate) or (None, None) if no match.
+    """
+    if not timestamp or not index.entries:
+        return None, None
+
+    # Sort entries chronologically
+    sorted_entries = sorted(index.entries.values(), key=lambda e: e.entry_id)
+
+    # Find the most recent entry before this timestamp
+    best_skill = None
+    best_substate = None
+    for entry in sorted_entries:
+        # Entry IDs are unix timestamps; compare with ISO timestamp
+        try:
+            entry_time = datetime.fromisoformat(
+                entry.created_at.replace("Z", "+00:00")
+            )
+            question_time = datetime.fromisoformat(
+                timestamp.replace("Z", "+00:00")
+            )
+            if entry_time <= question_time:
+                gs = entry.global_state or {}
+                if gs.get("skill"):
+                    best_skill = gs.get("skill")
+                    best_substate = gs.get("substate")
+        except (ValueError, TypeError):
+            continue
+
+    return best_skill, best_substate
+
+
+def sbs_question_analysis_impl(
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+    skill: Optional[str] = None,
+    limit: int = 50,
+) -> QuestionAnalysisResult:
+    """Extract AskUserQuestion interactions from session files.
+
+    Scans JSONL session files for AskUserQuestion tool calls, links them
+    with their tool_result answers, and correlates with archive state.
+    """
+    from pathlib import Path
+    from sbs.archive.extractor import extract_ask_user_questions
+
+    index = load_archive_index()
+    session_files = _get_session_jsonl_files()
+
+    all_interactions: list[QuestionInteraction] = []
+    sessions_searched = 0
+
+    for session_id, session_path in session_files:
+        sessions_searched += 1
+        raw_interactions = extract_ask_user_questions(session_path)
+
+        for raw in raw_interactions:
+            ts = raw.get("timestamp")
+
+            # Filter by time range
+            if since and ts and ts < since:
+                continue
+            if until and ts and ts > until:
+                continue
+
+            # Correlate with archive state
+            active_skill, active_substate = _correlate_with_archive(ts, index)
+
+            # Filter by skill
+            if skill and active_skill != skill:
+                continue
+
+            interaction = QuestionInteraction(
+                session_id=session_id,
+                timestamp=ts,
+                questions=raw.get("questions", []),
+                answers=raw.get("answers", {}),
+                context_before=raw.get("context_before"),
+                skill=active_skill,
+                substate=active_substate,
+            )
+            all_interactions.append(interaction)
+
+    # Sort by timestamp descending (most recent first)
+    all_interactions.sort(
+        key=lambda i: i.timestamp or "", reverse=True
+    )
+
+    # Apply limit
+    limited = all_interactions[:limit]
+
+    return QuestionAnalysisResult(
+        interactions=limited,
+        total_found=len(all_interactions),
+        sessions_searched=sessions_searched,
+    )
+
+
+def sbs_question_stats_impl(
+    since: Optional[str] = None,
+    until: Optional[str] = None,
+) -> QuestionStatsResult:
+    """Aggregate statistics about AskUserQuestion usage patterns."""
+    from collections import Counter
+    from pathlib import Path
+    from sbs.archive.extractor import extract_ask_user_questions
+
+    index = load_archive_index()
+    session_files = _get_session_jsonl_files()
+
+    total_questions = 0
+    skill_counts: Counter = Counter()
+    header_counts: Counter = Counter()
+    option_counts: Counter = Counter()
+    multi_select_count = 0
+    sessions_with = 0
+    sessions_without = 0
+
+    for session_id, session_path in session_files:
+        raw_interactions = extract_ask_user_questions(session_path)
+
+        if raw_interactions:
+            sessions_with += 1
+        else:
+            sessions_without += 1
+
+        for raw in raw_interactions:
+            ts = raw.get("timestamp")
+
+            # Filter by time range
+            if since and ts and ts < since:
+                continue
+            if until and ts and ts > until:
+                continue
+
+            total_questions += 1
+
+            # Correlate skill
+            active_skill, _ = _correlate_with_archive(ts, index)
+            if active_skill:
+                skill_counts[active_skill] += 1
+            else:
+                skill_counts["none"] += 1
+
+            # Analyze questions
+            for q in raw.get("questions", []):
+                header = q.get("header", "")
+                if header:
+                    header_counts[header] += 1
+
+                if q.get("multiSelect", False):
+                    multi_select_count += 1
+
+            # Track selected options
+            for question_text, answer in raw.get("answers", {}).items():
+                option_counts[answer] += 1
+
+    # Build most common options selected
+    most_common = [
+        {"option": opt, "count": cnt}
+        for opt, cnt in option_counts.most_common(15)
+    ]
+
+    return QuestionStatsResult(
+        total_questions=total_questions,
+        questions_by_skill=dict(skill_counts),
+        questions_by_header=dict(header_counts),
+        most_common_options_selected=most_common,
+        multi_select_usage=multi_select_count,
+        sessions_with_questions=sessions_with,
+        sessions_without_questions=sessions_without,
     )
