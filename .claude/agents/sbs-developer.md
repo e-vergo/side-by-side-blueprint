@@ -82,9 +82,10 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 
 ## Agent Parallelism
 
-This agent has full edit permissions. Therefore:
-- Only one `sbs-developer` agent runs at a time (architectural invariant)
-- Multiple Explore agents can run in parallel alongside this agent
+This agent has full edit permissions. Concurrency rules:
+- **Default:** One `sbs-developer` agent at a time (alignment, planning, finalization phases)
+- **Execution phase exception:** Up to 4 `sbs-developer` instances may run concurrently during `/task` execution when the approved plan specifies parallel waves. Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos.
+- Multiple Explore agents can run in parallel alongside at all times
 - If spawning subagents, ensure no edit collisions
 
 ---
