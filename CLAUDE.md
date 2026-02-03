@@ -52,7 +52,7 @@ Building tooling that:
 | `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
 | `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
 | `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
-| `forks/` | **sbs-lsp-mcp** | MCP server (29 tools: 18 Lean + 11 SBS) |
+| `forks/` | **sbs-lsp-mcp** | MCP server (47 tools: 18 Lean + 29 SBS) |
 | `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
 | `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
 | `toolchain/` | **SBS-Test** | Minimal test project (33 nodes) |

@@ -324,7 +324,7 @@ For build commands, screenshot capture, compliance validation, archive managemen
 
 ### MCP Tools
 
-The `sbs-lsp-mcp` server (located at `forks/sbs-lsp-mcp/`) provides 29 tools: 18 Lean tools for proof development and 11 SBS tools for orchestration, testing, and archive management. See the server README for full documentation.
+The `sbs-lsp-mcp` server (located at `forks/sbs-lsp-mcp/`) provides 47 tools: 18 Lean tools for proof development and 29 SBS tools for orchestration, testing, archive management, GitHub integration, and Zulip search. See the server README for full documentation.
 
 ### One-Click Build Scripts
 
