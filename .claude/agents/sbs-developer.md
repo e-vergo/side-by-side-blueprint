@@ -950,6 +950,7 @@ rev = "main"
 - Don't configure paper metadata in runway.json - extract from paper.tex
 - Don't use negative margins for full-width highlights - use `::before` pseudo-elements
 - Don't define status colors in CSS - Lean is the source of truth
+- Don't use direct `git push` - hooks deny it by design. All pushes go through the orchestrator's archival process (`sbs archive upload`). If you need to push, report the need to the orchestrator.
 
 ---
 
