@@ -91,7 +91,6 @@ ALL_PAGES = [
     "paper_tex",
     "pdf_tex",
     "paper_verso",
-    "pdf_verso",
     "blueprint_verso",
     "chapter",
 ]

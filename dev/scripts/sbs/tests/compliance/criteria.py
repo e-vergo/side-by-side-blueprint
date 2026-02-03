@@ -563,7 +563,6 @@ PAGE_CRITERIA: dict[str, PageCriteria] = {
     "paper_tex": PAPER_TEX_CRITERIA,
     "pdf_tex": PDF_TEX_CRITERIA,
     "paper_verso": PAPER_VERSO_CRITERIA,
-    "pdf_verso": PageCriteria(page="pdf_verso", criteria=[], interactive_elements=[]),  # Disabled
     "blueprint_verso": BLUEPRINT_VERSO_CRITERIA,
     "chapter": CHAPTER_CRITERIA,
 }
