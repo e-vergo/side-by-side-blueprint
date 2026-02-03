@@ -1359,6 +1359,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             Optional[str],
             Field(description="Issue label: bug, feature, or idea"),
         ] = None,
+        area: Annotated[
+            Optional[str],
+            Field(description="Area label: sbs, devtools, or misc"),
+        ] = None,
     ) -> IssueCreateResult:
         """Create a new GitHub issue in the SBS repository.
 
@@ -1375,10 +1379,12 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
         cmd.extend(["--body", full_body])
 
-        # Always add ai-authored label, plus optional type label
+        # Always add ai-authored label, plus optional type and area labels
         labels = ["ai-authored"]
         if label:
             labels.append(label)
+        if area:
+            labels.append(f"area:{area}")
         cmd.extend(["--label", ",".join(labels)])
 
         try:
