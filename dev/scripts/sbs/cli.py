@@ -47,6 +47,7 @@ Commands:
   versions     Show dependency versions across repos
   archive      Archive management commands
   oracle       Oracle management commands
+  labels       Label taxonomy management
   test-catalog List all testable components (MCP tools, tests, CLI commands)
 
 Examples:
@@ -59,6 +60,9 @@ Examples:
   sbs sync -m "Fix bug"          # Commit and push all changes
   sbs oracle compile             # Compile Oracle from sources
   sbs readme-check               # Check which READMEs may need updating
+  sbs labels list                # Show label taxonomy tree
+  sbs labels sync --dry-run      # Preview GitHub label sync
+  sbs labels validate bug:visual # Validate label names
         """,
     )
 
@@ -533,6 +537,67 @@ Examples:
         help="Output path (default: .claude/agents/sbs-oracle.md)",
     )
 
+    # --- labels (command group) ---
+    labels_parser = subparsers.add_parser(
+        "labels",
+        help="Label taxonomy management",
+        description="Manage GitHub issue label taxonomy.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Subcommands:
+  list         Show taxonomy tree grouped by dimension
+  sync         Sync labels to GitHub
+  validate     Validate label names against taxonomy
+
+Examples:
+  sbs labels list                        # Show taxonomy tree
+  sbs labels sync --dry-run              # Preview GitHub label sync
+  sbs labels sync --repo owner/repo      # Sync to specific repo
+  sbs labels validate bug:visual origin:agent  # Validate label names
+        """,
+    )
+    labels_subparsers = labels_parser.add_subparsers(
+        dest="labels_command",
+        title="labels commands",
+        metavar="<subcommand>",
+    )
+
+    # --- labels list ---
+    labels_subparsers.add_parser(
+        "list",
+        help="Show taxonomy tree grouped by dimension",
+        description="Render the label taxonomy as a tree with label counts.",
+    )
+
+    # --- labels sync ---
+    labels_sync_parser = labels_subparsers.add_parser(
+        "sync",
+        help="Sync labels to GitHub",
+        description="Create or update GitHub labels to match taxonomy.yaml.",
+    )
+    labels_sync_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Report what would be done without making changes",
+    )
+    labels_sync_parser.add_argument(
+        "--repo",
+        default="e-vergo/Side-By-Side-Blueprint",
+        help="Target repository (default: e-vergo/Side-By-Side-Blueprint)",
+    )
+
+    # --- labels validate ---
+    labels_validate_parser = labels_subparsers.add_parser(
+        "validate",
+        help="Validate label names against taxonomy",
+        description="Check if label names are defined in the taxonomy.",
+    )
+    labels_validate_parser.add_argument(
+        "label_names",
+        nargs="+",
+        help="Label names to validate",
+    )
+
     # --- readme-check ---
     readme_check_parser = subparsers.add_parser(
         "readme-check",
@@ -655,6 +720,38 @@ def cmd_oracle(args: argparse.Namespace) -> int:
         return 0
 
     log.error(f"Unknown oracle command: {args.oracle_command}")
+    return 1
+
+
+def cmd_labels(args: argparse.Namespace) -> int:
+    """Handle labels commands."""
+    if not args.labels_command:
+        log.error("No labels subcommand specified. Use 'sbs labels list', 'sync', or 'validate'.")
+        return 1
+
+    if args.labels_command == "list":
+        from sbs.labels.sync import render_taxonomy_tree
+        print(render_taxonomy_tree())
+        return 0
+
+    elif args.labels_command == "sync":
+        from sbs.labels.sync import sync_labels
+        sync_labels(repo=args.repo, dry_run=args.dry_run)
+        return 0
+
+    elif args.labels_command == "validate":
+        from sbs.labels import validate_labels
+        valid, invalid = validate_labels(args.label_names)
+        if valid:
+            for name in valid:
+                log.success(f"  {name}")
+        if invalid:
+            for name in invalid:
+                log.error(f"  {name} (unknown)")
+            return 1
+        return 0
+
+    log.error(f"Unknown labels command: {args.labels_command}")
     return 1
 
 
@@ -892,6 +989,9 @@ def main(argv: list[str] | None = None) -> int:
 
         elif args.command == "oracle":
             return cmd_oracle(args)
+
+        elif args.command == "labels":
+            return cmd_labels(args)
 
         elif args.command == "readme-check":
             return cmd_readme_check(args)

@@ -176,16 +176,93 @@ python3 -m sbs archive upload --trigger skill \
 ### Actions
 
 For each confirmed improvement:
-1. Determine issue type (bug, feature, idea)
+1. Infer labels from the finding (see Finding-to-Label Mapping below)
 2. Create issue via `sbs_issue_create`:
    - Title: Clear, actionable description
    - Body: Context from dialogue, recommended approach
-   - Label: Appropriate type + `ai-authored` + `self-improve`
+   - Labels: `["origin:self-improve", "ai-authored", ...inferred labels]`
 3. Track created issue numbers
+
+Example call:
+```python
+sbs_issue_create(
+    title="Add tool call batching guidance to sbs-developer agent",
+    body="...",
+    labels=[
+        "origin:self-improve",
+        "ai-authored",
+        "feature:enhancement",
+        "area:devtools:skills",
+        "pillar:claude-execution",
+        "impact:performance",
+        "friction:slow-feedback",
+    ]
+)
+```
 
 ### Output
 
 List of created issue numbers with URLs.
+
+### Finding-to-Label Mapping
+
+Every issue created by `/self-improve` includes:
+
+**Always present:**
+- `origin:self-improve`
+- `ai-authored`
+
+**Type label** -- inferred from finding content:
+
+| Signal | Label |
+|--------|-------|
+| severity: high + category contains "error"/"failure"/"broken" | `bug:functional` |
+| category contains "build"/"compile"/"lake" | `bug:build` |
+| category contains "data"/"ledger"/"manifest" | `bug:data` |
+| category contains "visual"/"render"/"css" | `bug:visual` |
+| recommendation contains "add"/"implement"/"create" (new capability) | `feature:new` |
+| recommendation contains "improve"/"enhance"/"optimize" | `feature:enhancement` |
+| recommendation contains "connect"/"integrate"/"bridge" | `feature:integration` |
+| recommendation contains "investigate"/"debug"/"profile" | `investigation` |
+| recommendation contains "document"/"clarify" | `housekeeping:docs` |
+| recommendation contains "clean"/"remove"/"simplify" | `housekeeping:cleanup` |
+| Default | `housekeeping:tooling` |
+
+**Area label** -- inferred from finding category and evidence (entry IDs link to repos):
+- Map to the most specific `area:sbs:*`, `area:devtools:*`, or `area:lean:*` label
+- When uncertain, prefer the broader area (e.g., `area:devtools:cli` over `area:devtools:gates`)
+
+**Pillar label** -- direct mapping from `finding.pillar`:
+
+| Pillar | Label |
+|--------|-------|
+| User Effectiveness | `pillar:user-effectiveness` |
+| Claude Execution | `pillar:claude-execution` |
+| Alignment Patterns | `pillar:alignment-patterns` |
+| System Engineering | `pillar:system-engineering` |
+
+**Impact labels** (optional, multi-select) -- inferred from finding content:
+- Performance-related findings -> `impact:performance`
+- Visual/UI findings -> `impact:visual`
+- Developer workflow findings -> `impact:dx`
+- Data quality findings -> `impact:data-quality`
+- Alignment-related findings -> `impact:alignment`
+
+**Friction labels** (optional) -- inferred from finding description keywords:
+
+| Keyword Pattern | Label |
+|-----------------|-------|
+| "compaction"/"context lost"/"state recovery" | `friction:context-loss` |
+| "misunderstanding"/"different understanding" | `friction:alignment-gap` |
+| "missing tool"/"no way to"/"needed capability" | `friction:tooling-gap` |
+| "slow"/"wait"/"rebuild"/"iteration time" | `friction:slow-feedback` |
+| "manual"/"by hand"/"should be automated" | `friction:manual-step` |
+| "submodule"/"cross-repo"/"dependency chain" | `friction:cross-repo` |
+| "state confusion"/"orphaned"/"stale state" | `friction:state-confusion` |
+| "noise"/"false positive"/"buried" | `friction:signal-noise` |
+| "repeated"/"duplicate"/"same work again" | `friction:repeated-work` |
+| "no data"/"not captured"/"missing metrics" | `friction:missing-data` |
+| "too many"/"cognitive load"/"overwhelm" | `friction:cognitive-load` |
 
 ---
 
@@ -395,6 +472,14 @@ finding:
     should emphasize parallel tool calls for independent
     operations.
   issue_type: "feature"
+  labels:
+    - "origin:self-improve"
+    - "ai-authored"
+    - "feature:enhancement"
+    - "area:devtools:mcp"
+    - "pillar:claude-execution"
+    - "impact:performance"
+    - "friction:slow-feedback"
 ```
 
 ---
@@ -580,8 +665,12 @@ State cleared. Returning to idle.
 
 ## Labels
 
-Issues created by this skill use:
-- Type label: `bug`, `feature`, or `idea`
-- `ai-authored`: Indicates AI authorship
-- `self-improve`: Indicates origin from self-improvement analysis
+Issues created by `/self-improve` use the enriched label taxonomy defined in
+`dev/storage/labels/taxonomy.yaml`. Every issue includes `origin:self-improve`
+and `ai-authored`, plus labels from the type, area, pillar, impact, and friction
+dimensions as inferred from the finding content (see Finding-to-Label Mapping
+in Phase 4 above).
+
+The old `label`/`area` parameters on `sbs_issue_create` are superseded by
+the `labels` list parameter, which accepts any label name from the taxonomy.
 

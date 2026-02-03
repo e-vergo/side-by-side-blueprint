@@ -1602,22 +1602,36 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             Optional[str],
             Field(description="Issue body/description"),
         ] = None,
+        labels: Annotated[
+            Optional[List[str]],
+            Field(
+                description=(
+                    "List of labels from taxonomy dimensions: "
+                    "origin:*, bug:*/feature:*/idea:*/behavior/housekeeping:*/investigation, "
+                    "area:sbs:*/area:devtools:*/area:lean:*, loop:*, impact:*, "
+                    "scope:*, pillar:*, project:*, friction:*"
+                ),
+            ),
+        ] = None,
         label: Annotated[
             Optional[str],
-            Field(description="Issue label: bug, feature, or idea"),
+            Field(description="(Legacy) Issue label: bug, feature, or idea"),
         ] = None,
         area: Annotated[
             Optional[str],
-            Field(description="Area label: sbs, devtools, or misc"),
+            Field(description="(Legacy) Area label: sbs, devtools, or misc"),
         ] = None,
     ) -> IssueCreateResult:
         """Create a new GitHub issue in the SBS repository.
 
         Creates an issue in e-vergo/Side-By-Side-Blueprint.
 
+        When `labels` is provided, uses those labels plus `ai-authored`.
+        When `labels` is not provided, falls back to legacy `label` + `area` params.
+
         Examples:
-        - sbs_issue_create(title="Bug in graph layout")
-        - sbs_issue_create(title="Add dark mode", body="Details here", label="feature")
+        - sbs_issue_create(title="Bug in graph layout", labels=["bug:visual", "area:sbs:graph"])
+        - sbs_issue_create(title="Add dark mode", labels=["feature:new", "area:sbs:theme", "impact:visual"])
         - sbs_issue_create(title="Fix Verso export", label="bug", area="sbs")
         """
         # Attribution footer for AI transparency
@@ -1627,13 +1641,18 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
         cmd.extend(["--body", full_body])
 
-        # Always add ai-authored label, plus optional type and area labels
-        labels = ["ai-authored"]
-        if label:
-            labels.append(label)
-        if area:
-            labels.append(f"area:{area}")
-        cmd.extend(["--label", ",".join(labels)])
+        # Always add ai-authored label
+        resolved_labels = ["ai-authored"]
+        if labels:
+            # New taxonomy-aware path
+            resolved_labels.extend(labels)
+        else:
+            # Legacy fallback: single label + area prefix
+            if label:
+                resolved_labels.append(label)
+            if area:
+                resolved_labels.append(f"area:{area}")
+        cmd.extend(["--label", ",".join(resolved_labels)])
 
         try:
             result = subprocess.run(
@@ -1999,8 +2018,33 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             type_labels = {"bug", "feature", "idea"}
             area_prefix = "area:"
 
+            # Dimension prefixes for taxonomy grouping.
+            # Order matters: longer prefixes checked first so "area:sbs:"
+            # matches before "area:". Standalone labels map to their dimension.
+            _DIM_PREFIXES = [
+                ("area:sbs:", "area_sbs"),
+                ("area:devtools:", "area_devtools"),
+                ("area:lean:", "area_lean"),
+                ("origin:", "origin"),
+                ("bug:", "type"),
+                ("feature:", "type"),
+                ("idea:", "type"),
+                ("housekeeping:", "type"),
+                ("loop:", "loop"),
+                ("impact:", "impact"),
+                ("scope:", "scope"),
+                ("pillar:", "pillar"),
+                ("project:", "project"),
+                ("friction:", "friction"),
+            ]
+            _STANDALONE_DIMS = {
+                "behavior": "type",
+                "investigation": "type",
+            }
+
             by_type: Dict[str, List[int]] = {}
             by_area: Dict[str, List[int]] = {}
+            by_dimension: Dict[str, Dict[str, List[int]]] = {}
             items: List[IssueSummaryItem] = []
 
             for item in data:
@@ -2039,7 +2083,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                     )
                 )
 
-                # Group by type
+                # Group by type (legacy)
                 found_type = False
                 for lbl in label_names:
                     if lbl in type_labels:
@@ -2048,7 +2092,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 if not found_type:
                     by_type.setdefault("unlabeled", []).append(number)
 
-                # Group by area
+                # Group by area (legacy)
                 found_area = False
                 for lbl in label_names:
                     if lbl.startswith(area_prefix):
@@ -2057,6 +2101,23 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                         found_area = True
                 if not found_area:
                     by_area.setdefault("unlabeled", []).append(number)
+
+                # Group by taxonomy dimension
+                for lbl in label_names:
+                    dimension = None
+                    # Check standalone labels first
+                    if lbl in _STANDALONE_DIMS:
+                        dimension = _STANDALONE_DIMS[lbl]
+                    else:
+                        # Check prefix-based dimensions
+                        for prefix, dim in _DIM_PREFIXES:
+                            if lbl.startswith(prefix):
+                                dimension = dim
+                                break
+                    if dimension:
+                        by_dimension.setdefault(dimension, {}).setdefault(
+                            lbl, []
+                        ).append(number)
 
             # Sort by age descending (oldest first)
             items.sort(key=lambda x: x.age_days, reverse=True)
@@ -2068,6 +2129,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 total_open=len(items),
                 by_type=by_type,
                 by_area=by_area,
+                by_dimension=by_dimension,
                 issues=items,
                 oldest_age_days=oldest,
                 newest_age_days=newest,
