@@ -626,6 +626,8 @@ With equal weighting between deterministic (50%) and heuristic (50%) tests.
 dev/scripts/sbs/tests/validators/
 +-- base.py              # Protocol definitions
 +-- registry.py          # Plugin registration
++-- runner.py            # Central orchestration: runs validators, updates ledger
++-- cli_execution.py     # T1: Evergreen pytest suite pass/fail
 +-- visual.py            # Visual compliance wrapper
 +-- timing.py            # Build timing metrics
 +-- code_stats.py        # LOC and file counts
