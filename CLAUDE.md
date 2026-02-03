@@ -23,13 +23,14 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 |----------------|----------------------|
 | Discusses requirements with user | Executes ALL implementation tasks |
 | Decomposes and plans work | Has deep architectural knowledge |
-| Spawns agents (one at a time) | Works within defined scope |
+| Spawns agents (one at a time; up to 4 during /task execution) | Works within defined scope |
 | Synthesizes results | Reports outcomes |
 
-**Single Agent Architecture:**
+**Phase-Aware Agent Concurrency:**
 - `sbs-developer` is the ONLY implementation agent
-- Only ONE `sbs-developer` agent runs at a time (architectural invariant)
-- Multiple read-only exploration agents may run in parallel alongside
+- **Default:** One `sbs-developer` agent at a time (alignment, planning, finalization phases)
+- **Exception:** During `/task` execution phase, up to 4 concurrent `sbs-developer` agents are allowed when the approved plan specifies parallel waves
+- Multiple read-only exploration agents may run in parallel alongside at all times
 
 ---
 
@@ -141,6 +142,8 @@ Spawn an agent for:
 3. Wait for agent to complete
 4. Synthesize results for user
 5. Repeat if needed
+
+**Parallel spawning (execution phase only):** During `/task` execution, up to 4 agents may be spawned in a single message with multiple Task tool calls, per the approved plan's wave structure.
 
 ### Visual Verification Requirement
 

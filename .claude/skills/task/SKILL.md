@@ -197,17 +197,14 @@ python3 -m sbs archive upload --trigger skill \
 **All work happens on the feature branch, not main.**
 
 Fully autonomous:
-1. Execute agents sequentially (one at a time) for code changes
+1. **Up to 4 `sbs-developer` agents may run concurrently** within a wave. The approved plan determines which waves are parallel vs sequential.
 2. **All commits go to the feature branch** -- commits are pushed to remote automatically by `sbs archive upload` during phase transitions. Agents never need direct `git push`.
-3. **Exception: Documentation-only waves** - Agents can run in parallel when:
-   - No code is being modified (only README/docs)
-   - No collision risk between agents
-   - Spawn all wave agents in a SINGLE message with multiple Task tool calls
-4. After each agent/wave, run specified validators
+3. **Parallel wave spawning:** Spawn all agents in a parallel wave in a SINGLE message with multiple Task tool calls. Collision avoidance is the plan's responsibility -- parallel waves must target non-overlapping files/repos.
+4. **Validators run after all agents in a wave complete** -- not after individual agents.
 5. If validation fails:
    - Retry failed agent once
    - If retry fails, pause for re-approval
-6. Continue until all agents complete
+6. Continue until all waves complete
 
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
@@ -496,7 +493,7 @@ When `/task` is invoked, the orchestration follows a specific model designed for
 The `/task` invocation spawns a dedicated task agent that becomes "center stage":
 
 - **Direct subordination**: The task agent is directly beneath the top-level chat, not a nested subagent
-- **Single-agent constraint**: Only one task agent runs at a time (architectural invariant)
+- **Concurrency constraint**: One agent at a time by default; up to 4 concurrent agents during execution phase per the approved plan
 - **Compaction survival**: The agent reconstructs state from archive on context reset
 - **Full awareness**: The agent knows it's being tracked by the archive system it's helping build
 
