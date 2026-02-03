@@ -7,6 +7,9 @@ This module contains SBS-specific MCP tools for:
 - Testing tools (sbs_run_tests, sbs_validate_project)
 - Build tools (sbs_build_project, sbs_serve_project)
 - Investigation tools (sbs_last_screenshot, sbs_visual_history, sbs_search_entries)
+- GitHub tools (sbs_issue_*, sbs_pr_*)
+- Self-improve tools (sbs_analysis_summary, sbs_entries_since_self_improve)
+- Skill management tools (sbs_skill_status, sbs_skill_start, sbs_skill_transition, sbs_skill_end)
 """
 
 import json
@@ -16,7 +19,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
@@ -2156,10 +2159,355 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         from .sbs_self_improve import sbs_entries_since_self_improve_impl
         return sbs_entries_since_self_improve_impl()
 
+    # =========================================================================
+    # Skill Management Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sbs_skill_status",
+        annotations=ToolAnnotations(
+            title="SBS Skill Status",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_status(ctx: Context) -> SkillStatusResult:
+        """Query current skill state from the archive.
+
+        Returns whether a skill is active, which phase it's in, and whether
+        a new skill can be started. Use this before starting a skill to check
+        for conflicts.
+
+        Returns:
+            SkillStatusResult with active_skill, substate, can_start_new, etc.
+        """
+        index = load_archive_index()
+
+        active_skill = None
+        substate = None
+        phase_started_at = None
+        entries_in_phase = 0
+
+        if index.global_state:
+            active_skill = index.global_state.get("skill")
+            substate = index.global_state.get("substate")
+            phase_started_at = index.global_state.get("phase_started_at")
+
+            # Count entries since phase started
+            if phase_started_at:
+                # Find entries after phase_started_at
+                for entry in index.entries.values():
+                    if entry.created_at > phase_started_at:
+                        entries_in_phase += 1
+
+        can_start_new = active_skill is None
+
+        return SkillStatusResult(
+            active_skill=active_skill,
+            substate=substate,
+            can_start_new=can_start_new,
+            entries_in_phase=entries_in_phase,
+            phase_started_at=phase_started_at,
+        )
+
+    @mcp.tool(
+        "sbs_skill_start",
+        annotations=ToolAnnotations(
+            title="SBS Skill Start",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_start(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name: task, self-improve, update-and-archive, log"),
+        ],
+        initial_substate: Annotated[
+            str,
+            Field(description="Initial phase/substate for the skill"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers this skill relates to"),
+        ] = None,
+    ) -> SkillStartResult:
+        """Start a skill session, claiming the global state.
+
+        Checks for conflicts (another skill already active), then updates the
+        archive with the new skill state. Use sbs_skill_status first to check
+        if starting is allowed.
+
+        Args:
+            skill: Name of the skill to start (task, self-improve, etc.)
+            initial_substate: Initial phase within the skill (e.g., "alignment", "execution")
+            issue_refs: Optional list of GitHub issue numbers related to this skill
+
+        Returns:
+            SkillStartResult with success, error, archive_entry_id, and new global_state
+        """
+        # Check current state first
+        index = load_archive_index()
+        if index.global_state and index.global_state.get("skill"):
+            current_skill = index.global_state.get("skill")
+            return SkillStartResult(
+                success=False,
+                error=f"Cannot start '{skill}': skill '{current_skill}' is already active. "
+                      f"Use sbs_skill_end to finish the current skill first.",
+                archive_entry_id=None,
+                global_state=index.global_state,
+            )
+
+        # Prepare global state
+        new_state = {
+            "skill": skill,
+            "substate": initial_substate,
+        }
+
+        # Run archive upload with phase_start
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=new_state,
+            state_transition="phase_start",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillStartResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+                global_state=None,
+            )
+
+        # Reload to get the updated state with phase_started_at
+        index = load_archive_index()
+
+        return SkillStartResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+            global_state=index.global_state,
+        )
+
+    @mcp.tool(
+        "sbs_skill_transition",
+        annotations=ToolAnnotations(
+            title="SBS Skill Transition",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_transition(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        to_phase: Annotated[
+            str,
+            Field(description="New phase/substate to transition to"),
+        ],
+        is_final: Annotated[
+            bool,
+            Field(description="If true, clears the global state after transition"),
+        ] = False,
+    ) -> SkillTransitionResult:
+        """Transition to a new phase within the current skill.
+
+        Verifies that the specified skill owns the current state, then updates
+        the substate. If is_final=True, also clears the global state.
+
+        Args:
+            skill: Name of the skill (must match current active skill)
+            to_phase: New phase to transition to
+            is_final: If True, clear global state after recording the transition
+
+        Returns:
+            SkillTransitionResult with success, from_phase, to_phase, and archive_entry_id
+        """
+        # Check current state
+        index = load_archive_index()
+        current_skill = index.global_state.get("skill") if index.global_state else None
+        current_substate = index.global_state.get("substate") if index.global_state else None
+
+        if current_skill != skill:
+            return SkillTransitionResult(
+                success=False,
+                error=f"Cannot transition '{skill}': current active skill is '{current_skill or 'none'}'",
+                from_phase=current_substate,
+                to_phase=to_phase,
+                archive_entry_id=None,
+            )
+
+        # Prepare new state
+        new_state = {
+            "skill": skill,
+            "substate": to_phase,
+        }
+
+        # Determine state transition type
+        state_transition = "phase_end" if is_final else None
+
+        # Run archive upload
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None if is_final else new_state,  # Clear state if final
+            state_transition=state_transition,
+            issue_refs=None,
+        )
+
+        if not success:
+            return SkillTransitionResult(
+                success=False,
+                error=error or "Archive upload failed",
+                from_phase=current_substate,
+                to_phase=to_phase,
+                archive_entry_id=None,
+            )
+
+        return SkillTransitionResult(
+            success=True,
+            error=None,
+            from_phase=current_substate,
+            to_phase=to_phase,
+            archive_entry_id=entry_id,
+        )
+
+    @mcp.tool(
+        "sbs_skill_end",
+        annotations=ToolAnnotations(
+            title="SBS Skill End",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_skill_end(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers to close with this skill"),
+        ] = None,
+    ) -> SkillEndResult:
+        """End a skill session, releasing the global state.
+
+        Verifies that the specified skill owns the current state, then clears
+        the global state. Optionally associates issue references for closing.
+
+        Args:
+            skill: Name of the skill to end (must match current active skill)
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillEndResult with success, error, and archive_entry_id
+        """
+        # Check current state
+        index = load_archive_index()
+        current_skill = index.global_state.get("skill") if index.global_state else None
+
+        if current_skill != skill:
+            return SkillEndResult(
+                success=False,
+                error=f"Cannot end '{skill}': current active skill is '{current_skill or 'none'}'",
+                archive_entry_id=None,
+            )
+
+        # Run archive upload with phase_end to clear state
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None,  # Clear the state
+            state_transition="phase_end",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillEndResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+            )
+
+        return SkillEndResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+        )
+
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
+
+def _run_archive_upload(
+    trigger: str = "skill",
+    global_state: Optional[Dict[str, Any]] = None,
+    state_transition: Optional[str] = None,
+    issue_refs: Optional[List[int]] = None,
+) -> tuple[bool, Optional[str], Optional[str]]:
+    """Run sbs archive upload and return (success, entry_id, error).
+
+    Args:
+        trigger: Trigger type for the archive entry
+        global_state: New global state to set (None to clear)
+        state_transition: Either "phase_start" or "phase_end"
+        issue_refs: List of GitHub issue numbers to associate
+
+    Returns:
+        Tuple of (success, entry_id, error_message)
+    """
+    scripts_dir = SBS_ROOT / "dev" / "scripts"
+
+    cmd = ["python3", "-m", "sbs", "archive", "upload", "--trigger", trigger]
+
+    if global_state:
+        cmd.extend(["--global-state", json.dumps(global_state)])
+    if state_transition:
+        cmd.extend(["--state-transition", state_transition])
+    if issue_refs:
+        cmd.extend(["--issue-refs", ",".join(str(i) for i in issue_refs)])
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=str(scripts_dir),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        # Parse entry ID from output
+        entry_id = None
+        for line in result.stdout.split("\n"):
+            if "Entry ID:" in line:
+                entry_id = line.split("Entry ID:")[1].strip()
+                break
+            # Also check for "entry_id:" in JSON output
+            if '"entry_id":' in line:
+                import re
+                match = re.search(r'"entry_id":\s*"([^"]+)"', line)
+                if match:
+                    entry_id = match.group(1)
+                    break
+
+        if result.returncode != 0:
+            return False, None, result.stderr.strip() or "Archive upload failed"
+
+        return True, entry_id, None
+
+    except subprocess.TimeoutExpired:
+        return False, None, "Archive upload timed out after 60 seconds"
+    except Exception as e:
+        return False, None, str(e)
 
 
 def _entry_id_to_dir_format(entry_id: str) -> str:

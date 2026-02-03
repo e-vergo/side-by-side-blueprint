@@ -653,10 +653,11 @@ Each markdown file owns specific concerns and delegates to others.
 
 | File | Owns | Delegates To |
 |------|------|--------------|
-| [`CLAUDE.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md) | Orchestration model, user preferences, when to spawn agents, project context | sbs-developer.md for implementation, sbs-oracle.md for codebase Q&A |
-| [`.claude/agents/sbs-developer.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md) | Implementation details, file locations, patterns, MCP tool usage | (self-contained technical reference) |
-| [`.claude/agents/sbs-oracle.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-oracle.md) | Pre-compiled knowledge indices, concept map, file purpose map | (auto-generated from READMEs) |
+| [`CLAUDE.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md) | Orchestration model, user preferences, when to spawn agents, project context | sbs-developer.md for implementation |
+| [`.claude/agents/sbs-developer.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md) | Implementation details, file locations, patterns, MCP tool usage. **ONLY implementation agent.** | (self-contained technical reference) |
+| [`.claude/agents/sbs-oracle.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-oracle.md) | Auto-generated concept index, file purpose map | (auto-generated from READMEs via `/update-and-archive`) |
 | [`.claude/skills/task/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md) | Workflow phases, validator specs, grab-bag mode | (self-contained skill definition) |
+| [`.claude/skills/oracle/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/oracle/SKILL.md) | Zero-shot codebase Q&A using compiled knowledge base | (self-contained skill definition) |
 | [`.claude/skills/update-and-archive/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/update-and-archive/SKILL.md) | README wave structure, archive triggers, Oracle regeneration, porcelain state | (self-contained skill definition) |
 | [`dev/storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/README.md) | CLI command reference, validator infrastructure, quality scoring | Repository READMEs for component details |
 

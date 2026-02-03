@@ -182,12 +182,17 @@ When working with rubrics or validation, consult the hub first.
 
 ---
 
-## SBS-Oracle for Codebase Questions
+## /oracle Skill for Codebase Questions
 
-When you need to know "where is X?" or "how does Y work?", spawn the Oracle BEFORE searching:
+When you need to know "where is X?" or "how does Y work?", invoke `/oracle` BEFORE searching:
 
+```
+/oracle graph layout
+```
+
+Or use the MCP tool for quick lookups:
 ```python
-Task(subagent_type="sbs-oracle", prompt="Where is graph layout implemented?")
+sbs_oracle_query(query="graph layout")
 ```
 
 The Oracle contains pre-compiled knowledge:
@@ -197,7 +202,7 @@ The Oracle contains pre-compiled knowledge:
 - **Gotchas**: Known quirks and tribal knowledge
 - **Cross-Repo Impact**: What to check when changing X
 
-**Use Oracle BEFORE:**
+**Use /oracle or sbs_oracle_query BEFORE:**
 - Grepping for file locations
 - Reading multiple files to understand architecture
 - Asking "where is X implemented?"

@@ -1,12 +1,16 @@
 """Pydantic models for SBS-specific tool outputs.
 
-This module contains models for the 11 SBS tools organized by category:
+This module contains models for SBS MCP tools organized by category:
 - Oracle tools: OracleQueryResult
 - Archive state tools: ArchiveStateResult, EpochSummaryResult, ContextResult
 - Testing tools: TestResult, ValidationResult
 - Build tools: BuildResult, ServeResult
 - Visual tools: ScreenshotResult, VisualHistoryResult
 - Search tools: SearchResult
+- GitHub tools: GitHubIssue, GitHubPullRequest, Issue/PR Create/List/Get/Close/Merge results
+- Zulip tools: ZulipMessage, ZulipSearchResult, ZulipThreadResult, ZulipScreenshotResult
+- Self-improve tools: AnalysisSummary, SelfImproveEntries
+- Skill management tools: SkillStatusResult, SkillStartResult, SkillTransitionResult, SkillEndResult
 """
 
 from typing import Any, Dict, List, Optional
