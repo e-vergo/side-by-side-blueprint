@@ -185,6 +185,10 @@ def sbs_entries_since_self_improve_impl() -> SelfImproveEntries:
         if last_self_improve_entry and entry.entry_id <= last_self_improve_entry:
             break
 
+        # Skip retroactive entries (backdated migrations)
+        if "retroactive" in entry.tags + entry.auto_tags:
+            continue
+
         # Extract quality score if available
         quality_score = None
         if entry.quality_scores and "overall" in entry.quality_scores:
