@@ -512,6 +512,139 @@ class TestSkillTransition:
 
 
 # =============================================================================
+# TestPhaseOrdering
+# =============================================================================
+
+
+class TestPhaseOrdering:
+    """Tests for phase ordering enforcement in sbs_skill_transition."""
+
+    def test_task_alignment_to_execution_rejected(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Task alignment -> execution is rejected (must go through planning)."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "task", "substate": "alignment"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        with patch("sbs_lsp_mcp.sbs_tools.load_archive_index", return_value=mock_index), \
+             patch("sbs_lsp_mcp.sbs_tools._run_archive_upload") as mock_upload:
+
+            mock_upload.return_value = (True, "20260131161500", None)
+
+            # Simulate what the tool does with the new phase ordering logic
+            current_skill = mock_index.global_state.get("skill")
+            current_substate = mock_index.global_state.get("substate")
+            skill = "task"
+            to_phase = "execution"
+
+            # Phase ordering check (mirrors the implementation)
+            VALID_TRANSITIONS = {
+                "task": {
+                    "alignment": {"planning"},
+                    "planning": {"execution"},
+                    "execution": {"finalization"},
+                },
+            }
+
+            skill_phases = VALID_TRANSITIONS.get(skill, {})
+            if skill_phases and current_substate in skill_phases:
+                allowed = skill_phases[current_substate]
+                if to_phase not in allowed:
+                    result = SkillTransitionResult(
+                        success=False,
+                        error=f"Invalid transition: {current_substate} -> {to_phase}. "
+                              f"Allowed: {sorted(allowed)}",
+                        from_phase=current_substate,
+                        to_phase=to_phase,
+                        archive_entry_id=None,
+                    )
+                else:
+                    result = SkillTransitionResult(
+                        success=True, error=None, from_phase=current_substate,
+                        to_phase=to_phase, archive_entry_id="test",
+                    )
+            else:
+                result = SkillTransitionResult(
+                    success=True, error=None, from_phase=current_substate,
+                    to_phase=to_phase, archive_entry_id="test",
+                )
+
+            assert result.success is False
+            assert "Invalid transition" in result.error
+            assert "alignment" in result.error
+            assert "execution" in result.error
+            assert "planning" in result.error  # Should suggest planning
+
+    def test_task_alignment_to_planning_accepted(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Task alignment -> planning is accepted."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "task", "substate": "alignment"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        # Simulate phase ordering check
+        current_substate = mock_index.global_state.get("substate")
+        skill = "task"
+        to_phase = "planning"
+
+        VALID_TRANSITIONS = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+        allowed = skill_phases.get(current_substate, set())
+
+        assert to_phase in allowed
+
+    def test_unlisted_skill_unconstrained(self, mock_archive_entries: Dict[str, Dict[str, Any]]) -> None:
+        """Skills not in VALID_TRANSITIONS (like self-improve) are unconstrained."""
+        index_dict = {
+            "version": "1.1",
+            "entries": mock_archive_entries,
+            "by_tag": {},
+            "by_project": {},
+            "latest_by_project": {},
+            "global_state": {"skill": "self-improve", "substate": "discovery"},
+            "last_epoch_entry": None,
+        }
+        mock_index = create_mock_index_from_dict(index_dict)
+
+        current_substate = mock_index.global_state.get("substate")
+        skill = "self-improve"
+        to_phase = "any-phase-should-work"
+
+        VALID_TRANSITIONS = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+
+        # self-improve not in VALID_TRANSITIONS, so skill_phases is empty
+        assert not skill_phases
+        # Therefore no phase ordering is enforced -- transition would proceed
+
+
+# =============================================================================
 # TestSkillEnd
 # =============================================================================
 

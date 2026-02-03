@@ -61,6 +61,8 @@ python3 -m sbs archive upload --trigger skill \
 
 Phases: `alignment` → `planning` → `execution` → `finalization`
 
+**Planning is MANDATORY.** The MCP server enforces this -- transitions from alignment directly to execution are rejected. Every task must go through planning before execution begins.
+
 **Issue Tracking:** If the task is issue-driven, include `--issue-refs` with the linked issue number(s) in every archive upload during this task.
 
 ### Ending the Task

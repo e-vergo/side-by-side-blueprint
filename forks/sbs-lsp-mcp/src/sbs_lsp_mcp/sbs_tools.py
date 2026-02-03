@@ -3010,6 +3010,34 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 archive_entry_id=None,
             )
 
+        # Phase ordering enforcement
+        VALID_TRANSITIONS: Dict[str, Dict[str, set]] = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+            "update-and-archive": {
+                "retrospective": {"readme-wave"},
+                "readme-wave": {"oracle-regen"},
+                "oracle-regen": {"porcelain"},
+                "porcelain": {"archive-upload"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+        if skill_phases and current_substate in skill_phases:
+            allowed = skill_phases[current_substate]
+            if to_phase not in allowed:
+                return SkillTransitionResult(
+                    success=False,
+                    error=f"Invalid transition: {current_substate} -> {to_phase}. "
+                          f"Allowed: {sorted(allowed)}",
+                    from_phase=current_substate,
+                    to_phase=to_phase,
+                    archive_entry_id=None,
+                )
+
         # Prepare new state
         new_state = {
             "skill": skill,
