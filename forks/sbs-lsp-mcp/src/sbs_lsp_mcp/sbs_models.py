@@ -828,6 +828,9 @@ class TagEffectivenessEntry(BaseModel):
     """Effectiveness analysis for a single auto-tag."""
 
     tag: str = Field(description="Auto-tag name")
+    tag_era: str = Field(
+        default="v2", description="'legacy' (pre-v2.0, no colon) or 'v2' (colon-delimited)"
+    )
     frequency: int = Field(default=0)
     frequency_pct: float = Field(default=0.0)
     co_occurs_with_gate_failure: int = Field(default=0)

@@ -700,10 +700,22 @@ def sbs_gate_failures_impl(as_findings: bool = False) -> GateFailureReport:
     )
 
 
+def _classify_tag_era(tag: str) -> str:
+    """Classify a tag as 'legacy' (pre-v2.0) or 'v2' (colon-delimited).
+
+    v2.0 tags use colon-delimited namespaces (e.g., 'signal:cli-misfire').
+    Legacy tags are flat strings (e.g., 'heavy-session', 'css-modified').
+    """
+    return "v2" if ":" in tag else "legacy"
+
+
 def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessResult:
     """Analyze auto-tag signal-to-noise ratio.
 
     Identifies noisy tags and tags correlated with actual problems.
+    Classifies tags by era (legacy vs v2.0) and only considers v2.0
+    tags for noise/signal classification, since legacy tags cannot be
+    changed.
     """
     from collections import Counter
 
@@ -755,9 +767,14 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
     tag_entries: list[TagEffectivenessEntry] = []
     noisy_tags: list[str] = []
     signal_tags: list[str] = []
+    legacy_count = 0
 
     for tag, freq in tag_freq.most_common():
         freq_pct = freq / total_entries
+        era = _classify_tag_era(tag)
+
+        if era == "legacy":
+            legacy_count += 1
 
         # Count co-occurrences
         co_gate = 0
@@ -776,8 +793,10 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
         signal_score = (co_gate + co_backward + co_error) / (freq * 3) if freq > 0 else 0.0
         signal_score = min(signal_score, 1.0)
 
-        # Classify
-        if freq_pct > 0.8:
+        # Classify: only v2.0 tags participate in noise/signal classification
+        if era == "legacy":
+            classification = "legacy"
+        elif freq_pct > 0.8:
             classification = "noise"
             noisy_tags.append(tag)
         elif signal_score > 0.3:
@@ -788,6 +807,7 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
 
         tag_entries.append(TagEffectivenessEntry(
             tag=tag,
+            tag_era=era,
             frequency=freq,
             frequency_pct=round(freq_pct, 3),
             co_occurs_with_gate_failure=co_gate,
@@ -804,7 +824,7 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
                 pillar="system_engineering",
                 category="tagging",
                 severity="medium",
-                description=f"Noisy tags (>80% frequency, low signal): {', '.join(noisy_tags)}",
+                description=f"Noisy v2.0 tags (>80% frequency, low signal): {', '.join(noisy_tags)}",
                 recommendation="Consider raising thresholds or removing these auto-tags",
                 evidence=[],
             ))
@@ -813,8 +833,17 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
                 pillar="system_engineering",
                 category="tagging",
                 severity="low",
-                description=f"Signal tags (correlated with problems): {', '.join(signal_tags)}",
+                description=f"Signal v2.0 tags (correlated with problems): {', '.join(signal_tags)}",
                 recommendation="These tags are effective problem indicators; preserve and leverage them",
+                evidence=[],
+            ))
+        if legacy_count > 0:
+            findings.append(AnalysisFinding(
+                pillar="system_engineering",
+                category="tagging",
+                severity="info",
+                description=f"{legacy_count} legacy (pre-v2.0) tags found in historical entries",
+                recommendation="Legacy tags are from pre-v2.0 entries and cannot be changed; they are excluded from noise/signal analysis",
                 evidence=[],
             ))
 
@@ -823,7 +852,7 @@ def sbs_tag_effectiveness_impl(as_findings: bool = False) -> TagEffectivenessRes
         noisy_tags=noisy_tags,
         signal_tags=signal_tags,
         findings=findings,
-        summary=f"Analyzed {len(tag_freq)} auto-tags: {len(noisy_tags)} noisy, {len(signal_tags)} signal.",
+        summary=f"Analyzed {len(tag_freq)} auto-tags ({legacy_count} legacy, {len(tag_freq) - legacy_count} v2.0): {len(noisy_tags)} noisy, {len(signal_tags)} signal.",
     )
 
 
