@@ -512,6 +512,41 @@ class BuildOrchestrator:
         build_project_with_dress(self.config.project_root, self.config.dry_run)
         log.success("Project built with dressed artifacts")
 
+    def generate_verso_documents(self) -> None:
+        """Run Verso document generators (paper, blueprint) if executables exist."""
+        log.header("Generating Verso documents")
+
+        generators = ["generate-paper-verso", "generate-blueprint-verso"]
+        generated = False
+
+        for gen_name in generators:
+            cmd = ["lake", "exe", gen_name]
+
+            if self.config.dry_run:
+                log.info(f"[DRY-RUN] Would run: {' '.join(cmd)}")
+                generated = True
+                continue
+
+            result = subprocess.run(
+                cmd,
+                cwd=self.config.project_root,
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode == 0:
+                log.success(f"{gen_name}: Generated")
+                generated = True
+            else:
+                # Not all projects have all generators -- this is expected
+                if "unknown executable" in result.stderr.lower() or "unknown target" in result.stderr.lower():
+                    log.info(f"{gen_name}: Not configured for this project, skipping")
+                else:
+                    log.warning(f"{gen_name}: Failed ({result.stderr.strip()[:200]})")
+
+        if not generated:
+            log.info("No Verso generators found for this project")
+
     def generate_dep_graph(self) -> None:
         """Generate the dependency graph."""
         log.header("Generating dependency graph")
@@ -701,6 +736,11 @@ class BuildOrchestrator:
             self._start_phase("build_blueprint")
             lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
             self._end_phase("build_blueprint")
+
+            # Generate Verso documents (paper_verso, blueprint_verso)
+            self._start_phase("generate_verso")
+            self.generate_verso_documents()
+            self._end_phase("generate_verso")
 
             # Generate outputs
             self._start_phase("build_dep_graph")
