@@ -336,7 +336,7 @@ For implementation details, file locations, and build internals, see:
 
 ### Verso LaTeX Export
 
-Not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+Not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 
 ### Dashboard Layout
 

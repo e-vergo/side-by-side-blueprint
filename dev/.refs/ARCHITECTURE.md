@@ -808,7 +808,6 @@ Captures 8 pages from a running server:
 | paper_tex | `paper_tex.html` | Paper [TeX] |
 | pdf_tex | `pdf_tex.html` | PDF [TeX] |
 | paper_verso | `paper_verso.html` | Paper [Verso] |
-| pdf_verso | `pdf_verso.html` | PDF [Verso] |
 | blueprint_verso | `blueprint_verso.html` | Blueprint [Verso] |
 | chapter | (auto-detected) | First chapter with content |
 
@@ -972,7 +971,7 @@ Build.py automatically:
 
 ### Verso LaTeX Export
 
-Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type is disabled. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 
 ### Dashboard Layout
 
