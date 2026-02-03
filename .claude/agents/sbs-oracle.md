@@ -33,7 +33,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `state_transition` | `dev/storage/README.md` | State Machine Fields |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | absolute imports | `dev/scripts/README.md` | Design Principles |
-| agent parallelism: | `CLAUDE.md` | Orchestration Model |
 | agentic and project-specific development tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | agents | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
@@ -115,7 +114,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dress dependency | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | dress-blueprint-action | `CLAUDE.md` | Repository Map |
 | during ci | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
-| edit agents: | `CLAUDE.md` | Orchestration Model |
 | environment lookup with suffix matching | `forks/subverso/README.md` | Identifier Resolution |
 | epoch | `dev/storage/README.md` | Epoch Semantics |
 | epoch summary structure: | `dev/storage/README.md` | Epoch Semantics |
@@ -124,6 +122,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
+| features: | `CLAUDE.md` | `/oracle` |
 | file purpose map | `dev/storage/README.md` | What the Oracle Knows |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
@@ -251,7 +250,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | qualityscoreledger | `dev/storage/README.md` | Implementation |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| read-only agents: | `CLAUDE.md` | Orchestration Model |
 | rebuild and re-capture | `CLAUDE.md` | Standard Workflow |
 | rebuild: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | refer to: | `toolchain/SBS-Test/README.md` | Archive & Metrics |
@@ -266,7 +264,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | rubric.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubriccriterion | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubricevaluation | `dev/scripts/sbs/tests/README.md` | rubrics/ |
-| rule of thumb: | `CLAUDE.md` | Orchestration Model |
 | run from: | `dev/storage/README.md` | Quick Reference |
 | runway | `CLAUDE.md` | Repository Map |
 | runway.json | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
@@ -305,6 +302,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | side-by-side display issues: | `toolchain/Runway/README.md` | Debugging Tips |
 | sidebar not showing: | `toolchain/Runway/README.md` | Debugging Tips |
 | simplified per-project workflows | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
+| single agent architecture: | `CLAUDE.md` | Orchestration Model |
 | single command, single purpose | `dev/scripts/README.md` | Design Principles |
 | site building | `toolchain/Runway/README.md` | Processing Steps |
 | site output | `toolchain/SBS-Test/README.md` | Testing Points |
@@ -361,7 +359,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | update imports: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | upstream dependencies: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | upstream: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
-| usage: | `CLAUDE.md` | `/log` |
+| usage: | `CLAUDE.md` | `/oracle` |
 | user preferences: | `CLAUDE.md` | How This Document Works |
 | uses `sbs.core.git_ops` | `dev/scripts/sbs/build/README.md` | Design Notes |
 | utils | `scripts/utils.py` | Logging, path utilities, git helpers, lakefile parsing |
