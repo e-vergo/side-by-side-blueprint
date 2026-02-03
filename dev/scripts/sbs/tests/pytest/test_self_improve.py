@@ -1,13 +1,15 @@
 """
-Tests for the /self-improve skill and sbs-improver agent.
+Tests for the /self-improve skill.
 
 Validates:
-- V1: Skill file exists and parses correctly
-- V2: Agent file exists and parses correctly
+- V1: Skill file exists and parses correctly (including framework content)
 - V3: sbs_analysis_summary returns structured data
 - V4: sbs_entries_since_self_improve returns entry count
 - V5: Archive entries with self-improve tag work
 - V7: Recovery from each phase works
+
+Note: V2 (Agent file tests) removed after sbs-improver.md was consolidated
+into the skill file in #29 (unified skill-agent architecture).
 """
 
 from __future__ import annotations
@@ -68,7 +70,6 @@ def _get_self_improve_module():
 
 MONOREPO_ROOT = Path("/Users/eric/GitHub/Side-By-Side-Blueprint")
 SKILL_FILE = MONOREPO_ROOT / ".claude" / "skills" / "self-improve" / "SKILL.md"
-AGENT_FILE = MONOREPO_ROOT / ".claude" / "agents" / "sbs-improver.md"
 
 
 # =============================================================================
@@ -161,81 +162,50 @@ class TestSkillFileExistsAndParses:
             assert pillar.lower() in content.lower(), \
                 f"Skill must document pillar: {pillar}"
 
-
-# =============================================================================
-# V2: Agent File Tests
-# =============================================================================
-
-
-@pytest.mark.dev
-class TestAgentFileExistsAndParses:
-    """V2: Agent file exists and parses correctly."""
-
-    def test_agent_file_exists(self):
-        """Agent file must exist at expected path."""
-        assert AGENT_FILE.exists(), f"Agent file not found at {AGENT_FILE}"
-
-    def test_agent_file_has_yaml_frontmatter(self):
-        """Agent file must have valid YAML frontmatter."""
-        content = AGENT_FILE.read_text()
-
-        assert content.startswith("---"), "Agent file must start with YAML frontmatter"
-
-        parts = content.split("---", 2)
-        assert len(parts) >= 3, "Agent file must have closing --- for frontmatter"
-
-        frontmatter = parts[1].strip()
-        parsed = yaml.safe_load(frontmatter)
-
-        assert isinstance(parsed, dict), "Frontmatter must parse to a dict"
-
-    def test_agent_frontmatter_has_required_fields(self):
-        """Agent frontmatter must have name, model, color."""
-        content = AGENT_FILE.read_text()
-        parts = content.split("---", 2)
-        frontmatter = yaml.safe_load(parts[1].strip())
-
-        assert "name" in frontmatter, "Frontmatter must have 'name'"
-        assert frontmatter["name"] == "sbs-improver", "Name must be 'sbs-improver'"
-
-        assert "model" in frontmatter, "Frontmatter must have 'model'"
-        assert frontmatter["model"] == "opus", "Model must be 'opus'"
-
-        assert "color" in frontmatter, "Frontmatter must have 'color'"
-        assert frontmatter["color"] != "pink", "Color must not be pink (reserved for sbs-developer)"
-
-    def test_agent_has_four_pillars(self):
-        """Agent must document four pillars framework."""
-        content = AGENT_FILE.read_text()
-
-        pillars = [
-            "user effectiveness",
-            "claude execution",
-            "alignment patterns",
-            "system engineering"
-        ]
-        for pillar in pillars:
-            assert pillar.lower() in content.lower(), \
-                f"Agent must document pillar: {pillar}"
-
-    def test_agent_has_tool_inventory(self):
-        """Agent must have tool inventory section."""
-        content = AGENT_FILE.read_text()
+    def test_skill_has_tool_inventory(self):
+        """Skill must have tool inventory section (consolidated from agent)."""
+        content = SKILL_FILE.read_text()
 
         assert "tool inventory" in content.lower(), \
-            "Agent must have 'Tool Inventory' section"
+            "Skill must have 'Tool Inventory' section"
 
         # Should reference key MCP tools
         expected_tools = ["sbs_archive_state", "sbs_search_entries", "sbs_issue_create"]
         for tool in expected_tools:
-            assert tool in content, f"Agent must reference tool: {tool}"
+            assert tool in content, f"Skill must reference tool: {tool}"
 
-    def test_agent_has_anti_patterns(self):
-        """Agent must document anti-patterns."""
-        content = AGENT_FILE.read_text()
+    def test_skill_has_anti_patterns(self):
+        """Skill must document anti-patterns (consolidated from agent)."""
+        content = SKILL_FILE.read_text()
 
         assert "anti-pattern" in content.lower(), \
-            "Agent must have anti-patterns section"
+            "Skill must have anti-patterns section"
+
+    def test_skill_has_analysis_workflow(self):
+        """Skill must have analysis workflow section."""
+        content = SKILL_FILE.read_text()
+
+        assert "analysis workflow" in content.lower(), \
+            "Skill must have 'Analysis Workflow' section"
+
+        # Should have the 4 steps
+        expected_steps = ["gather data", "pattern detection", "generate findings", "prioritize"]
+        for step in expected_steps:
+            assert step.lower() in content.lower(), \
+                f"Skill must document workflow step: {step}"
+
+    def test_skill_has_finding_template(self):
+        """Skill must have finding template."""
+        content = SKILL_FILE.read_text()
+
+        assert "finding template" in content.lower(), \
+            "Skill must have 'Finding Template' section"
+
+        # Template should have key fields
+        expected_fields = ["pillar", "evidence", "frequency", "impact", "recommendation"]
+        for field in expected_fields:
+            assert field.lower() in content.lower(), \
+                f"Finding template must have field: {field}"
 
 
 # =============================================================================

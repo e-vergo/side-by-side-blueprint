@@ -21,15 +21,15 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 
 | Top-Level Chat | `sbs-developer` Agent |
 |----------------|----------------------|
-| Discusses requirements with user | Executes implementation tasks |
+| Discusses requirements with user | Executes ALL implementation tasks |
 | Decomposes and plans work | Has deep architectural knowledge |
 | Spawns agents (one at a time) | Works within defined scope |
 | Synthesizes results | Reports outcomes |
 
-**Agent Parallelism:**
-- **Edit agents:** Only ONE agent with edit permissions at a time (architectural invariant)
-- **Read-only agents:** Multiple search/exploration agents may run in parallel
-- **Rule of thumb:** If agents might touch the same files, run sequentially
+**Single Agent Architecture:**
+- `sbs-developer` is the ONLY implementation agent
+- Only ONE `sbs-developer` agent runs at a time (architectural invariant)
+- Multiple read-only exploration agents may run in parallel alongside
 
 ---
 
@@ -213,6 +213,19 @@ Accepts issue numbers: `/task #42` loads issue context and prompts to close on c
 
 **Location:** `.claude/skills/task/SKILL.md`
 
+### `/oracle`
+
+Zero-shot codebase question answering.
+
+**Usage:** `/oracle <question>` or `/oracle` for interactive mode.
+
+**Features:**
+- Searches concept index for file locations
+- Explains relationships between components
+- Flags uncertainty explicitly
+
+**Location:** `.claude/skills/oracle/SKILL.md`
+
 ### `/log`
 
 Quick capture of bugs, features, and ideas to GitHub Issues.
@@ -274,6 +287,10 @@ For implementation details, file locations, and build internals, see:
 | `sbs_pr_list` | List open PRs |
 | `sbs_pr_get` | Get PR details |
 | `sbs_pr_merge` | Merge PR to main |
+| `sbs_skill_status` | Get current skill/substate |
+| `sbs_skill_start` | Start a skill, set global_state |
+| `sbs_skill_transition` | Move to next phase |
+| `sbs_skill_end` | Clear global_state |
 
 ---
 
