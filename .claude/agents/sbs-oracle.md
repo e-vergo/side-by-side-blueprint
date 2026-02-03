@@ -385,6 +385,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | verify: | `toolchain/SBS-Test/README.md` | Standard Visual Verification Workflow |
 | verso | `CLAUDE.md` | Repository Map |
 | verso integration | `toolchain/Runway/README.md` | Features |
+| verso paper | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
 | versopaper | `forks/verso/README.md` | Fork Purpose |
 | visual regression baseline | `toolchain/SBS-Test/README.md` | Purpose |
 | visual verification is mandatory for ui work. | `CLAUDE.md` | Visual Verification Requirement |
