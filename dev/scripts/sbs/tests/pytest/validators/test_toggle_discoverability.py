@@ -10,6 +10,10 @@ Tests cover:
 - Threshold configuration
 - Breakdown preservation
 - Recommendations capture
+
+Uses shared fixtures from conftest.py:
+- single_page_screenshots_dir: Directory with only chapter.png
+- empty_screenshots_dir: Empty temporary directory
 """
 
 from __future__ import annotations
@@ -28,6 +32,8 @@ from sbs.tests.validators.design.toggle_discoverability import (
 )
 from sbs.tests.validators.base import ValidationContext
 
+from .base_test import ValidatorPropertiesTestMixin
+
 
 # =============================================================================
 # Fixtures
@@ -42,29 +48,16 @@ def validator() -> ToggleDiscoverabilityValidator:
 
 @pytest.fixture
 def temp_screenshots_dir() -> Path:
-    """Create a temporary directory with mock screenshots."""
+    """Create a temporary directory with toggle discoverability screenshots.
+
+    Note: This overrides the conftest.py fixture because toggle discoverability
+    validates only chapter and blueprint_verso pages.
+    """
     with tempfile.TemporaryDirectory(prefix="sbs_toggle_test_") as tmpdir:
         path = Path(tmpdir)
-        # Create mock screenshot files for default pages
         for page in DEFAULT_PAGES:
             (path / f"{page}.png").touch()
         yield path
-
-
-@pytest.fixture
-def single_page_screenshots_dir() -> Path:
-    """Create a temporary directory with only chapter screenshot."""
-    with tempfile.TemporaryDirectory(prefix="sbs_toggle_single_") as tmpdir:
-        path = Path(tmpdir)
-        (path / "chapter.png").touch()
-        yield path
-
-
-@pytest.fixture
-def empty_screenshots_dir() -> Path:
-    """Create an empty temporary directory."""
-    with tempfile.TemporaryDirectory(prefix="sbs_toggle_empty_") as tmpdir:
-        yield Path(tmpdir)
 
 
 # =============================================================================
@@ -73,16 +66,16 @@ def empty_screenshots_dir() -> Path:
 
 
 @pytest.mark.evergreen
-class TestValidatorProperties:
-    """Tests for validator name and category."""
+class TestValidatorProperties(ValidatorPropertiesTestMixin):
+    """Tests for validator name and category using mixin."""
 
-    def test_name(self, validator: ToggleDiscoverabilityValidator) -> None:
-        """Verify validator name."""
-        assert validator.name == "toggle-discoverability"
+    validator_name = "toggle-discoverability"
+    validator_category = "visual"
 
-    def test_category(self, validator: ToggleDiscoverabilityValidator) -> None:
-        """Verify validator category is visual."""
-        assert validator.category == "visual"
+    @pytest.fixture
+    def validator(self) -> ToggleDiscoverabilityValidator:
+        """Create a ToggleDiscoverabilityValidator instance."""
+        return ToggleDiscoverabilityValidator()
 
 
 # =============================================================================

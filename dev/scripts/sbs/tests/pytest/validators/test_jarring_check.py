@@ -7,6 +7,10 @@ Tests cover:
 - JSON response parsing
 - Fallback keyword parsing
 - Result aggregation across pages
+
+Uses shared fixtures from conftest.py:
+- temp_screenshots_dir: Directory with dashboard.png, chapter.png, dep_graph.png
+- empty_screenshots_dir: Empty temporary directory
 """
 
 from __future__ import annotations
@@ -24,6 +28,8 @@ from sbs.tests.validators.design.jarring_check import (
 )
 from sbs.tests.validators.base import ValidationContext
 
+from .base_test import ValidatorPropertiesTestMixin
+
 
 # =============================================================================
 # Fixtures
@@ -38,10 +44,13 @@ def validator() -> JarringCheckValidator:
 
 @pytest.fixture
 def temp_screenshots_dir() -> Path:
-    """Create a temporary directory with mock screenshots."""
+    """Create a temporary directory with all 5 jarring check screenshots.
+
+    Note: This overrides the conftest.py fixture because jarring check
+    validates 5 pages, not the 3 in the shared fixture.
+    """
     with tempfile.TemporaryDirectory(prefix="sbs_jarring_test_") as tmpdir:
         path = Path(tmpdir)
-        # Create mock screenshot files
         for page in DEFAULT_PAGES:
             (path / f"{page}.png").touch()
         yield path
@@ -59,29 +68,22 @@ def partial_screenshots_dir() -> Path:
         yield path
 
 
-@pytest.fixture
-def empty_screenshots_dir() -> Path:
-    """Create an empty temporary directory."""
-    with tempfile.TemporaryDirectory(prefix="sbs_jarring_empty_") as tmpdir:
-        yield Path(tmpdir)
-
-
 # =============================================================================
 # Validator Properties Tests
 # =============================================================================
 
 
 @pytest.mark.evergreen
-class TestValidatorProperties:
-    """Tests for validator name and category."""
+class TestValidatorProperties(ValidatorPropertiesTestMixin):
+    """Tests for validator name and category using mixin."""
 
-    def test_name(self, validator: JarringCheckValidator) -> None:
-        """Verify validator name."""
-        assert validator.name == "jarring-check"
+    validator_name = "jarring-check"
+    validator_category = "visual"
 
-    def test_category(self, validator: JarringCheckValidator) -> None:
-        """Verify validator category is visual."""
-        assert validator.category == "visual"
+    @pytest.fixture
+    def validator(self) -> JarringCheckValidator:
+        """Create a JarringCheckValidator instance."""
+        return JarringCheckValidator()
 
 
 # =============================================================================
