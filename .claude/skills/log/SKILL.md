@@ -34,6 +34,7 @@ When type is not explicit, scan the input for these keywords:
 | **bug** | "bug", "fix", "broken", "error", "issue", "crash", "fail", "wrong", "doesn't work" |
 | **feature** | "add", "implement", "feature", "new", "support", "enable", "create", "make" |
 | **idea** | "idea", "maybe", "consider", "could", "should", "what if", "wonder", "might" |
+| **housekeeping** | "cleanup", "housekeeping", "refactor", "organize", "tidy", "maintenance", "chore" |
 
 **Priority:** If multiple types match, use the first keyword found (left-to-right scan).
 
@@ -69,12 +70,13 @@ When area is not explicit, scan the input for these keywords:
    - [B] Bug - Something is broken
    - [F] Feature - New functionality
    - [I] Idea - Something to consider
+   - [H] Housekeeping - Maintenance or cleanup
 4. **Infer area** from keywords if not explicit (default: misc)
 5. **If title missing:** Ask "What would you like to log?"
 6. **Create issue** via `sbs_issue_create` MCP tool:
    - `title`: The issue title
    - `body`: Optional description (empty string if none)
-   - `label`: One of "bug", "feature", "idea"
+   - `label`: One of "bug", "feature", "idea", "housekeeping"
    - `area`: One of "sbs", "devtools", "misc"
 7. **On success:**
    - Archive with `issue_refs` populated
@@ -173,6 +175,7 @@ The skill uses these GitHub labels (should exist in repo):
 - `bug` - Something isn't working
 - `feature` - New feature or request
 - `idea` - Idea or suggestion for consideration
+- `housekeeping` - Maintenance and cleanup tasks
 
 **Area labels:**
 - `area:sbs` - Core SBS toolchain (Lean, Blueprint, Verso)
