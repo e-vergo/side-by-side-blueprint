@@ -318,11 +318,11 @@ class TestSignalDetector:
         spec.loader.exec_module(mod)
         return mod
 
-    def test_signal_bash_error_rate(self) -> None:
-        """High bash error rate -> signal:bash-error-rate-high."""
+    def test_signal_consecutive_bash_failures(self) -> None:
+        """3+ consecutive bash failures -> signal:consecutive-bash-failures."""
         mod = self._load_hook()
 
-        # 20 Bash calls, 5 with real errors (25% > 10% threshold, and > 10 calls)
+        # 15 good calls followed by 5 consecutive bad calls
         good_calls = [make_tool_call("Bash") for _ in range(15)]
         bad_calls = [
             make_tool_call("Bash", success=False, error="command not found: foobar")
@@ -331,7 +331,34 @@ class TestSignalDetector:
         session = make_session(tool_calls=good_calls + bad_calls)
         entry = make_entry()
         tags = mod.detect_signals(entry, [session])
-        assert "signal:bash-error-rate-high" in tags
+        assert "signal:consecutive-bash-failures" in tags
+
+    def test_signal_consecutive_bash_failures_not_triggered_when_interleaved(self) -> None:
+        """Interleaved successes prevent consecutive-bash-failures."""
+        mod = self._load_hook()
+
+        # Alternate: fail, succeed, fail, succeed -- never 3 in a row
+        calls = []
+        for _ in range(5):
+            calls.append(make_tool_call("Bash", success=False, error="error"))
+            calls.append(make_tool_call("Bash"))
+        session = make_session(tool_calls=calls)
+        entry = make_entry()
+        tags = mod.detect_signals(entry, [session])
+        assert "signal:consecutive-bash-failures" not in tags
+
+    def test_signal_same_command_retry(self) -> None:
+        """Same command run 3+ times -> signal:same-command-retry."""
+        mod = self._load_hook()
+
+        calls = [
+            make_tool_call("Read", input_full={"file_path": "/foo/bar.py"})
+            for _ in range(3)
+        ]
+        session = make_session(tool_calls=calls)
+        entry = make_entry()
+        tags = mod.detect_signals(entry, [session])
+        assert "signal:same-command-retry" in tags
 
     def test_signal_user_correction(self) -> None:
         """Entry notes with correction keyword -> signal:user-correction."""
