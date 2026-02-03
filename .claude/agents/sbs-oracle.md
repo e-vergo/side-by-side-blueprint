@@ -377,6 +377,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | validation checks | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | validation display | `toolchain/Runway/README.md` | Features |
 | validation testing | `toolchain/SBS-Test/README.md` | Purpose |
+| validationcontext | `dev/storage/README.md` | Validator Runner |
 | validationresult | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validator | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validators | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |

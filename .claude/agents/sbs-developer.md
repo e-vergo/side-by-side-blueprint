@@ -258,9 +258,12 @@ The archive system extracts Claude Code interaction data from `~/.claude`:
 ```bash
 sbs archive upload              # Extract and archive all data
 sbs archive upload --dry-run    # Preview without changes
+sbs archive upload --validate   # Run deterministic validators and attach scores
 ```
 
-Archive upload runs automatically with every build. For tagging rules and hooks, see `dev/storage/tagging/rules.yaml`.
+Archive upload runs automatically with every build. The `--validate` flag runs deterministic validators (T1, T2, T5, T6) and persists results to the quality score ledger. For build triggers with empty quality scores, validation runs automatically.
+
+For tagging rules and hooks, see `dev/storage/tagging/rules.yaml`.
 
 **Key files:**
 - `dev/scripts/sbs/archive/upload.py` - Main upload logic
@@ -425,6 +428,8 @@ The `scripts/sbs/tests/validators/` directory contains a pluggable validator sys
 |------|---------|
 | `base.py` | Protocol definitions (Validator, ValidatorResult, ValidationContext) |
 | `registry.py` | Plugin registration and discovery |
+| `runner.py` | Central orchestration: runs validators, maps to metric IDs, updates ledger |
+| `cli_execution.py` | T1 validator: runs evergreen pytest suite |
 | `visual.py` | AI vision validation (wraps existing compliance) |
 | `timing.py` | Build phase timing metrics |
 | `git_metrics.py` | Commit/diff tracking |
