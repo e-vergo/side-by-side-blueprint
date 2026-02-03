@@ -1345,40 +1345,98 @@ def _get_session_jsonl_files() -> list[tuple[str, "Path"]]:
     return results
 
 
+def _build_skill_intervals(index) -> list[tuple[datetime, Optional[datetime], str, str]]:
+    """Build skill intervals from lifecycle entries.
+
+    Scans archive entries for state_transition events (phase_start,
+    phase_end, phase_fail, handoff) and builds explicit time intervals.
+
+    Returns list of (start_time, end_time, skill, substate) tuples.
+    end_time is None if the skill is still active.
+    """
+    sorted_entries = sorted(index.entries.values(), key=lambda e: e.entry_id)
+
+    intervals: list[tuple[datetime, Optional[datetime], str, str]] = []
+    current_skill: Optional[str] = None
+    current_substate: Optional[str] = None
+    current_start: Optional[datetime] = None
+
+    for entry in sorted_entries:
+        try:
+            gs = getattr(entry, "global_state", None) or {}
+            st = getattr(entry, "state_transition", None)
+            if not st:
+                continue
+
+            entry_time = datetime.fromisoformat(
+                entry.created_at.replace("Z", "+00:00")
+            )
+
+            if st == "phase_start":
+                # Close any existing interval
+                if current_skill and current_start:
+                    intervals.append((current_start, entry_time, current_skill, current_substate or ""))
+                # Open new interval
+                current_skill = gs.get("skill")
+                current_substate = gs.get("substate")
+                current_start = entry_time
+
+            elif st in ("phase_end", "phase_fail"):
+                # Close current interval
+                if current_skill and current_start:
+                    intervals.append((current_start, entry_time, current_skill, current_substate or ""))
+                current_skill = None
+                current_substate = None
+                current_start = None
+
+            elif st == "handoff":
+                # Close outgoing skill, open incoming skill
+                if current_skill and current_start:
+                    intervals.append((current_start, entry_time, current_skill, current_substate or ""))
+                # The global_state after handoff is the incoming skill
+                current_skill = gs.get("skill")
+                current_substate = gs.get("substate")
+                current_start = entry_time
+
+        except (ValueError, TypeError, AttributeError):
+            continue
+
+    # If a skill is still active, leave end_time as None
+    if current_skill and current_start:
+        intervals.append((current_start, None, current_skill, current_substate or ""))
+
+    return intervals
+
+
 def _correlate_with_archive(
     timestamp: Optional[str], index
 ) -> tuple[Optional[str], Optional[str]]:
     """Find the active skill/substate at a given timestamp from archive entries.
+
+    Uses interval-based lookup: builds explicit skill intervals from lifecycle
+    entries (phase_start, phase_end, phase_fail, handoff) and checks if the
+    question timestamp falls within any interval.
 
     Returns (skill, substate) or (None, None) if no match.
     """
     if not timestamp or not index.entries:
         return None, None
 
-    # Sort entries chronologically
-    sorted_entries = sorted(index.entries.values(), key=lambda e: e.entry_id)
+    try:
+        question_time = datetime.fromisoformat(
+            timestamp.replace("Z", "+00:00")
+        )
+    except (ValueError, TypeError):
+        return None, None
 
-    # Find the most recent entry before this timestamp
-    best_skill = None
-    best_substate = None
-    for entry in sorted_entries:
-        # Entry IDs are unix timestamps; compare with ISO timestamp
-        try:
-            entry_time = datetime.fromisoformat(
-                entry.created_at.replace("Z", "+00:00")
-            )
-            question_time = datetime.fromisoformat(
-                timestamp.replace("Z", "+00:00")
-            )
-            if entry_time <= question_time:
-                gs = entry.global_state or {}
-                if gs.get("skill"):
-                    best_skill = gs.get("skill")
-                    best_substate = gs.get("substate")
-        except (ValueError, TypeError):
-            continue
+    intervals = _build_skill_intervals(index)
 
-    return best_skill, best_substate
+    for start_time, end_time, skill, substate in intervals:
+        if start_time <= question_time:
+            if end_time is None or question_time <= end_time:
+                return skill, substate
+
+    return None, None
 
 
 def sbs_question_analysis_impl(
