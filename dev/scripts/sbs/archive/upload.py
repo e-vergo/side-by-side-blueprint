@@ -266,6 +266,8 @@ def archive_upload(
     issue_refs: Optional[list[str]] = None,
     # PR references
     pr_refs: Optional[list[int]] = None,
+    # Validation
+    validate: bool = False,
 ) -> dict:
     """
     Main archive upload function.
@@ -344,17 +346,28 @@ def archive_upload(
         log.info("Loading quality scores...")
         quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
 
-        if trigger == "build" and not quality_scores:
-            log.info("Auto-running T5+T6 validators for build entry...")
+        # Run validators if requested or auto-validate for build triggers
+        should_validate = validate or (trigger == "build" and not quality_scores)
+        if should_validate:
+            log.info("Running validators...")
             try:
-                subprocess.run(
-                    [sys.executable, "-m", "sbs", "validate-all", "--project", project or "SBSTest"],
-                    cwd=str(Path(__file__).parent.parent.parent),
-                    capture_output=True, timeout=120
+                from sbs.tests.validators.runner import run_validators
+                runner_result = run_validators(
+                    project=project or "SBSTest",
+                    update_ledger=True,
+                    skip_heuristic=True,
                 )
-                quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+                # Reload quality scores from updated ledger
+                quality_scores, quality_delta = _load_quality_scores(
+                    project or "SBSMonorepo", index_path
+                )
+                result["validation"] = {
+                    "passed": runner_result.overall_passed,
+                    "skipped": runner_result.skipped,
+                    "errors": runner_result.errors,
+                }
             except Exception as e:
-                log.warning(f"Auto-validation failed: {e}")
+                log.warning(f"Validation failed: {e}")
 
         entry.quality_scores = quality_scores
         entry.quality_delta = quality_delta

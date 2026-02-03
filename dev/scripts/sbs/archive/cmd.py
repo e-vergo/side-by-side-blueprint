@@ -280,6 +280,8 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
             log.error(f"Invalid JSON for --global-state: {e}")
             return 1
 
+    validate = getattr(args, "validate", False)
+
     result = archive_upload(
         project=project,
         trigger=trigger,
@@ -288,6 +290,7 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
         state_transition=state_transition,
         issue_refs=issue_refs,
         pr_refs=pr_refs,
+        validate=validate,
     )
 
     # Log summary
@@ -298,6 +301,17 @@ def cmd_archive_upload(args: argparse.Namespace) -> int:
     log.info(f"Tags:         {result.get('tags_applied', [])}")
     log.info(f"Porcelain:    {'Yes' if result.get('porcelain') else 'No'}")
     log.info(f"Synced:       {'Yes' if result.get('synced') else 'No'}")
+
+    if result.get("quality_score"):
+        log.info(f"Quality:      {result['quality_score']:.1f}%")
+    if result.get("validation"):
+        v = result["validation"]
+        log.info(f"Validated:    {'PASS' if v.get('passed') else 'FAIL'}")
+        if v.get("skipped"):
+            log.dim(f"  Skipped: {', '.join(v['skipped'])}")
+        if v.get("errors"):
+            for err in v["errors"]:
+                log.warning(f"  {err}")
 
     if result.get("errors"):
         log.header("Errors")
