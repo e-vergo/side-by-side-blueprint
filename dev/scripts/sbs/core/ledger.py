@@ -146,6 +146,9 @@ class BuildMetrics:
     # Phase timings
     phase_timings: dict[str, float] = field(default_factory=dict)
 
+    # QA timings (per-page capture and evaluation)
+    qa_timings: Optional[dict[str, float]] = None
+
     # Git state
     repos_changed: list[str] = field(default_factory=list)
     commits_before: dict[str, str] = field(default_factory=dict)
@@ -319,6 +322,7 @@ def _serialize_build_metrics(metrics: BuildMetrics) -> dict:
         "completed_at": metrics.completed_at,
         "duration_seconds": metrics.duration_seconds,
         "phase_timings": metrics.phase_timings,
+        "qa_timings": metrics.qa_timings,
         "repos_changed": metrics.repos_changed,
         "commits_before": metrics.commits_before,
         "commits_after": metrics.commits_after,
@@ -342,6 +346,7 @@ def _deserialize_build_metrics(data: dict) -> BuildMetrics:
         completed_at=data.get("completed_at", ""),
         duration_seconds=data.get("duration_seconds", 0.0),
         phase_timings=data.get("phase_timings", {}),
+        qa_timings=data.get("qa_timings"),
         repos_changed=data.get("repos_changed", []),
         commits_before=data.get("commits_before", {}),
         commits_after=data.get("commits_after", {}),
