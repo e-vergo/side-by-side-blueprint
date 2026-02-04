@@ -302,7 +302,8 @@ def _load_quality_scores(project: str, index_path: Path) -> tuple[Optional[dict]
         ledger = load_quality_ledger(project)
 
         if not ledger.scores:
-            return None, None
+            log.warning(f"Quality ledger for {project} has no scores")
+            return {}, None
 
         # Build quality scores snapshot
         scores_dict = {}
@@ -448,8 +449,15 @@ def archive_upload(
         log.info("Loading quality scores...")
         quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
 
-        # Run validators if requested or auto-validate for build triggers
-        should_validate = validate or (trigger == "build")
+        # Run validators if requested, auto-validate for build triggers,
+        # or when transitioning to finalization (ensures quality scores exist)
+        should_validate = (
+            validate
+            or (trigger == "build")
+            or (state_transition == "phase_start"
+                and global_state
+                and global_state.get("substate") == "finalization")
+        )
         if should_validate:
             log.info("Running validators...")
             try:
@@ -525,6 +533,7 @@ def archive_upload(
 
         # 4.5 Gate validation for /task execution->finalization transition
         gate_result: Optional[GateResult] = None
+        gate_blocked = False
         if (state_transition == "phase_start" and
             global_state and
             global_state.get("skill") == "task" and
@@ -536,24 +545,20 @@ def archive_upload(
             for finding in gate_result.findings:
                 log.dim(f"  {finding}")
 
-            if not gate_result.passed:
-                log.error("[BLOCKED] Gate validation failed - transition blocked")
-                return {
-                    "success": False,
-                    "error": "Gate validation failed",
-                    "gate_findings": gate_result.findings,
-                    "entry_id": entry_id,
-                }
-            else:
-                log.success("[OK] Gate validation passed")
-
-            # Record gate validation in entry
+            # Record gate validation in entry BEFORE save (persisted regardless of outcome)
             entry.gate_validation = {
                 "passed": gate_result.passed,
                 "findings": gate_result.findings,
             }
 
+            if not gate_result.passed:
+                log.error("[BLOCKED] Gate validation failed - transition blocked")
+                gate_blocked = True
+            else:
+                log.success("[OK] Gate validation passed")
+
         # 5. Save to archive index
+        # Entry is ALWAYS persisted, even on gate failure, so we have a record
         log.info("Saving to archive index...")
         # index_path already defined above
 
@@ -582,17 +587,28 @@ def archive_upload(
                 index.last_epoch_entry = entry.entry_id
 
             # Update index global_state if state_transition indicates a change
-            if state_transition == "handoff" and handoff_to:
-                # Handoff: atomically end outgoing skill and start incoming skill
-                index.global_state = handoff_to
-            elif global_state is not None:
-                index.global_state = global_state
-            elif state_transition == "phase_end" and global_state is None:
-                # Clearing state (returning to idle)
-                index.global_state = None
+            # On gate failure, do NOT update global_state (transition is blocked)
+            if not gate_blocked:
+                if state_transition == "handoff" and handoff_to:
+                    # Handoff: atomically end outgoing skill and start incoming skill
+                    index.global_state = handoff_to
+                elif global_state is not None:
+                    index.global_state = global_state
+                elif state_transition == "phase_end" and global_state is None:
+                    # Clearing state (returning to idle)
+                    index.global_state = None
 
             index.add_entry(entry)
             index.save(index_path)
+
+        # Return gate failure AFTER entry is persisted
+        if gate_blocked:
+            return {
+                "success": False,
+                "error": "Gate validation failed",
+                "gate_findings": gate_result.findings,
+                "entry_id": entry_id,
+            }
 
         # 6. Sync to iCloud
         log.info("Syncing to iCloud...")

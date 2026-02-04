@@ -6,7 +6,7 @@ Separated from sbs_tools.py to avoid requiring MCP dependencies during testing.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from dataclasses import dataclass, field as dc_field
@@ -1374,6 +1374,21 @@ def _get_session_jsonl_files() -> list[tuple[str, "Path"]]:
     return results
 
 
+def _parse_timestamp(s: str) -> datetime:
+    """Parse an ISO-format timestamp string into a timezone-aware datetime.
+
+    Handles both offset-aware (``2024-01-01T10:00:00+00:00``) and
+    offset-naive (``2024-01-01T10:00:00``) inputs, as well as the ``Z``
+    suffix for UTC.  Always returns a UTC-aware datetime so that
+    comparisons never mix naive and aware objects.
+    """
+    s = s.replace("Z", "+00:00")
+    dt = datetime.fromisoformat(s)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 def _build_skill_intervals(index) -> list[tuple[datetime, Optional[datetime], str, str]]:
     """Build skill intervals from lifecycle entries.
 
@@ -1397,9 +1412,7 @@ def _build_skill_intervals(index) -> list[tuple[datetime, Optional[datetime], st
             if not st:
                 continue
 
-            entry_time = datetime.fromisoformat(
-                entry.created_at.replace("Z", "+00:00")
-            )
+            entry_time = _parse_timestamp(entry.created_at)
 
             if st == "phase_start":
                 # Close any existing interval
@@ -1452,9 +1465,7 @@ def _correlate_with_archive(
         return None, None
 
     try:
-        question_time = datetime.fromisoformat(
-            timestamp.replace("Z", "+00:00")
-        )
+        question_time = _parse_timestamp(timestamp)
     except (ValueError, TypeError):
         return None, None
 
@@ -1485,6 +1496,20 @@ def sbs_question_analysis_impl(
     index = load_archive_index()
     session_files = _get_session_jsonl_files()
 
+    # Convert boundary strings to aware datetimes once for safe comparison
+    since_dt: Optional[datetime] = None
+    until_dt: Optional[datetime] = None
+    if since:
+        try:
+            since_dt = _parse_timestamp(since)
+        except (ValueError, TypeError):
+            pass
+    if until:
+        try:
+            until_dt = _parse_timestamp(until)
+        except (ValueError, TypeError):
+            pass
+
     all_interactions: list[QuestionInteraction] = []
     sessions_searched = 0
 
@@ -1495,11 +1520,21 @@ def sbs_question_analysis_impl(
         for raw in raw_interactions:
             ts = raw.get("timestamp")
 
-            # Filter by time range
-            if since and ts and ts < since:
-                continue
-            if until and ts and ts > until:
-                continue
+            # Filter by time range (compare as aware datetimes)
+            if since_dt and ts:
+                try:
+                    ts_dt = _parse_timestamp(ts)
+                    if ts_dt < since_dt:
+                        continue
+                except (ValueError, TypeError):
+                    pass
+            if until_dt and ts:
+                try:
+                    ts_dt = _parse_timestamp(ts)
+                    if ts_dt > until_dt:
+                        continue
+                except (ValueError, TypeError):
+                    pass
 
             # Correlate with archive state
             active_skill, active_substate = _correlate_with_archive(ts, index)
@@ -1546,6 +1581,20 @@ def sbs_question_stats_impl(
     index = load_archive_index()
     session_files = _get_session_jsonl_files()
 
+    # Convert boundary strings to aware datetimes once for safe comparison
+    since_dt: Optional[datetime] = None
+    until_dt: Optional[datetime] = None
+    if since:
+        try:
+            since_dt = _parse_timestamp(since)
+        except (ValueError, TypeError):
+            pass
+    if until:
+        try:
+            until_dt = _parse_timestamp(until)
+        except (ValueError, TypeError):
+            pass
+
     total_questions = 0
     skill_counts: Counter = Counter()
     header_counts: Counter = Counter()
@@ -1565,11 +1614,21 @@ def sbs_question_stats_impl(
         for raw in raw_interactions:
             ts = raw.get("timestamp")
 
-            # Filter by time range
-            if since and ts and ts < since:
-                continue
-            if until and ts and ts > until:
-                continue
+            # Filter by time range (compare as aware datetimes)
+            if since_dt and ts:
+                try:
+                    ts_dt = _parse_timestamp(ts)
+                    if ts_dt < since_dt:
+                        continue
+                except (ValueError, TypeError):
+                    pass
+            if until_dt and ts:
+                try:
+                    ts_dt = _parse_timestamp(ts)
+                    if ts_dt > until_dt:
+                        continue
+                except (ValueError, TypeError):
+                    pass
 
             total_questions += 1
 

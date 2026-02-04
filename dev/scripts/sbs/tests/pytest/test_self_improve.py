@@ -30,6 +30,82 @@ import importlib.util
 _SBS_LSP_MCP_SRC = Path("/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src")
 
 
+def _ensure_pydantic_shim():
+    """Install a lightweight pydantic shim if pydantic is not available.
+
+    sbs_models.py uses ``from pydantic import BaseModel, Field``.  The real
+    pydantic package lives inside the MCP virtualenv and is not on the pytest
+    path.  This shim provides just enough surface area (BaseModel as a
+    dataclass-like base, Field as a passthrough) so that the models can be
+    imported and instantiated in tests.
+    """
+    if "pydantic" in sys.modules:
+        return
+
+    import types
+    import dataclasses
+
+    class _FactoryDefault:
+        """Sentinel wrapping a default_factory callable for the shim."""
+        __slots__ = ("factory",)
+        def __init__(self, factory):
+            self.factory = factory
+
+    def _field_shim(default=dataclasses.MISSING, *, default_factory=None, description=None, **kwargs):
+        """Mimic pydantic.Field: returns default, factory sentinel, or MISSING."""
+        if default_factory is not None:
+            return _FactoryDefault(default_factory)
+        if default is dataclasses.MISSING:
+            return dataclasses.MISSING
+        return default
+
+    class _BaseModelMeta(type):
+        """Metaclass that auto-generates __init__ from annotations."""
+        def __new__(mcs, name, bases, namespace):
+            cls = super().__new__(mcs, name, bases, namespace)
+            if name == "BaseModel":
+                return cls
+            # Collect annotations (including inherited)
+            all_annotations: dict = {}
+            for base in reversed(cls.__mro__):
+                all_annotations.update(getattr(base, "__annotations__", {}))
+            cls.__annotations__ = all_annotations
+
+            # Build defaults from class body
+            defaults: dict = {}
+            for field_name in all_annotations:
+                if field_name in namespace:
+                    val = namespace[field_name]
+                    if val is not dataclasses.MISSING:
+                        defaults[field_name] = val
+
+            def _init(self, **kwargs):
+                for fn in all_annotations:
+                    if fn in kwargs:
+                        setattr(self, fn, kwargs[fn])
+                    elif fn in defaults:
+                        val = defaults[fn]
+                        if isinstance(val, _FactoryDefault):
+                            setattr(self, fn, val.factory())
+                        elif callable(val) and not isinstance(val, type):
+                            setattr(self, fn, val())
+                        else:
+                            setattr(self, fn, val)
+                    else:
+                        setattr(self, fn, None)
+
+            cls.__init__ = _init
+            return cls
+
+    class BaseModel(metaclass=_BaseModelMeta):
+        pass
+
+    shim = types.ModuleType("pydantic")
+    shim.BaseModel = BaseModel
+    shim.Field = _field_shim
+    sys.modules["pydantic"] = shim
+
+
 def _load_module_directly(module_name: str, file_path: Path):
     """Load a module directly from file path, bypassing __init__.py."""
     spec = importlib.util.spec_from_file_location(module_name, file_path)
@@ -43,7 +119,9 @@ def _load_module_directly(module_name: str, file_path: Path):
 
 def _get_self_improve_module():
     """Get the sbs_self_improve module, loading dependencies as needed."""
-    # First load sbs_models (no external deps)
+    # Ensure pydantic shim is available (sbs_models.py requires it)
+    _ensure_pydantic_shim()
+    # First load sbs_models
     if "sbs_lsp_mcp.sbs_models" not in sys.modules:
         _load_module_directly(
             "sbs_lsp_mcp.sbs_models",
@@ -933,11 +1011,12 @@ class TestSelfImproveMCPTools:
         module = _get_self_improve_module()
 
         index = ArchiveIndex()
-        # Create 10 entries, one tag appears on 9+
+        # Create 10 entries, one v2-style tag appears on 9+
+        # Tags must contain ":" to be classified as v2 (non-legacy)
         for i in range(10):
-            auto_tags = ["ubiquitous_tag"]
+            auto_tags = ["signal:ubiquitous"]
             if i < 2:
-                auto_tags.append("rare_tag")
+                auto_tags.append("signal:rare")
             index.add_entry(ArchiveEntry(
                 entry_id=f"2024010{i}100000",
                 created_at=f"2024-01-0{i + 1}T10:00:00+00:00" if i < 9 else "2024-01-10T10:00:00+00:00",
@@ -950,7 +1029,7 @@ class TestSelfImproveMCPTools:
         index.save(index_path)
 
         result = module.sbs_tag_effectiveness_impl()
-        assert "ubiquitous_tag" in result.noisy_tags
+        assert "signal:ubiquitous" in result.noisy_tags
 
     def test_as_findings_populates_findings(self, mock_archive_dir: Path, monkeypatch: pytest.MonkeyPatch):
         """as_findings=True populates the findings field on populated data."""
