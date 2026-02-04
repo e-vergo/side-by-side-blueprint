@@ -931,6 +931,20 @@ class QuestionStatsResult(BaseModel):
 
 
 # =============================================================================
+# Improvement Capture Tools
+# =============================================================================
+
+
+class ImprovementCaptureResult(BaseModel):
+    """Result from capturing an improvement opportunity."""
+
+    success: bool = Field(description="Whether capture succeeded")
+    entry_id: Optional[str] = Field(None, description="Archive entry ID created")
+    tags: List[str] = Field(default_factory=list, description="Tags applied to the entry")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+# =============================================================================
 # Skill Management Tools
 # =============================================================================
 

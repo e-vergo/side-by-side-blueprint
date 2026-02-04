@@ -29,6 +29,7 @@ EXPECTED_DIMENSIONS = {
     "phase", "transition", "skill", "trigger", "session",
     "outcome", "signal", "scope", "repo", "epoch",
     "linkage", "token", "thinking", "tool", "quality", "model",
+    "improvement",
 }
 
 
