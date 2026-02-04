@@ -143,7 +143,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 
 ## Agent Parallelism
 
-- **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/self-improve`, when the approved plan or skill definition specifies parallel work
+- **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/introspect`, when the approved plan or skill definition specifies parallel work
 - Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos
 - Multiple Explore agents can run in parallel alongside at all times
 - If spawning subagents, ensure no edit collisions

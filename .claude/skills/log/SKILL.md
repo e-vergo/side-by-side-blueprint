@@ -116,7 +116,7 @@ When area is not explicit, scan the input for these keywords:
 | area:devtools:capture | "screenshot", "capture", "playwright" |
 | area:devtools:porcelain | "porcelain", "git push", "submodule commit" |
 | area:devtools:state-machine | "state machine", "global_state", "skill state", "handoff" |
-| area:devtools:self-improve | "self-improve", "self-improvement", "pillar", "finding" |
+| area:devtools:self-improve | "self-improve", "self-improvement", "introspect", "pillar", "finding" |
 | area:devtools:question-analysis | "question analysis", "AskUserQuestion" |
 | area:devtools:test-suite | "test", "pytest", "evergreen", "test tier" |
 | area:lean:architect | "LeanArchitect", "lean architect", "blueprint attribute" |
