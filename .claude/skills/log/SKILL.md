@@ -25,19 +25,21 @@ Rapidly capture bugs, features, and ideas as GitHub issues without breaking flow
 
 ## Labels
 
-This skill applies labels from the project taxonomy at `dev/storage/labels/taxonomy.yaml`. Each issue receives labels from multiple dimensions:
+**Available labels:** Read `dev/storage/labels/taxonomy.yaml` for the full label list, counts, and dimensions. The taxonomy is the source of truth -- do not hardcode label counts or enumerate all labels here.
+
+Each issue receives labels from multiple dimensions:
 
 **Always applied:**
 - `origin:agent` -- all `/log` issues are agent-filed
 
 **Required (one each):**
-- **Type** -- one of 18 subtypes (bug:visual, feature:new, etc.)
-- **Area** -- one of 42 area labels across sbs, devtools, and lean
+- **Type** -- a subtype from the `type` dimension (e.g., bug:visual, feature:new)
+- **Area** -- an area label from `area_sbs`, `area_devtools`, or `area_lean` dimensions
 
 **Conditional (applied when keywords strongly signal):**
-- **Impact** -- what the issue affects (visual, functional, performance, etc.)
-- **Friction** -- what pain point it addresses (context-loss, tooling-gap, etc.)
-- **Scope** -- how big the change is (single-repo, cross-repo, architectural, config-only)
+- **Impact** -- from the `impact` dimension
+- **Friction** -- from the `friction` dimension
+- **Scope** -- from the `scope` dimension
 
 Multiple labels per dimension are allowed when the issue genuinely spans categories.
 
@@ -46,6 +48,8 @@ Multiple labels per dimension are allowed when the issue genuinely spans categor
 ## Parsing Rules
 
 ### Type Inference from Keywords
+
+**Note:** Label names in the tables below must match `dev/storage/labels/taxonomy.yaml`. If the taxonomy changes (labels renamed, added, or removed), update these tables to match.
 
 When type is not explicit, scan the input for these keywords:
 
