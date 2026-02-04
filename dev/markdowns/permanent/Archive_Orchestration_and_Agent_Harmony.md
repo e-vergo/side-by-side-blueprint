@@ -316,7 +316,7 @@ The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` 
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
 
-**Implementation:** 55 total tools (18 Lean + 37 SBS). See `forks/sbs-lsp-mcp/README.md` for full documentation.
+**Implementation:** 62 total tools (18 Lean + 41 SBS + 3 Zulip). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -329,7 +329,7 @@ All existing Lean tools remain available:
 - `lean_local_search` - Declaration search
 - `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
 
-### Added Capabilities (37 SBS-specific Tools)
+### Added Capabilities (41 SBS-specific Tools + 3 Zulip)
 
 Tools organized by category:
 
@@ -340,8 +340,8 @@ Tools organized by category:
 | **Self-Improve** | `sbs_successful_sessions`, `sbs_comparative_analysis`, `sbs_system_health`, `sbs_user_patterns`, `sbs_skill_stats`, `sbs_phase_transition_health`, `sbs_interruption_analysis`, `sbs_gate_failures`, `sbs_tag_effectiveness` | Structured analysis for self-improvement |
 | **Testing** | `sbs_run_tests`, `sbs_validate_project` | Pytest and T1-T8 validators |
 | **Build** | `sbs_build_project`, `sbs_serve_project`, `sbs_last_screenshot`, `sbs_visual_history`, `sbs_inspect_project` | Build, serve, visual checks, and QA context |
-| **GitHub** | `sbs_issue_create`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management |
-| **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end`, `sbs_skill_handoff` | Skill state machine (including atomic handoffs) |
+| **GitHub** | `sbs_issue_create`, `sbs_issue_log`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management (including agent-optimized logging) |
+| **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end`, `sbs_skill_fail`, `sbs_skill_handoff` | Skill state machine (including failure recording and atomic handoffs) |
 | **Questions** | `sbs_question_analysis`, `sbs_question_stats` | AskUserQuestion interaction analysis |
 | **Zulip** | `zulip_search`, `zulip_fetch_thread`, `zulip_screenshot` | Lean Zulip integration |
 

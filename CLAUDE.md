@@ -53,7 +53,7 @@ Building tooling that:
 | `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
 | `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
 | `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
-| `forks/` | **sbs-lsp-mcp** | MCP server (55 tools: 18 Lean + 37 SBS) |
+| `forks/` | **sbs-lsp-mcp** | MCP server (62 tools: 18 Lean + 41 SBS + 3 Zulip) |
 | `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
 | `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
 | `toolchain/` | **SBS-Test** | Minimal test project (33 nodes) |
@@ -327,8 +327,10 @@ For implementation details, file locations, and build internals, see:
 | `sbs_skill_start` | Start a skill, set global_state |
 | `sbs_skill_transition` | Move to next phase |
 | `sbs_skill_end` | Clear global_state |
+| `sbs_skill_fail` | Record skill failure and release global_state |
 | `sbs_skill_handoff` | Atomic skill-to-skill transition |
 | `sbs_issue_summary` | Aggregate stats for open issues |
+| `sbs_issue_log` | Agent-optimized issue logging with auto-populated archive context |
 | `sbs_question_analysis` | Extract AskUserQuestion interactions from sessions |
 | `sbs_question_stats` | Aggregate question usage statistics |
 | `sbs_inspect_project` | Prepare context for visual QA |

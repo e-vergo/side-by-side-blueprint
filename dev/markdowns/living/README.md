@@ -29,7 +29,7 @@ The active development environment for **agentic and project-specific developmen
 
 - **Archive system** - Event log, state machine, context provider
 - **Validators** - T1-T8 quality scoring, visual compliance
-- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (55 tools: 18 Lean + 37 SBS)
+- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (62 tools: 18 Lean + 41 SBS + 3 Zulip)
 - **Skills** - `/task`, `/update-and-archive` workflow definitions
 - **Agents** - `sbs-developer`, `sbs-oracle` agent specifications
 
@@ -55,10 +55,10 @@ The archive system that tracks your work is itself being developed in this repo.
 - Context injection means you benefit from what previous agents learned
 
 ### Agent Concurrency
-- Default: one `sbs-developer` agent at a time (alignment, planning, finalization phases)
-- Exception: up to 4 concurrent `sbs-developer` agents during `/task` execution phase when the approved plan specifies parallel waves
+- Up to 4 concurrent `sbs-developer` agents in any `/task` phase or `/self-improve` when the orchestrator determines work is parallelizable with non-overlapping file scopes
 - Multiple read-only exploration agents may run in parallel at all times
-- This design eliminates collision overhead while allowing parallelism when plans guarantee non-overlapping file scopes
+- Archive state consistency enforced: single writer for state transitions, no race conditions on ledgers
+- Collision avoidance is the orchestrator's responsibility via file-scope isolation in plans
 
 
 ---
@@ -96,11 +96,12 @@ You are changing the environment for all future work. Think carefully.
 
 ### Agent Concurrency Is Architectural
 
-Default single-agent execution with controlled parallelism during task execution:
+Controlled parallelism across all workflow phases:
+- Up to 4 concurrent `sbs-developer` agents when the orchestrator ensures non-overlapping file scopes
 - Archive state remains consistent (single writer at a time for state transitions)
 - No race conditions on ledgers
 - Context injection works reliably
-- Up to 4 parallel agents during execution phase when the plan specifies non-overlapping scopes
+- Applies to all `/task` phases (alignment, planning, execution, finalization) and `/self-improve`
 
 ---
 
