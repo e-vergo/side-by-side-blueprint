@@ -79,6 +79,12 @@ class RunnerResult:
     errors: list[str] = field(default_factory=list)
     """Error messages from validators that raised exceptions."""
 
+    warnings: list[str] = field(default_factory=list)
+    """Non-fatal issues (skipped validators, degraded results, etc.)."""
+
+    ledger_save_error: Optional[str] = None
+    """If ledger save failed, the error message. None means save succeeded or was not attempted."""
+
 
 # =============================================================================
 # Project Resolution
@@ -284,6 +290,7 @@ def run_validators(
         # Skip heuristic validators if no screenshots available
         if metric_id in HEURISTIC_METRICS and not has_screenshots:
             runner_result.skipped.append(metric_id)
+            runner_result.warnings.append(f"Skipped {metric_id}: no screenshots available for heuristic validation")
             log.dim(f"Skipped {metric_id} (no screenshots available)")
             continue
 
@@ -309,6 +316,13 @@ def run_validators(
             error_msg = f"{metric_id}: validator '{validator_name}' raised {type(e).__name__}: {e}"
             runner_result.errors.append(error_msg)
             runner_result.overall_passed = False
+            # Add failed result entry so gaps don't occur in ledger
+            runner_result.results[metric_id] = ValidatorResult(
+                validator=validator_name,
+                passed=False,
+                findings=[f"Validator raised {type(e).__name__}: {e}"],
+                metrics={"error": True},
+            )
             log.error(error_msg)
             log.dim(traceback.format_exc())
 
@@ -337,6 +351,7 @@ def run_validators(
         except Exception as e:
             error_msg = f"Failed to update ledger: {e}"
             runner_result.errors.append(error_msg)
+            runner_result.ledger_save_error = str(e)
             log.error(error_msg)
 
     return runner_result
