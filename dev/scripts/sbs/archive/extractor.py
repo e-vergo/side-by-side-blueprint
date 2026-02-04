@@ -663,11 +663,15 @@ def extract_claude_data(output_dir: Path) -> ClaudeDataSnapshot:
     # Extract tool call summary
     tool_summary = extract_tool_call_summary(sessions, output_dir)
 
-    # Collect all modified files
+    # Collect all modified files (aggregate for backward compat)
     files_modified = set()
+    per_session_files = []
     for s in sessions:
         files_modified.update(s.files_written)
         files_modified.update(s.files_edited)
+        # Preserve per-session file lists for entry-level tagging
+        session_files = sorted(set(s.files_written) | set(s.files_edited))
+        per_session_files.append(session_files)
 
     # Calculate totals
     total_messages = sum(s.message_count for s in sessions)
@@ -729,4 +733,5 @@ def extract_claude_data(output_dir: Path) -> ClaudeDataSnapshot:
         thinking_block_count=thinking_block_count,
         model_versions_used=list(model_versions_used),
         unique_tools_used=list(unique_tools_used),
+        per_session_files=per_session_files,
     )

@@ -82,6 +82,56 @@ def repo_is_dirty(repo_path: Path) -> bool:
         return True
 
 
+def repo_has_unpushed(repo_path: Path) -> bool:
+    """Check if repo has committed-but-unpushed changes.
+
+    Returns True if there are local commits not yet on the remote tracking
+    branch. Returns False if there is no remote, no tracking branch, or
+    no unpushed commits.
+    """
+    try:
+        # Get current branch name
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return False
+        branch = result.stdout.strip()
+        if not branch or branch == "HEAD":
+            # Detached HEAD -- nothing to push
+            return False
+
+        # Check if tracking branch exists
+        result = subprocess.run(
+            ["git", "rev-parse", "--verify", f"origin/{branch}"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            # No remote tracking branch -- can't determine unpushed state
+            return False
+
+        # Check for unpushed commits
+        result = subprocess.run(
+            ["git", "log", f"origin/{branch}..HEAD", "--oneline"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return False
+        return bool(result.stdout.strip())
+    except Exception:
+        return False
+
+
 def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -> bool:
     """Commit and push changes in a repo."""
     if dry_run:
@@ -135,12 +185,36 @@ def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -
         return False
 
 
+def _push_repo(repo_path: Path, dry_run: bool = False) -> bool:
+    """Push a repo that has unpushed commits (no commit needed)."""
+    if dry_run:
+        log.dim(f"[dry-run] Would push unpushed commits: {repo_path.name}")
+        return True
+
+    try:
+        result = subprocess.run(
+            ["git", "push"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if result.returncode != 0:
+            log.warning(f"Push failed for {repo_path.name}: {result.stderr}")
+            return False
+        return True
+    except Exception as e:
+        log.warning(f"Push failed for {repo_path.name}: {e}")
+        return False
+
+
 def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
     """Ensure all repos are in clean git state.
 
     Two-phase approach:
-    1. Scan all repos to identify which are dirty
-    2. Commit and push all dirty repos (submodules first, main repo last)
+    1. Scan all repos to identify which are dirty or have unpushed commits
+    2. Commit (if dirty) and push all affected repos (submodules first,
+       main repo last)
 
     This avoids the 'chasing' pattern where committing one repo
     (e.g., dev/storage) dirties another (main repo submodule pointer).
@@ -152,24 +226,40 @@ def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
     root = get_monorepo_root()
     failed = []
 
-    # Phase 1: Scan all repos to identify dirty ones
+    # Phase 1: Scan all repos to identify dirty or unpushed ones
     dirty_submodules = []
+    unpushed_only_submodules = []
     for name, rel_path in REPO_PATHS.items():
         repo_path = root / rel_path
-        if repo_path.exists() and repo_is_dirty(repo_path):
+        if not repo_path.exists():
+            continue
+        dirty = repo_is_dirty(repo_path)
+        if dirty:
             dirty_submodules.append((name, repo_path))
+        elif repo_has_unpushed(repo_path):
+            unpushed_only_submodules.append((name, repo_path))
 
     main_dirty = repo_is_dirty(root)
+    main_unpushed = repo_has_unpushed(root)
 
-    # Phase 2: Commit and push all dirty submodule repos first
+    # Phase 2: Handle all submodule repos first
+    # Dirty repos: commit and push
     for name, repo_path in dirty_submodules:
         if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
+            failed.append(name)
+
+    # Unpushed-only repos: just push (already committed)
+    for name, repo_path in unpushed_only_submodules:
+        if not _push_repo(repo_path, dry_run):
             failed.append(name)
 
     # Phase 3: Commit main repo last (picks up submodule pointer updates)
     # Re-check since submodule commits may have dirtied the main repo
     if main_dirty or repo_is_dirty(root):
         if not commit_and_push_repo(root, "chore: archive upload", dry_run):
+            failed.append("main")
+    elif main_unpushed or repo_has_unpushed(root):
+        if not _push_repo(root, dry_run):
             failed.append("main")
 
     return len(failed) == 0, failed
@@ -398,12 +488,18 @@ def archive_upload(
         tagger = TaggingEngine(rules_path, hooks_dir)
 
         # Build context for tagging
+        # Use most recent session's files for entry-level discrimination
+        # instead of the global aggregate (fixes #110)
+        current_session_files = snapshot.files_modified  # fallback: aggregate
+        if snapshot.per_session_files:
+            current_session_files = snapshot.per_session_files[-1]
+
         context = build_tagging_context(
             entry,
             build_success=build_success,
             build_duration_seconds=build_duration_seconds,
             repos_changed=repos_changed,
-            files_modified=snapshot.files_modified,
+            files_modified=current_session_files,
         )
 
         # Load sessions for hooks (if not dry run)

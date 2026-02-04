@@ -275,6 +275,14 @@ sbs_pr_merge(
 )
 ```
 
+### Compressed Confirmation
+
+For straightforward closures where all conditions are unambiguous (all gates pass, PR approved, issues clearly linked), use a single compressed confirmation rather than step-by-step walkthrough:
+
+"Closing #X, #Y, merging PR #Z, pushing -- proceed?"
+
+Reserve step-by-step confirmation for cases with ambiguity: partial gate failures, overridden gates, unclear issue linkage, or user-requested granularity.
+
 **REQUIRED:** After finalization completes, hand off to update-and-archive:
 
 Use the `sbs_skill_handoff` MCP tool to atomically end the task skill and start update-and-archive:
