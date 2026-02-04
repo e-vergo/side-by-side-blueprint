@@ -16,15 +16,26 @@ The loop is: **build -> evaluate -> fix -> introspect -> rebuild -> re-evaluate*
 
 | Pattern | Behavior |
 |---------|----------|
-| `/converge GCR` | Run convergence loop on GCR |
+| `/converge GCR` | Run convergence loop on GCR (all failures fixed in parallel per iteration) |
 | `/converge SBSTest` | Run convergence loop on SBSTest |
 | `/converge PNT` | Run convergence loop on PNT |
 | `/converge GCR --max-iter 5` | Override max iterations (default: 3) |
+| `/converge GCR --single` | Process failures one category at a time (sequential mode) |
+| `/converge GCR --goal qa` | QA criteria evaluation (default behavior) |
+| `/converge GCR --goal tests` | Pytest pass rate convergence |
+| `/converge GCR --goal "T5 >= 0.9, T6 >= 0.95"` | Custom validator thresholds |
+
+**Default behavior is crush mode:** all QA failures in an iteration are addressed simultaneously, with fix agents grouped by category to avoid file conflicts. Use `--single` to revert to sequential one-category-at-a-time processing.
 
 ### Argument Parsing
 
 - First argument is **required**: project name (`SBSTest`, `GCR`, or `PNT`)
 - `--max-iter N` overrides the default max iteration count of 3
+- `--single` enables sequential mode: process one failure category at a time instead of all in parallel (crush mode is the default)
+- `--goal <target>` sets the convergence target (default: `qa`):
+  - `qa` -- evaluate QA criteria via browser (current default behavior)
+  - `tests` -- run `sbs_run_tests` and converge on pytest pass rate
+  - `"T5 >= 0.9, T6 >= 0.95"` -- run `sbs_validate_project` with specified validators and check against custom thresholds (comma-separated `<validator> >= <threshold>` pairs)
 - No arguments -> error: project name required
 
 ---
@@ -102,7 +113,17 @@ sbs_skill_transition(skill="converge", to_phase="eval-1")
 sbs_skill_transition(skill="converge", to_phase="eval-<N>")
 ```
 
-### Actions
+### Goal Dispatch
+
+Evaluation behavior depends on `--goal`:
+
+- **`qa` (default):** Evaluate QA criteria via browser tools as described below. Pass rate = passed criteria / total criteria.
+- **`tests`:** Run `sbs_run_tests(project="<name>")` and parse results. Pass rate = tests passed / tests total. Skip browser-based evaluation entirely.
+- **Custom thresholds (e.g., `"T5 >= 0.9, T6 >= 0.95"`):** Run `sbs_validate_project(project="<name>", validators=["T5", "T6"])` and check each validator's score against its threshold. Pass rate = validators meeting threshold / total validators specified.
+
+For `tests` and custom threshold goals, skip steps 1-3 below and jump directly to step 4 (write results) with the appropriate pass/fail data. The ledger format is the same; the `pages` field is replaced with `validators` or `tests` as appropriate.
+
+### Actions (QA Goal)
 
 1. **Navigate to each page type:** `dashboard`, `dep_graph`, `paper_tex`, `pdf_tex`, `chapter`
    - Pages that return HTTP 404 are skipped without error
@@ -165,9 +186,11 @@ sbs_skill_transition(skill="converge", to_phase="report")
 
 ## Phase: Fix-N (Remediation, iteration N)
 
-**Purpose:** Parse QA failures, categorize them, spawn agents to fix.
+**Purpose:** Parse failures, categorize them, spawn agents to fix.
 
-**No planning phase.** Fix scope is derived directly from QA failure analysis. Each failure maps to a criterion with known category, selector, and expected value.
+**No planning phase.** Fix scope is derived directly from failure analysis. Each failure maps to a known category with actionable remediation.
+
+**Default: crush mode.** All failure categories are addressed in parallel within a single iteration (up to 4 concurrent agents, grouped by category to avoid file conflicts). With `--single`, categories are processed sequentially one at a time.
 
 ### Entry
 
@@ -179,9 +202,11 @@ sbs_skill_transition(skill="converge", to_phase="fix-<N>")
 
 0. **Load adaptation notes** from `dev/storage/<project>/adaptation_notes.json`. For N > 1, pass adaptation context (persistent failures, recommended strategies, what was tried before) to fix agents as additional context.
 
-1. **Parse `qa_ledger.json`** for failures (findings starting with `"FAIL:"`)
+1. **Parse failure data** from the latest evaluation results.
 
-2. **Categorize each failure** by its criterion category:
+2. **Determine fix strategy based on goal type:**
+
+   **For `qa` goal (default):** Parse `qa_ledger.json` for failures (findings starting with `"FAIL:"`). Categorize each by criterion category:
 
    | QA Failure Category | Fix Strategy | Typical Files |
    |---------------------|-------------|---------------|
@@ -191,10 +216,20 @@ sbs_skill_transition(skill="converge", to_phase="fix-<N>")
    | `content` | Edit Lean templates or document generation | `Runway/Theme.lean`, `Dress/*.lean` |
    | `visual` | Edit CSS visual properties | `dress-blueprint-action/assets/css/common.css` |
 
-3. **For each failure category:**
+   **For `tests` goal:** Parse test error output. Group failures by module/file. Fix strategy is driven by error messages and stack traces rather than predefined categories.
+
+   **For custom validator thresholds:** Identify which validators fell below their threshold. Apply validator-specific remediation (e.g., T5 failures -> CSS color variable fixes, T6 failures -> replace hardcoded colors with CSS variables).
+
+3. **Spawn fix agents:**
+
+   **Crush mode (default):** Group all failures by category (for `qa`) or by target file (for `tests`/validators). Spawn up to 4 concurrent `sbs-developer` agents, one per non-overlapping file group. All categories are addressed within the same iteration.
+
+   **Sequential mode (`--single`):** Process one failure category at a time. Spawn agent(s) for the first category, wait for completion, then proceed to the next.
+
+   For each agent:
    1. Query `ask_oracle` for affected files
-   2. Spawn `sbs-developer` agent(s) with specific fix instructions (up to 4 concurrent, non-overlapping files)
-   3. Each agent receives: criterion ID, expected value, actual value, affected file paths
+   2. Provide specific fix instructions (criterion ID, expected value, actual value, affected file paths)
+   3. Include adaptation notes for N > 1
 
 ### Transition
 

@@ -83,11 +83,11 @@ class TestThemeToggle:
         assert "localStorage" in js, "JS should use localStorage for theme persistence"
         assert "sbs-theme" in js, "JS should use 'sbs-theme' localStorage key"
 
-    def test_system_preference_fallback(self, sbstest_site: SiteArtifacts):
-        """CSS or JS contains prefers-color-scheme media query for system default."""
+    def test_no_system_preference_autodetect(self, sbstest_site: SiteArtifacts):
+        """Theme must NOT auto-detect system preference — manual toggle only (#172)."""
         combined = _all_css_content(sbstest_site) + "\n" + _all_js_content(sbstest_site)
-        assert "prefers-color-scheme" in combined, (
-            "Should have prefers-color-scheme fallback in CSS or JS"
+        assert "prefers-color-scheme" not in combined, (
+            "Assets should not contain prefers-color-scheme; theme is manual-only"
         )
 
     def test_pages_no_hardcoded_theme(self, sbstest_site: SiteArtifacts):
@@ -188,11 +188,12 @@ class TestDarkModeDesign:
             f"dark overrides for: {overridden}"
         )
 
-    def test_prefers_color_scheme_media_fallback(self, sbstest_site: SiteArtifacts):
-        """common.css has @media (prefers-color-scheme: dark) fallback."""
+    def test_no_prefers_color_scheme_media_query(self, sbstest_site: SiteArtifacts):
+        """common.css must NOT have @media (prefers-color-scheme: dark) — removed per #172."""
         css = sbstest_site.css
-        assert "@media (prefers-color-scheme: dark)" in css, (
-            "common.css must include @media (prefers-color-scheme: dark) fallback"
+        assert "@media (prefers-color-scheme: dark)" not in css, (
+            "common.css must not include @media (prefers-color-scheme: dark); "
+            "auto-detect was removed per #172"
         )
 
     def test_dark_mode_badge_vars_overridden(self, sbstest_site: SiteArtifacts):
