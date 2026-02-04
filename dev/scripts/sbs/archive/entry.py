@@ -79,6 +79,9 @@ class ArchiveEntry:
     # PR references
     pr_refs: list[int] = field(default_factory=list)  # PR numbers, e.g., [42, 57]
 
+    # Timing data for archive operations
+    archive_timings: dict[str, float] = field(default_factory=dict)
+
     # Timestamp when entry was added to the archive (vs created_at which is logical time)
     added_at: Optional[str] = None
 
@@ -113,6 +116,7 @@ class ArchiveEntry:
             "gate_validation": self.gate_validation,
             "issue_refs": self.issue_refs,
             "pr_refs": self.pr_refs,
+            "archive_timings": self.archive_timings,
             "added_at": self.added_at,
         }
         if include_claude_data:
@@ -191,6 +195,7 @@ class ArchiveEntry:
             gate_validation=data.get("gate_validation"),
             issue_refs=data.get("issue_refs", []),
             pr_refs=data.get("pr_refs", []),
+            archive_timings=data.get("archive_timings", {}),
             added_at=data.get("added_at"),
         )
 

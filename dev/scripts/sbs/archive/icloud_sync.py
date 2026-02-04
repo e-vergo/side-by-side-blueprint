@@ -328,6 +328,27 @@ def full_sync(local_archive: Path, index: ArchiveIndex) -> dict:
     return result
 
 
+def async_full_sync(archive_root: Path, index: "ArchiveIndex") -> None:
+    """Launch full_sync in a daemon thread (fire-and-forget).
+
+    The sync runs in the background and does not block the caller.
+    Errors are logged but not raised.
+    """
+    import threading
+
+    def _sync() -> None:
+        try:
+            result = full_sync(archive_root, index)
+            if not result.get("success", False):
+                logger.warning(f"Background iCloud sync had errors: {result.get('errors', [])}")
+        except Exception as e:
+            logger.warning(f"Background iCloud sync failed: {e}")
+
+    thread = threading.Thread(target=_sync, daemon=True, name="icloud-sync")
+    thread.start()
+    logger.info("iCloud sync started in background")
+
+
 # Legacy function aliases for backwards compatibility
 def sync_ledger(local_ledger_path: Path) -> bool:
     """Sync unified_ledger.json to iCloud."""

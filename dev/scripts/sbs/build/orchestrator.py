@@ -38,6 +38,9 @@ from sbs.build.caching import (
     get_cached_build,
     save_to_cache,
     restore_from_cache,
+    has_lean_changes,
+    save_lean_hash,
+    get_lean_sources_hash,
 )
 from sbs.build.compliance import run_compliance_checks
 from sbs.build.phases import (
@@ -465,6 +468,11 @@ class BuildOrchestrator:
                 log.warning(f"{name}: Not found, skipping")
                 continue
 
+            # Check if Lean sources changed (skip if stable)
+            if not self.config.force_lake and not has_lean_changes(repo.path, self.config.cache_dir, name):
+                log.info(f"Skipping {name}: Lean sources unchanged")
+                continue
+
             # Check cache
             if not self.config.skip_cache:
                 cache_key = get_cache_key(repo.path)
@@ -495,6 +503,11 @@ class BuildOrchestrator:
                     self.config.dry_run,
                 )
 
+            # Record Lean hash for future skip detection
+            lean_hash = get_lean_sources_hash(repo.path)
+            if lean_hash:
+                save_lean_hash(self.config.cache_dir, name, lean_hash)
+
     def build_project(self) -> None:
         """Build the project with dressed artifacts (legacy method for compatibility)."""
         log.header("Fetching mathlib cache")
@@ -508,9 +521,20 @@ class BuildOrchestrator:
 
     def _build_project_internal(self) -> None:
         """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
+        if not self.config.force_lake and not has_lean_changes(
+            self.config.project_root, self.config.cache_dir, self.config.project_name
+        ):
+            log.info("Skipping project build: Lean sources unchanged")
+            return
+
         log.header("Building Lean project with dressed artifacts")
         build_project_with_dress(self.config.project_root, self.config.dry_run)
         log.success("Project built with dressed artifacts")
+
+        # Record Lean hash for future skip detection
+        lean_hash = get_lean_sources_hash(self.config.project_root)
+        if lean_hash:
+            save_lean_hash(self.config.cache_dir, self.config.project_name, lean_hash)
 
     def generate_verso_documents(self) -> None:
         """Run Verso document generators (paper, blueprint) if executables exist."""
@@ -703,9 +727,15 @@ class BuildOrchestrator:
             self.sync_repos()
             self._end_phase("sync_repos")
 
-            self._start_phase("update_manifests")
-            self.update_manifests()
-            self._end_phase("update_manifests")
+            # Update manifests only if Lean sources changed
+            if self.config.force_lake or has_lean_changes(
+                self.config.project_root, self.config.cache_dir, self.config.project_name
+            ):
+                self._start_phase("update_manifests")
+                self.update_manifests()
+                self._end_phase("update_manifests")
+            else:
+                log.info("Skipping manifest update: Lean sources unchanged")
 
             # Compliance checks
             self._start_phase("compliance_checks")
@@ -723,9 +753,14 @@ class BuildOrchestrator:
             self._end_phase("build_toolchain")
 
             # Fetch mathlib cache (extracted from build_project for granular timing)
-            self._start_phase("fetch_mathlib_cache")
-            fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
-            self._end_phase("fetch_mathlib_cache")
+            if self.config.force_lake or has_lean_changes(
+                self.config.project_root, self.config.cache_dir, self.config.project_name
+            ):
+                self._start_phase("fetch_mathlib_cache")
+                fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
+                self._end_phase("fetch_mathlib_cache")
+            else:
+                log.info("Skipping mathlib cache fetch: Lean sources unchanged")
 
             # Build project
             self._start_phase("build_project")
@@ -733,9 +768,14 @@ class BuildOrchestrator:
             self._end_phase("build_project")
 
             # Build blueprint facet
-            self._start_phase("build_blueprint")
-            lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
-            self._end_phase("build_blueprint")
+            if self.config.force_lake or has_lean_changes(
+                self.config.project_root, self.config.cache_dir, self.config.project_name
+            ):
+                self._start_phase("build_blueprint")
+                lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
+                self._end_phase("build_blueprint")
+            else:
+                log.info("Skipping blueprint build: Lean sources unchanged")
 
             # Generate Verso documents (paper_verso, blueprint_verso)
             self._start_phase("generate_verso")
@@ -854,6 +894,12 @@ Examples:
         help="URL to capture from (default: http://localhost:8000)",
     )
 
+    parser.add_argument(
+        "--force-lake",
+        action="store_true",
+        help="Force Lake builds even if Lean sources are unchanged",
+    )
+
     return parser.parse_args()
 
 
@@ -878,6 +924,7 @@ def main() -> int:
             verbose=args.verbose,
             capture=args.capture,
             capture_url=args.capture_url,
+            force_lake=args.force_lake,
         )
 
         # Run build
