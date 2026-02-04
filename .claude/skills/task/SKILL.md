@@ -133,6 +133,8 @@ Phase topics
 - Validation requirements
 - Affected repositories
 
+**Runtime state checks:** Before asking the user about system state during alignment, agents must first query MCP tools (`sbs_archive_state`, `sbs_skill_status`, `sbs_serve_project`) to gather facts. Questions should be reserved for requirements ambiguity and preference decisions, not discoverable state.
+
 **For tasks producing artifacts (builds, screenshots, CSS, templates):**
 - Probe for quantitative success criteria: "What score/threshold defines success?"
 - Map criteria to specific gate definitions (T1-T8, test counts, regression bounds)
@@ -318,13 +320,17 @@ User can:
 
 ## Phase 4: Finalization
 
-1. Run full validation suite
-2. Update unified ledger
-3. Generate summary report
-4. **If gates pass:**
+1. Run full validation suite (per plan's `gates:` section)
+2. **Verify gate results against plan:**
+   - Cross-reference each gate defined in the plan with actual results
+   - Record pass/fail status and actual values for each gate in the archive entry
+   - If any plan-specified validator was not run, flag it as a gap
+3. Update unified ledger
+4. Generate summary report (include gate results table)
+5. **If gates pass:**
    - Merge PR via `sbs_pr_merge` MCP tool (squash strategy)
    - Feature branch is automatically deleted
-5. Commit final state
+6. Commit final state
 
 **Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during finalization for independent validation tasks (e.g., running validators on different projects, checking different repos).
 

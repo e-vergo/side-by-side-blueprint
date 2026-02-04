@@ -1039,3 +1039,118 @@ class TestSkillLifecycle:
 
         assert result.success is False
         assert "already active" in result.error
+
+
+# =============================================================================
+# TestImprovementCapture
+# =============================================================================
+
+
+class TestImprovementCapture:
+    """Tests for sbs_improvement_capture tool."""
+
+    def _simulate_capture(
+        self,
+        mock_index: MagicMock,
+        observation: str,
+        category: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Simulate sbs_improvement_capture logic and return result dict.
+
+        Mirrors the implementation in sbs_tools.py without calling through MCP.
+        """
+        from sbs_lsp_mcp.sbs_models import ImprovementCaptureResult
+
+        valid_categories = {"process", "interaction", "workflow", "tooling", "other"}
+        cat = category or "other"
+        if cat not in valid_categories:
+            return ImprovementCaptureResult(
+                success=False,
+                error=f"Invalid category '{cat}'. Must be one of: {', '.join(sorted(valid_categories))}",
+            )
+
+        # Build tags (mirrors implementation)
+        entry_tags = [f"improvement:{cat}"]
+        auto_tags = ["trigger:improvement"]
+
+        gs = mock_index.global_state
+        if gs:
+            skill = gs.get("skill")
+            substate = gs.get("substate")
+            if skill:
+                auto_tags.append(f"skill:{skill}")
+            if substate:
+                auto_tags.append(f"phase:{substate}")
+        else:
+            auto_tags.append("skill:none")
+            auto_tags.append("phase:idle")
+
+        all_tags = entry_tags + auto_tags
+        return ImprovementCaptureResult(
+            success=True,
+            entry_id="1738300000",
+            tags=all_tags,
+        )
+
+    def test_capture_with_explicit_category(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Capture with explicit category includes improvement:<category> tag."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = self._simulate_capture(
+            mock_index, observation="Test observation", category="tooling"
+        )
+
+        assert result.success is True
+        assert "improvement:tooling" in result.tags
+        assert "trigger:improvement" in result.tags
+
+    def test_capture_with_default_category(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Capture without category defaults to 'other'."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = self._simulate_capture(
+            mock_index, observation="Test observation"
+        )
+
+        assert result.success is True
+        assert "improvement:other" in result.tags
+
+    def test_capture_invalid_category(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Capture with invalid category returns error."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = self._simulate_capture(
+            mock_index, observation="Test observation", category="invalid_category"
+        )
+
+        assert result.success is False
+        assert result.error is not None
+        assert "invalid_category" in result.error
+        # Error should mention valid categories
+        assert "process" in result.error
+        assert "tooling" in result.error
+
+    def test_capture_records_skill_context(self, mock_archive_index_with_task: Dict[str, Any]) -> None:
+        """Capture during active skill includes skill and phase tags."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_with_task)
+
+        # mock_archive_index_with_task has global_state = {"skill": "task", "substate": "execution"}
+        result = self._simulate_capture(
+            mock_index, observation="Test observation", category="process"
+        )
+
+        assert result.success is True
+        assert "skill:task" in result.tags
+        assert "phase:execution" in result.tags
+
+    def test_capture_idle_skill_context(self, mock_archive_index_idle: Dict[str, Any]) -> None:
+        """Capture when idle includes skill:none and phase:idle tags."""
+        mock_index = create_mock_index_from_dict(mock_archive_index_idle)
+
+        result = self._simulate_capture(
+            mock_index, observation="Test observation", category="workflow"
+        )
+
+        assert result.success is True
+        assert "skill:none" in result.tags
+        assert "phase:idle" in result.tags

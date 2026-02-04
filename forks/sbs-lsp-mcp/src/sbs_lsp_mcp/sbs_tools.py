@@ -899,6 +899,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 url=None,
                 pid=None,
                 project=project,
+                error=f"Unknown project '{project}'. Valid projects: SBSTest, GCR, PNT",
             )
 
         # Normalize project name for state file
@@ -992,7 +993,26 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                     url=None,
                     pid=None,
                     project=normalized_project,
+                    error=f"Site directory not found at {site_path}. Run 'sbs build' first.",
                 )
+
+            # Check if port is already in use
+            try:
+                import socket
+
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.5)
+                    result = s.connect_ex(("localhost", port))
+                    if result == 0:
+                        return ServeResult(
+                            running=False,
+                            url=None,
+                            pid=None,
+                            project=normalized_project,
+                            error=f"Port {port} already in use",
+                        )
+            except Exception:
+                pass  # If check fails, proceed and let Popen report the error
 
             # Start server
             try:
@@ -1000,7 +1020,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                     ["python", "-m", "http.server", str(port)],
                     cwd=site_path,
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
                     start_new_session=True,
                 )
 
@@ -1024,19 +1044,33 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                         project=normalized_project,
                     )
                 else:
+                    # Process died — try to capture stderr
+                    stderr_output = ""
+                    if process.stderr:
+                        try:
+                            stderr_output = process.stderr.read().decode(
+                                "utf-8", errors="replace"
+                            )
+                        except Exception:
+                            pass
+                    error_msg = f"Server process exited immediately"
+                    if stderr_output.strip():
+                        error_msg += f": {stderr_output.strip()}"
                     return ServeResult(
                         running=False,
                         url=None,
                         pid=None,
                         project=normalized_project,
+                        error=error_msg,
                     )
 
-            except Exception:
+            except Exception as e:
                 return ServeResult(
                     running=False,
                     url=None,
                     pid=None,
                     project=normalized_project,
+                    error=f"Failed to start server: {e}",
                 )
 
         else:
@@ -1046,6 +1080,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 url=None,
                 pid=None,
                 project=normalized_project,
+                error=f"Unknown action '{action}'. Valid actions: start, stop, status",
             )
 
     # =========================================================================

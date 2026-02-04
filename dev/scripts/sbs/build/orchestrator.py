@@ -43,6 +43,7 @@ from sbs.build.caching import (
     get_lean_sources_hash,
 )
 from sbs.build.compliance import run_compliance_checks
+from sbs.tests.validators.runner import run_validators
 from sbs.build.phases import (
     clean_build_artifacts,
     lake_build,
@@ -426,6 +427,37 @@ class BuildOrchestrator:
 
         log.success("All compliance checks passed")
 
+    def run_quality_validators(self) -> None:
+        """Run deterministic quality validators (non-blocking)."""
+        log.header("Running quality validators")
+        try:
+            result = run_validators(
+                project=self.config.project_name,
+                project_root=self.config.project_root,
+                metric_ids=[
+                    "t1-cli-execution",
+                    "t2-ledger-population",
+                    "t5-color-match",
+                    "t6-css-coverage",
+                ],
+                update_ledger=True,
+                skip_heuristic=True,
+            )
+            passed = sum(1 for r in result.results.values() if r.passed)
+            total = len(result.results)
+            if result.overall_passed:
+                log.success(f"Quality validators: {passed}/{total} passed")
+            else:
+                log.warning(f"Quality validators: {passed}/{total} passed (non-blocking)")
+                for metric_id, r in result.results.items():
+                    if not r.passed:
+                        log.warning(f"  - {metric_id}: {'; '.join(r.findings[:3])}")
+            if result.errors:
+                for err in result.errors:
+                    log.warning(f"  Validator error: {err}")
+        except Exception as e:
+            log.warning(f"Quality validators skipped: {e}")
+
     def clean_artifacts(self) -> None:
         """Clean build artifacts from toolchain and project."""
         log.header("Cleaning build artifacts")
@@ -741,6 +773,11 @@ class BuildOrchestrator:
             self._start_phase("compliance_checks")
             self.run_compliance_checks()
             self._end_phase("compliance_checks")
+
+            # Quality validators (non-blocking)
+            self._start_phase("quality_validators")
+            self.run_quality_validators()
+            self._end_phase("quality_validators")
 
             # Clean artifacts
             self._start_phase("clean_build")
