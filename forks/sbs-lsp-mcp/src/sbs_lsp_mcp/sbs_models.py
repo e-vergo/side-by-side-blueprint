@@ -335,6 +335,59 @@ class GraphStats(BaseModel):
 
 
 # =============================================================================
+# General Browser Tools
+# =============================================================================
+
+
+class BrowserNavigateResult(BaseModel):
+    """Result from navigating the browser to a URL."""
+
+    url: str = Field(description="Final URL after navigation")
+    title: str = Field(description="Page title")
+    status: int = Field(description="HTTP status code")
+
+
+class BrowserClickResult(BaseModel):
+    """Result from clicking an element on the page."""
+
+    selector: str = Field(description="CSS selector clicked")
+    clicked: bool = Field(description="Whether element was found and clicked")
+    element_text: Optional[str] = Field(None, description="Text content of clicked element")
+
+
+class BrowserScreenshotResult(BaseModel):
+    """Result from capturing a browser screenshot."""
+
+    image_path: str = Field(description="Absolute path to screenshot file")
+    url: str = Field(description="URL of the page")
+    captured_at: str = Field(description="ISO timestamp of capture")
+    hash: Optional[str] = Field(None, description="SHA256 hash prefix for comparison")
+
+
+class ElementInfo(BaseModel):
+    """Information about a single DOM element."""
+
+    tag: str = Field(description="HTML tag name")
+    text: str = Field(description="Text content (truncated)")
+    attributes: Dict[str, str] = Field(default_factory=dict, description="Key HTML attributes")
+
+
+class BrowserEvaluateResult(BaseModel):
+    """Result from evaluating JavaScript on the page."""
+
+    result: Optional[str] = Field(None, description="JS evaluation result as string")
+    type: str = Field(description="Type of the result")
+
+
+class BrowserElementsResult(BaseModel):
+    """Result from querying DOM elements."""
+
+    selector: str = Field(description="CSS selector queried")
+    elements: List[ElementInfo] = Field(default_factory=list)
+    count: int = Field(description="Total matching elements (may exceed returned)")
+
+
+# =============================================================================
 # Zulip Tools
 # =============================================================================
 

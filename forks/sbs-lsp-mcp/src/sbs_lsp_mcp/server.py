@@ -124,6 +124,8 @@ class AppContext:
     # Playwright browser for Zulip tools (lazy-initialized when ZULIP_ENABLED)
     browser: "Browser | None" = None
     browser_context: "BrowserContext | None" = None
+    # Persistent active page for general browser tools
+    active_page: "Page | None" = None
 
 
 @asynccontextmanager
@@ -195,6 +197,13 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
         if context.client:
             context.client.close()
 
+        # Close active page if it exists
+        if hasattr(context, 'active_page') and context.active_page:
+            try:
+                await context.active_page.close()
+            except Exception:
+                pass
+
         # Close Playwright resources
         if browser_context:
             await browser_context.close()
@@ -236,6 +245,15 @@ if os.environ.get("ZULIP_ENABLED", "").lower() in ("1", "true", "yes"):
         logger.info("Zulip tools registered")
     except ImportError:
         logger.warning("zulip_tools module not found - Zulip tools disabled")
+
+# Register general browser tools (if browser available)
+if os.environ.get("ZULIP_ENABLED", "").lower() in ("1", "true", "yes"):
+    try:
+        from sbs_lsp_mcp.browser_tools import register_browser_tools
+        register_browser_tools(mcp)
+        logger.info("Browser tools registered")
+    except ImportError:
+        logger.warning("browser_tools module not found")
 
 
 def rate_limited(category: str, max_requests: int, per_seconds: int):
