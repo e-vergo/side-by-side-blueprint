@@ -73,6 +73,7 @@ class BuildConfig:
     verbose: bool = False
     capture: bool = False
     capture_url: str = "http://localhost:8000"
+    force_lake: bool = False  # Force Lake builds even if Lean sources unchanged
 
 
 # =============================================================================

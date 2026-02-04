@@ -854,6 +854,12 @@ Examples:
         help="URL to capture from (default: http://localhost:8000)",
     )
 
+    parser.add_argument(
+        "--force-lake",
+        action="store_true",
+        help="Force Lake builds even if Lean sources are unchanged",
+    )
+
     return parser.parse_args()
 
 
@@ -878,6 +884,7 @@ def main() -> int:
             verbose=args.verbose,
             capture=args.capture,
             capture_url=args.capture_url,
+            force_lake=args.force_lake,
         )
 
         # Run build
