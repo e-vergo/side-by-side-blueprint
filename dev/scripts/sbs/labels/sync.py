@@ -13,7 +13,7 @@ import time
 from typing import Any
 
 from sbs.core.utils import log
-from sbs.labels import get_all_labels, get_label_info, load_taxonomy
+from sbs.labels import get_all_labels, get_label_info, load_taxonomy, _entry_matches_context
 
 
 # =============================================================================
@@ -134,8 +134,8 @@ def sync_labels(
     log.info(f"Found {len(existing)} existing labels")
     log.info("")
 
-    # Build target label list from taxonomy
-    all_label_names = get_all_labels()
+    # Build target label list from taxonomy (issues-context only)
+    all_label_names = get_all_labels(context="issues")
     summary = {"created": 0, "updated": 0, "skipped": 0}
 
     for label_name in all_label_names:
@@ -193,39 +193,52 @@ def sync_labels(
 # =============================================================================
 
 
-def render_taxonomy_tree() -> str:
-    """Render the taxonomy as a formatted tree string grouped by dimension."""
+def render_taxonomy_tree(context: str | None = None) -> str:
+    """Render the taxonomy as a formatted tree string grouped by dimension.
+
+    Args:
+        context: Optional filter -- ``"issues"`` or ``"archive"`` to show
+                 only entries for that context, or ``None`` for all.
+    """
     taxonomy = load_taxonomy()
     lines: list[str] = []
     total = 0
 
     dimensions = taxonomy.get("dimensions", {})
     for dim_name, dim_data in dimensions.items():
-        labels = dim_data.get("labels", [])
+        entries = dim_data.get("entries", [])
+        filtered = [e for e in entries if _entry_matches_context(e, context)]
+        if not filtered:
+            continue
         dim_desc = dim_data.get("description", "")
         dim_color = dim_data.get("color", "")
         lines.append(f"{dim_name} ({dim_desc})")
 
-        for i, label in enumerate(labels):
-            is_last = i == len(labels) - 1
+        for i, entry in enumerate(filtered):
+            is_last = i == len(filtered) - 1
             prefix = "  +-- " if is_last else "  |-- "
-            color = label.get("color", dim_color)
-            lines.append(f"{prefix}{label['name']}  [{color}]")
+            color = entry.get("color", dim_color)
+            ctx_tag = f"  {entry.get('contexts', [])}" if context is None else ""
+            lines.append(f"{prefix}{entry['name']}  [{color}]{ctx_tag}")
             total += 1
 
         lines.append("")
 
     # Standalone
     standalone = taxonomy.get("standalone", [])
-    if standalone:
+    filtered_standalone = [e for e in standalone if _entry_matches_context(e, context)]
+    if filtered_standalone:
         lines.append("standalone")
-        for i, label in enumerate(standalone):
-            is_last = i == len(standalone) - 1
+        for i, entry in enumerate(filtered_standalone):
+            is_last = i == len(filtered_standalone) - 1
             prefix = "  +-- " if is_last else "  |-- "
-            color = label.get("color", "")
-            lines.append(f"{prefix}{label['name']}  [{color}]")
+            color = entry.get("color", "")
+            ctx_tag = f"  {entry.get('contexts', [])}" if context is None else ""
+            lines.append(f"{prefix}{entry['name']}  [{color}]{ctx_tag}")
             total += 1
         lines.append("")
 
-    lines.append(f"Total: {total} labels across {len(dimensions)} dimensions + standalone")
+    dim_count = sum(1 for d in dimensions.values()
+                    if any(_entry_matches_context(e, context) for e in d.get("entries", [])))
+    lines.append(f"Total: {total} entries across {dim_count} dimensions + standalone")
     return "\n".join(lines)

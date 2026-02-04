@@ -23,12 +23,12 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 |----------------|----------------------|
 | Discusses requirements with user | Executes ALL implementation tasks |
 | Decomposes and plans work | Has deep architectural knowledge |
-| Spawns agents (up to 4 concurrent during /task and /self-improve) | Works within defined scope |
+| Spawns agents (up to 4 concurrent during /task and /introspect) | Works within defined scope |
 | Synthesizes results | Reports outcomes |
 
 **Multiagent Concurrency:**
 - `sbs-developer` is the ONLY implementation agent type (writes files, interacts with archival system)
-- **Up to 4 concurrent `sbs-developer` agents** are allowed during ALL phases of `/task` (alignment, planning, execution, finalization) and during `/self-improve`, when the approved plan or skill definition specifies parallel work
+- **Up to 4 concurrent `sbs-developer` agents** are allowed during ALL phases of `/task` (alignment, planning, execution, finalization) and during `/introspect`, when the approved plan or skill definition specifies parallel work
 - Files targeted by parallel agents must not overlap
 - Multiple read-only exploration agents may run in parallel alongside at all times
 
@@ -145,7 +145,7 @@ Spawn an agent for:
 4. Synthesize results for user
 5. Repeat if needed
 
-**Parallel spawning:** During `/task` (all phases) and `/self-improve`, up to 4 agents may be spawned in a single message with multiple Task tool calls, per the approved plan's wave structure. Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos.
+**Parallel spawning:** During `/task` (all phases) and `/introspect`, up to 4 agents may be spawned in a single message with multiple Task tool calls, per the approved plan's wave structure. Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos.
 
 ### Visual Verification Requirement
 
@@ -290,11 +290,16 @@ Documentation refresh and porcelain state. Runs automatically at end of `/task`.
 
 ### `/introspect`
 
-Meta-improvement analysis across introspection hierarchy levels. Reads all L(N-1) documents to produce an L(N) meta-summary.
+Introspection and self-improvement across hierarchy levels.
 
-**Usage:** `/introspect 3` (reads L2 summaries, produces L3 meta-analysis)
+**Usage:**
+- `/introspect 2` -- L2 self-improvement cycle (discovery, selection, dialogue, logging, archive)
+- `/introspect 2 --dry-run` -- Discovery only, no issue creation
+- `/introspect 3` -- Reads L2 summaries, produces L3 meta-analysis
+- `/introspect N` -- Reads L(N-1) documents, produces L(N) meta-analysis (N >= 3)
 
-**Workflow:** Ingestion -> Synthesis -> Archive
+**Workflow (L2):** Discovery -> Selection -> Dialogue -> Logging -> Archive
+**Workflow (L3+):** Ingestion -> Synthesis -> Archive
 
 **Location:** `.claude/skills/introspect/SKILL.md`
 
@@ -490,7 +495,7 @@ In both cases, infer the most appropriate category from context: `process`, `int
 
 **When multiagent is allowed:**
 - All `/task` phases: alignment, planning, execution, finalization
-- `/self-improve` skill: discovery and logging phases
+- `/introspect` skill: discovery and logging phases (L2)
 - Up to 4 concurrent agents per wave
 - Non-overlapping file targets required
 

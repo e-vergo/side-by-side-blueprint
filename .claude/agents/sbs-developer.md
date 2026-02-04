@@ -143,7 +143,7 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 
 ## Agent Parallelism
 
-- **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/self-improve`, when the approved plan or skill definition specifies parallel work
+- **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/introspect`, when the approved plan or skill definition specifies parallel work
 - Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos
 - Multiple Explore agents can run in parallel alongside at all times
 - If spawning subagents, ensure no edit collisions
@@ -1050,6 +1050,35 @@ Signals to match simplicity:
 - User rejects a proposed alternative → return to the simpler path without further suggestions
 
 The default posture is: implement what was asked, at the complexity level implied. Propose alternatives only when the user's approach has a clear technical problem (won't compile, has a bug, violates a constraint).
+
+---
+
+## CLI Gotchas
+
+### gh CLI Repository Inference
+
+When working inside showcase project directories (GCR, PNT), `gh` infers the wrong repository from the git remote. This has caused agents to post comments and actions to the wrong repo.
+
+**Always use `--repo` on all `gh` commands targeting the SBS monorepo:**
+
+```bash
+gh issue comment 123 --repo e-vergo/Side-By-Side-Blueprint --body "..."
+gh pr create --repo e-vergo/Side-By-Side-Blueprint ...
+gh api repos/e-vergo/Side-By-Side-Blueprint/issues/123/comments
+```
+
+This applies to all `gh` subcommands: `issue`, `pr`, `api`, `label`, `release`, etc.
+
+---
+
+## Testing Standards
+
+- Tests MUST import and call actual functions, not simulate their behavior
+- Integration tests over unit tests for MCP tools and CLI commands
+- If a function cannot be imported directly (e.g., MCP tool handler), test through the CLI or subprocess
+- Simulation tests (reimplementing logic inline to verify understanding) are explicitly prohibited -- they mirror bugs instead of catching them
+- When testing MCP repo tools: `cd forks/sbs-lsp-mcp && .venv/bin/pytest tests/ -v`
+- Use `sbs_run_tests(repo="mcp")` to run MCP repo tests through the standard MCP tool
 
 ---
 

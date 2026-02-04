@@ -18,7 +18,14 @@ import pytest
 
 from sbs.archive.entry import ArchiveEntry
 from sbs.archive.session_data import SessionData, ToolCall, ThinkingBlock, MessageUsage
-from sbs.archive.tagger import TaggingEngine, build_tagging_context
+from sbs.archive.tagger import (
+    TaggingEngine,
+    build_tagging_context,
+    build_entry_context,
+    build_session_context,
+    _ENTRY_FIELDS,
+    _SESSION_FIELDS,
+)
 
 # All tests in this module are evergreen
 pytestmark = pytest.mark.evergreen
@@ -527,3 +534,181 @@ class TestFullPipeline:
         assert len(prefixes) >= 4, (
             f"Expected tags from at least 4 dimensions, got {len(prefixes)}: {prefixes}"
         )
+
+
+# =============================================================================
+# 7. Scope-Aware Evaluation Tests
+# =============================================================================
+
+
+class TestScopeAwareEvaluation:
+    """TaggingEngine respects rule scope when session_context is provided."""
+
+    def test_entry_scope_rule_uses_entry_context(self, engine: TaggingEngine) -> None:
+        """Entry-scoped rules evaluate against entry context, not session context."""
+        entry = make_entry(
+            global_state={"skill": "task", "substate": "execution"},
+            state_transition="phase_start",
+        )
+        entry_ctx = build_entry_context(entry)
+        session_ctx = build_session_context(entry)
+
+        tags = engine.evaluate(entry, entry_ctx, session_context=session_ctx)
+        assert "phase:execution" in tags
+        assert "transition:phase-start" in tags
+
+    def test_session_scope_rule_uses_session_context(self, engine: TaggingEngine) -> None:
+        """Session-scoped rules evaluate against session context."""
+        entry = make_entry(
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 10,
+                "message_count": 50,
+                "plan_files": ["plan.md"],
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "cache_read_tokens": 0,
+                "thinking_block_count": 0,
+                "unique_tools_used": [],
+                "model_versions_used": [],
+            },
+        )
+        entry_ctx = build_entry_context(entry)
+        session_ctx = build_session_context(entry)
+
+        tags = engine.evaluate(entry, entry_ctx, session_context=session_ctx)
+        # linkage:has-plan is session-scoped (plan_count > 0)
+        assert "linkage:has-plan" in tags
+
+    def test_session_field_not_in_entry_context(self, engine: TaggingEngine) -> None:
+        """Session-scoped rule does not match if field only in entry context."""
+        entry = make_entry(
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 10,
+                "message_count": 50,
+                "plan_files": ["plan.md"],
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "cache_read_tokens": 0,
+                "thinking_block_count": 0,
+                "unique_tools_used": [],
+                "model_versions_used": [],
+            },
+        )
+        entry_ctx = build_entry_context(entry)
+        # Verify plan_count is NOT in entry context
+        assert "plan_count" not in entry_ctx
+
+    def test_backward_compat_single_context(self, engine: TaggingEngine) -> None:
+        """Without session_context, all rules evaluate against single context."""
+        entry = make_entry(
+            global_state={"skill": "task", "substate": "execution"},
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 10,
+                "message_count": 50,
+                "plan_files": ["plan.md"],
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "cache_read_tokens": 0,
+                "thinking_block_count": 0,
+                "unique_tools_used": [],
+                "model_versions_used": [],
+            },
+        )
+        # Old-style: single merged context
+        ctx = build_tagging_context(entry)
+        tags = engine.evaluate(entry, ctx)
+        assert "phase:execution" in tags
+        assert "skill:task" in tags
+        assert "linkage:has-plan" in tags
+
+
+# =============================================================================
+# 8. Split Context Builder Tests
+# =============================================================================
+
+
+class TestSplitContextBuilders:
+    """build_entry_context and build_session_context produce correct fields."""
+
+    def test_entry_context_excludes_session_fields(self) -> None:
+        """Entry context does NOT contain session-constant fields."""
+        entry = make_entry(
+            global_state={"skill": "task", "substate": "execution"},
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 42,
+                "message_count": 100,
+                "plan_files": ["plan.md"],
+                "total_input_tokens": 250000,
+                "total_output_tokens": 30000,
+                "cache_read_tokens": 150000,
+                "thinking_block_count": 5,
+                "unique_tools_used": ["Read", "Edit"],
+                "model_versions_used": ["opus-4.5"],
+            },
+        )
+        ctx = build_entry_context(entry)
+        for field in _SESSION_FIELDS:
+            assert field not in ctx, f"Entry context should not have '{field}'"
+
+    def test_session_context_contains_session_fields(self) -> None:
+        """Session context contains all session-constant fields."""
+        entry = make_entry(
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 42,
+                "message_count": 100,
+                "plan_files": ["plan.md"],
+                "total_input_tokens": 250000,
+                "total_output_tokens": 30000,
+                "cache_read_tokens": 150000,
+                "thinking_block_count": 5,
+                "unique_tools_used": ["Read", "Edit"],
+                "model_versions_used": ["opus-4.5"],
+            },
+        )
+        ctx = build_session_context(entry)
+        for field in _SESSION_FIELDS:
+            assert field in ctx, f"Session context missing '{field}'"
+
+    def test_session_context_no_entry_fields(self) -> None:
+        """Session context does NOT contain entry-only fields."""
+        entry = make_entry(
+            global_state={"skill": "task", "substate": "execution"},
+            state_transition="phase_start",
+            quality_scores={"overall": 0.85, "scores": {}},
+        )
+        ctx = build_session_context(entry)
+        entry_only = {"substate", "state_transition", "gate_passed",
+                      "quality_overall", "quality_delta", "issue_refs", "pr_refs"}
+        for field in entry_only:
+            assert field not in ctx, f"Session context should not have '{field}'"
+
+    def test_merged_is_superset(self) -> None:
+        """build_tagging_context produces superset of both split contexts."""
+        entry = make_entry(
+            global_state={"skill": "task", "substate": "execution"},
+            claude_data={
+                "session_ids": ["s1"],
+                "tool_call_count": 10,
+                "message_count": 50,
+                "plan_files": [],
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "cache_read_tokens": 0,
+                "thinking_block_count": 0,
+                "unique_tools_used": [],
+                "model_versions_used": [],
+            },
+        )
+        merged = build_tagging_context(entry)
+        entry_ctx = build_entry_context(entry)
+        session_ctx = build_session_context(entry)
+
+        for key in entry_ctx:
+            assert key in merged, f"Merged missing entry key '{key}'"
+        for key in session_ctx:
+            assert key in merged, f"Merged missing session key '{key}'"

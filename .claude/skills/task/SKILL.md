@@ -187,7 +187,7 @@ gates:
 
 Plans without gates are incomplete. Define appropriate gates based on task scope.
 
-**Taxonomy changes:** Plans modifying `dev/storage/labels/taxonomy.yaml` or tag dimensions MUST include taxonomy tests in gates (`pytest sbs/tests/pytest/test_taxonomy.py -v`).
+**Taxonomy changes:** Plans modifying `dev/storage/taxonomy.yaml` or tag dimensions MUST include taxonomy tests in gates (`pytest sbs/tests/pytest/test_taxonomy.py -v`).
 
 **Test Tiers:**
 - `evergreen`: Tests marked with `@pytest.mark.evergreen` - fast, reliable, always run
@@ -492,20 +492,9 @@ validators:
   - code_stats: [loc, file_counts]
 ```
 
-Available validators:
-- `visual-compliance` - AI vision validation of screenshots (category: visual)
-- `timing` - Build phase timing metrics (category: timing)
-- `git-metrics` - Commit/diff tracking (category: git)
-- `code-stats` - LOC and file counts (category: code)
+**Available validators:** Discover registered validators at runtime via `discover_validators()` from `dev/scripts/sbs/tests/validators/`. Each validator file uses `@register_validator` -- grep the directory for the full current list. Do not hardcode validator names here; the registry is the source of truth.
 
-### Validator to T1-T8 Mapping
-
-| Tests | Category | Type | Description |
-|-------|----------|------|-------------|
-| T1-T2 | CLI | Deterministic | CLI execution, ledger population |
-| T3-T4 | Dashboard | AI Vision | Dashboard clarity, toggle discoverability |
-| T5-T6 | Design | Deterministic | Status color match, CSS variable coverage |
-| T7-T8 | Polish | AI Vision | Jarring-free check, professional score |
+**T1-T8 validator details:** See `dev/storage/README.md` for the canonical T1-T8 mapping (categories, types, weights, descriptions). The mapping is also documented in `CLAUDE.md` under "Quality Validation Framework".
 
 ### Hybrid Compliance Pattern
 

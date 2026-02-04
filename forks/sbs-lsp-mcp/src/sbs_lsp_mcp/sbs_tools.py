@@ -497,6 +497,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             bool,
             Field(description="Show verbose output"),
         ] = False,
+        repo: Annotated[
+            Optional[str],
+            Field(description="Repo to test: 'mcp' for sbs-lsp-mcp. Default: dev/scripts"),
+        ] = None,
     ) -> TestResult:
         """Run pytest suite and return structured results.
 
@@ -508,12 +512,41 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - Run specific tests: sbs_run_tests(filter="test_color")
         - Run tests in a specific path: sbs_run_tests(path="sbs/tests/pytest/validators")
         - Run only evergreen tests: sbs_run_tests(tier="evergreen")
+        - Run MCP repo tests: sbs_run_tests(repo="mcp")
         """
-        scripts_dir = SBS_ROOT / "dev" / "scripts"
-        test_path = path or "sbs/tests/pytest"
+        REPO_CONFIGS = {
+            "mcp": {
+                "root": SBS_ROOT / "forks" / "sbs-lsp-mcp",
+                "pytest": SBS_ROOT / "forks" / "sbs-lsp-mcp" / ".venv" / "bin" / "pytest",
+                "default_test_path": "tests",
+            },
+        }
 
-        # Build pytest command
-        cmd = ["python", "-m", "pytest", test_path]
+        if repo is not None:
+            if repo not in REPO_CONFIGS:
+                return TestResult(
+                    passed=0,
+                    failed=0,
+                    errors=1,
+                    skipped=0,
+                    duration_seconds=0.0,
+                    failures=[
+                        TestFailure(
+                            test_name="ERROR",
+                            message=f"Unknown repo '{repo}'. Valid repos: {', '.join(sorted(REPO_CONFIGS))}",
+                            file=None,
+                            line=None,
+                        )
+                    ],
+                )
+            cfg = REPO_CONFIGS[repo]
+            scripts_dir = cfg["root"]
+            test_path = path or cfg["default_test_path"]
+            cmd = [str(cfg["pytest"]), test_path]
+        else:
+            scripts_dir = SBS_ROOT / "dev" / "scripts"
+            test_path = path or "sbs/tests/pytest"
+            cmd = ["python", "-m", "pytest", test_path]
 
         if filter:
             cmd.extend(["-k", filter])
