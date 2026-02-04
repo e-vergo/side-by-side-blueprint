@@ -621,7 +621,7 @@ python -m pytest sbs/tests/pytest -v
 
 ## Gotchas & Anti-Patterns
 
-- Verso LaTeX Export: Not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+- Verso Document Generation: Not yet implemented. All Verso page types (`paper_verso`, `blueprint_verso`, `pdf_verso`) have been removed from active surfaces (sidebar, compliance, validation). Lean infrastructure is preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 - Dashboard Layout: Displays single-column layout without chapter panel sidebar. Intentional - controlled by `isBlueprintPage` returning `false` for dashboard.
 - Don't spawning agents during these sequences.
 - Don't GNU-specific options: no `cat -A`, use `od -c` instead.

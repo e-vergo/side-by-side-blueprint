@@ -412,9 +412,9 @@ Captures 7 pages plus interactive states:
 2. `dep_graph` - Dependency graph
 3. `paper_tex` - Paper [TeX]
 4. `pdf_tex` - PDF [TeX]
-5. `paper_verso` - Paper [Verso]
-6. `blueprint_verso` - Blueprint [Verso]
-7. `chapter` - First chapter page (auto-detected)
+5. `chapter` - First chapter page (auto-detected)
+
+Note: `paper_verso` and `blueprint_verso` pages were removed from active surfaces. Capture skips them (HTTP 404).
 
 Plus interactive states: theme toggles, zoom controls, node clicks, proof toggles.
 Pages that return HTTP 404 are skipped without error.
@@ -739,7 +739,7 @@ def detectVersoDocuments (projectRoot : System.FilePath) (config : Config) : IO 
   if ← paperPath.pathExists then ...
 ```
 
-**Filename convention**: Verso paper output is `paper_verso.html` (not `verso_paper.html`) to match sidebar link expectations.
+**Filename convention**: Verso paper output is `paper_verso.html` (not `verso_paper.html`). Note: Verso pages have been removed from the sidebar; this convention is preserved for future use.
 
 ### Dependency Graph Work
 
@@ -855,7 +855,7 @@ lake exe runway pdf runway.json    # Just PDF
 
 **Metadata** (`Paper.lean`): extracts `\title{}`, `\author{}`, `\begin{abstract}` from paper.tex
 
-**Note**: Verso LaTeX export is not implemented. `pdf_verso` has been removed from active surfaces; Lean infrastructure preserved. Use `paper_tex` and `pdf_tex` for paper generation.
+**Note**: All Verso page types (`paper_verso`, `blueprint_verso`, `pdf_verso`) have been removed from active surfaces (sidebar, compliance, validation). Lean infrastructure preserved for future use. Use `paper_tex` and `pdf_tex` for paper generation.
 
 ### Module Reference Support
 
@@ -1008,9 +1008,9 @@ JSON parsing handles legacy status values:
 
 ## Known Limitations
 
-### Verso LaTeX Export
+### Verso Native Generation
 
-Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved. Paper/PDF generation uses TeX sources directly.
+All Verso page types (`paper_verso`, `blueprint_verso`, `pdf_verso`) have been removed from active surfaces (sidebar, compliance, validation). Lean infrastructure and rendering code are preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 
 ### Dashboard Layout
 
