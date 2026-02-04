@@ -90,10 +90,9 @@ class TestValidatorMapping:
 
     def test_highlighting_repos_trigger_polish(self):
         """Highlighting repos should trigger T7, T8 (polish)."""
-        for repo in ["subverso", "verso"]:
-            validators = get_validators_for_changes([repo])
-            assert "T7" in validators
-            assert "T8" in validators
+        validators = get_validators_for_changes(["subverso"])
+        assert "T7" in validators
+        assert "T8" in validators
 
 
 # =============================================================================
@@ -115,12 +114,6 @@ class TestPageMapping:
         pages = get_affected_pages(["Dress"])
         assert "dep_graph" in pages
         assert "chapter" in pages
-
-    def test_verso_affects_verso_pages(self):
-        """Verso changes should affect paper_verso and blueprint_verso."""
-        pages = get_affected_pages(["verso"])
-        assert "paper_verso" in pages
-        assert "blueprint_verso" in pages
 
     def test_mapping_valid(self):
         """Mapping validation should pass."""

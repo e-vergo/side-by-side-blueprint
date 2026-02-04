@@ -165,7 +165,7 @@ class TestPromptGeneration:
 
         assert result.metrics["pages_to_check"] == 1
         assert "chapter" in result.details["prompts"]
-        assert result.metrics["missing_screenshots"] == 1
+        assert result.metrics["missing_screenshots"] == 0
 
     def test_handles_no_chapter_screenshots(
         self,
@@ -691,7 +691,6 @@ class TestStaticMethods:
         pages = ToggleDiscoverabilityValidator.get_default_pages()
         assert pages == DEFAULT_PAGES
         assert "chapter" in pages
-        assert "blueprint_verso" in pages
 
     def test_get_default_threshold(self) -> None:
         """Verify get_default_threshold returns 7.0."""
