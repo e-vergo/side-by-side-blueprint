@@ -49,6 +49,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | backward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
 | base.py | `dev/scripts/sbs/tests/README.md` | validators/ |
 | basevalidator | `dev/storage/README.md` | Creating Custom Validators |
+| before spawning any agent during execution phase | `CLAUDE.md` | Doing Mode Detection |
 | being tracked by the tools they're building | `dev/markdowns/living/README.md` | Why This Matters for Agents |
 | block | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
 | block directives: | `forks/verso/README.md` | 1. SBSBlueprint Genre (`src/verso-sbs/`) |
@@ -623,7 +624,7 @@ python -m pytest sbs/tests/pytest -v
 
 - Verso Document Generation: Not yet implemented. All Verso page types (`paper_verso`, `blueprint_verso`, `pdf_verso`) have been removed from active surfaces (sidebar, compliance, validation). Lean infrastructure is preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 - Dashboard Layout: Displays single-column layout without chapter panel sidebar. Intentional - controlled by `isBlueprintPage` returning `false` for dashboard.
-- Don't spawning agents during these sequences.
+- Don't spawn agents -- the user is actively working.
 - Don't GNU-specific options: no `cat -A`, use `od -c` instead.
 - Verso LaTeX Export: Verso's LaTeX export functionality is not yet implemented. The `pdf_verso` page has been removed from the sidebar and compliance framework. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 - Dashboard Layout: The dashboard displays a single-column layout without the chapter panel sidebar. This is intentional - the dashboard is not a blueprint chapter page.
