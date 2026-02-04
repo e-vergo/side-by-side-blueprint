@@ -53,6 +53,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | block | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
 | block directives: | `forks/verso/README.md` | 1. SBSBlueprint Genre (`src/verso-sbs/`) |
 | blueprint | `toolchain/Runway/README.md` | Module Architecture |
+| blueprint chapters | `toolchain/Runway/README.md` | Sidebar Navigation |
 | blueprint directory | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | blueprint-specific: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | blueprintsite | `toolchain/Runway/README.md` | Module Architecture |
@@ -136,7 +137,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | fork of [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect) | `forks/LeanArchitect/README.md` | LeanArchitect |
 | forward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
-| fully static | `toolchain/Runway/README.md` | Sidebar Navigation |
 | general crystallographic restriction | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | git ops | `scripts/git_ops.py` | Git status, diff, and sync operations |
 | github action | `toolchain/dress-blueprint-action/README.md` | Overview |
@@ -315,7 +315,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | side-by-side blueprint tool | `dev/markdowns/living/README.md` | 1. Tool Development |
 | side-by-side display | `toolchain/Runway/README.md` | Features |
 | side-by-side display issues: | `toolchain/Runway/README.md` | Debugging Tips |
-| sidebar not showing: | `toolchain/Runway/README.md` | Debugging Tips |
+| sidebar not showing chapters: | `toolchain/Runway/README.md` | Debugging Tips |
 | simplified per-project workflows | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
 | single command, single purpose | `dev/scripts/README.md` | Design Principles |
 | site building | `toolchain/Runway/README.md` | Processing Steps |
@@ -363,7 +363,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | toolchain | `toolchain/dress-blueprint-action/README.md` | Related Repositories |
 | tooltip themes | `toolchain/dress-blueprint-action/README.md` | Status Dot Classes |
 | total css: 3,196 lines. | `toolchain/dress-blueprint-action/README.md` | File Organization |
-| total frontend assets: 3,805 lines | `toolchain/dress-blueprint-action/README.md` | Overview |
+| total frontend assets: 3,952 lines | `toolchain/dress-blueprint-action/README.md` | Overview |
 | total javascript: 609 lines. | `toolchain/dress-blueprint-action/README.md` | JavaScript |
 | track | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | traversem | `toolchain/Runway/README.md` | Module Architecture |
@@ -499,7 +499,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | File | Purpose |
 |------|---------|
 | `assets/` | CSS and JavaScript files |
-| `blueprint.css` | Blueprint pages: plasTeX base styles, sidebar, chapter layout, dashboard grid, side-by-side displays... |
+| `blueprint.css` | Blueprint pages: plasTeX base styles, sidebar with collapsible chapter list, dashboard grid, side-by... |
 | `chapter_*.html` | Chapter pages with side-by-side theorem/proof displays |
 | `common.css` | Design system: CSS variables, status dots, Lean syntax highlighting, Tippy tooltips, modals, dark mo... |
 | `dep_graph.css` | Dependency graph: pan/zoom viewport, toolbar, legend, SVG node styling |
@@ -511,7 +511,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `paper.pdf` | PDF (if `paperTexPath` configured) |
 | `paper_tex.html` | Paper (if `paperTexPath` configured) |
 | `pdf_tex.html` | Embedded PDF viewer |
-| `plastex.js` | Theme toggle, TOC toggle, LaTeX proof expand/collapse |
+| `plastex.js` | Theme toggle, TOC toggle, LaTeX proof expand/collapse, chapter list toggle |
 | `verso-code.js` | Token binding, Tippy.js tooltips, proof sync, pan/zoom, modal handling |
 
 ### root
@@ -580,10 +580,11 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 2. Check `manifest.json` in `.lake/build/dressed/`
 3. Rebuild with `BLUEPRINT_DRESS=1` if artifacts stale
 
-**Sidebar not showing:**
+**Sidebar not showing chapters:**
 1. `isBlueprintPage` returns `false` for dashboard (intentional)
-2. Check `currentSlug` matches a chapter slug
-3. Verify `chapters` array is populated
+2. Chapter list auto-expands only when `data-blueprint-page` attribute is on `<body>`
+3. Check `currentSlug` matches a chapter slug
+4. Verify `chapters` array is populated
 
 </details>
 
