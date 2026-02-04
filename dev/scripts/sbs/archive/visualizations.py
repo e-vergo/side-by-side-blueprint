@@ -216,6 +216,92 @@ def generate_activity_heatmap(ledger_path: Path, output_path: Path, last_n: int 
     return True
 
 
+def generate_archive_timing_chart(entries: list, output_dir: Path, max_entries: int = 20) -> Optional[Path]:
+    """Generate stacked bar chart of archive upload phase timings.
+
+    Shows per-phase timing breakdown for recent archive entries that have
+    archive_timings data.
+
+    Args:
+        entries: List of ArchiveEntry objects (or dicts with archive_timings)
+        output_dir: Directory to save the chart
+        max_entries: Maximum number of entries to include
+
+    Returns:
+        Path to generated chart, or None if no data available.
+    """
+    if not HAS_MATPLOTLIB:
+        log.warning("matplotlib not installed, skipping archive timing chart")
+        return None
+
+    # Filter entries to those with non-empty archive_timings
+    timed_entries = []
+    for entry in entries:
+        timings = entry.get("archive_timings") if isinstance(entry, dict) else getattr(entry, "archive_timings", None)
+        if timings:
+            timed_entries.append(entry)
+
+    if not timed_entries:
+        log.warning("No entries with archive_timings data")
+        return None
+
+    # Take the most recent max_entries
+    timed_entries = timed_entries[-max_entries:]
+
+    # Define phases and colors
+    phases = [
+        "extraction", "quality_scores", "repo_commits", "tagging",
+        "gate_validation", "index_save", "icloud_sync_launch", "porcelain",
+    ]
+    phase_colors = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',
+        '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+    ]
+
+    # Extract timing data
+    labels = []
+    phase_data = {p: [] for p in phases}
+
+    for entry in timed_entries:
+        timings = entry.get("archive_timings") if isinstance(entry, dict) else getattr(entry, "archive_timings", None)
+        entry_id = entry.get("entry_id") if isinstance(entry, dict) else getattr(entry, "entry_id", "?")
+        # Use short entry_id or timestamp for x-axis label
+        label = str(entry_id)[-6:] if len(str(entry_id)) > 6 else str(entry_id)
+        labels.append(label)
+
+        for phase in phases:
+            phase_data[phase].append(timings.get(phase, 0) if isinstance(timings, dict) else 0)
+
+    # Create stacked bar chart
+    fig, ax = plt.subplots(figsize=(max(10, len(labels) * 0.6), 6))
+
+    x = range(len(labels))
+    bottom = [0.0] * len(labels)
+
+    for i, phase in enumerate(phases):
+        values = phase_data[phase]
+        if any(v > 0 for v in values):
+            ax.bar(x, values, bottom=bottom, label=phase.replace('_', ' ').title(),
+                   color=phase_colors[i], alpha=0.85, width=0.7)
+            bottom = [b + v for b, v in zip(bottom, values)]
+
+    ax.set_xlabel("Archive Entry")
+    ax.set_ylabel("Duration (seconds)")
+    ax.set_title("Archive Upload Phase Timings")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+    ax.legend(loc='upper left', fontsize='small')
+    ax.grid(True, alpha=0.3, axis='y')
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "archive_timing_trends.png"
+    fig.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.close(fig)
+
+    log.info(f"Generated archive timing chart: {output_path}")
+    return output_path
+
+
 def generate_all_charts(archive_root: Path) -> dict:
     """
     Generate all charts from unified ledger.
@@ -256,5 +342,23 @@ def generate_all_charts(archive_root: Path) -> dict:
         except Exception as e:
             log.error(f"Error generating {filename}: {e}")
             results["failed"].append(f"{filename}: {e}")
+
+    # Archive timing chart (uses archive_index.json entries, not ledger)
+    try:
+        index_path = archive_root / "archive_index.json"
+        if index_path.exists():
+            with open(index_path) as f:
+                index_data = json.load(f)
+            entries = index_data.get("entries", [])
+            chart_path = generate_archive_timing_chart(entries, charts_dir)
+            if chart_path:
+                results["generated"].append(str(chart_path))
+            else:
+                results["failed"].append("archive_timing_trends.png")
+        else:
+            results["failed"].append("archive_timing_trends.png: no archive_index.json")
+    except Exception as e:
+        log.error(f"Error generating archive_timing_trends.png: {e}")
+        results["failed"].append(f"archive_timing_trends.png: {e}")
 
     return results
