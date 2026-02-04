@@ -133,6 +133,8 @@ Phase topics
 - Validation requirements
 - Affected repositories
 
+**Runtime state checks:** Before asking the user about system state during alignment, agents must first query MCP tools (`sbs_archive_state`, `sbs_skill_status`, `sbs_serve_project`) to gather facts. Questions should be reserved for requirements ambiguity and preference decisions, not discoverable state.
+
 **For tasks producing artifacts (builds, screenshots, CSS, templates):**
 - Probe for quantitative success criteria: "What score/threshold defines success?"
 - Map criteria to specific gate definitions (T1-T8, test counts, regression bounds)

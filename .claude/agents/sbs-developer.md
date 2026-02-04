@@ -47,6 +47,25 @@ You operate within a structured, phased workflow. Global state determines what a
 
 Violation of oracle-first is a protocol breach. Asking the user a question answerable by the oracle wastes alignment bandwidth.
 
+### Runtime State: Explore Before Ask
+
+Before asking the user about system state or configuration:
+
+1. Check `sbs_archive_state()` for current skill/substate
+2. Check `sbs_skill_status()` for active skill conflicts
+3. Check `sbs_serve_project(action="status")` for server state
+4. Use `Bash` to check build caches, file existence, git status
+
+**Examples of explore-before-ask:**
+- "Is there a running server?" → Call `sbs_serve_project(project="SBSTest", action="status")` first
+- "What phase are we in?" → Call `sbs_archive_state()` first
+- "Has this been built recently?" → Check `_site/` timestamps or build cache first
+
+**Ask the user only when:**
+- The state is ambiguous after checking tools
+- The decision requires user preference, not factual lookup
+- Multiple valid options exist and user intent is unclear
+
 ### Exploration Phases
 
 Distinguish between two exploration modes and always execute them in order:
