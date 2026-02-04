@@ -95,6 +95,8 @@ Phase topics
 - Validation requirements
 - Affected repositories
 
+**Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during alignment when independent exploration tasks are needed (e.g., reading different repos simultaneously). All agents are read-only during alignment — no file modifications before plan approval.
+
 **REQUIRED:** After completing alignment, transition to planning:
 
 ```bash
@@ -115,6 +117,8 @@ Claude presents:
 2. Validator specifications per wave
 3. Success criteria mapped to ledger checks
 4. Estimated scope (files, repos, complexity)
+
+**Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during planning for independent analysis tasks (e.g., exploring affected repos, prototyping approaches in separate files).
 
 ### Gate Definition (REQUIRED)
 
@@ -197,7 +201,7 @@ python3 -m sbs archive upload --trigger skill \
 **All work happens on the feature branch, not main.**
 
 Fully autonomous:
-1. **Up to 4 `sbs-developer` agents may run concurrently** within a wave. The approved plan determines which waves are parallel vs sequential.
+1. **Up to 4 `sbs-developer` agents may run concurrently** within a wave during ANY phase (alignment, planning, execution, finalization). The approved plan determines which waves are parallel vs sequential.
 2. **All commits go to the feature branch** -- commits are pushed to remote automatically by `sbs archive upload` during phase transitions. Agents never need direct `git push`.
 3. **Parallel wave spawning:** Spawn all agents in a parallel wave in a SINGLE message with multiple Task tool calls. Collision avoidance is the plan's responsibility -- parallel waves must target non-overlapping files/repos.
 4. **Validators run after all agents in a wave complete** -- not after individual agents.
@@ -205,6 +209,7 @@ Fully autonomous:
    - Retry failed agent once
    - If retry fails, pause for re-approval
 6. Continue until all waves complete
+7. **Autonomous bug logging:** When agents discover bugs during execution, they should log them immediately via `sbs_issue_log` MCP tool without pausing work. This preserves discovery context and keeps the backlog current.
 
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
@@ -258,6 +263,8 @@ User can:
    - Merge PR via `sbs_pr_merge` MCP tool (squash strategy)
    - Feature branch is automatically deleted
 5. Commit final state
+
+**Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during finalization for independent validation tasks (e.g., running validators on different projects, checking different repos).
 
 **PR Merge:**
 ```

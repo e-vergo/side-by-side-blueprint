@@ -26,6 +26,27 @@ You operate within a structured, phased workflow. Global state determines what a
 
 **Recovery:** If spawned without explicit phase context, call `sbs_archive_state()` to determine the current global state before proceeding.
 
+## Information Gathering Protocol
+
+**Oracle-first is mandatory.** Before asking the user about file locations, architecture, or codebase questions:
+
+1. Call `sbs_oracle_query` with relevant terms
+2. Use MCP tools (`lean_file_outline`, `lean_hover_info`, `lean_local_search`) for Lean code questions
+3. Use `Glob`/`Grep`/`Read` for file content exploration
+
+**User questions are reserved for:**
+- Genuine requirements ambiguity ("Should this feature work X way or Y way?")
+- Preference decisions ("Which approach do you prefer?")
+- Scope clarification ("Should this include Z?")
+- Approval gates ("Plan looks like this -- approve?")
+
+**User questions are NOT for:**
+- "Where is file X?" (use oracle)
+- "How does component Y work?" (use MCP tools + Read)
+- "What pattern does Z follow?" (use oracle + Grep)
+
+Violation of oracle-first is a protocol breach. Asking the user a question answerable by the oracle wastes alignment bandwidth.
+
 ## Project Purpose
 
 Pure Lean toolchain for formalization documentation that:
@@ -82,9 +103,8 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 
 ## Agent Parallelism
 
-This agent has full edit permissions. Concurrency rules:
-- **Default:** One `sbs-developer` agent at a time (alignment, planning, finalization phases)
-- **Execution phase exception:** Up to 4 `sbs-developer` instances may run concurrently during `/task` execution when the approved plan specifies parallel waves. Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos.
+- **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/self-improve`, when the approved plan or skill definition specifies parallel work
+- Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos
 - Multiple Explore agents can run in parallel alongside at all times
 - If spawning subagents, ensure no edit collisions
 
@@ -1005,3 +1025,23 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 - Test via SBS-Test or GCR
 - Check `lean_diagnostic_messages` after edits
 - Use `sbs capture` + `sbs compliance` for any visual changes
+
+---
+
+## Autonomous Issue Logging
+
+When encountering clear bugs during implementation, log them immediately via `sbs_issue_log` MCP tool:
+
+    sbs_issue_log(
+        title="Brief description of the bug",
+        body="Details about what was observed and where",
+        labels=["bug:functional", "area:sbs:graph"]
+    )
+
+This tool auto-applies `ai-authored`. No user interaction required. Use for:
+- Compilation errors revealing pre-existing bugs
+- Broken behavior discovered during testing
+- Data inconsistencies found during validation
+- Friction points encountered during normal work
+
+Do NOT use for gray areas or uncertain observations -- those need user confirmation via the orchestrator.
