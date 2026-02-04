@@ -1,6 +1,6 @@
 # sbs-lsp-mcp
 
-SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 35 SBS-specific tools and 3 Zulip browsing tools while preserving all 18 Lean proof-writing capabilities.
+SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 41 SBS-specific tools and 3 Zulip browsing tools while preserving all 18 Lean proof-writing capabilities.
 
 ## Overview
 
@@ -12,9 +12,10 @@ This package extends the upstream lean-lsp-mcp with SBS-specific tools for:
 - **Testing tools**: Run pytest suites and T1-T8 validators
 - **Build tools**: Trigger project builds and manage dev servers
 - **Investigation tools**: View screenshots, visual history, and search archive entries
-- **GitHub integration**: Create, list, get, close issues and manage pull requests
+- **GitHub integration**: Create, list, get, close issues and manage pull requests; agent-optimized issue logging
 - **Self-improve analysis**: Mine session patterns, analyze skill lifecycle, detect interruptions
-- **Skill management**: Start, transition, and end skill sessions with global state tracking
+- **Question analysis**: Extract and aggregate AskUserQuestion interactions from sessions
+- **Skill management**: Start, transition, end, fail, and handoff skill sessions with global state tracking
 - **Zulip browsing**: Search and browse Leanprover Zulip anonymously via browser automation
 
 ## Installation
@@ -76,7 +77,7 @@ Or if globally installed:
 }
 ```
 
-## Tools (56 Total)
+## Tools (62 Total)
 
 ### Lean Tools (18)
 
@@ -103,9 +104,9 @@ All upstream Lean tools are preserved for proof-writing workflows:
 | `lean_hammer_premise` | Get premises for automation |
 | `lean_profile_proof` | Profile theorem performance |
 
-### SBS Tools (35)
+### SBS Tools (41)
 
-#### Core (11)
+#### Core (12)
 
 Tools for Side-by-Side Blueprint development workflows:
 
@@ -122,12 +123,14 @@ Tools for Side-by-Side Blueprint development workflows:
 | `sbs_last_screenshot` | Get latest screenshot for a page |
 | `sbs_visual_history` | View screenshot history |
 | `sbs_search_entries` | Search archive entries |
+| `sbs_inspect_project` | Prepare context for agent-driven visual QA |
 
-#### GitHub Issues (5)
+#### GitHub Issues (6)
 
 | Tool | Description |
 |------|-------------|
-| `sbs_issue_create` | Create a new issue in e-vergo/Side-By-Side-Blueprint |
+| `sbs_issue_create` | Create a new issue with full label taxonomy support |
+| `sbs_issue_log` | Agent-optimized issue logging with auto-populated archive context |
 | `sbs_issue_list` | List issues with state/label filters |
 | `sbs_issue_get` | Get details of a specific issue by number |
 | `sbs_issue_close` | Close an issue with optional comment |
@@ -160,7 +163,14 @@ Tools for mining session data and analyzing agent behavior. The first 6 provide 
 | `sbs_gate_failures` | Gate failure rates, overrides, and common failure types |
 | `sbs_tag_effectiveness` | Auto-tag signal-to-noise ratio analysis |
 
-#### Skill Management (4)
+#### Question Analysis (2)
+
+| Tool | Description |
+|------|-------------|
+| `sbs_question_analysis` | Extract AskUserQuestion interactions from Claude Code sessions |
+| `sbs_question_stats` | Aggregate question usage statistics by skill and header |
+
+#### Skill Management (6)
 
 | Tool | Description |
 |------|-------------|
@@ -168,6 +178,8 @@ Tools for mining session data and analyzing agent behavior. The first 6 provide 
 | `sbs_skill_start` | Claim global state for a skill session |
 | `sbs_skill_transition` | Move to a new phase within the active skill |
 | `sbs_skill_end` | Release global state, ending the skill session |
+| `sbs_skill_fail` | Record skill failure with reason and release global state |
+| `sbs_skill_handoff` | Atomic end-one-start-another skill transition |
 
 ### Zulip Tools (3)
 
