@@ -174,6 +174,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | large-scale integration | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | large-scale integration example | `showcase/PrimeNumberTheoremAnd/README.md` | Side-by-Side Blueprint Integration |
 | latex parsing | `toolchain/Runway/README.md` | Processing Steps |
+| lean source skip: | `CLAUDE.md` | Direct Build Script Usage |
 | lean: | `forks/verso/README.md` | Dependencies |
 | leanarchitect | `CLAUDE.md` | Repository Map |
 | leanblueprint | `showcase/General_Crystallographic_Restriction/README.md` | Attribution |
