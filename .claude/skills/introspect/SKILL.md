@@ -146,6 +146,34 @@ Before running any MCP analysis tools, read all session retrospectives generated
 
 The retrospectives contain observations captured while context was hot -- things that automated analysis of archive metadata cannot reconstruct. Treat them as the highest-fidelity input available.
 
+**Step 0.5: Verification Sampling**
+
+Before running automated analysis, verify whether prior improvement guidance has been adopted.
+
+Each L2 cycle selects 2-3 prior guidance additions (from previous improvement cycles) and searches for adoption evidence:
+
+1. **Selection criteria:** Pick 2-3 items from the most recent L2 summary's recommendations or recently created improvement issues. Prefer items that are:
+   - At least 1 cycle old (give time for adoption)
+   - Concrete enough to search for evidence
+   - Not yet verified in a previous cycle
+
+2. **Evidence search:** For each selected item:
+   - Search session JSONL files in `dev/storage/archive/sessions/` for behavioral evidence
+   - Search archive entries via `sbs_search_entries` for related tags or patterns
+   - Check if related issues were closed and if the fix is present in guidance files
+
+3. **Status classification:** Record each item with one of:
+   - **ADOPTED** — Clear evidence the guidance is being followed (cite specific session/entry IDs)
+   - **NOT YET OBSERVED** — No evidence found, but insufficient data to conclude ineffective
+   - **INEFFECTIVE** — Evidence that the guidance is being ignored or is not working as intended
+
+4. **Escalation rule:** If an item has been "NOT YET OBSERVED" for 2 consecutive L2 cycles, escalate to "INEFFECTIVE" and recommend either:
+   - Strengthening the guidance (making it more prominent/specific)
+   - Removing the guidance (it's not providing value)
+   - Converting to an automated check (if the behavior can be validated programmatically)
+
+Carry verification results forward to the Archive phase output (see Verification Sampling section in L2 Phase 5).
+
 **Step 1: Automated Analysis**
 
 5. Query recent archive entries via `sbs_search_entries` or `sbs_epoch_summary`
@@ -352,9 +380,21 @@ sbs_skill_transition(skill="introspect", to_phase="archive")
      - **Cross-session patterns:** Themes that appeared in multiple retrospectives
      - **Per-pillar synthesis:** What the combined L1 + automated analysis revealed for each pillar
      - **Behavioral observations:** Longer-term patterns visible only when viewing multiple sessions together (e.g., how user communication style evolved, recurring alignment gaps, tool usage trends)
+     - **Verification sampling results:** Table from Step 0.5 (see template below)
      - **Findings logged:** Issue numbers and titles
      - **Recommendations for next cycle:** What the next self-improve should pay attention to
    - This document is the L2 introspection -- it observes patterns across L1 documents that no single retrospective could see
+   - The **Verification Sampling** section uses this template:
+
+     ```markdown
+     ## Verification Sampling
+
+     | Guidance Item | Source | Status | Evidence |
+     |---------------|--------|--------|----------|
+     | <description> | L2-<id> / Issue #N | ADOPTED / NOT YET OBSERVED / INEFFECTIVE | <cite session/entry IDs or "no evidence found"> |
+
+     **Escalations:** <items hitting 2-cycle threshold, or "none">
+     ```
 2. Generate cycle summary:
    - Findings discovered: N
    - Findings selected: M
