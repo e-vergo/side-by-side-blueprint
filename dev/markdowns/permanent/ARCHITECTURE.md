@@ -338,6 +338,14 @@ From the monorepo root:
 
 These scripts wrap `python dev/scripts/build.py` with the correct working directory.
 
+Build options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--force-lake`
+
+**Lean Source Skip:** The build script auto-detects whether `.lean` files changed since the last successful build. If unchanged, Lake build phases are skipped. Use `--force-lake` to override.
+
+### Performance Instrumentation
+
+Archive uploads (`sbs archive upload`) instrument every phase via `TimingContext` (`sbs/core/timing.py`). Timings are recorded in the `archive_timings` field of each entry and visualized in `archive_timing_trends.png`. Git pushes run in parallel via `ThreadPoolExecutor`; iCloud sync runs asynchronously (fire-and-forget).
+
 ## Document Taxonomy
 
 Documentation is organized into three categories, each with distinct characteristics and update expectations.

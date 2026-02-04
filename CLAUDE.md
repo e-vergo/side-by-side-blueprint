@@ -92,7 +92,9 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
 python ../../dev/scripts/build.py
 ```
 
-Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`
+Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--force-lake`
+
+**Lean Source Skip:** By default, the build script detects whether `.lean` files have changed since the last successful build. If unchanged, Lake build phases are skipped entirely. Use `--force-lake` to force a full rebuild.
 
 **Required:** `runway.json` must include `assetsDir` pointing to CSS/JS assets.
 

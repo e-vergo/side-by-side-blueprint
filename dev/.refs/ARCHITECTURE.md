@@ -776,6 +776,8 @@ Located in `scripts/sbs/tests/validators/design/`:
 # Or from project directories
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
 python ../../dev/scripts/build.py
+# Options: --dry-run, --skip-cache, --verbose, --capture, --force-lake
+# --force-lake overrides auto-detection of unchanged Lean sources
 
 # Run all deterministic tests
 cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
@@ -911,17 +913,27 @@ sbs rubric show <id>                     # Display rubric
 sbs rubric evaluate <id> --project X     # Evaluate project
 ```
 
+### Performance Instrumentation
+
+Archive uploads instrument every phase via `TimingContext` (`sbs/core/timing.py`):
+- `extraction`, `quality_scores`, `repo_commits`, `tagging`, `gate_validation`, `index_save`, `icloud_sync_launch`, `porcelain`
+- Timings stored in `archive_timings` field of each entry
+- Git pushes run in parallel via `ThreadPoolExecutor` (up to 4 concurrent); commits remain sequential for submodule pointer correctness
+- iCloud sync runs asynchronously (fire-and-forget via `async_full_sync()`)
+
 ### Visualizations
 
-Charts generated from `unified_ledger.json`:
+Charts generated from `unified_ledger.json` and `archive_index.json`:
 - **LOC Trends**: Lines of code by language over time
 - **Timing Trends**: Build phase durations (stacked area)
 - **Activity Heatmap**: Files changed per repo per build
+- **Archive Timing Trends**: Archive upload phase timings (stacked bar)
 
 ### iCloud Sync
 
 Archive data syncs to `~/Library/Mobile Documents/com~apple~CloudDocs/SBS_dev/storage/`:
 - Non-blocking (failures logged but don't break builds)
+- Async fire-and-forget via `async_full_sync()` (does not block archive upload)
 - Syncs: unified ledger, archive index, charts, screenshots, rubrics
 - Manual sync: `sbs archive sync`
 
