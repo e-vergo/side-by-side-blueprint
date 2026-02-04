@@ -251,19 +251,6 @@ Accepts issue numbers: `/task #42` loads issue context and prompts to close on c
 
 **Location:** `.claude/skills/task/SKILL.md`
 
-### `/oracle`
-
-Zero-shot codebase question answering.
-
-**Usage:** `/oracle <question>` or `/oracle` for interactive mode.
-
-**Features:**
-- Searches concept index for file locations
-- Explains relationships between components
-- Flags uncertainty explicitly
-
-**Location:** `.claude/skills/oracle/SKILL.md`
-
 ### `/log`
 
 Quick capture of bugs, features, and ideas to GitHub Issues.
@@ -319,7 +306,7 @@ Autonomous QA convergence loop. Runs QA evaluation, fixes failures, rebuilds, an
 
 For implementation details, file locations, and build internals, see:
 - [sbs-developer.md](.claude/agents/sbs-developer.md) - Implementation patterns and file locations
-- [sbs-oracle.md](.claude/agents/sbs-oracle.md) - Codebase knowledge (use Task tool with sbs-oracle agent to query)
+- [sbs-oracle.md](.claude/agents/sbs-oracle.md) - Oracle concept index data (parsed by `ask_oracle` MCP tool via DuckDB)
 - [dev/storage/README.md](dev/storage/README.md) - CLI tooling documentation
 - [Archive_Orchestration_and_Agent_Harmony.md](dev/markdowns/permanent/Archive_Orchestration_and_Agent_Harmony.md) - Script-agent interaction patterns
 
@@ -351,7 +338,7 @@ For implementation details, file locations, and build internals, see:
 *SBS Tools (for orchestration and testing):*
 | Tool | Use For |
 |------|---------|
-| `sbs_oracle_query` | File locations and concept info |
+| `ask_oracle` | Unified query: concept index + archive + quality metrics |
 | `sbs_archive_state` | Current orchestration state |
 | `sbs_run_tests` | Run pytest suite |
 | `sbs_validate_project` | Run T1-T8 validators |
@@ -512,28 +499,30 @@ In both cases, infer the most appropriate category from context: `process`, `int
 **When multiagent is NOT allowed:**
 - `/log` (atomic, single-agent operation)
 - `/update-and-archive` (sequential by design)
-- `/oracle` (read-only, no agents needed)
 - Outside of any active skill (idle state)
 
 ---
 
 ### Oracle-First Approach
 
-Use `sbs_oracle_query` reflexively as the default starting point for understanding:
+Use `ask_oracle` reflexively as the default starting point for understanding:
 - Where files/concepts are located
 - How components relate to each other
 - What exists before searching manually
+- Archive history and quality metrics for a topic
 
 The oracle should be the go-to before Glob/Grep for orientation questions.
 
 **Configurable arguments:**
 | Arg | Type | Purpose |
 |-----|------|---------|
-| `result_type` | string | Filter to "files", "concepts", or "all" |
-| `scope` | string | Limit to specific repo (e.g., "Dress", "Runway") |
-| `include_raw_section` | bool | Return full section content |
+| `query` | string | Natural language query to search |
+| `max_results` | int | Maximum results to return (default: 10) |
 | `min_relevance` | float | Filter low-relevance matches (0.0-1.0) |
 | `fuzzy` | bool | Enable fuzzy matching for typos |
+| `include_archive` | bool | Include archive entry matches |
+| `include_issues` | bool | Include GitHub issue matches |
+| `include_quality` | bool | Include quality metric matches |
 
 ---
 

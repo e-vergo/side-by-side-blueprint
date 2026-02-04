@@ -30,7 +30,7 @@ You operate within a structured, phased workflow. Global state determines what a
 
 **Oracle-first is mandatory.** Before asking the user about file locations, architecture, or codebase questions:
 
-1. Call `sbs_oracle_query` with relevant terms
+1. Call `ask_oracle` with relevant terms
 2. Use MCP tools (`lean_file_outline`, `lean_hover_info`, `lean_local_search`) for Lean code questions
 3. Use `Glob`/`Grep`/`Read` for file content exploration
 
@@ -70,7 +70,7 @@ Before asking the user about system state or configuration:
 
 Distinguish between two exploration modes and always execute them in order:
 
-1. **Orientation (cheap, do first):** Oracle queries, file outlines, README scans. Answers "where is X?" and "what exists?" Use `sbs_oracle_query` as the default starting point.
+1. **Orientation (cheap, do first):** Oracle queries, file outlines, README scans. Answers "where is X?" and "what exists?" Use `ask_oracle` as the default starting point.
 2. **Deep exploration (targeted, do second):** Full file reads, grep across repos, hover info, call-chain tracing. Answers "how does X work?" and "is X reachable?"
 
 Orientation informs which deep exploration is needed. Skipping orientation and jumping to exhaustive grep sweeps wastes tokens and context. When oracle provides direct file paths, use those instead of broad searches.
@@ -279,33 +279,23 @@ This prevents repeated mistakes from writing code that contradicts documented pa
 
 ---
 
-## /oracle Skill for Codebase Questions
+## Oracle for Codebase Questions
 
-When you need to know "where is X?" or "how does Y work?", invoke `/oracle` BEFORE searching:
+When you need to know "where is X?" or "how does Y work?", use the MCP tool:
 
-```
-/oracle graph layout
-```
-
-Or use the MCP tool for quick lookups:
 ```python
-sbs_oracle_query(query="graph layout")
+ask_oracle(query="graph layout")
 ```
 
-The Oracle contains pre-compiled knowledge:
-- **Concept Index**: Concept -> file location
-- **File Purpose Map**: One-liner summaries
-- **How-To Patterns**: Add CLI command, add validator, etc.
-- **Gotchas**: Known quirks and tribal knowledge
-- **Cross-Repo Impact**: What to check when changing X
+The Oracle contains pre-compiled knowledge (concept index, file purpose map, how-to patterns, gotchas, cross-repo impact) plus archive history, issues, and quality metrics via DuckDB.
 
-**Use /oracle or sbs_oracle_query BEFORE:**
+**Use `ask_oracle` BEFORE:**
 - Grepping for file locations
 - Reading multiple files to understand architecture
 - Asking "where is X implemented?"
 - Figuring out patterns for common modifications
 
-The Oracle is auto-regenerated during `/update-and-archive`.
+The Oracle concept index is auto-regenerated during `/update-and-archive`.
 
 ---
 
@@ -696,7 +686,7 @@ The sbs-lsp-mcp server provides 11 SBS-specific tools for orchestration and test
 | `sbs_serve_project` | Start/stop/check dev server |
 | `sbs_last_screenshot` | Get most recent screenshot for a page |
 | `sbs_visual_history` | View screenshot history across entries |
-| `sbs_oracle_query` | Query the compiled oracle knowledge base |
+| `ask_oracle` | Unified query: concept index + archive + quality metrics |
 
 ---
 

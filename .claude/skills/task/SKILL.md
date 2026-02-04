@@ -49,7 +49,7 @@ When invoked as `/task crush` (with or without issue numbers):
 
 2. **Gather oracle context (parallel):**
    - Spawn up to 4 read-only Explore agents, each taking a batch of issues
-   - Each agent calls `sbs_oracle_query` for its batch and reads relevant files
+   - Each agent calls `ask_oracle` for its batch and reads relevant files
    - Each reports back per issue: affected files, estimated complexity (trivial/moderate/significant), recommended wave type (direct/fix/docs/code)
 
 3. **Propose triage plan:**
