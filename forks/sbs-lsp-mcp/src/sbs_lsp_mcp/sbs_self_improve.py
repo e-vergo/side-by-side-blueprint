@@ -1008,10 +1008,11 @@ def sbs_entries_since_self_improve_impl() -> SelfImproveEntries:
     last_self_improve_entry: Optional[str] = None
     last_self_improve_timestamp: Optional[str] = None
 
-    for entry in sorted_entries:
-        if entry.global_state and entry.global_state.get("skill") == "self-improve":
-            last_self_improve_entry = entry.entry_id
-            last_self_improve_timestamp = getattr(entry, 'added_at', None) or entry.created_at
+    sessions = _group_entries_by_skill_session(list(index.entries.values()))
+    for session in reversed(sessions):
+        if session.skill == "self-improve" and session.completed:
+            last_self_improve_entry = session.last_entry_id
+            last_self_improve_timestamp = session.end_time
             break
 
     # Get entries since the last self-improve (or all if no self-improve found)
