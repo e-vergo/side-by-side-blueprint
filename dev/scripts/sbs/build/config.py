@@ -69,11 +69,13 @@ class BuildConfig:
     sbs_root: Path = field(default_factory=lambda: SBS_ROOT)
     cache_dir: Path = field(default_factory=lambda: CACHE_DIR)
     skip_cache: bool = False
+    skip_validation: bool = False  # Skip pre-flight validation checks
     dry_run: bool = False
     verbose: bool = False
     capture: bool = False
     capture_url: str = "http://localhost:8000"
     force_lake: bool = False  # Force Lake builds even if Lean sources unchanged
+    force_clean: bool = False  # Force full cleanup of build artifacts
 
 
 # =============================================================================

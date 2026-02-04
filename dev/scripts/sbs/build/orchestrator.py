@@ -124,6 +124,94 @@ class BuildOrchestrator:
             self._phase_timings[name] = round(duration, 3)
             self._phase_start = None
 
+    def _validate_project_structure(self) -> None:
+        """Pre-flight checks before expensive operations.
+
+        Catches configuration errors early to avoid wasting 2+ minutes
+        before discovering missing files or bad state.
+
+        Raises:
+            RuntimeError: If critical configuration is missing or invalid.
+        """
+        errors: list[str] = []
+        warnings: list[str] = []
+
+        # 1. Check required files exist
+        runway_json = self.config.project_root / "runway.json"
+        if not runway_json.exists():
+            errors.append(
+                f"runway.json not found at {runway_json}\n"
+                f"  Fix: Create runway.json with projectName and assetsDir fields"
+            )
+        else:
+            # Validate runway.json is parseable and has required fields
+            try:
+                data = json.loads(runway_json.read_text())
+                if not data.get("projectName"):
+                    errors.append(
+                        f"runway.json missing required 'projectName' field\n"
+                        f"  Fix: Add \"projectName\": \"YourProject\" to runway.json"
+                    )
+                # Check assetsDir exists if specified
+                assets_dir = data.get("assetsDir")
+                if assets_dir:
+                    assets_path = (self.config.project_root / assets_dir).resolve()
+                    if not assets_path.exists():
+                        errors.append(
+                            f"assetsDir not found: {assets_path}\n"
+                            f"  Fix: Create the assets directory or update assetsDir in runway.json"
+                        )
+            except json.JSONDecodeError as e:
+                errors.append(
+                    f"runway.json is not valid JSON: {e}\n"
+                    f"  Fix: Validate JSON syntax in runway.json"
+                )
+
+        # Check lakefile exists
+        lakefile_toml = self.config.project_root / "lakefile.toml"
+        lakefile_lean = self.config.project_root / "lakefile.lean"
+        if not lakefile_toml.exists() and not lakefile_lean.exists():
+            errors.append(
+                f"No lakefile found in {self.config.project_root}\n"
+                f"  Fix: Create lakefile.toml or lakefile.lean"
+            )
+
+        # 2. Check Lake manifests parseable (catches corruption early)
+        manifest_path = self.config.project_root / "lake-manifest.json"
+        if manifest_path.exists():
+            try:
+                json.loads(manifest_path.read_text())
+            except json.JSONDecodeError as e:
+                errors.append(
+                    f"lake-manifest.json is corrupted: {e}\n"
+                    f"  Fix: Run 'lake update' to regenerate the manifest"
+                )
+
+        # 3. Check git status in toolchain repos (warn if dirty)
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo_path = self.config.sbs_root / REPO_PATHS.get(name, name)
+            if repo_path.exists():
+                if git_has_changes(repo_path):
+                    warnings.append(f"{name}: Has uncommitted changes")
+
+        # Report warnings (non-blocking)
+        if warnings:
+            log.header("Pre-flight warnings")
+            for warning in warnings:
+                log.warning(f"  {warning}")
+
+        # Report errors and fail if any critical issues
+        if errors:
+            log.header("Pre-flight validation failed")
+            for error in errors:
+                log.error(f"  {error}")
+            raise RuntimeError(
+                f"Pre-flight validation failed with {len(errors)} error(s). "
+                f"Fix the issues above before building."
+            )
+
+        log.success("Pre-flight validation passed")
+
     def _collect_commits_before(self) -> None:
         """Collect git commits from all repos before build."""
         for name, repo in self.repos.items():
@@ -571,6 +659,51 @@ class BuildOrchestrator:
             return True
         return False
 
+    def _lake_manifests_changed(self) -> bool:
+        """Check if Lake manifests changed since last successful build.
+
+        Compares lakefile.lean/toml and lake-manifest.json timestamps against
+        the last recorded build timestamp to detect dependency changes.
+        """
+        # Check for manifest timestamp file
+        timestamp_file = self.config.cache_dir / f"{self.config.project_name}_manifest_ts"
+
+        # Get current manifest files
+        lakefile_toml = self.config.project_root / "lakefile.toml"
+        lakefile_lean = self.config.project_root / "lakefile.lean"
+        lake_manifest = self.config.project_root / "lake-manifest.json"
+
+        manifest_files = [f for f in [lakefile_toml, lakefile_lean, lake_manifest] if f.exists()]
+
+        if not manifest_files:
+            return False  # No manifests to check
+
+        # Get latest modification time of manifest files
+        latest_mtime = max(f.stat().st_mtime for f in manifest_files)
+
+        # If no timestamp file exists, this is first run - don't force clean
+        if not timestamp_file.exists():
+            # Save current timestamp for future comparisons
+            timestamp_file.parent.mkdir(parents=True, exist_ok=True)
+            timestamp_file.write_text(str(latest_mtime))
+            return False
+
+        # Compare with last recorded timestamp
+        try:
+            last_mtime = float(timestamp_file.read_text().strip())
+            manifests_changed = latest_mtime > last_mtime
+
+            if manifests_changed:
+                log.info("Lake manifests changed since last build")
+                # Update timestamp for next run
+                timestamp_file.write_text(str(latest_mtime))
+
+            return manifests_changed
+        except (ValueError, OSError):
+            # Corrupt timestamp file - don't force clean, just update
+            timestamp_file.write_text(str(latest_mtime))
+            return False
+
     def _build_project_internal(self) -> None:
         """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
         if not self._needs_project_build():
@@ -762,6 +895,14 @@ class BuildOrchestrator:
         log.info(f"Run ID: {self._run_id}")
 
         try:
+            # Pre-flight validation (catches missing files before expensive ops)
+            if not self.config.skip_validation:
+                self._start_phase("validation")
+                self._validate_project_structure()
+                self._end_phase("validation")
+            else:
+                log.info("Skipping pre-flight validation (--skip-validation)")
+
             # Discover repos
             self.discover_repos()
 
@@ -797,10 +938,14 @@ class BuildOrchestrator:
             self.run_quality_validators()
             self._end_phase("quality_validators")
 
-            # Clean artifacts
-            self._start_phase("clean_build")
-            self.clean_artifacts()
-            self._end_phase("clean_build")
+            # Clean artifacts only if explicitly requested or manifests changed
+            # This preserves dressed/ artifacts for skip logic when Lean unchanged
+            if self.config.force_clean or self._lake_manifests_changed():
+                self._start_phase("clean_build")
+                self.clean_artifacts()
+                self._end_phase("clean_build")
+            else:
+                log.info("Skipping artifact cleanup: manifests unchanged (use --clean to force)")
 
             # Build toolchain (mandatory - ensures consistency)
             self._start_phase("build_toolchain")
@@ -928,6 +1073,12 @@ Examples:
     )
 
     parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip pre-flight validation checks",
+    )
+
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose debug output",
@@ -951,6 +1102,12 @@ Examples:
         help="Force Lake builds even if Lean sources are unchanged",
     )
 
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Force full cleanup of build artifacts before building",
+    )
+
     return parser.parse_args()
 
 
@@ -971,11 +1128,13 @@ def main() -> int:
             project_name=project_name,
             module_name=module_name,
             skip_cache=args.skip_cache,
+            skip_validation=args.skip_validation,
             dry_run=args.dry_run,
             verbose=args.verbose,
             capture=args.capture,
             capture_url=args.capture_url,
             force_lake=args.force_lake,
+            force_clean=args.clean,
         )
 
         # Run build
