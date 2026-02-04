@@ -15,6 +15,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -24,7 +25,8 @@ from sbs.archive.extractor import extract_claude_data
 from sbs.archive.gates import check_gates, GateResult
 from sbs.archive.session_data import ClaudeDataSnapshot, SessionData
 from sbs.archive.tagger import TaggingEngine, build_tagging_context
-from sbs.archive.icloud_sync import full_sync
+from sbs.archive.icloud_sync import async_full_sync, full_sync
+from sbs.core.timing import TimingContext, timing_summary
 from sbs.core.utils import log, ARCHIVE_DIR, SBS_ROOT
 
 # Repo paths relative to monorepo root
@@ -132,10 +134,21 @@ def repo_has_unpushed(repo_path: Path) -> bool:
         return False
 
 
-def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -> bool:
-    """Commit and push changes in a repo."""
+def commit_and_push_repo(
+    repo_path: Path, message: str, dry_run: bool = False, push: bool = True
+) -> bool:
+    """Commit and optionally push changes in a repo.
+
+    Args:
+        repo_path: Path to the git repository.
+        message: Commit message.
+        dry_run: If True, log what would happen without acting.
+        push: If True (default), push after committing. Set to False to
+              commit only, deferring the push to a later parallel phase.
+    """
     if dry_run:
-        log.dim(f"[dry-run] Would commit and push: {repo_path.name}")
+        action = "commit and push" if push else "commit"
+        log.dim(f"[dry-run] Would {action}: {repo_path.name}")
         return True
 
     try:
@@ -165,18 +178,19 @@ def commit_and_push_repo(repo_path: Path, message: str, dry_run: bool = False) -
             log.warning(f"Commit failed for {repo_path.name}: {result.stderr}")
             return False
 
-        # Push
-        result = subprocess.run(
-            ["git", "push"],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
+        # Push (unless deferred)
+        if push:
+            result = subprocess.run(
+                ["git", "push"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
 
-        if result.returncode != 0:
-            log.warning(f"Push failed for {repo_path.name}: {result.stderr}")
-            return False
+            if result.returncode != 0:
+                log.warning(f"Push failed for {repo_path.name}: {result.stderr}")
+                return False
 
         return True
 
@@ -398,20 +412,23 @@ def archive_upload(
     }
 
     try:
+        archive_timings: dict[str, float] = {}
+
         # 1. Extract ~/.claude data
-        log.info("Extracting Claude Code data...")
-        claude_data_dir = ARCHIVE_DIR / "claude_data"
+        with TimingContext(archive_timings, "extraction"):
+            log.info("Extracting Claude Code data...")
+            claude_data_dir = ARCHIVE_DIR / "claude_data"
 
-        if dry_run:
-            log.dim("[dry-run] Would extract to: " + str(claude_data_dir))
-            snapshot = ClaudeDataSnapshot(
-                extraction_timestamp=datetime.now().isoformat()
-            )
-        else:
-            snapshot = extract_claude_data(claude_data_dir)
+            if dry_run:
+                log.dim("[dry-run] Would extract to: " + str(claude_data_dir))
+                snapshot = ClaudeDataSnapshot(
+                    extraction_timestamp=datetime.now().isoformat()
+                )
+            else:
+                snapshot = extract_claude_data(claude_data_dir)
 
-        result["sessions_extracted"] = len(snapshot.session_ids)
-        result["plans_extracted"] = len(snapshot.plan_files)
+            result["sessions_extracted"] = len(snapshot.session_ids)
+            result["plans_extracted"] = len(snapshot.plan_files)
 
         # Define index path early (needed for quality score delta computation)
         index_path = ARCHIVE_DIR / "archive_index.json"
@@ -446,160 +463,168 @@ def archive_upload(
         entry.added_at = datetime.now(timezone.utc).isoformat()
 
         # 2.5 Include quality scores
-        log.info("Loading quality scores...")
-        quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
+        with TimingContext(archive_timings, "quality_scores"):
+            log.info("Loading quality scores...")
+            quality_scores, quality_delta = _load_quality_scores(project or "SBSMonorepo", index_path)
 
-        # Run validators if requested, auto-validate for build triggers,
-        # or when transitioning to finalization (ensures quality scores exist)
-        should_validate = (
-            validate
-            or (trigger == "build")
-            or (state_transition == "phase_start"
-                and global_state
-                and global_state.get("substate") == "finalization")
-        )
-        if should_validate:
-            log.info("Running validators...")
-            try:
-                from sbs.tests.validators.runner import run_validators
-                runner_result = run_validators(
-                    project=project or "SBSTest",
-                    update_ledger=True,
-                    skip_heuristic=True,
-                )
-                # Reload quality scores from updated ledger
-                quality_scores, quality_delta = _load_quality_scores(
-                    project or "SBSMonorepo", index_path
-                )
-                result["validation"] = {
-                    "passed": runner_result.overall_passed,
-                    "skipped": runner_result.skipped,
-                    "errors": runner_result.errors,
-                }
-            except Exception as e:
-                log.warning(f"Validation failed: {e}")
+            # Run validators if requested, auto-validate for build triggers,
+            # or when transitioning to finalization (ensures quality scores exist)
+            should_validate = (
+                validate
+                or (trigger == "build")
+                or (state_transition == "phase_start"
+                    and global_state
+                    and global_state.get("substate") == "finalization")
+            )
+            if should_validate:
+                log.info("Running validators...")
+                try:
+                    from sbs.tests.validators.runner import run_validators
+                    runner_result = run_validators(
+                        project=project or "SBSTest",
+                        update_ledger=True,
+                        skip_heuristic=True,
+                    )
+                    # Reload quality scores from updated ledger
+                    quality_scores, quality_delta = _load_quality_scores(
+                        project or "SBSMonorepo", index_path
+                    )
+                    result["validation"] = {
+                        "passed": runner_result.overall_passed,
+                        "skipped": runner_result.skipped,
+                        "errors": runner_result.errors,
+                    }
+                except Exception as e:
+                    log.warning(f"Validation failed: {e}")
 
-        entry.quality_scores = quality_scores
-        entry.quality_delta = quality_delta
-        if quality_scores:
-            result["quality_score"] = quality_scores.get("overall", 0.0)
+            entry.quality_scores = quality_scores
+            entry.quality_delta = quality_delta
+            if quality_scores:
+                result["quality_score"] = quality_scores.get("overall", 0.0)
 
         # 3. Collect repo commits
-        log.info("Collecting repo commits...")
-        entry.repo_commits = collect_repo_commits()
+        with TimingContext(archive_timings, "repo_commits"):
+            log.info("Collecting repo commits...")
+            entry.repo_commits = collect_repo_commits()
 
         # 4. Run tagging engine
-        log.info("Running auto-tagging...")
-        rules_path = ARCHIVE_DIR / "tagging" / "rules.yaml"
-        hooks_dir = ARCHIVE_DIR / "tagging" / "hooks"
+        with TimingContext(archive_timings, "tagging"):
+            log.info("Running auto-tagging...")
+            rules_path = ARCHIVE_DIR / "tagging" / "rules.yaml"
+            hooks_dir = ARCHIVE_DIR / "tagging" / "hooks"
 
-        tagger = TaggingEngine(rules_path, hooks_dir)
+            tagger = TaggingEngine(rules_path, hooks_dir)
 
-        # Build context for tagging
-        # Use most recent session's files for entry-level discrimination
-        # instead of the global aggregate (fixes #110)
-        current_session_files = snapshot.files_modified  # fallback: aggregate
-        if snapshot.per_session_files:
-            current_session_files = snapshot.per_session_files[-1]
+            # Build context for tagging
+            # Use most recent session's files for entry-level discrimination
+            # instead of the global aggregate (fixes #110)
+            current_session_files = snapshot.files_modified  # fallback: aggregate
+            if snapshot.per_session_files:
+                current_session_files = snapshot.per_session_files[-1]
 
-        context = build_tagging_context(
-            entry,
-            build_success=build_success,
-            build_duration_seconds=build_duration_seconds,
-            repos_changed=repos_changed,
-            files_modified=current_session_files,
-        )
+            context = build_tagging_context(
+                entry,
+                build_success=build_success,
+                build_duration_seconds=build_duration_seconds,
+                repos_changed=repos_changed,
+                files_modified=current_session_files,
+            )
 
-        # Load sessions for hooks (if not dry run)
-        sessions: list[SessionData] = []
-        if not dry_run:
-            import json
+            # Load sessions for hooks (if not dry run)
+            sessions: list[SessionData] = []
+            if not dry_run:
+                import json
 
-            sessions_dir = claude_data_dir / "sessions"
-            if sessions_dir.exists():
-                for f in sessions_dir.glob("*.json"):
-                    if f.name != "index.json":
-                        try:
-                            with open(f) as fp:
-                                sessions.append(SessionData.from_dict(json.load(fp)))
-                        except Exception:
-                            pass
+                sessions_dir = claude_data_dir / "sessions"
+                if sessions_dir.exists():
+                    for f in sessions_dir.glob("*.json"):
+                        if f.name != "index.json":
+                            try:
+                                with open(f) as fp:
+                                    sessions.append(SessionData.from_dict(json.load(fp)))
+                            except Exception:
+                                pass
 
-        auto_tags = tagger.evaluate(entry, context, sessions)
-        entry.auto_tags = auto_tags
-        result["tags_applied"] = auto_tags
+            auto_tags = tagger.evaluate(entry, context, sessions)
+            entry.auto_tags = auto_tags
+            result["tags_applied"] = auto_tags
 
-        log.info(f"Applied {len(auto_tags)} auto-tags: {auto_tags}")
+            log.info(f"Applied {len(auto_tags)} auto-tags: {auto_tags}")
 
         # 4.5 Gate validation for /task execution->finalization transition
-        gate_result: Optional[GateResult] = None
-        gate_blocked = False
-        if (state_transition == "phase_start" and
-            global_state and
-            global_state.get("skill") == "task" and
-            global_state.get("substate") == "finalization"):
+        with TimingContext(archive_timings, "gate_validation"):
+            gate_result: Optional[GateResult] = None
+            gate_blocked = False
+            if (state_transition == "phase_start" and
+                global_state and
+                global_state.get("skill") == "task" and
+                global_state.get("substate") == "finalization"):
 
-            log.info("Checking gates before finalization...")
-            gate_result = check_gates(project=project or "SBSTest")
+                log.info("Checking gates before finalization...")
+                gate_result = check_gates(project=project or "SBSTest")
 
-            for finding in gate_result.findings:
-                log.dim(f"  {finding}")
+                for finding in gate_result.findings:
+                    log.dim(f"  {finding}")
 
-            # Record gate validation in entry BEFORE save (persisted regardless of outcome)
-            entry.gate_validation = {
-                "passed": gate_result.passed,
-                "findings": gate_result.findings,
-            }
+                # Record gate validation in entry BEFORE save (persisted regardless of outcome)
+                entry.gate_validation = {
+                    "passed": gate_result.passed,
+                    "findings": gate_result.findings,
+                }
 
-            if not gate_result.passed:
-                log.error("[BLOCKED] Gate validation failed - transition blocked")
-                gate_blocked = True
-            else:
-                log.success("[OK] Gate validation passed")
+                if not gate_result.passed:
+                    log.error("[BLOCKED] Gate validation failed - transition blocked")
+                    gate_blocked = True
+                else:
+                    log.success("[OK] Gate validation passed")
 
         # 5. Save to archive index
         # Entry is ALWAYS persisted, even on gate failure, so we have a record
-        log.info("Saving to archive index...")
-        # index_path already defined above
+        with TimingContext(archive_timings, "index_save"):
+            log.info("Saving to archive index...")
+            # index_path already defined above
 
-        if dry_run:
-            log.dim(f"[dry-run] Would save entry {entry_id} to {index_path}")
-        else:
-            index = ArchiveIndex.load(index_path)
+            # Attach timing data to entry before persisting
+            entry.archive_timings = archive_timings
 
-            # Compute epoch_summary for skill-triggered entries (epoch close)
-            if trigger == "skill":
-                # Get entries since last epoch close
-                last_epoch_id = index.last_epoch_entry
-                epoch_entries = []
-                for eid, e in index.entries.items():
-                    if last_epoch_id is None or eid > last_epoch_id:
-                        if eid != entry.entry_id:  # Don't include self
-                            epoch_entries.append(e)
+            if dry_run:
+                log.dim(f"[dry-run] Would save entry {entry_id} to {index_path}")
+            else:
+                index = ArchiveIndex.load(index_path)
 
-                entry.epoch_summary = {
-                    "entries_in_epoch": len(epoch_entries),
-                    "builds_in_epoch": sum(1 for e in epoch_entries if e.trigger == "build"),
-                    "entry_ids": [e.entry_id for e in epoch_entries],
-                }
+                # Compute epoch_summary for skill-triggered entries (epoch close)
+                if trigger == "skill":
+                    # Get entries since last epoch close
+                    last_epoch_id = index.last_epoch_entry
+                    epoch_entries = []
+                    for eid, e in index.entries.items():
+                        if last_epoch_id is None or eid > last_epoch_id:
+                            if eid != entry.entry_id:  # Don't include self
+                                epoch_entries.append(e)
 
-                # Update index to mark this as the new epoch boundary
-                index.last_epoch_entry = entry.entry_id
+                    entry.epoch_summary = {
+                        "entries_in_epoch": len(epoch_entries),
+                        "builds_in_epoch": sum(1 for e in epoch_entries if e.trigger == "build"),
+                        "entry_ids": [e.entry_id for e in epoch_entries],
+                    }
 
-            # Update index global_state if state_transition indicates a change
-            # On gate failure, do NOT update global_state (transition is blocked)
-            if not gate_blocked:
-                if state_transition == "handoff" and handoff_to:
-                    # Handoff: atomically end outgoing skill and start incoming skill
-                    index.global_state = handoff_to
-                elif global_state is not None:
-                    index.global_state = global_state
-                elif state_transition == "phase_end" and global_state is None:
-                    # Clearing state (returning to idle)
-                    index.global_state = None
+                    # Update index to mark this as the new epoch boundary
+                    index.last_epoch_entry = entry.entry_id
 
-            index.add_entry(entry)
-            index.save(index_path)
+                # Update index global_state if state_transition indicates a change
+                # On gate failure, do NOT update global_state (transition is blocked)
+                if not gate_blocked:
+                    if state_transition == "handoff" and handoff_to:
+                        # Handoff: atomically end outgoing skill and start incoming skill
+                        index.global_state = handoff_to
+                    elif global_state is not None:
+                        index.global_state = global_state
+                    elif state_transition == "phase_end" and global_state is None:
+                        # Clearing state (returning to idle)
+                        index.global_state = None
+
+                index.add_entry(entry)
+                index.save(index_path)
 
         # Return gate failure AFTER entry is persisted
         if gate_blocked:
@@ -610,31 +635,32 @@ def archive_upload(
                 "entry_id": entry_id,
             }
 
-        # 6. Sync to iCloud
-        log.info("Syncing to iCloud...")
-        if dry_run:
-            log.dim("[dry-run] Would sync to iCloud")
-            result["synced"] = True
-        else:
-            try:
-                index = ArchiveIndex.load(index_path)
-                sync_result = full_sync(ARCHIVE_DIR, index)
-                result["synced"] = sync_result.get("success", False)
-                if not result["synced"]:
-                    result["errors"].extend(sync_result.get("errors", []))
-            except Exception as e:
-                log.warning(f"iCloud sync failed: {e}")
-                result["errors"].append(f"iCloud sync: {e}")
+        # 6. Sync to iCloud (async, non-blocking)
+        with TimingContext(archive_timings, "icloud_sync_launch"):
+            log.info("Launching async iCloud sync...")
+            if dry_run:
+                log.dim("[dry-run] Would sync to iCloud")
+                result["synced"] = True
+            else:
+                try:
+                    index = ArchiveIndex.load(index_path)
+                    async_full_sync(ARCHIVE_DIR, index)
+                    result["synced"] = True  # Launched, not completed
+                except Exception as e:
+                    log.warning(f"iCloud sync launch failed: {e}")
+                    result["errors"].append(f"iCloud sync: {e}")
 
         # 7. Ensure porcelain state
-        log.info("Ensuring porcelain git state...")
-        porcelain_success, failed_repos = ensure_porcelain(dry_run)
-        result["porcelain"] = porcelain_success
+        with TimingContext(archive_timings, "porcelain"):
+            log.info("Ensuring porcelain git state...")
+            porcelain_success, failed_repos = ensure_porcelain(dry_run)
+            result["porcelain"] = porcelain_success
 
-        if not porcelain_success:
-            result["errors"].append(f"Failed to achieve porcelain: {failed_repos}")
-            log.warning(f"Porcelain failed for: {failed_repos}")
+            if not porcelain_success:
+                result["errors"].append(f"Failed to achieve porcelain: {failed_repos}")
+                log.warning(f"Porcelain failed for: {failed_repos}")
 
+        log.info(f"Archive timing: {timing_summary(archive_timings)}")
         result["success"] = True
         log.success(f"Archive upload complete: entry {entry_id}")
 
