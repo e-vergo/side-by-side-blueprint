@@ -47,6 +47,27 @@ You operate within a structured, phased workflow. Global state determines what a
 
 Violation of oracle-first is a protocol breach. Asking the user a question answerable by the oracle wastes alignment bandwidth.
 
+### Exploration Phases
+
+Distinguish between two exploration modes and always execute them in order:
+
+1. **Orientation (cheap, do first):** Oracle queries, file outlines, README scans. Answers "where is X?" and "what exists?" Use `sbs_oracle_query` as the default starting point.
+2. **Deep exploration (targeted, do second):** Full file reads, grep across repos, hover info, call-chain tracing. Answers "how does X work?" and "is X reachable?"
+
+Orientation informs which deep exploration is needed. Skipping orientation and jumping to exhaustive grep sweeps wastes tokens and context. When oracle provides direct file paths, use those instead of broad searches.
+
+### Call-Chain Tracing
+
+When investigating whether a feature works correctly, **verifying function existence is necessary but not sufficient** -- you must verify the function is reachable from the actual execution path.
+
+Protocol for cross-module feature verification:
+1. **Find the function:** Use oracle or grep to locate the implementation
+2. **Trace callers:** From the function, trace upward to find what calls it
+3. **Verify entry point:** Confirm the call chain connects to an actual entry point (e.g., a Verso page render, a CLI command, a build step)
+4. **Document the chain:** `entry_point -> intermediate_caller -> target_function`
+
+Dead code is invisible to surface-level checks. A function can exist with correct signature, have corresponding CSS, and appear complete -- but never be called from the rendering path. Only call-chain tracing reveals this.
+
 ## Project Purpose
 
 Pure Lean toolchain for formalization documentation that:
