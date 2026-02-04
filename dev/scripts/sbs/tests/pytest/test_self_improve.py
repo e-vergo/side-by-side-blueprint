@@ -181,6 +181,38 @@ class TestSkillFileExistsAndParses:
         assert "anti-pattern" in content.lower(), \
             "Skill must have anti-patterns section"
 
+    def test_skill_has_retrospective_review_in_discovery(self):
+        """Skill must document retrospective review as first step in discovery."""
+        content = SKILL_FILE.read_text()
+
+        assert "retrospective review" in content.lower(), \
+            "Skill must document retrospective review in discovery phase"
+        assert "dev/storage/archive/retrospectives/" in content, \
+            "Skill must reference retrospective file path"
+        assert "l1" in content.lower(), \
+            "Skill must reference L1 introspection level"
+
+    def test_skill_has_summary_document_in_archive(self):
+        """Skill must document summary document generation in archive phase."""
+        content = SKILL_FILE.read_text()
+
+        assert "dev/storage/archive/summaries/" in content, \
+            "Skill must reference summary document path"
+        assert "l2" in content.lower(), \
+            "Skill must reference L2 introspection level"
+
+    def test_skill_has_introspection_hierarchy(self):
+        """Skill must document the introspection hierarchy."""
+        content = SKILL_FILE.read_text()
+
+        assert "introspection hierarchy" in content.lower(), \
+            "Skill must have 'Introspection Hierarchy' section"
+        # Must define L1 and L2
+        assert "session retrospective" in content.lower(), \
+            "Skill must define L1 as session retrospective"
+        assert "self-improvement summary" in content.lower(), \
+            "Skill must define L2 as self-improvement summary"
+
     def test_skill_has_analysis_workflow(self):
         """Skill must have analysis workflow section."""
         content = SKILL_FILE.read_text()

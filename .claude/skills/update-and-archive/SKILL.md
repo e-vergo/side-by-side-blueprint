@@ -197,15 +197,17 @@ python3 -m sbs archive upload --trigger skill --global-state '{"skill":"update-a
 
 ### Output
 
-- **Standalone markdown file:** `dev/storage/archive/retrospectives/<entry-id>.md`
+- **Standalone markdown file:** `dev/storage/archive/retrospectives/<entry-id>.md` (L1 introspection)
 - **Summary included in archive entry notes** (key findings, 3-5 bullet points)
+
+**Introspection hierarchy role:** These retrospectives are **L1 introspections** -- per-session observations captured while context is hot. During `/self-improve`, all L1 documents since the last improvement cycle are read and synthesized into an **L2 introspection** (self-improvement summary at `dev/storage/archive/summaries/`). Write retrospectives with this consumer in mind: include specific examples, concrete data, and observations that automated analysis cannot reconstruct.
 
 ### Methodology
 
 - The agent has access to the full conversation context at spawn time (compaction-immune)
 - Reads recent archive entries via `sbs_search_entries` or `sbs_context` for quantitative data
 - Examines user answer patterns, question frequency, correction patterns
-- Captures specific examples, not just summaries -- future `/self-improve` agents need concrete data
+- Captures specific examples, not just summaries -- `/self-improve` reads these as L1 inputs for L2 synthesis
 
 ### Transition
 

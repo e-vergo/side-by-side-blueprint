@@ -183,8 +183,15 @@ alignment -> planning -> execution -> finalization
 
 **`/update-and-archive` skill:**
 ```
-readme-wave -> oracle-regen -> porcelain -> archive-upload
+retrospective -> readme-wave -> oracle-regen -> porcelain -> archive-upload
 ```
+
+**`/self-improve` skill:**
+```
+discovery -> selection -> dialogue -> logging -> archive
+```
+
+**Note:** Discovery reads L1 retrospectives (from `/update-and-archive`) as primary input, then runs MCP analysis tools. Archive phase writes an L2 summary to `dev/storage/archive/summaries/`. See the Introspection Hierarchy in the self-improve skill definition for the full model.
 
 ### State Transition Diagram
 
