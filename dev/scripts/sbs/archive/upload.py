@@ -610,12 +610,18 @@ def archive_upload(
 
         # 5. Save to archive index
         # Entry is ALWAYS persisted, even on gate failure, so we have a record
+        #
+        # Timing note: We capture timings for phases completed BEFORE save.
+        # The index_save, icloud_sync_launch, and porcelain phases happen
+        # after this point and cannot be included in the persisted entry.
+        # The "pre_save_total" captures extraction + quality_scores +
+        # repo_commits + tagging + gate_validation.
+        archive_timings["pre_save_total"] = round(sum(archive_timings.values()), 3)
+        entry.archive_timings = archive_timings
+
         with TimingContext(archive_timings, "index_save"):
             log.info("Saving to archive index...")
             # index_path already defined above
-
-            # Attach timing data to entry before persisting
-            entry.archive_timings = archive_timings
 
             if dry_run:
                 log.dim(f"[dry-run] Would save entry {entry_id} to {index_path}")
