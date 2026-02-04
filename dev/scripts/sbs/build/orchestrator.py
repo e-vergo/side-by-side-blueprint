@@ -7,6 +7,7 @@ Coordinates multi-repo builds with timing, caching, and metrics.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -704,6 +705,116 @@ class BuildOrchestrator:
             timestamp_file.write_text(str(latest_mtime))
             return False
 
+    # =========================================================================
+    # CSS-Only Fast Path Detection
+    # =========================================================================
+
+    # CSS files to track for change detection
+    CSS_FILES = [
+        "toolchain/dress-blueprint-action/assets/common.css",
+        "toolchain/dress-blueprint-action/assets/blueprint.css",
+        "toolchain/dress-blueprint-action/assets/dep_graph.css",
+        "toolchain/dress-blueprint-action/assets/paper.css",
+    ]
+
+    def _css_hash_path(self) -> Path:
+        """Return path to stored CSS hashes file."""
+        return self.config.cache_dir / self.config.project_name / "css_hashes.json"
+
+    def _compute_css_hashes(self) -> dict[str, str]:
+        """Compute SHA256 hashes of all CSS files.
+
+        Returns:
+            Dict mapping relative path to 16-char hex hash.
+        """
+        hashes = {}
+        for rel_path in self.CSS_FILES:
+            full_path = self.config.sbs_root / rel_path
+            if full_path.exists():
+                content = full_path.read_bytes()
+                file_hash = hashlib.sha256(content).hexdigest()[:16]
+                hashes[rel_path] = file_hash
+        return hashes
+
+    def _load_css_hashes(self) -> dict[str, str]:
+        """Load previously saved CSS hashes.
+
+        Returns:
+            Dict mapping relative path to hash, or empty dict if none saved.
+        """
+        path = self._css_hash_path()
+        if path.exists():
+            try:
+                return json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                return {}
+        return {}
+
+    def _save_css_hashes(self, hashes: dict[str, str]) -> None:
+        """Save CSS hashes for future comparison."""
+        path = self._css_hash_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hashes, indent=2))
+
+    def _is_css_only_change(self) -> bool:
+        """Check if only CSS files changed since last build.
+
+        Returns True only if:
+        - CSS files have changed
+        - Lean sources have NOT changed (in toolchain AND project)
+        - Lake manifests have NOT changed
+        - Dressed artifacts exist (previous build completed)
+
+        Returns:
+            True if this is a CSS-only change suitable for fast path.
+        """
+        # Check if CSS changed
+        current_css = self._compute_css_hashes()
+        saved_css = self._load_css_hashes()
+
+        if not saved_css:
+            log.info("No previous CSS hashes found - not a CSS-only change")
+            return False
+
+        css_changed = current_css != saved_css
+        if not css_changed:
+            log.info("CSS files unchanged")
+            return False
+
+        # Log which CSS files changed
+        for path, hash_val in current_css.items():
+            old_hash = saved_css.get(path)
+            if old_hash and old_hash != hash_val:
+                log.info(f"  CSS changed: {path}")
+
+        # Check Lean sources in toolchain repos
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo = self.repos.get(name)
+            if repo and repo.exists():
+                if has_lean_changes(repo.path, self.config.cache_dir, name):
+                    log.info(f"Lean changes detected in {name} - not CSS-only")
+                    return False
+
+        # Check Lean sources in project
+        if has_lean_changes(
+            self.config.project_root, self.config.cache_dir, self.config.project_name
+        ):
+            log.info("Lean changes detected in project - not CSS-only")
+            return False
+
+        # Check Lake manifests
+        if self._lake_manifests_changed():
+            log.info("Lake manifests changed - not CSS-only")
+            return False
+
+        # Check dressed artifacts exist
+        if not has_dressed_artifacts(self.config.project_root):
+            log.info("Dressed artifacts missing - not CSS-only")
+            return False
+
+        log.info("CSS-only change detected!")
+        return True
+
     def _build_project_internal(self) -> None:
         """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
         if not self._needs_project_build():
@@ -918,6 +1029,62 @@ class BuildOrchestrator:
             self.sync_repos()
             self._end_phase("sync_repos")
 
+            # ================================================================
+            # CSS-Only Fast Path
+            # ================================================================
+            # If only CSS changed (no Lean, no manifests), skip expensive phases
+            if (not self.config.force_full_build
+                and not self.config.force_lake
+                and self._is_css_only_change()
+                and has_dressed_artifacts(self.config.project_root)):
+
+                log.header("CSS-ONLY FAST PATH")
+                log.info("Skipping: update_manifests, build_toolchain, build_project, generate_verso, build_dep_graph")
+
+                # Only regenerate site (picks up new CSS via assetsDir)
+                self._start_phase("generate_site")
+                self.generate_site()
+                self._end_phase("generate_site")
+
+                # Final git sync
+                self._start_phase("final_sync")
+                if git_commit_and_push(self.config.project_root, self.config.dry_run):
+                    log.success("Final changes committed and pushed")
+                self._end_phase("final_sync")
+
+                # Collect commits after build
+                self._collect_commits_after()
+
+                # Start server
+                self._start_phase("start_server")
+                self.start_server()
+                self._end_phase("start_server")
+
+                # Capture screenshots if requested
+                if self.config.capture:
+                    self._start_phase("capture")
+                    self.run_capture()
+                    self._end_phase("capture")
+
+                # Update CSS hashes for next run
+                self._save_css_hashes(self._compute_css_hashes())
+
+                # Mark build as successful
+                self._build_success = True
+
+                log.header("CSS-ONLY BUILD COMPLETE")
+                total = time.time() - self._build_start
+                log.info(f"Total time: {total:.1f}s (fast path)")
+                log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
+                log.info("Web: http://localhost:8000")
+
+                if self.config.verbose:
+                    for phase, duration in self._phase_timings.items():
+                        log.info(f"  {phase}: {duration:.1f}s")
+
+                # Return early - skip full build
+                return
+
             # Update manifests only if Lean sources changed
             if self.config.force_lake or has_lean_changes(
                 self.config.project_root, self.config.cache_dir, self.config.project_name
@@ -1006,6 +1173,9 @@ class BuildOrchestrator:
                 self._start_phase("capture")
                 self.run_capture()
                 self._end_phase("capture")
+
+            # Save CSS hashes for future fast-path detection
+            self._save_css_hashes(self._compute_css_hashes())
 
             # Mark build as successful
             self._build_success = True
@@ -1108,6 +1278,12 @@ Examples:
         help="Force full cleanup of build artifacts before building",
     )
 
+    parser.add_argument(
+        "--force-full-build",
+        action="store_true",
+        help="Force full build even if CSS-only change detected (bypass fast path)",
+    )
+
     return parser.parse_args()
 
 
@@ -1135,6 +1311,7 @@ def main() -> int:
             capture_url=args.capture_url,
             force_lake=args.force_lake,
             force_clean=args.clean,
+            force_full_build=args.force_full_build,
         )
 
         # Run build
