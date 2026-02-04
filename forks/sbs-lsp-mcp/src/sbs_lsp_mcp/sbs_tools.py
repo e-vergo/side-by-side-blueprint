@@ -83,7 +83,7 @@ from .sbs_utils import (
 
 def _get_db(ctx: Context) -> DuckDBLayer:
     """Extract the DuckDBLayer from the MCP lifespan context."""
-    return ctx.request_context.lifespan_context["duckdb_layer"]
+    return ctx.request_context.lifespan_context.duckdb_layer
 
 
 def register_sbs_tools(mcp: FastMCP) -> None:
