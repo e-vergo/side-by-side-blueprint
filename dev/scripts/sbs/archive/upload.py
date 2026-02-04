@@ -225,10 +225,12 @@ def _push_repo(repo_path: Path, dry_run: bool = False) -> bool:
 def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
     """Ensure all repos are in clean git state.
 
-    Two-phase approach:
+    Four-phase approach:
     1. Scan all repos to identify which are dirty or have unpushed commits
-    2. Commit (if dirty) and push all affected repos (submodules first,
-       main repo last)
+    2. Commit dirty submodule repos sequentially (needed for correct
+       submodule pointers in the main repo)
+    3. Push all non-main repos in parallel (ThreadPoolExecutor, max_workers=4)
+    4. Commit and push main repo last (must be after submodules)
 
     This avoids the 'chasing' pattern where committing one repo
     (e.g., dev/storage) dirties another (main repo submodule pointer).
@@ -256,18 +258,46 @@ def ensure_porcelain(dry_run: bool = False) -> tuple[bool, list[str]]:
     main_dirty = repo_is_dirty(root)
     main_unpushed = repo_has_unpushed(root)
 
-    # Phase 2: Handle all submodule repos first
-    # Dirty repos: commit and push
+    # Phase 2: Commit dirty submodule repos sequentially (no push yet).
+    # Sequential commits are needed so submodule pointers are correct
+    # when the main repo is committed in Phase 4.
+    committed_submodules: list[tuple[str, Path]] = []
     for name, repo_path in dirty_submodules:
-        if not commit_and_push_repo(repo_path, "chore: archive upload", dry_run):
+        if commit_and_push_repo(repo_path, "chore: archive upload", dry_run, push=False):
+            committed_submodules.append((name, repo_path))
+        else:
             failed.append(name)
 
-    # Unpushed-only repos: just push (already committed)
-    for name, repo_path in unpushed_only_submodules:
-        if not _push_repo(repo_path, dry_run):
-            failed.append(name)
+    # Phase 3: Push all non-main repos in parallel.
+    # This includes both newly-committed repos and repos that already had
+    # unpushed commits before we started.
+    repos_to_push: list[tuple[str, Path]] = []
+    repos_to_push.extend(committed_submodules)
+    repos_to_push.extend(unpushed_only_submodules)
 
-    # Phase 3: Commit main repo last (picks up submodule pointer updates)
+    if repos_to_push:
+        if dry_run:
+            for name, _repo_path in repos_to_push:
+                log.dim(f"[dry-run] Would push: {name}")
+        else:
+            log.info(f"Pushing {len(repos_to_push)} repos in parallel...")
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = {
+                    executor.submit(_push_repo, repo_path): name
+                    for name, repo_path in repos_to_push
+                }
+                for future in as_completed(futures):
+                    name = futures[future]
+                    try:
+                        if not future.result():
+                            if name not in failed:
+                                failed.append(name)
+                    except Exception as e:
+                        log.warning(f"Push failed for {name}: {e}")
+                        if name not in failed:
+                            failed.append(name)
+
+    # Phase 4: Commit and push main repo last (picks up submodule pointer updates)
     # Re-check since submodule commits may have dirtied the main repo
     if main_dirty or repo_is_dirty(root):
         if not commit_and_push_repo(root, "chore: archive upload", dry_run):
