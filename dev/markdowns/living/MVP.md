@@ -26,19 +26,18 @@ Both columns synchronized - expanding the LaTeX proof expands the Lean proof.
 
 ### 2. Dual Authoring Modes
 
-Support two document authoring approaches:
-
-**TeX Mode** (leanblueprint-compatible)
+**TeX Mode** (primary MVP authoring mode, leanblueprint-compatible)
 - Author documents in LaTeX (`.tex` files)
 - Familiar workflow for existing leanblueprint users
 - `\inputleannode{label}` inserts side-by-side displays
 
-**Verso Mode** (native Lean)
+**Verso Mode** (future capability, native Lean)
 - Author documents in Verso (`.lean` files)
 - Type-checked documentation with IDE support
 - `:::leanNode "label"` inserts side-by-side displays
+- **Planned for post-MVP** -- infrastructure exists but not yet an active deliverable
 
-Both modes produce equivalent HTML output.
+TeX mode is the primary authoring path for MVP. Verso mode will produce equivalent HTML output once fully integrated.
 
 ### 3. Dependency Graph
 
@@ -46,7 +45,7 @@ Interactive visualization of the proof dependency structure:
 - Nodes represent theorems/lemmas/definitions
 - Edges show logical dependencies (statement uses vs proof uses)
 - Click nodes to view details and navigate to source
-- Pan, zoom, and filter controls
+- Pan, zoom, and fit controls
 
 ### 4. Status Indicators
 
@@ -77,7 +76,8 @@ Academic paper output from the same source:
 - ar5iv-style HTML rendering
 - PDF generation via LaTeX
 - Verification badges linking statements to formal proofs
-- Supports both TeX and Verso authoring
+- Verification badges showing formalization status (Verified, In Progress, Not Started) next to theorem statements
+- Primary support for TeX authoring (Verso planned for future)
 
 ### 7. CI/CD Integration
 
@@ -92,9 +92,21 @@ GitHub Action for automated deployment:
 
 Professional presentation with clean aesthetics:
 - Consistent typography and spacing
-- Dark/light theme toggle with system preference detection
-- Responsive layout for various screen sizes
+- Manual dark/light theme toggle with system preference fallback
+- Desktop/landscape layout optimized for wide screens
 - Rainbow bracket highlighting for Lean code readability
+- No horizontal scrollbars -- all content, including side-by-side displays, must fit within the viewport width
+- Hover tooltips bounded in width with consistent styling
+
+### 8. Interactive Components & Design Consistency
+
+- Working proof toggles (expand/collapse with synchronized LaTeX and Lean panels)
+- Graph node modals with status, statement, and proof details
+- Lean code hover tooltips with type signatures (bounded width, consistent styling)
+- Theme toggle (dark/light) with localStorage persistence and system preference fallback
+- Sidebar navigation across all page types (dashboard, graph, blueprint chapters, paper)
+- Chapter prev/next navigation
+- Design language consistency across all page types -- unified colors, typography, spacing
 
 ---
 
@@ -165,6 +177,9 @@ Integration stress test and existence proof:
 - Multi-project aggregation (single project per site)
 - Collaborative editing features
 - Version history or diff visualization
+- Mobile/tablet responsive layout (desktop-only)
+- Verso-native document generation (planned for future)
+- Dependency graph filter controls
 
 ---
 
@@ -173,10 +188,12 @@ Integration stress test and existence proof:
 MVP is complete when:
 
 1. **Side-by-side works** - Theorems display with LaTeX left, Lean right
-2. **Both authoring modes work** - TeX and Verso documents render correctly
+2. **TeX authoring mode works** - TeX documents render correctly (Verso planned)
 3. **Dependency graph works** - Interactive visualization with all controls
 4. **Status colors work** - All six states display with correct colors
 5. **Dashboard works** - Stats, key theorems, navigation functional
 6. **Paper generation works** - HTML and PDF output from same source
 7. **CI/CD works** - GitHub Action deploys functional site
 8. **Visual quality** - Professional appearance, no jarring elements
+9. **Interactive components work** - Toggles, modals, hovers, navigation all functional
+10. **Design consistency** - No horizontal scrollbars, no visual artifacts, cohesive design language
