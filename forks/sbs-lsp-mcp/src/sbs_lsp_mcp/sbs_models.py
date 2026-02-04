@@ -418,6 +418,18 @@ class IssueCreateResult(BaseModel):
     error: Optional[str] = Field(None, description="Error message if failed")
 
 
+class IssueLogResult(BaseModel):
+    """Result from autonomous agent issue logging."""
+
+    success: bool = Field(description="Whether creation succeeded")
+    number: Optional[int] = Field(None, description="New issue number")
+    url: Optional[str] = Field(None, description="New issue URL")
+    context_attached: bool = Field(
+        description="Whether archive context was successfully attached"
+    )
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
 class IssueListResult(BaseModel):
     """Result from listing issues."""
 

@@ -40,6 +40,7 @@ from .sbs_models import (
     IssueCloseResult,
     IssueCreateResult,
     IssueGetResult,
+    IssueLogResult,
     IssueListResult,
     IssueSummaryItem,
     IssueSummaryResult,
@@ -1699,6 +1700,138 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 success=False,
                 number=None,
                 url=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sbs_issue_log",
+        annotations=ToolAnnotations(
+            title="SBS Issue Log (Autonomous)",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sbs_issue_log(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="Issue title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="Issue body/description"),
+        ] = None,
+        labels: Annotated[
+            Optional[List[str]],
+            Field(
+                description=(
+                    "Labels from taxonomy. origin:agent is always added automatically."
+                ),
+            ),
+        ] = None,
+    ) -> IssueLogResult:
+        """Log a GitHub issue autonomously with archive context.
+
+        Creates an issue in e-vergo/Side-By-Side-Blueprint with automatic
+        archive context metadata attached. Designed for agent use without
+        user interaction. Always adds ``origin:agent`` and ``ai-authored`` labels.
+
+        Examples:
+        - sbs_issue_log(title="Bug in graph layout", labels=["bug:visual", "area:sbs:graph"])
+        - sbs_issue_log(title="CSS variable missing", body="Details...", labels=["bug:visual"])
+        """
+        # Build archive context block
+        context_attached = False
+        context_block = ""
+        try:
+            index = load_archive_index()
+            global_state = index.global_state
+            state_str = (
+                json.dumps(global_state) if global_state else '"idle"'
+            )
+            epoch_entries = get_epoch_entries(index)
+            epoch_count = len(epoch_entries)
+            last_epoch = index.last_epoch_entry or "unknown"
+
+            context_block = (
+                "\n\n---\n"
+                "**Agent Context (auto-populated)**\n"
+                f"- Global State: {state_str}\n"
+                f"- Current Epoch Entries: {epoch_count}\n"
+                f"- Last Epoch: {last_epoch}\n"
+            )
+            context_attached = True
+        except Exception:
+            # Archive load failure is non-fatal
+            pass
+
+        # Attribution footer
+        attribution = "\n\n---\n\U0001f916 Logged autonomously via sbs_issue_log"
+
+        full_body = (body or "") + context_block + attribution
+
+        # Resolve labels: always include origin:agent and ai-authored
+        resolved_labels = ["ai-authored", "origin:agent"]
+        if labels:
+            resolved_labels.extend(labels)
+
+        cmd = [
+            "gh", "issue", "create",
+            "--repo", GITHUB_REPO,
+            "--title", title,
+            "--body", full_body,
+            "--label", ",".join(resolved_labels),
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueLogResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    context_attached=context_attached,
+                    error=result.stderr.strip() or "Failed to create issue",
+                )
+
+            # Parse URL from output
+            url = result.stdout.strip()
+            number = None
+            if url and "/issues/" in url:
+                try:
+                    number = int(url.split("/issues/")[-1])
+                except ValueError:
+                    pass
+
+            return IssueLogResult(
+                success=True,
+                number=number,
+                url=url,
+                context_attached=context_attached,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
                 error=str(e),
             )
 
