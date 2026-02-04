@@ -1078,6 +1078,7 @@ This applies to all `gh` subcommands: `issue`, `pr`, `api`, `label`, `release`, 
 - If a function cannot be imported directly (e.g., MCP tool handler), test through the CLI or subprocess
 - Simulation tests (reimplementing logic inline to verify understanding) are explicitly prohibited -- they mirror bugs instead of catching them
 - When testing MCP repo tools: `cd forks/sbs-lsp-mcp && .venv/bin/pytest tests/ -v`
+- Use `sbs_run_tests(repo="mcp")` to run MCP repo tests through the standard MCP tool
 
 ---
 
