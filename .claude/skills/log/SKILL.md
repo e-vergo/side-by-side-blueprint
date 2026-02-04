@@ -206,7 +206,7 @@ When user selects [E], present current labels with option to add/remove from tax
 
 8. **Create issue** via `sbs_issue_create` MCP tool:
    - `title`: The issue title
-   - `body`: Optional description with attribution footer
+   - `body`: Optional description
    - `labels`: `["origin:agent", "<type>", "<area>", ...optional impact/friction/scope...]`
 9. **On success:**
    - Archive with `issue_refs` populated
@@ -367,10 +367,6 @@ Claude: Created idea issue #45: "Tooltips for graph nodes"
 **All issues created by this skill are transparently marked as AI-authored:**
 
 1. **Label:** `origin:agent` label is always added
-2. **Footer:** Attribution footer appended to body:
-   ```
-   ---
-   Created with [Claude Code](https://claude.ai/code)
-   ```
+2. **Footer:** The MCP tool (`sbs_issue_create`) automatically appends an attribution footer
 
 This ensures clear provenance and transparency for all AI-generated content.

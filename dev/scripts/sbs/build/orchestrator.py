@@ -7,6 +7,7 @@ Coordinates multi-repo builds with timing, caching, and metrics.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -123,6 +124,94 @@ class BuildOrchestrator:
             duration = time.time() - self._phase_start
             self._phase_timings[name] = round(duration, 3)
             self._phase_start = None
+
+    def _validate_project_structure(self) -> None:
+        """Pre-flight checks before expensive operations.
+
+        Catches configuration errors early to avoid wasting 2+ minutes
+        before discovering missing files or bad state.
+
+        Raises:
+            RuntimeError: If critical configuration is missing or invalid.
+        """
+        errors: list[str] = []
+        warnings: list[str] = []
+
+        # 1. Check required files exist
+        runway_json = self.config.project_root / "runway.json"
+        if not runway_json.exists():
+            errors.append(
+                f"runway.json not found at {runway_json}\n"
+                f"  Fix: Create runway.json with projectName and assetsDir fields"
+            )
+        else:
+            # Validate runway.json is parseable and has required fields
+            try:
+                data = json.loads(runway_json.read_text())
+                if not data.get("projectName"):
+                    errors.append(
+                        f"runway.json missing required 'projectName' field\n"
+                        f"  Fix: Add \"projectName\": \"YourProject\" to runway.json"
+                    )
+                # Check assetsDir exists if specified
+                assets_dir = data.get("assetsDir")
+                if assets_dir:
+                    assets_path = (self.config.project_root / assets_dir).resolve()
+                    if not assets_path.exists():
+                        errors.append(
+                            f"assetsDir not found: {assets_path}\n"
+                            f"  Fix: Create the assets directory or update assetsDir in runway.json"
+                        )
+            except json.JSONDecodeError as e:
+                errors.append(
+                    f"runway.json is not valid JSON: {e}\n"
+                    f"  Fix: Validate JSON syntax in runway.json"
+                )
+
+        # Check lakefile exists
+        lakefile_toml = self.config.project_root / "lakefile.toml"
+        lakefile_lean = self.config.project_root / "lakefile.lean"
+        if not lakefile_toml.exists() and not lakefile_lean.exists():
+            errors.append(
+                f"No lakefile found in {self.config.project_root}\n"
+                f"  Fix: Create lakefile.toml or lakefile.lean"
+            )
+
+        # 2. Check Lake manifests parseable (catches corruption early)
+        manifest_path = self.config.project_root / "lake-manifest.json"
+        if manifest_path.exists():
+            try:
+                json.loads(manifest_path.read_text())
+            except json.JSONDecodeError as e:
+                errors.append(
+                    f"lake-manifest.json is corrupted: {e}\n"
+                    f"  Fix: Run 'lake update' to regenerate the manifest"
+                )
+
+        # 3. Check git status in toolchain repos (warn if dirty)
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo_path = self.config.sbs_root / REPO_PATHS.get(name, name)
+            if repo_path.exists():
+                if git_has_changes(repo_path):
+                    warnings.append(f"{name}: Has uncommitted changes")
+
+        # Report warnings (non-blocking)
+        if warnings:
+            log.header("Pre-flight warnings")
+            for warning in warnings:
+                log.warning(f"  {warning}")
+
+        # Report errors and fail if any critical issues
+        if errors:
+            log.header("Pre-flight validation failed")
+            for error in errors:
+                log.error(f"  {error}")
+            raise RuntimeError(
+                f"Pre-flight validation failed with {len(errors)} error(s). "
+                f"Fix the issues above before building."
+            )
+
+        log.success("Pre-flight validation passed")
 
     def _collect_commits_before(self) -> None:
         """Collect git commits from all repos before build."""
@@ -571,6 +660,161 @@ class BuildOrchestrator:
             return True
         return False
 
+    def _lake_manifests_changed(self) -> bool:
+        """Check if Lake manifests changed since last successful build.
+
+        Compares lakefile.lean/toml and lake-manifest.json timestamps against
+        the last recorded build timestamp to detect dependency changes.
+        """
+        # Check for manifest timestamp file
+        timestamp_file = self.config.cache_dir / f"{self.config.project_name}_manifest_ts"
+
+        # Get current manifest files
+        lakefile_toml = self.config.project_root / "lakefile.toml"
+        lakefile_lean = self.config.project_root / "lakefile.lean"
+        lake_manifest = self.config.project_root / "lake-manifest.json"
+
+        manifest_files = [f for f in [lakefile_toml, lakefile_lean, lake_manifest] if f.exists()]
+
+        if not manifest_files:
+            return False  # No manifests to check
+
+        # Get latest modification time of manifest files
+        latest_mtime = max(f.stat().st_mtime for f in manifest_files)
+
+        # If no timestamp file exists, this is first run - don't force clean
+        if not timestamp_file.exists():
+            # Save current timestamp for future comparisons
+            timestamp_file.parent.mkdir(parents=True, exist_ok=True)
+            timestamp_file.write_text(str(latest_mtime))
+            return False
+
+        # Compare with last recorded timestamp
+        try:
+            last_mtime = float(timestamp_file.read_text().strip())
+            manifests_changed = latest_mtime > last_mtime
+
+            if manifests_changed:
+                log.info("Lake manifests changed since last build")
+                # Update timestamp for next run
+                timestamp_file.write_text(str(latest_mtime))
+
+            return manifests_changed
+        except (ValueError, OSError):
+            # Corrupt timestamp file - don't force clean, just update
+            timestamp_file.write_text(str(latest_mtime))
+            return False
+
+    # =========================================================================
+    # CSS-Only Fast Path Detection
+    # =========================================================================
+
+    # CSS files to track for change detection
+    CSS_FILES = [
+        "toolchain/dress-blueprint-action/assets/common.css",
+        "toolchain/dress-blueprint-action/assets/blueprint.css",
+        "toolchain/dress-blueprint-action/assets/dep_graph.css",
+        "toolchain/dress-blueprint-action/assets/paper.css",
+    ]
+
+    def _css_hash_path(self) -> Path:
+        """Return path to stored CSS hashes file."""
+        return self.config.cache_dir / self.config.project_name / "css_hashes.json"
+
+    def _compute_css_hashes(self) -> dict[str, str]:
+        """Compute SHA256 hashes of all CSS files.
+
+        Returns:
+            Dict mapping relative path to 16-char hex hash.
+        """
+        hashes = {}
+        for rel_path in self.CSS_FILES:
+            full_path = self.config.sbs_root / rel_path
+            if full_path.exists():
+                content = full_path.read_bytes()
+                file_hash = hashlib.sha256(content).hexdigest()[:16]
+                hashes[rel_path] = file_hash
+        return hashes
+
+    def _load_css_hashes(self) -> dict[str, str]:
+        """Load previously saved CSS hashes.
+
+        Returns:
+            Dict mapping relative path to hash, or empty dict if none saved.
+        """
+        path = self._css_hash_path()
+        if path.exists():
+            try:
+                return json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                return {}
+        return {}
+
+    def _save_css_hashes(self, hashes: dict[str, str]) -> None:
+        """Save CSS hashes for future comparison."""
+        path = self._css_hash_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hashes, indent=2))
+
+    def _is_css_only_change(self) -> bool:
+        """Check if only CSS files changed since last build.
+
+        Returns True only if:
+        - CSS files have changed
+        - Lean sources have NOT changed (in toolchain AND project)
+        - Lake manifests have NOT changed
+        - Dressed artifacts exist (previous build completed)
+
+        Returns:
+            True if this is a CSS-only change suitable for fast path.
+        """
+        # Check if CSS changed
+        current_css = self._compute_css_hashes()
+        saved_css = self._load_css_hashes()
+
+        if not saved_css:
+            log.info("No previous CSS hashes found - not a CSS-only change")
+            return False
+
+        css_changed = current_css != saved_css
+        if not css_changed:
+            log.info("CSS files unchanged")
+            return False
+
+        # Log which CSS files changed
+        for path, hash_val in current_css.items():
+            old_hash = saved_css.get(path)
+            if old_hash and old_hash != hash_val:
+                log.info(f"  CSS changed: {path}")
+
+        # Check Lean sources in toolchain repos
+        for name in TOOLCHAIN_BUILD_ORDER:
+            repo = self.repos.get(name)
+            if repo and repo.exists():
+                if has_lean_changes(repo.path, self.config.cache_dir, name):
+                    log.info(f"Lean changes detected in {name} - not CSS-only")
+                    return False
+
+        # Check Lean sources in project
+        if has_lean_changes(
+            self.config.project_root, self.config.cache_dir, self.config.project_name
+        ):
+            log.info("Lean changes detected in project - not CSS-only")
+            return False
+
+        # Check Lake manifests
+        if self._lake_manifests_changed():
+            log.info("Lake manifests changed - not CSS-only")
+            return False
+
+        # Check dressed artifacts exist
+        if not has_dressed_artifacts(self.config.project_root):
+            log.info("Dressed artifacts missing - not CSS-only")
+            return False
+
+        log.info("CSS-only change detected!")
+        return True
+
     def _build_project_internal(self) -> None:
         """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
         if not self._needs_project_build():
@@ -762,6 +1006,14 @@ class BuildOrchestrator:
         log.info(f"Run ID: {self._run_id}")
 
         try:
+            # Pre-flight validation (catches missing files before expensive ops)
+            if not self.config.skip_validation:
+                self._start_phase("validation")
+                self._validate_project_structure()
+                self._end_phase("validation")
+            else:
+                log.info("Skipping pre-flight validation (--skip-validation)")
+
             # Discover repos
             self.discover_repos()
 
@@ -776,6 +1028,62 @@ class BuildOrchestrator:
             self._start_phase("sync_repos")
             self.sync_repos()
             self._end_phase("sync_repos")
+
+            # ================================================================
+            # CSS-Only Fast Path
+            # ================================================================
+            # If only CSS changed (no Lean, no manifests), skip expensive phases
+            if (not self.config.force_full_build
+                and not self.config.force_lake
+                and self._is_css_only_change()
+                and has_dressed_artifacts(self.config.project_root)):
+
+                log.header("CSS-ONLY FAST PATH")
+                log.info("Skipping: update_manifests, build_toolchain, build_project, generate_verso, build_dep_graph")
+
+                # Only regenerate site (picks up new CSS via assetsDir)
+                self._start_phase("generate_site")
+                self.generate_site()
+                self._end_phase("generate_site")
+
+                # Final git sync
+                self._start_phase("final_sync")
+                if git_commit_and_push(self.config.project_root, self.config.dry_run):
+                    log.success("Final changes committed and pushed")
+                self._end_phase("final_sync")
+
+                # Collect commits after build
+                self._collect_commits_after()
+
+                # Start server
+                self._start_phase("start_server")
+                self.start_server()
+                self._end_phase("start_server")
+
+                # Capture screenshots if requested
+                if self.config.capture:
+                    self._start_phase("capture")
+                    self.run_capture()
+                    self._end_phase("capture")
+
+                # Update CSS hashes for next run
+                self._save_css_hashes(self._compute_css_hashes())
+
+                # Mark build as successful
+                self._build_success = True
+
+                log.header("CSS-ONLY BUILD COMPLETE")
+                total = time.time() - self._build_start
+                log.info(f"Total time: {total:.1f}s (fast path)")
+                log.info(f"Output: {self.config.project_root / '.lake' / 'build' / 'runway'}")
+                log.info("Web: http://localhost:8000")
+
+                if self.config.verbose:
+                    for phase, duration in self._phase_timings.items():
+                        log.info(f"  {phase}: {duration:.1f}s")
+
+                # Return early - skip full build
+                return
 
             # Update manifests only if Lean sources changed
             if self.config.force_lake or has_lean_changes(
@@ -797,10 +1105,14 @@ class BuildOrchestrator:
             self.run_quality_validators()
             self._end_phase("quality_validators")
 
-            # Clean artifacts
-            self._start_phase("clean_build")
-            self.clean_artifacts()
-            self._end_phase("clean_build")
+            # Clean artifacts only if explicitly requested or manifests changed
+            # This preserves dressed/ artifacts for skip logic when Lean unchanged
+            if self.config.force_clean or self._lake_manifests_changed():
+                self._start_phase("clean_build")
+                self.clean_artifacts()
+                self._end_phase("clean_build")
+            else:
+                log.info("Skipping artifact cleanup: manifests unchanged (use --clean to force)")
 
             # Build toolchain (mandatory - ensures consistency)
             self._start_phase("build_toolchain")
@@ -861,6 +1173,9 @@ class BuildOrchestrator:
                 self._start_phase("capture")
                 self.run_capture()
                 self._end_phase("capture")
+
+            # Save CSS hashes for future fast-path detection
+            self._save_css_hashes(self._compute_css_hashes())
 
             # Mark build as successful
             self._build_success = True
@@ -928,6 +1243,12 @@ Examples:
     )
 
     parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip pre-flight validation checks",
+    )
+
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Enable verbose debug output",
@@ -951,6 +1272,18 @@ Examples:
         help="Force Lake builds even if Lean sources are unchanged",
     )
 
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Force full cleanup of build artifacts before building",
+    )
+
+    parser.add_argument(
+        "--force-full-build",
+        action="store_true",
+        help="Force full build even if CSS-only change detected (bypass fast path)",
+    )
+
     return parser.parse_args()
 
 
@@ -971,11 +1304,14 @@ def main() -> int:
             project_name=project_name,
             module_name=module_name,
             skip_cache=args.skip_cache,
+            skip_validation=args.skip_validation,
             dry_run=args.dry_run,
             verbose=args.verbose,
             capture=args.capture,
             capture_url=args.capture_url,
             force_lake=args.force_lake,
+            force_clean=args.clean,
+            force_full_build=args.force_full_build,
         )
 
         # Run build

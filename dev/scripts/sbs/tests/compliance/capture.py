@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -198,8 +199,11 @@ def capture_page(
     - "success": Page loaded and captured
     - "skipped": Page doesn't exist (404) - not an error, just not available
     - "error": Actual error during capture
+
+    Includes timing_seconds for performance measurement.
     """
     log.info(f"Capturing {name}...")
+    start_time = time.time()
 
     try:
         response = page.goto(url, wait_until="networkidle", timeout=30000)
@@ -213,6 +217,7 @@ def capture_page(
                 "url": url,
                 "status": "skipped",
                 "reason": f"HTTP {response.status}",
+                "timing_seconds": round(time.time() - start_time, 3),
             }
 
         if wait_for_load:
@@ -220,11 +225,13 @@ def capture_page(
 
         page.screenshot(path=str(output_path), full_page=False)
 
+        elapsed = time.time() - start_time
         return {
             "name": name,
             "path": str(output_path.name),
             "url": url,
             "status": "success",
+            "timing_seconds": round(elapsed, 3),
         }
     except Exception as e:
         log.error(f"Error capturing {name}: {e}")
@@ -234,6 +241,7 @@ def capture_page(
             "url": url,
             "status": "error",
             "error": str(e),
+            "timing_seconds": round(time.time() - start_time, 3),
         }
 
 
@@ -254,7 +262,7 @@ def run_capture(
         pages: Optional list of page names to capture (default: all)
 
     Returns:
-        Metadata dict with capture results
+        Metadata dict with capture results including timing data
     """
     try:
         from playwright.sync_api import sync_playwright
@@ -262,6 +270,8 @@ def run_capture(
         log.error("playwright not installed.")
         log.error("Run: scripts/.venv/bin/pip install playwright && scripts/.venv/bin/playwright install chromium")
         raise RuntimeError("playwright not available")
+
+    capture_start = time.time()
 
     # Setup directories
     project_dir = IMAGES_DIR / project_name
@@ -292,6 +302,9 @@ def run_capture(
         "pages": [],
     }
 
+    # Per-page timing aggregation
+    page_timings: dict[str, float] = {}
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport=viewport)
@@ -314,7 +327,18 @@ def run_capture(
             result = capture_page(page, url, output_path, name)
             metadata["pages"].append(result)
 
+            # Aggregate timing
+            if "timing_seconds" in result:
+                page_timings[f"capture_{name}"] = result["timing_seconds"]
+
         browser.close()
+
+    # Total capture timing
+    total_capture_time = time.time() - capture_start
+    page_timings["capture_total"] = round(total_capture_time, 3)
+
+    # Add timing summary to metadata
+    metadata["timings"] = page_timings
 
     # Write metadata
     metadata_path = latest_dir / "capture.json"
@@ -526,13 +550,15 @@ def run_interactive_capture(
         use_frozen_manifests: If True, use saved manifests; if False, rediscover
 
     Returns:
-        Metadata dict with capture results including interactions
+        Metadata dict with capture results including interactions and timing data
     """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         log.error("playwright not installed.")
         raise RuntimeError("playwright not available")
+
+    capture_start = time.time()
 
     # Setup directories
     project_dir = IMAGES_DIR / project_name
@@ -561,6 +587,9 @@ def run_interactive_capture(
         "interactions": [],
     }
 
+    # Per-page timing aggregation
+    page_timings: dict[str, float] = {}
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport=viewport)
@@ -582,19 +611,33 @@ def run_interactive_capture(
             url = f"{base_url.rstrip('/')}/{path}"
             output_path = latest_dir / f"{name}.png"
 
-            # Capture static page
+            # Capture static page (timing included in result)
             result = capture_page(page, url, output_path, name)
             metadata["pages"].append(result)
 
+            # Aggregate page timing
+            if "timing_seconds" in result:
+                page_timings[f"capture_{name}"] = result["timing_seconds"]
+
             # Capture interactive states
             if result["status"] == "success":
+                interactive_start = time.time()
                 manifest = load_manifest(name) if use_frozen_manifests else None
                 interactions = capture_interactive_states(
                     page, base_url, page_config, latest_dir, manifest
                 )
                 metadata["interactions"].extend(interactions)
+                interactive_elapsed = time.time() - interactive_start
+                page_timings[f"interactive_{name}"] = round(interactive_elapsed, 3)
 
         browser.close()
+
+    # Total capture timing
+    total_capture_time = time.time() - capture_start
+    page_timings["capture_total"] = round(total_capture_time, 3)
+
+    # Add timing summary to metadata
+    metadata["timings"] = page_timings
 
     # Write metadata
     metadata_path = latest_dir / "capture.json"
