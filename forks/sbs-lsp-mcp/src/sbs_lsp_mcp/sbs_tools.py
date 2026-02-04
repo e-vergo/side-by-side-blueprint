@@ -36,6 +36,7 @@ from .sbs_models import (
     GitHubIssue,
     GitHubPullRequest,
     HistoryEntry,
+    ImprovementCaptureResult,
     InspectResult,
     IssueCloseResult,
     IssueCreateResult,
@@ -76,6 +77,7 @@ from .sbs_models import (
 from .sbs_utils import (
     ARCHIVE_DIR,
     SBS_ROOT,
+    ArchiveEntry,
     aggregate_visual_changes,
     collect_projects,
     collect_tags,
@@ -3452,6 +3454,92 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             to_substate=to_substate,
             archive_entry_id=entry_id,
         )
+
+    # =========================================================================
+    # Improvement Capture Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sbs_improvement_capture",
+        annotations=ToolAnnotations(
+            title="Capture Improvement Opportunity",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_improvement_capture(
+        ctx: Context,
+        observation: Annotated[str, Field(description="The improvement idea or observation in the user's own words")],
+        category: Annotated[Optional[str], Field(description="Category: process, interaction, workflow, tooling, or other")] = None,
+    ) -> ImprovementCaptureResult:
+        """Capture an improvement opportunity mid-session as a lightweight archive entry.
+
+        Zero-friction capture of process/interaction improvement ideas. Creates a
+        lightweight archive entry (no claude data extraction, no iCloud sync, no
+        git push) tagged for later retrieval during /self-improve discovery.
+
+        Examples:
+        - sbs_improvement_capture(observation="The alignment phase could auto-suggest success criteria based on issue labels")
+        - sbs_improvement_capture(observation="Oracle queries should cache results within a session", category="tooling")
+        """
+        import time as _time
+        from datetime import datetime as _dt, timezone as _tz
+
+        # Validate category
+        valid_categories = {"process", "interaction", "workflow", "tooling", "other"}
+        cat = category or "other"
+        if cat not in valid_categories:
+            return ImprovementCaptureResult(
+                success=False, error=f"Invalid category '{cat}'. Must be one of: {', '.join(sorted(valid_categories))}"
+            )
+
+        try:
+            index = load_archive_index()
+            archive_path = ARCHIVE_DIR / "archive_index.json"
+
+            # Build tags
+            entry_tags = [f"improvement:{cat}"]
+
+            # Build auto_tags from current state
+            auto_tags = ["trigger:improvement"]
+            gs = index.global_state
+            if gs:
+                skill = gs.get("skill")
+                substate = gs.get("substate")
+                if skill:
+                    auto_tags.append(f"skill:{skill}")
+                if substate:
+                    auto_tags.append(f"phase:{substate}")
+            else:
+                auto_tags.append("skill:none")
+                auto_tags.append("phase:idle")
+
+            # Create lightweight entry
+            now = _time.time()
+            entry_id = str(int(now))
+            entry = ArchiveEntry(
+                entry_id=entry_id,
+                created_at=_dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
+                project="SBSMonorepo",
+                trigger="improvement",
+                notes=observation,
+                tags=entry_tags,
+                auto_tags=auto_tags,
+                global_state=gs,
+            )
+
+            index.add_entry(entry)
+            index.save(archive_path)
+
+            all_tags = entry_tags + auto_tags
+            return ImprovementCaptureResult(
+                success=True, entry_id=entry_id, tags=all_tags
+            )
+        except Exception as e:
+            return ImprovementCaptureResult(
+                success=False, error=str(e)
+            )
 
 
 # =============================================================================
