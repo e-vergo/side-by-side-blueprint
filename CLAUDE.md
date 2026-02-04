@@ -288,6 +288,16 @@ Documentation refresh and porcelain state. Runs automatically at end of `/task`.
 
 **Location:** `.claude/skills/update-and-archive/SKILL.md`
 
+### `/introspect`
+
+Meta-improvement analysis across introspection hierarchy levels. Reads all L(N-1) documents to produce an L(N) meta-summary.
+
+**Usage:** `/introspect 3` (reads L2 summaries, produces L3 meta-analysis)
+
+**Workflow:** Ingestion -> Synthesis -> Archive
+
+**Location:** `.claude/skills/introspect/SKILL.md`
+
 ---
 
 ## Technical Details
