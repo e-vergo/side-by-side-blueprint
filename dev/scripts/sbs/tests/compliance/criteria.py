@@ -369,71 +369,6 @@ PDF_TEX_CRITERIA = PageCriteria(
 )
 
 
-PAPER_VERSO_CRITERIA = PageCriteria(
-    page="paper_verso",
-    criteria=[
-        Criterion(
-            id="verso_content_rendered",
-            description="Verso paper content is rendered",
-            category="content",
-            source="dapper-wondering-riddle.md",
-        ),
-        Criterion(
-            id="sidebar_consistent",
-            description="Sidebar matches other pages",
-            category="layout",
-        ),
-    ],
-    interactive_elements=[
-        {"id": "theme_toggle", "selector": "#theme-toggle, .theme-toggle", "type": "click"},
-    ],
-)
-
-
-BLUEPRINT_VERSO_CRITERIA = PageCriteria(
-    page="blueprint_verso",
-    criteria=[
-        Criterion(
-            id="blueprint_content_rendered",
-            description="Blueprint Verso content is rendered",
-            category="content",
-        ),
-        Criterion(
-            id="leanNode_renders",
-            description=":::leanNode hook renders full side-by-side display",
-            category="content",
-            source="dapper-wondering-riddle.md",
-        ),
-        Criterion(
-            id="leanModule_renders",
-            description=":::leanModule renders all nodes from module",
-            category="content",
-            source="dapper-wondering-riddle.md",
-        ),
-        Criterion(
-            id="nodeRef_links",
-            description="Node references link to correct node",
-            category="interaction",
-            source="dapper-wondering-riddle.md",
-        ),
-        Criterion(
-            id="statusDot_colors",
-            description="Status dots show correct colors per status",
-            category="color",
-            source="dapper-wondering-riddle.md",
-        ),
-        Criterion(
-            id="sidebar_consistent",
-            description="Sidebar matches other pages",
-            category="layout",
-        ),
-    ],
-    interactive_elements=[
-        {"id": "theme_toggle", "selector": "#theme-toggle, .theme-toggle", "type": "click"},
-    ],
-)
-
-
 CHAPTER_CRITERIA = PageCriteria(
     page="chapter",
     criteria=[
@@ -562,8 +497,6 @@ PAGE_CRITERIA: dict[str, PageCriteria] = {
     "dep_graph": DEP_GRAPH_CRITERIA,
     "paper_tex": PAPER_TEX_CRITERIA,
     "pdf_tex": PDF_TEX_CRITERIA,
-    "paper_verso": PAPER_VERSO_CRITERIA,
-    "blueprint_verso": BLUEPRINT_VERSO_CRITERIA,
     "chapter": CHAPTER_CRITERIA,
 }
 

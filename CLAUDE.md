@@ -343,9 +343,9 @@ For implementation details, file locations, and build internals, see:
 
 ## Known Limitations
 
-### Verso LaTeX Export
+### Verso Document Generation
 
-Not yet implemented. The `pdf_verso` page type has been removed from active surfaces (sidebar, compliance); Lean infrastructure preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
+Not yet implemented. All Verso page types (`paper_verso`, `blueprint_verso`, `pdf_verso`) have been removed from active surfaces (sidebar, compliance, validation). Lean infrastructure is preserved for future use. Paper/PDF generation uses TeX sources directly via `paper_tex` and `pdf_tex`.
 
 ### Dashboard Layout
 

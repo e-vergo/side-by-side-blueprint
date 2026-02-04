@@ -35,9 +35,6 @@ REPO_PAGE_MAPPING: dict[str, list[str]] = {
     # Templates, site structure - affects all pages
     "Runway": ["ALL"],
 
-    # Verso documents
-    "verso": ["paper_verso", "blueprint_verso"],
-
     # CSS/JS assets - affects all pages
     "dress-blueprint-action": ["ALL"],
 
@@ -61,8 +58,6 @@ REPO_VALIDATOR_MAPPING: dict[str, list[str]] = {
 
     # Highlighting affects visual
     "subverso": ["T7", "T8"],
-    "verso": ["T7", "T8"],
-
     # Test project changes - full validation
     "SBS-Test": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
     "GCR": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"],
@@ -90,8 +85,6 @@ ALL_PAGES = [
     "dep_graph",
     "paper_tex",
     "pdf_tex",
-    "paper_verso",
-    "blueprint_verso",
     "chapter",
 ]
 

@@ -34,8 +34,6 @@ DEFAULT_PAGES = [
     {"name": "dep_graph", "path": "dep_graph.html", "description": "Dependency graph"},
     {"name": "paper_tex", "path": "paper_tex.html", "description": "Paper [TeX]"},
     {"name": "pdf_tex", "path": "pdf_tex.html", "description": "PDF [TeX]"},
-    {"name": "paper_verso", "path": "paper_verso.html", "description": "Paper [Verso]"},
-    {"name": "blueprint_verso", "path": "blueprint_verso.html", "description": "Blueprint [Verso]"},
     {"name": "chapter", "path": None, "description": "First chapter page"},
 ]
 
@@ -59,14 +57,12 @@ def find_chapter_page(page, base_url: str) -> Optional[str]:
         # Exclusion patterns for non-chapter pages
         exclude_patterns = [
             "index", "dep_graph", "paper", "pdf", "verso",
-            "blueprint_verso", "paper_verso",
             "introduction",
         ]
 
         # Try multiple starting points to find chapter links
         starting_pages = [
             "index.html",           # Dashboard
-            "blueprint_verso.html", # Blueprint Verso (has sidebar with chapters)
         ]
 
         candidates = []

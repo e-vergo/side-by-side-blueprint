@@ -64,7 +64,7 @@ def partial_screenshots_dir() -> Path:
         # Only create some screenshots
         (path / "dashboard.png").touch()
         (path / "dep_graph.png").touch()
-        # Missing: chapter.png, paper_tex.png, blueprint_verso.png
+        # Missing: chapter.png, paper_tex.png
         yield path
 
 
@@ -171,11 +171,10 @@ class TestPromptGeneration:
 
         result = validator.validate(context)
 
-        assert result.metrics["missing_screenshots"] == 3
+        assert result.metrics["missing_screenshots"] == 2
         assert result.details["missing_screenshots"] == [
             "chapter",
             "paper_tex",
-            "blueprint_verso",
         ]
         # Should still generate prompts for available screenshots
         assert result.metrics["pages_to_check"] == 2
