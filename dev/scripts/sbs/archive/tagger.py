@@ -16,6 +16,12 @@ from sbs.archive.session_data import SessionData
 from sbs.core.utils import log
 
 # ---------------------------------------------------------------------------
+# Valid scope values
+# ---------------------------------------------------------------------------
+
+VALID_SCOPES = {"entry", "session", "both"}
+
+# ---------------------------------------------------------------------------
 # Agent-state taxonomy loader (cached)
 # ---------------------------------------------------------------------------
 
@@ -28,7 +34,7 @@ def load_agent_state_taxonomy(
 ) -> dict[str, dict]:
     """Load and cache the agent-state taxonomy.
 
-    Returns a flat dict of ``{tag_name: {"description": str, "dimension": str}}``
+    Returns a flat dict of ``{tag_name: {"description": str, "dimension": str, "scope": str}}``
     for every tag defined in the taxonomy YAML.
     """
     global _TAXONOMY_CACHE
@@ -49,6 +55,7 @@ def load_agent_state_taxonomy(
             result[tag_name] = {
                 "description": tag_entry.get("description", ""),
                 "dimension": dim_name,
+                "scope": tag_entry.get("scope", "both"),
             }
 
     _TAXONOMY_CACHE = result
@@ -67,6 +74,11 @@ class TaggingEngine:
 
     Rules are defined in YAML format with conditions that match against
     entry context. Hooks are Python modules that can perform complex analysis.
+
+    Rules and hooks declare a ``scope`` (entry, session, or both) that
+    determines which context dict is used for evaluation. This prevents
+    session-constant tags from being uniformly applied to every entry in
+    the same session.
     """
 
     def __init__(self, rules_path: Optional[Path] = None, hooks_dir: Optional[Path] = None):
@@ -94,23 +106,47 @@ class TaggingEngine:
         entry: ArchiveEntry,
         context: dict[str, Any],
         sessions: Optional[list[SessionData]] = None,
+        *,
+        session_context: Optional[dict[str, Any]] = None,
     ) -> list[str]:
         """
         Evaluate all rules and hooks against entry context.
 
         Args:
             entry: The archive entry being tagged
-            context: Dict of field values to evaluate rules against
+            context: Dict of entry-specific field values to evaluate rules against.
+                     For backward compatibility, if *session_context* is not provided,
+                     this dict is used for all scopes.
             sessions: Optional list of session data for hook analysis
+            session_context: Dict of session-constant field values. When provided,
+                             rules with ``scope: session`` use only this dict,
+                             rules with ``scope: entry`` use only *context*, and
+                             rules with ``scope: both`` use a merged dict.
 
         Returns:
             List of tags to apply
         """
         tags = []
 
+        # Build the merged context for "both" scope rules
+        if session_context is not None:
+            merged_context = {**session_context, **context}
+        else:
+            # Backward compat: single context used for all scopes
+            merged_context = context
+            session_context = context
+
         # Evaluate declarative rules
         for rule in self.rules:
-            rule_tags = self._evaluate_rule(rule, context)
+            rule_scope = rule.get("scope", "both")
+            if rule_scope == "entry":
+                effective_ctx = context
+            elif rule_scope == "session":
+                effective_ctx = session_context
+            else:
+                effective_ctx = merged_context
+
+            rule_tags = self._evaluate_rule(rule, effective_ctx)
             if rule_tags:
                 tags.extend(rule_tags)
                 log.dim(f"Rule '{rule.get('name', 'unnamed')}' matched: {rule_tags}")
@@ -255,7 +291,30 @@ class TaggingEngine:
             return []
 
 
-def build_tagging_context(
+# ---------------------------------------------------------------------------
+# Entry-specific context fields
+# ---------------------------------------------------------------------------
+
+# Context fields that come directly from the archive entry and vary
+# between entries in the same session.
+_ENTRY_FIELDS = {
+    "project", "trigger", "has_notes", "tag_count", "screenshot_count",
+    "repo_count", "issue_refs", "pr_refs", "skill", "substate",
+    "state_transition", "has_epoch_summary", "gate_passed",
+    "quality_overall", "quality_delta",
+}
+
+# Context fields extracted from claude_data that are constant across
+# all entries in the same session.
+_SESSION_FIELDS = {
+    "session_count", "tool_call_count", "message_count", "plan_count",
+    "total_input_tokens", "total_output_tokens", "total_tokens",
+    "cache_read_tokens", "thinking_block_count", "unique_tools_count",
+    "model_versions",
+}
+
+
+def build_entry_context(
     entry: ArchiveEntry,
     build_success: Optional[bool] = None,
     build_duration_seconds: Optional[float] = None,
@@ -263,11 +322,13 @@ def build_tagging_context(
     files_modified: Optional[list[str]] = None,
 ) -> dict[str, Any]:
     """
-    Build a context dict for rule evaluation.
+    Build a context dict with entry-specific fields only.
 
-    Combines entry data with additional build context.
+    These fields vary between entries in the same session:
+    state machine fields, quality scores, linkage refs, and
+    build context passed as arguments.
     """
-    context = {
+    context: dict[str, Any] = {
         "project": entry.project,
         "trigger": entry.trigger,
         "has_notes": bool(entry.notes),
@@ -300,7 +361,29 @@ def build_tagging_context(
     context["has_epoch_summary"] = entry.epoch_summary is not None
     context["gate_passed"] = entry.gate_validation.get("passed") if entry.gate_validation else None
 
-    # ---- Claude data (load from sidecar if needed) ----
+    # ---- Quality (from entry) ----
+    context["quality_overall"] = (
+        entry.quality_scores.get("overall") if entry.quality_scores else None
+    )
+    context["quality_delta"] = (
+        entry.quality_delta.get("overall") if entry.quality_delta else None
+    )
+
+    return context
+
+
+def build_session_context(
+    entry: ArchiveEntry,
+) -> dict[str, Any]:
+    """
+    Build a context dict with session-constant fields only.
+
+    These fields are derived from ``claude_data`` and are identical
+    for every entry created from the same Claude Code session: token
+    counts, tool counts, model versions, thinking metrics.
+    """
+    context: dict[str, Any] = {}
+
     claude_data = entry.claude_data or entry.load_claude_data()
     if claude_data:
         context["session_count"] = len(claude_data.get("session_ids", []))
@@ -320,6 +403,10 @@ def build_tagging_context(
         context["model_versions"] = claude_data.get("model_versions_used", [])
     else:
         # Ensure token fields exist even without claude_data
+        context["session_count"] = 0
+        context["tool_call_count"] = 0
+        context["message_count"] = 0
+        context["plan_count"] = 0
         context["total_input_tokens"] = 0
         context["total_output_tokens"] = 0
         context["total_tokens"] = 0
@@ -328,12 +415,31 @@ def build_tagging_context(
         context["unique_tools_count"] = 0
         context["model_versions"] = []
 
-    # ---- Quality (from entry) ----
-    context["quality_overall"] = (
-        entry.quality_scores.get("overall") if entry.quality_scores else None
-    )
-    context["quality_delta"] = (
-        entry.quality_delta.get("overall") if entry.quality_delta else None
-    )
-
     return context
+
+
+def build_tagging_context(
+    entry: ArchiveEntry,
+    build_success: Optional[bool] = None,
+    build_duration_seconds: Optional[float] = None,
+    repos_changed: Optional[list[str]] = None,
+    files_modified: Optional[list[str]] = None,
+) -> dict[str, Any]:
+    """
+    Build a combined context dict for rule evaluation.
+
+    This is the backward-compatible function that merges entry and session
+    context into a single dict. For scope-aware evaluation, use
+    :func:`build_entry_context` and :func:`build_session_context` separately.
+    """
+    entry_ctx = build_entry_context(
+        entry,
+        build_success=build_success,
+        build_duration_seconds=build_duration_seconds,
+        repos_changed=repos_changed,
+        files_modified=files_modified,
+    )
+    session_ctx = build_session_context(entry)
+
+    # Merge: entry fields take precedence on collision
+    return {**session_ctx, **entry_ctx}

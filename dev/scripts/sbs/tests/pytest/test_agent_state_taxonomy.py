@@ -15,9 +15,14 @@ import yaml
 from sbs.archive.entry import ArchiveEntry
 from sbs.archive.tagger import (
     build_tagging_context,
+    build_entry_context,
+    build_session_context,
     load_agent_state_taxonomy,
     _reset_taxonomy_cache,
     _TAXONOMY_PATH,
+    VALID_SCOPES,
+    _ENTRY_FIELDS,
+    _SESSION_FIELDS,
 )
 
 # All tests in this module are evergreen
@@ -377,3 +382,83 @@ class TestContextTokens:
         assert ctx["thinking_block_count"] == 0
         assert ctx["unique_tools_count"] == 0
         assert ctx["model_versions"] == []
+
+
+# =============================================================================
+# 11. Every tag has a valid scope field
+# =============================================================================
+
+
+class TestTagScope:
+    """Every tag in the taxonomy has a valid scope field."""
+
+    def test_every_tag_has_scope(self, raw_taxonomy: dict) -> None:
+        """Every tag defines a scope field."""
+        missing: list[str] = []
+        for dim_data in raw_taxonomy["dimensions"].values():
+            for tag_entry in dim_data.get("tags", []):
+                if "scope" not in tag_entry:
+                    missing.append(tag_entry["name"])
+        assert missing == [], f"Tags missing scope: {missing}"
+
+    def test_scope_values_valid(self, raw_taxonomy: dict) -> None:
+        """Every tag's scope is one of: entry, session, both."""
+        invalid: list[tuple[str, str]] = []
+        for dim_data in raw_taxonomy["dimensions"].values():
+            for tag_entry in dim_data.get("tags", []):
+                scope = tag_entry.get("scope")
+                if scope not in VALID_SCOPES:
+                    invalid.append((tag_entry["name"], str(scope)))
+        assert invalid == [], f"Tags with invalid scope: {invalid}"
+
+    def test_loader_includes_scope(self, flat_taxonomy: dict[str, dict]) -> None:
+        """Loaded taxonomy entries include scope field."""
+        for tag_name, info in flat_taxonomy.items():
+            assert "scope" in info, f"{tag_name} missing scope in loaded taxonomy"
+            assert info["scope"] in VALID_SCOPES, (
+                f"{tag_name} has invalid scope: {info['scope']}"
+            )
+
+
+# =============================================================================
+# 12. Split context builders produce disjoint field sets
+# =============================================================================
+
+
+class TestSplitContextBuilders:
+    """build_entry_context and build_session_context produce correct fields."""
+
+    def test_entry_context_has_no_session_fields(self, minimal_entry: ArchiveEntry) -> None:
+        """Entry context does not contain session-constant fields."""
+        ctx = build_entry_context(minimal_entry)
+        for field in _SESSION_FIELDS:
+            assert field not in ctx, (
+                f"Entry context should not contain session field '{field}'"
+            )
+
+    def test_session_context_has_session_fields(self, minimal_entry: ArchiveEntry) -> None:
+        """Session context contains all expected session-constant fields."""
+        ctx = build_session_context(minimal_entry)
+        for field in _SESSION_FIELDS:
+            assert field in ctx, (
+                f"Session context missing expected field '{field}'"
+            )
+
+    def test_session_context_has_no_entry_only_fields(self, minimal_entry: ArchiveEntry) -> None:
+        """Session context does not contain entry-only fields."""
+        ctx = build_session_context(minimal_entry)
+        # These fields are strictly entry-level (state machine, quality, linkage)
+        entry_only = {"substate", "state_transition", "gate_passed",
+                      "quality_overall", "quality_delta", "issue_refs", "pr_refs"}
+        for field in entry_only:
+            assert field not in ctx, (
+                f"Session context should not contain entry field '{field}'"
+            )
+
+    def test_merged_context_has_all_fields(self, minimal_entry: ArchiveEntry) -> None:
+        """build_tagging_context merges both sets of fields."""
+        ctx = build_tagging_context(minimal_entry)
+        for field in _ENTRY_FIELDS:
+            assert field in ctx, f"Merged context missing entry field '{field}'"
+        for field in _SESSION_FIELDS:
+            assert field in ctx, f"Merged context missing session field '{field}'"

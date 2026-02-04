@@ -3,7 +3,7 @@
 from .entry import ArchiveEntry, ArchiveIndex
 from .session_data import SessionData, ToolCall, ClaudeDataSnapshot
 from .extractor import extract_claude_data
-from .tagger import TaggingEngine, build_tagging_context
+from .tagger import TaggingEngine, build_tagging_context, build_entry_context, build_session_context
 from .upload import (
     archive_upload,
     ensure_porcelain,
@@ -48,6 +48,8 @@ __all__ = [
     # Tagging
     "TaggingEngine",
     "build_tagging_context",
+    "build_entry_context",
+    "build_session_context",
     # Upload
     "archive_upload",
     "ensure_porcelain",
