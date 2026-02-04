@@ -30,7 +30,7 @@ The active development environment for **agentic and project-specific developmen
 - **Archive system** - Event log, state machine, context provider
 - **Validators** - T1-T8 quality scoring, visual compliance
 - **MCP tools** - Lean LSP integration via sbs-lsp-mcp (67 tools: 18 Lean + 41 SBS + 5 Browser + 3 Zulip)
-- **Skills** - `/task`, `/qa`, `/update-and-archive` workflow definitions
+- **Skills** - `/task`, `/qa`, `/converge`, `/introspect`, `/update-and-archive` workflow definitions
 - **Agents** - `sbs-developer`, `sbs-oracle` agent specifications
 
 ---
@@ -132,6 +132,7 @@ Controlled parallelism across all workflow phases:
 |-------|------------|---------|
 | task | `/task` | General-purpose agentic task execution |
 | qa | `/qa` | Live interactive browser-driven QA |
+| converge | `/converge` | Autonomous QA convergence loop (eval/fix/rebuild) |
 | update-and-archive | `/update-and-archive` | Documentation refresh, porcelain state |
 
 ### Agent Types

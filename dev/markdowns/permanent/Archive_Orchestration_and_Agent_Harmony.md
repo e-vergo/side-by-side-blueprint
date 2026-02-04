@@ -191,6 +191,13 @@ retrospective -> readme-wave -> oracle-regen -> porcelain -> archive-upload
 setup -> review -> report
 ```
 
+**`/converge` skill:**
+```
+setup -> eval-1 -> fix-1 -> eval-2 -> fix-2 -> eval-3 -> report
+```
+
+**Note:** Substates encode iteration number. Exits early on convergence (100% pass), plateau (no improvement), or max iterations (default 3). Fully autonomous -- no user interaction during the loop.
+
 **`/self-improve` skill:**
 ```
 discovery -> selection -> dialogue -> logging -> archive
