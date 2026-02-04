@@ -24,8 +24,13 @@ The loop is: **build -> evaluate -> fix -> introspect -> rebuild -> re-evaluate*
 | `/converge GCR --goal qa` | QA criteria evaluation (default behavior) |
 | `/converge GCR --goal tests` | Pytest pass rate convergence |
 | `/converge GCR --goal "T5 >= 0.9, T6 >= 0.95"` | Custom validator thresholds |
+| `/converge hardcore GCR` | Hardcore mode -- no bail, tick-tock introspect |
+| `/converge hardcore GCR --goal tests` | Hardcore with custom goal |
+| `/converge hardcore GCR --single` | Hardcore in sequential mode |
 
 **Default behavior is crush mode:** all QA failures in an iteration are addressed simultaneously, with fix agents grouped by category to avoid file conflicts. Use `--single` to revert to sequential one-category-at-a-time processing.
+
+**Hardcore mode** (`hardcore` keyword before project name) also uses crush mode by default. It disables plateau detection and max-iteration caps, running indefinitely until 100% pass or build failure. Introspection follows a tick-tock cadence (every other iteration).
 
 ### Argument Parsing
 
@@ -36,6 +41,11 @@ The loop is: **build -> evaluate -> fix -> introspect -> rebuild -> re-evaluate*
   - `qa` -- evaluate QA criteria via browser (current default behavior)
   - `tests` -- run `sbs_run_tests` and converge on pytest pass rate
   - `"T5 >= 0.9, T6 >= 0.95"` -- run `sbs_validate_project` with specified validators and check against custom thresholds (comma-separated `<validator> >= <threshold>` pairs)
+- `hardcore` keyword (before project name) enables hardcore mode:
+  - Disables plateau detection exit condition
+  - Disables max_iterations exit condition (runs indefinitely)
+  - Enables tick-tock introspection cadence (introspect on odd iterations only)
+  - Uses crush (parallel) mode by default (overridable with `--single`)
 - No arguments -> error: project name required
 
 ---
@@ -168,9 +178,12 @@ For `tests` and custom threshold goals, skip steps 1-3 below and jump directly t
 5. **Append to `pass_rates` list**
 
 6. **Check exit conditions** (any triggers transition to `report`):
-   1. Pass rate = 100% -- **converged**
-   2. N > 1 AND current pass rate <= previous pass rate -- **plateau** (not improving)
-   3. N >= max_iterations -- **hard cap**
+   1. Pass rate = 100% -- **converged** (all modes)
+   2. N > 1 AND current pass rate <= previous pass rate -- **plateau** (normal mode only; **DISABLED** in hardcore mode)
+   3. N >= max_iterations -- **hard cap** (normal mode only; **DISABLED** in hardcore mode)
+   4. Build failure -- **fatal** (all modes, handled separately in rebuild phase)
+
+   In hardcore mode, only condition 1 (100% converged) triggers exit from the eval-fix loop. The loop runs indefinitely until full convergence or a build failure halts it.
 
 7. If no exit condition met: transition to `fix-N`
 
@@ -234,6 +247,13 @@ sbs_skill_transition(skill="converge", to_phase="fix-<N>")
 ### Transition
 
 ```
+# Normal mode (always introspect):
+sbs_skill_transition(skill="converge", to_phase="introspect-<N>")
+
+# Hardcore mode, even iteration (skip introspect):
+sbs_skill_transition(skill="converge", to_phase="rebuild-<N>")
+
+# Hardcore mode, odd iteration (introspect):
 sbs_skill_transition(skill="converge", to_phase="introspect-<N>")
 ```
 
@@ -243,11 +263,26 @@ sbs_skill_transition(skill="converge", to_phase="introspect-<N>")
 
 **Purpose:** Reflect on Fix-N outcomes, compare with prior iterations, produce adaptation notes for the next cycle. Fully autonomous -- no user interaction.
 
+### Tick-Tock Cadence (Hardcore Mode)
+
+In **normal mode**, introspect runs every iteration (unchanged).
+
+In **hardcore mode**, introspect follows a tick-tock cadence:
+- **Odd iterations (1, 3, 5, ...):** Full introspect phase runs (tick)
+- **Even iterations (2, 4, 6, ...):** Skip introspect entirely (tock). Transition directly from `fix-N` to `rebuild-N`. Fix agents on even iterations still receive adaptation notes from the most recent odd-iteration introspect.
+
+When skipping introspect on even iterations, the phase transition is:
+```
+fix-N -> rebuild-N  (skip introspect-N)
+```
+
 ### Entry
 
 ```
 sbs_skill_transition(skill="converge", to_phase="introspect-<N>")
 ```
+
+(Only reached on odd iterations in hardcore mode, or every iteration in normal mode.)
 
 ### Actions
 
@@ -372,17 +407,35 @@ sbs_skill_transition(skill="converge", to_phase="report")
      sbs_skill_end(skill="converge")
      ```
 
+### Recursive Tick-Tock (Hardcore Mode)
+
+In hardcore mode, introspection levels above L2 also follow a tick-tock cadence:
+
+- **L2** runs on odd converge iterations (1, 3, 5, ...) as described in the Introspect-N phase
+- **L3** runs every other L2 completion (i.e., every 4th converge iteration: 1, 5, 9, ...)
+- **L(N+1)** runs every other L(N) completion
+
+To determine whether L3 should run, query the archive for previous `converge` entries with `hardcore` context:
+```
+sbs_search_entries(tags=["converge-hardcore-l2-complete"], limit=10)
+```
+Count completions since the last L3 run. If the count is even (0, 2, 4, ...), run L3. If odd, skip.
+
+The pattern generalizes: each level N+1 fires every other level N, producing a geometric decay in introspection frequency. This prevents introspection overhead from dominating long-running hardcore sessions.
+
 ---
 
 ## Safety Mechanisms
 
-1. **Hard iteration cap:** Max 3 iterations (configurable via `--max-iter`)
-2. **Plateau detection:** Stop if pass rate does not improve between iterations
-3. **Build failure:** Halt immediately, report, `sbs_skill_fail()`
+1. **Hard iteration cap:** Max 3 iterations (configurable via `--max-iter`). **DISABLED** in hardcore mode.
+2. **Plateau detection:** Stop if pass rate does not improve between iterations. **DISABLED** in hardcore mode.
+3. **Build failure:** Halt immediately, report, `sbs_skill_fail()`. Active in ALL modes.
 4. **Agent failure:** Retry once, then skip that fix and continue (do not block entire iteration)
 5. **No gate overrides:** Unlike /task, converge does not ask for gate override -- it reports and stops
 6. **No user interaction during loop:** The entire loop runs without AskUserQuestion calls
 7. **Introspection is non-blocking:** If `sbs_improvement_capture` or `sbs_issue_log` fails, log the error and continue. Introspection tool failures must never halt the convergence loop.
+8. **Hardcore stagnation warning:** In hardcore mode, if 3 consecutive iterations show no improvement in pass rate, log a warning via `sbs_improvement_capture(observation="Hardcore converge: 3 consecutive iterations with no improvement (iterations N-2 through N). Pass rate stalled at X%. Consider manual intervention.", category="process")`. The loop continues running -- this is a soft warning, not an exit condition. The warning repeats every 3 stagnant iterations.
+9. **Hardcore mode monitoring:** Hardcore mode has no iteration cap and runs indefinitely. Users should monitor long-running sessions periodically. The tick-tock introspection cadence and stagnation warnings provide visibility into progress.
 
 ---
 
@@ -419,11 +472,15 @@ If `global_state.skill != "converge"` and `global_state` is not `null`:
 | `introspect-1` | Reflect on iteration 1, produce adaptation notes | -> rebuild-1 |
 | `rebuild-1` | Rebuild after fix-1 | -> eval-2 |
 | `eval-2` | Second QA evaluation | -> fix-2 or report |
-| `fix-2` | Second remediation pass | -> introspect-2 |
-| `introspect-2` | Reflect on iteration 2, produce adaptation notes | -> rebuild-2 |
+| `fix-2` | Second remediation pass | -> introspect-2 (normal) or rebuild-2 (hardcore) |
+| `introspect-2` | Reflect on iteration 2 (normal mode only) | -> rebuild-2 |
 | `rebuild-2` | Rebuild after fix-2 | -> eval-3 |
-| `eval-3` | Third QA evaluation | -> report (always, max reached) |
+| `eval-3` | Third QA evaluation | -> report (normal: max reached) or fix-3 (hardcore: continues) |
 | `report` | Convergence summary, cleanup | -> handoff to introspect L3 or end |
+
+In **normal mode**, iteration count is bounded by `max_iterations` (default 3) and the table above shows the typical full run.
+
+In **hardcore mode**, the iteration count is unbounded. The pattern continues as `eval-N -> fix-N -> [introspect-N] -> rebuild-N -> eval-(N+1)` indefinitely, where `introspect-N` phases only appear on odd N (tick-tock cadence). The loop exits only on 100% pass rate or build failure.
 
 Each substate transition is recorded via `sbs_skill_transition`. The final `sbs_skill_end` (or `sbs_skill_handoff` for L3) clears `global_state` to `null`.
 
@@ -509,3 +566,5 @@ All errors are surfaced in dialogue. Nothing is silently ignored.
 - **Logging every failure as an issue**: Only log issues for bugs that transcend the convergence run. Normal QA failures are the loop's responsibility.
 - **Blocking on introspection failures**: `sbs_improvement_capture` and `sbs_issue_log` failures are non-fatal. The loop must continue.
 - **Ignoring adaptation notes**: Fix-(N+1) agents MUST receive adaptation notes as context. Without this, the loop has no memory.
+- **Running introspect on even iterations in hardcore mode**: Tick-tock cadence means even iterations skip introspect. Transition directly from fix-N to rebuild-N.
+- **Bailing on plateau in hardcore mode**: Hardcore mode disables plateau exit. Only 100% pass or build failure can stop the loop.
