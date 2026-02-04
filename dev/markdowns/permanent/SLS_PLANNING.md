@@ -57,9 +57,11 @@ A starter repository that provides:
 
 6. **A test framework** -- Pluggable validator architecture with tier-based test execution (evergreen / dev / temporary). Gates enforce quality thresholds at phase transitions.
 
+7. **A VSCode extension** -- Purpose-built interface that structurally enforces the skill workflow. Four skill buttons, a chat zone, and an archive plane replace free-form terminal interaction with a UI that channels behavior through the framework's intended patterns. The extension transforms conventions into interface constraints -- the principles described above become properties of the environment rather than rules to remember. See [SLS_EXTENSION.md](SLS_EXTENSION.md).
+
 ## What SLS Is Not
 
-- Not a coding assistant or IDE plugin
+- Not an IDE replacement -- it augments the editor with structured workflow
 - Not domain-specific (no Lean, no math, no particular language)
 - Not a multi-agent swarm framework
 - Not an autonomous agent -- the human is always in the loop via dialogue
@@ -170,6 +172,24 @@ Domain-specific values that are hardcoded in SBS become configuration in SLS:
 
 Users define their own quality dimensions, validators, repo topology, and sync targets. The framework provides the machinery; the user provides the domain.
 
+### Extension Layer
+
+The VSCode extension sits atop the CLI/MCP/archive stack as the primary user interface:
+
+```
+┌──────────────────────────┐
+│   VSCode Extension       │  Skill buttons, chat zone, archive plane
+├──────────────────────────┤
+│   Claude Code CLI        │  Session management, CLAUDE.md, permissions
+├──────────────────────────┤
+│   MCP Server + CLI       │  Skill state, archive queries, GitHub, tests
+├──────────────────────────┤
+│   Archive + Config       │  Entries, index, sls.json, gates, tags
+└──────────────────────────┘
+```
+
+The extension communicates downward: it spawns Claude Code sessions (which use MCP tools internally) and reads archive state directly. It never writes to the archive or manages skill state itself -- all mutations flow through Claude Code sessions. Terminal users bypass the top layer and interact with Claude Code + CLI directly. See [SLS_EXTENSION.md](SLS_EXTENSION.md) for the full spec.
+
 ---
 
 ## Transfer Plan from SBS
@@ -217,6 +237,7 @@ Create the SLS repository with the core loop working end-to-end:
 - Evergreen test suite passing
 - CLAUDE.md template with orchestration model and preference sections
 - Single example project demonstrating one complete improvement cycle
+- Extension scaffold: skill buttons, chat zone (CLI backend), archive plane with epoch dividers
 
 ### Phase 2: Onboarding and Documentation
 
@@ -224,8 +245,8 @@ Make it usable by someone who isn't us:
 
 - `sls init` command that scaffolds a new project
 - Interactive configuration wizard (quality dimensions, GitHub repo, sync target)
-- Guided first-cycle walkthrough
-- Minimal README focused on "clone, init, run your first loop"
+- Extension activation as the primary onboarding path -- installing the extension and opening a project replaces the guided walkthrough
+- Minimal README focused on "install extension, init, run your first loop"
 
 ### Phase 3: Extensibility
 
@@ -237,13 +258,15 @@ Make it powerful for advanced users:
 - Gate configuration for custom quality dimensions
 - Meta-self-improvement tooling (analyze N past improvement cycles)
 - Archive export/aggregation utilities for cross-instance analysis
+- Extension extensibility: custom skill buttons, custom per-skill chrome, pluggable archive row renderers
 
 ---
 
 ## Open Questions
 
-1. **Package distribution:** PyPI package? npx-style runner? Or just "clone this repo and go"?
-2. **MCP server packaging:** Bundle with CLI or separate install? Depends on whether users need agent-callable tools or just human CLI access.
+1. **Package distribution:** VSCode extension for IDE users; CLI remains for terminal users. PyPI for the Python backend? Bundled with the extension?
+2. **MCP server packaging:** Extension needs MCP access for archive reads. Bundle as sidecar process or call Python tools directly via child process?
 3. **Archive format versioning:** How to handle schema evolution as the framework matures without breaking existing archives?
-4. **Multi-project support:** Should one SLS installation support multiple projects, or is it one SLS instance per project?
+4. **Multi-project support:** Should one SLS installation support multiple projects, or is it one SLS instance per project? Extension: one instance per VSCode window?
 5. **Sync targets:** iCloud is SBS-specific. What general sync mechanisms should SLS support? Git-native (push to a branch)? Cloud storage? None (local only)?
+6. **Claude Code programmatic API:** The extension currently spawns `claude` CLI as a child process. If Anthropic exposes extension-to-extension communication, swap the CLI backend for the native API. Monitor their roadmap.

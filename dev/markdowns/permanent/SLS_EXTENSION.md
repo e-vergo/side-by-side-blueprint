@@ -17,6 +17,40 @@ The skill buttons (`Log`, `Task`, `Self-improve`, `End Epoch`) each start a new 
 
 ---
 
+## Structural Enforcement
+
+The extension doesn't just display the SLS workflow -- it structurally enforces it. Several principles from [SLS_PLANNING.md](SLS_PLANNING.md) that depend on convention in the terminal become properties of the interface in the extension:
+
+**Alignment through structure.** SLS's primary principle is that alignment is "actively constructed and maintained through every interaction." In the terminal, this depends on the agent reading CLAUDE.md and following skill protocols. The extension achieves it spatially: you cannot start interacting without first declaring intent via a skill button. The dialogue begins pre-aligned. The skill choice IS the alignment step.
+
+**Loop visibility.** The fundamental cycle (Work -> Archive -> Analyze -> Improve) is described textually in the planning doc. In the extension, the four buttons encode it spatially: Task -> End Epoch -> Self-improve -> back to Task. A new user doesn't need to read the planning doc to discover the rhythm -- the UI is the rhythm.
+
+**Single-agent as physical constraint.** One chat zone. One border color. One state indicator. You can't accidentally open a second terminal and start a conflicting session. The "One Working Agent at a Time" architectural invariant stops being a rule and becomes a property of the interface.
+
+**Transparency becomes ambient.** The archive plane is always visible. Every entry stacks up in front of you. Epoch boundaries are visual dividers. You can't avoid seeing the accumulation of structured data. The "no hidden state" principle holds without any effort from the user.
+
+**Introspection promoted to peer status.** Self-improve sits at the same visual level as Task. Not buried in documentation, not a slash command you have to remember exists. Reflection is a first-class activity, not an afterthought.
+
+**Verification rendered.** Phase indicators (task phase bar, update-and-archive substates) make gate enforcement visible. In the terminal, gates are invisible until they block you. In the extension, you watch yourself move through alignment -> planning -> execution -> finalization. The structure of the work is rendered, not just the work itself.
+
+**Data generation automatic.** Every interaction through the extension flows through a skill, producing structured archive data. In raw Claude Code, a user can just chat without invoking skills, producing no structured entries. The extension makes the unstructured path the exception rather than the default.
+
+**Escape hatch preserves flexibility.** Users can always drop into raw Claude Code for unconstrained interaction. The extension provides structure for the common case without caging power users. This is the Flexibility principle ("configuration over convention") made literal: the UI is the configuration, the terminal is the convention.
+
+The net effect: the extension transforms SLS from a discipline (follow these conventions, run these commands, maintain this rhythm) into an environment (the conventions are the interface, the rhythm is the layout, the discipline is structural).
+
+### Orchestration Overhead Reduction
+
+Specific overhead that disappears with the extension:
+
+- **Skill enforcement:** No CLAUDE.md instructions needed to ensure users invoke skills. The UI only offers skill-shaped interaction.
+- **Phase tracking:** No need for the agent to render phase state in text. The UI displays it natively via phase bars and substate indicators.
+- **Orphan prevention:** No risk of sessions that bypass archival. Every interaction flows through a skill, which flows through the archive.
+- **Question UX:** AskUserQuestion becomes a native UI card rather than a terminal interruption -- structured options render as buttons, not text.
+- **State awareness:** The "Current State" widget eliminates the need to call `sbs_skill_status()` manually. State is always visible.
+
+---
+
 ## Layout
 
 ```
@@ -256,6 +290,32 @@ SLS Framework          SLS Extension
 ```
 
 Non-VSCode users interact through the terminal + CLI. VSCode users get the same capabilities with a richer interface. The framework is UI-agnostic; the extension is one possible frontend.
+
+The extension also resolves several open questions from [SLS_PLANNING.md](SLS_PLANNING.md): package distribution (extension for IDE users, CLI for terminal users), MCP packaging (bundled as sidecar with the extension), and onboarding (extension activation replaces guided walkthrough). More fundamentally, it changes the framework's relationship to its own principles -- they stop being things to document and remember and start being things the interface enforces structurally.
+
+---
+
+## Compliance
+
+### Anthropic (Claude Code)
+
+In January 2026, Anthropic blocked third-party tools that spoofed Claude Code's client identity to use subscription OAuth tokens at favorable rates. The SLS extension does NOT do this.
+
+The extension spawns the actual `claude` CLI binary as a child process -- functionally identical to running `claude` in any terminal emulator (iTerm, Warp, Hyper). It does not:
+- Spoof client identity or headers
+- Extract or reuse OAuth tokens
+- Make direct API calls with subscription credentials
+- Build a competing product or service
+
+The extension is a rendering layer on top of Claude Code's own JSONL output. All model access flows through the official Claude Code binary running in its standard managed environment.
+
+**Risk:** If Anthropic restricts programmatic CLI spawning (unlikely -- it would break CI/CD), the CLI backend breaks. The Option 2 extension API would be the clean resolution.
+
+**Recommendation:** If distributing commercially, verify with Anthropic directly.
+
+### VSCode Marketplace
+
+Wrapping CLI tools in a webview is a standard extension pattern (GitLens wraps git, Docker extension wraps docker CLI). No marketplace restrictions apply.
 
 ---
 
