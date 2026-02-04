@@ -1,7 +1,7 @@
 """SBS-specific tool implementations.
 
 This module contains SBS-specific MCP tools for:
-- Oracle querying (sbs_oracle_query)
+- Oracle querying (ask_oracle)
 - Archive state inspection (sbs_archive_state, sbs_epoch_summary)
 - Context generation (sbs_context)
 - Testing tools (sbs_run_tests, sbs_validate_project)
@@ -26,11 +26,13 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
+from .duckdb_layer import DuckDBLayer
 from .sbs_models import (
     AnalysisFinding,
     AnalysisSummary,
     ArchiveEntrySummary,
     ArchiveStateResult,
+    AskOracleResult,
     ContextResult,
     EpochSummaryResult,
     GitHubIssue,
@@ -47,20 +49,16 @@ from .sbs_models import (
     IssueSummaryResult,
     OracleConcept,
     OracleMatch,
-    OracleQueryResult,
     PageInspection,
     PRCreateResult,
     PRGetResult,
     PRListResult,
     PRMergeResult,
-    QuestionAnalysisResult,
-    QuestionStatsResult,
     SBSBuildResult,
     SBSValidationResult,
     ScreenshotResult,
     SearchResult,
     SelfImproveEntries,
-    SelfImproveEntrySummary,
     ServeResult,
     SkillEndResult,
     SkillFailResult,
@@ -77,24 +75,15 @@ from .sbs_models import (
 from .sbs_utils import (
     ARCHIVE_DIR,
     SBS_ROOT,
-    ArchiveEntry,
-    aggregate_visual_changes,
-    collect_projects,
-    collect_tags,
     compute_hash,
-    count_builds,
-    format_time_range,
-    generate_context_block,
     get_archived_screenshot,
-    get_entry_timestamp,
-    get_epoch_entries,
     get_screenshot_path,
-    load_archive_index,
-    load_oracle_content,
-    parse_oracle_sections,
-    search_oracle,
-    summarize_entry,
 )
+
+
+def _get_db(ctx: Context) -> DuckDBLayer:
+    """Extract the DuckDBLayer from the MCP lifespan context."""
+    return ctx.request_context.lifespan_context["duckdb_layer"]
 
 
 def register_sbs_tools(mcp: FastMCP) -> None:
@@ -104,8 +93,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         mcp: The FastMCP server instance to register tools on.
     """
 
+    GITHUB_REPO = "e-vergo/Side-By-Side-Blueprint"
+
     @mcp.tool(
-        "sbs_oracle_query",
+        "ask_oracle",
         annotations=ToolAnnotations(
             title="SBS Oracle Query",
             readOnlyHint=True,
@@ -113,7 +104,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             openWorldHint=False,
         ),
     )
-    def sbs_oracle_query(
+    def ask_oracle(
         ctx: Context,
         query: Annotated[str, Field(description="Natural language query to search oracle")],
         max_results: Annotated[int, Field(description="Maximum results to return", ge=1)] = 10,
@@ -122,7 +113,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         include_raw_section: Annotated[bool, Field(description="Include full section content for exact matches")] = False,
         min_relevance: Annotated[float, Field(description="Minimum relevance score (0.0-1.0)", ge=0.0, le=1.0)] = 0.0,
         fuzzy: Annotated[bool, Field(description="Enable fuzzy matching for typos")] = False,
-    ) -> OracleQueryResult:
+        include_archive: Annotated[bool, Field(description="Include recent archive activity touching matched projects/files")] = False,
+        include_quality: Annotated[bool, Field(description="Include latest quality scores for relevant projects")] = False,
+        include_issues: Annotated[bool, Field(description="Include related GitHub issues")] = False,
+    ) -> AskOracleResult:
         """Query the SBS Oracle for file locations and concept information.
 
         Searches the compiled oracle (sbs-oracle.md) for matching files and concepts.
@@ -133,68 +127,58 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - "status color" -> finds color model documentation
         - "archive entry" -> finds entry.py and related files
         """
-        # Load and parse oracle content
-        content = load_oracle_content()
-        if not content:
-            return OracleQueryResult(
-                matches=[],
-                concepts=[],
-                raw_section=None,
-            )
-
-        sections = parse_oracle_sections(content)
-
-        # Search for matches with new filter parameters
-        raw_matches = search_oracle(
-            sections,
-            query,
-            max_results,
+        db = _get_db(ctx)
+        result = db.oracle_query(
+            query=query,
+            max_results=max_results,
             result_type=result_type,
             scope=scope,
             min_relevance=min_relevance,
             fuzzy=fuzzy,
+            include_archive=include_archive,
+            include_quality=include_quality,
         )
 
-        # Convert to model objects
-        matches: List[OracleMatch] = []
-        concepts: List[OracleConcept] = []
-
-        for match in raw_matches:
-            if match["file"]:
-                matches.append(
-                    OracleMatch(
-                        file=match["file"],
-                        lines=match.get("lines"),
-                        context=match["context"],
-                        relevance=match["relevance"],
-                    )
-                )
-            else:
-                # Extract concept name from context if possible
-                context_str = match["context"]
-                if "Concept '" in context_str:
-                    # Parse: "Concept 'name' in section: Section Name"
-                    start = context_str.find("'") + 1
-                    end = context_str.find("'", start)
-                    if start > 0 and end > start:
-                        name = context_str[start:end]
-                        section = context_str.split("in section: ")[-1] if "in section: " in context_str else ""
-                        concepts.append(OracleConcept(name=name, section=section))
-
-        # Check for exact section match (only if include_raw_section is True)
-        raw_section = None
+        # Handle include_raw_section (read from oracle file directly)
         if include_raw_section:
-            query_lower = query.lower()
-            for section_name, section_content in sections.get("sections", {}).items():
-                if query_lower in section_name.lower():
-                    raw_section = f"## {section_name}\n{section_content}"
-                    break
+            oracle_path = db._oracle_path
+            if oracle_path.exists():
+                content = oracle_path.read_text()
+                query_lower = query.lower()
+                current_section = None
+                section_lines: List[str] = []
+                found_section = None
+                for line in content.split("\n"):
+                    if line.startswith("## "):
+                        if found_section:
+                            break
+                        current_section = line[3:].strip()
+                        if query_lower in current_section.lower():
+                            found_section = current_section
+                            section_lines = []
+                            continue
+                    elif found_section:
+                        section_lines.append(line)
+                if found_section:
+                    result.raw_section = f"## {found_section}\n" + "\n".join(section_lines)
 
-        return OracleQueryResult(
-            matches=matches,
-            concepts=concepts,
-            raw_section=raw_section,
-        )
+        # Handle include_issues (query GitHub via gh CLI)
+        if include_issues:
+            try:
+                gh_result = subprocess.run(
+                    ["gh", "issue", "list", "--repo", GITHUB_REPO,
+                     "--search", query, "--json", "number,title,state,labels",
+                     "--limit", "5"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if gh_result.returncode == 0:
+                    issues = json.loads(gh_result.stdout)
+                    if issues:
+                        result.related_issues = issues
+            except Exception:
+                pass
+
+        return result
 
     @mcp.tool(
         "sbs_archive_state",
@@ -217,24 +201,25 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - {skill: "task", substate: "alignment"}: In /task skill, alignment phase
         - {skill: "update-and-archive", substate: "execution"}: In /update-and-archive
         """
-        index = load_archive_index()
+        db = _get_db(ctx)
+        meta = db.get_metadata()
+        current_epoch_entries = db.get_epoch_entries(epoch_entry_id=None)
 
-        # Get entries in current epoch
-        current_epoch_entries = get_epoch_entries(index, epoch_entry_id=None)
-
-        # Get all unique projects
-        all_projects = sorted(index.by_project.keys())
-
-        # Get last epoch timestamp
-        last_epoch_timestamp = get_entry_timestamp(index, index.last_epoch_entry)
+        # Derive last epoch timestamp from the last epoch entry
+        last_epoch_timestamp = None
+        last_epoch_id = meta.get("last_epoch_entry")
+        if last_epoch_id:
+            entry = db.get_entry(last_epoch_id)
+            if entry:
+                last_epoch_timestamp = entry.get("created_at")
 
         return ArchiveStateResult(
-            global_state=index.global_state,
-            last_epoch_entry=index.last_epoch_entry,
+            global_state=meta.get("global_state"),
+            last_epoch_entry=last_epoch_id,
             last_epoch_timestamp=last_epoch_timestamp,
             entries_in_current_epoch=len(current_epoch_entries),
-            total_entries=len(index.entries),
-            projects=all_projects,
+            total_entries=meta.get("total_entries", 0),
+            projects=meta.get("projects", []),
         )
 
     @mcp.tool(
@@ -264,13 +249,10 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - Which projects were touched
         - What tags were applied
         """
-        index = load_archive_index()
-
-        # Get entries for the specified epoch
-        entries = get_epoch_entries(index, epoch_entry_id)
+        db = _get_db(ctx)
+        entries = db.get_epoch_entries(epoch_entry_id)
 
         if not entries:
-            # Return empty summary
             return EpochSummaryResult(
                 epoch_id=epoch_entry_id or "current",
                 started_at="",
@@ -282,27 +264,36 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 projects_touched=[],
             )
 
-        # Sort entries by ID (chronological order)
-        sorted_entries = sorted(entries, key=lambda e: e.entry_id)
+        # Entries already sorted ASC by entry_id from DuckDB
+        sorted_entries = entries
 
-        # Compute aggregates
-        visual_changes_raw = aggregate_visual_changes(sorted_entries)
-        visual_changes = [
-            VisualChange(
-                entry_id=vc["entry_id"],
-                screenshots=vc["screenshots"],
-                timestamp=vc["timestamp"],
-            )
-            for vc in visual_changes_raw
-        ]
+        # Compute aggregates from dicts
+        visual_changes: List[VisualChange] = []
+        for e in sorted_entries:
+            screenshots = e.get("screenshots") or []
+            if screenshots:
+                visual_changes.append(VisualChange(
+                    entry_id=e["entry_id"],
+                    screenshots=screenshots,
+                    timestamp=e.get("created_at", ""),
+                ))
 
-        tags_used = collect_tags(sorted_entries)
-        projects_touched = collect_projects(sorted_entries)
-        builds = count_builds(sorted_entries)
+        # Collect tags
+        all_tags: set[str] = set()
+        for e in sorted_entries:
+            for t in (e.get("tags") or []) + (e.get("auto_tags") or []):
+                all_tags.add(t)
+        tags_used = sorted(all_tags)
 
-        # Get time bounds
-        started_at = sorted_entries[0].created_at if sorted_entries else ""
-        ended_at = sorted_entries[-1].created_at if sorted_entries else ""
+        # Collect projects
+        projects_touched = sorted({e.get("project", "") for e in sorted_entries if e.get("project")})
+
+        # Count builds
+        builds = sum(1 for e in sorted_entries if e.get("trigger") == "build")
+
+        # Time bounds
+        started_at = sorted_entries[0].get("created_at", "")
+        ended_at = sorted_entries[-1].get("created_at", "")
 
         return EpochSummaryResult(
             epoch_id=epoch_entry_id or "current",
@@ -351,119 +342,20 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         if include is None:
             include = ["state", "epoch", "quality", "recent"]
 
-        index = load_archive_index()
-        lines: List[str] = []
+        db = _get_db(ctx)
+        context_block = db.build_context_block(include)
+
+        # Count entries referenced
         entry_count = 0
-
-        # State section
-        if "state" in include:
-            lines.append("## Orchestration State")
-            lines.append("")
-            if index.global_state:
-                skill = index.global_state.get("skill", "unknown")
-                substate = index.global_state.get("substate", "unknown")
-                lines.append(f"- **Active Skill:** {skill}")
-                lines.append(f"- **Substate:** {substate}")
-            else:
-                lines.append("- **Status:** Idle (no active skill)")
-
-            if index.last_epoch_entry:
-                lines.append(f"- **Last Epoch:** {index.last_epoch_entry}")
-                timestamp = get_entry_timestamp(index, index.last_epoch_entry)
-                if timestamp:
-                    lines.append(f"- **Last Epoch Time:** {timestamp}")
-            lines.append("")
-
-        # Epoch section
         if "epoch" in include:
-            current_entries = get_epoch_entries(index, epoch_entry_id=None)
-            sorted_entries = sorted(current_entries, key=lambda e: e.entry_id)
-
-            lines.append("## Current Epoch")
-            lines.append("")
-            lines.append(f"- **Entries:** {len(sorted_entries)}")
-            lines.append(f"- **Builds:** {count_builds(sorted_entries)}")
-
-            time_range = format_time_range(sorted_entries)
-            if time_range:
-                lines.append(f"- **Duration:** {time_range}")
-
-            projects = collect_projects(sorted_entries)
-            if projects:
-                lines.append(f"- **Projects:** {', '.join(projects)}")
-
-            tags = collect_tags(sorted_entries)
-            if tags:
-                lines.append(f"- **Tags:** {', '.join(tags[:10])}")
-                if len(tags) > 10:
-                    lines.append(f"  *(+{len(tags) - 10} more)*")
-            lines.append("")
-
-            entry_count += len(sorted_entries)
-
-        # Quality section
-        if "quality" in include:
-            # Find most recent entry with quality scores
-            sorted_all = sorted(index.entries.values(), key=lambda e: e.entry_id, reverse=True)
-            quality_entry = None
-            for entry in sorted_all:
-                if entry.quality_scores:
-                    quality_entry = entry
-                    break
-
-            lines.append("## Quality Scores")
-            lines.append("")
-            if quality_entry and quality_entry.quality_scores:
-                overall = quality_entry.quality_scores.get("overall", "N/A")
-                lines.append(f"- **Overall:** {overall}")
-                lines.append(f"- **From Entry:** {quality_entry.entry_id}")
-
-                scores = quality_entry.quality_scores.get("scores", {})
-                if scores:
-                    lines.append("- **Breakdown:**")
-                    for metric_id, score_data in sorted(scores.items()):
-                        if isinstance(score_data, dict):
-                            value = score_data.get("value", "?")
-                            passed = score_data.get("passed", False)
-                            status = "PASS" if passed else "FAIL"
-                            lines.append(f"  - {metric_id}: {value} ({status})")
-                        else:
-                            lines.append(f"  - {metric_id}: {score_data}")
-            else:
-                lines.append("- No quality scores recorded yet")
-            lines.append("")
-
-        # Recent entries section
+            entry_count += len(db.get_epoch_entries())
         if "recent" in include:
-            sorted_all = sorted(index.entries.values(), key=lambda e: e.entry_id, reverse=True)
-            recent = sorted_all[:max_entries]
-
-            lines.append("## Recent Activity")
-            lines.append("")
-            if recent:
-                context_block = generate_context_block(recent, max_entries)
-                # Skip the header since we already have one
-                context_lines = context_block.split("\n")
-                for line in context_lines:
-                    if not line.startswith("## "):
-                        lines.append(line)
-            else:
-                lines.append("No recent entries.")
-            lines.append("")
-
-            entry_count += len(recent)
-
-        # Calculate time range for the response
-        if entry_count > 0:
-            sorted_all = sorted(index.entries.values(), key=lambda e: e.entry_id, reverse=True)
-            time_range = format_time_range(sorted_all[:entry_count])
-        else:
-            time_range = None
+            entry_count += min(max_entries, db.get_metadata().get("total_entries", 0))
 
         return ContextResult(
-            context_block="\n".join(lines),
+            context_block=context_block,
             entry_count=entry_count,
-            time_range=time_range,
+            time_range=None,
         )
 
     # =========================================================================
@@ -1256,41 +1148,36 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         }
         normalized_project = project_map.get(project, project)
 
-        # Load archive index
-        index = load_archive_index()
-
-        # Get entries for this project, sorted by entry_id descending (most recent first)
-        project_entries = index.get_entries_by_project(normalized_project)
-        sorted_entries = sorted(project_entries, key=lambda e: e.entry_id, reverse=True)
+        db = _get_db(ctx)
+        project_entries = db.get_entries_by_project(normalized_project)
 
         # Build history entries
         history: List[HistoryEntry] = []
         total_with_screenshots = 0
 
-        for entry in sorted_entries:
-            # Check if this entry has the requested page screenshot
-            if page + ".png" in entry.screenshots or page in entry.screenshots:
+        for entry in project_entries:
+            screenshots = entry.get("screenshots") or []
+            if page + ".png" in screenshots or page in screenshots:
                 total_with_screenshots += 1
 
                 if len(history) < limit:
-                    # Convert entry_id to directory format
-                    dir_name = _entry_id_to_dir_format(entry.entry_id)
+                    dir_name = _entry_id_to_dir_format(entry["entry_id"])
                     screenshot_path = ARCHIVE_DIR / normalized_project / "archive" / dir_name / f"{page}.png"
 
-                    # Compute hash if file exists
                     hash_map = {}
                     if screenshot_path.exists():
                         file_hash = compute_hash(screenshot_path)
                         if file_hash:
                             hash_map[page] = file_hash
 
+                    all_tags = (entry.get("tags") or []) + (entry.get("auto_tags") or [])
                     history.append(
                         HistoryEntry(
-                            entry_id=entry.entry_id,
-                            timestamp=entry.created_at,
+                            entry_id=entry["entry_id"],
+                            timestamp=entry.get("created_at", ""),
                             screenshots=[f"{page}.png"],
                             hash_map=hash_map,
-                            tags=entry.tags + entry.auto_tags,
+                            tags=all_tags,
                         )
                     )
 
@@ -1352,69 +1239,43 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         }
         normalized_project = project_map.get(project, project) if project else None
 
-        # Load archive index
-        index = load_archive_index()
+        # Handle since format: convert ISO timestamp to entry_id format
+        resolved_since = since
+        if since and "-" in since:
+            try:
+                dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+                resolved_since = dt.strftime("%Y%m%d%H%M%S")
+            except ValueError:
+                resolved_since = _dir_format_to_entry_id(since)
 
-        # Start with all entries sorted by entry_id descending
-        all_entries = sorted(index.entries.values(), key=lambda e: e.entry_id, reverse=True)
+        db = _get_db(ctx)
+        # DuckDB layer handles filtering; we request a generous limit to count total
+        all_matched = db.get_entries(
+            project=normalized_project,
+            tags=tags,
+            since=resolved_since,
+            trigger=trigger,
+            limit=10000,  # Get all to count total
+        )
 
-        # Apply filters
-        filtered_entries = []
-        for entry in all_entries:
-            # Project filter
-            if normalized_project and entry.project != normalized_project:
-                continue
+        total_count = len(all_matched)
+        limited_entries = all_matched[:limit]
 
-            # Tags filter (OR within tags - match if ANY tag matches)
-            if tags:
-                entry_tags = set(entry.tags + entry.auto_tags)
-                if not any(tag in entry_tags for tag in tags):
-                    continue
-
-            # Since filter
-            if since:
-                # Handle both entry_id format and ISO timestamp
-                since_id = since
-                if "-" in since:
-                    # Looks like ISO timestamp, convert to entry_id
-                    try:
-                        dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
-                        since_id = dt.strftime("%Y%m%d%H%M%S")
-                    except ValueError:
-                        # Try parsing as dir format
-                        since_id = _dir_format_to_entry_id(since)
-
-                if entry.entry_id <= since_id:
-                    continue
-
-            # Trigger filter
-            if trigger and entry.trigger != trigger:
-                continue
-
-            filtered_entries.append(entry)
-
-        total_count = len(filtered_entries)
-
-        # Limit results
-        limited_entries = filtered_entries[:limit]
-
-        # Convert to summaries
         summaries = [
             ArchiveEntrySummary(
-                entry_id=entry.entry_id,
-                created_at=entry.created_at,
-                project=entry.project,
-                trigger=entry.trigger,
-                tags=entry.tags + entry.auto_tags,
-                has_screenshots=len(entry.screenshots) > 0,
-                notes_preview=entry.notes[:100] if entry.notes else "",
-                build_run_id=entry.build_run_id,
+                entry_id=e["entry_id"],
+                created_at=e.get("created_at", ""),
+                project=e.get("project", ""),
+                trigger=e.get("trigger", ""),
+                tags=(e.get("tags") or []) + (e.get("auto_tags") or []),
+                has_screenshots=bool(e.get("screenshots")),
+                notes_preview=(e.get("notes") or "")[:100],
+                build_run_id=e.get("build_run_id"),
             )
-            for entry in limited_entries
+            for e in limited_entries
         ]
 
-        # Build filters dict for response
-        filters_dict = {}
+        filters_dict: Dict[str, Any] = {}
         if normalized_project:
             filters_dict["project"] = normalized_project
         if tags:
@@ -1653,8 +1514,6 @@ def register_sbs_tools(mcp: FastMCP) -> None:
     # GitHub Issue Tools
     # =========================================================================
 
-    GITHUB_REPO = "e-vergo/Side-By-Side-Blueprint"
-
     @mcp.tool(
         "sbs_issue_create",
         annotations=ToolAnnotations(
@@ -1815,14 +1674,14 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         context_attached = False
         context_block = ""
         try:
-            index = load_archive_index()
-            global_state = index.global_state
-            state_str = (
-                json.dumps(global_state) if global_state else '"idle"'
-            )
-            epoch_entries = get_epoch_entries(index)
+            db = _get_db(ctx)
+            skill, substate = db.get_global_state()
+            global_state = {"skill": skill, "substate": substate} if skill else None
+            state_str = json.dumps(global_state) if global_state else '"idle"'
+            epoch_entries = db.get_epoch_entries()
             epoch_count = len(epoch_entries)
-            last_epoch = index.last_epoch_entry or "unknown"
+            meta = db.get_metadata()
+            last_epoch = meta.get("last_epoch_entry") or "unknown"
 
             context_block = (
                 "\n\n---\n"
@@ -2785,8 +2644,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         - Projects summary
         - Basic improvement findings
         """
-        from .sbs_self_improve import sbs_analysis_summary_impl
-        return sbs_analysis_summary_impl()
+        db = _get_db(ctx)
+        return db.analysis_summary()
 
     @mcp.tool(
         "sbs_entries_since_self_improve",
@@ -2804,8 +2663,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         and returns all entries created after that point. Useful for determining
         what happened since the last self-improvement cycle.
         """
-        from .sbs_self_improve import sbs_entries_since_self_improve_impl
-        return sbs_entries_since_self_improve_impl()
+        db = _get_db(ctx)
+        return db.entries_since_self_improve()
 
     @mcp.tool(
         "sbs_successful_sessions",
@@ -2822,8 +2681,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Identifies sessions with completed tasks, clean execution (few auto-tags),
         and high quality scores. Use during self-improve discovery for Pillar 1 & 2.
         """
-        from .sbs_self_improve import sbs_successful_sessions_impl
-        result = sbs_successful_sessions_impl()
+        db = _get_db(ctx)
+        result = db.successful_sessions()
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2841,8 +2700,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Groups planning phase entries by outcome (reached execution or not),
         identifies discriminating features. Use during self-improve for Pillar 3.
         """
-        from .sbs_self_improve import sbs_comparative_analysis_impl
-        result = sbs_comparative_analysis_impl()
+        db = _get_db(ctx)
+        result = db.comparative_analysis()
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2860,8 +2719,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Reports build metrics, quality score coverage, auto-tag noise levels,
         and archive friction. Use during self-improve for Pillar 4.
         """
-        from .sbs_self_improve import sbs_system_health_impl
-        result = sbs_system_health_impl()
+        db = _get_db(ctx)
+        result = db.system_health()
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2879,8 +2738,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Examines alignment efficiency, issue-driven vs freeform task patterns,
         and communication effectiveness. Use during self-improve for Pillar 1.
         """
-        from .sbs_self_improve import sbs_user_patterns_impl
-        result = sbs_user_patterns_impl()
+        db = _get_db(ctx)
+        result = db.user_patterns()
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2898,8 +2757,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Returns invocation count, completion rate, duration, and failure modes
         for each skill type. Use during self-improve for Pillar 2.
         """
-        from .sbs_self_improve import sbs_skill_stats_impl
-        result = sbs_skill_stats_impl(as_findings=as_findings)
+        db = _get_db(ctx)
+        result = db.skill_stats(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2917,8 +2776,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Detects backward transitions, skipped phases, and time-in-phase
         distribution. Use during self-improve for Pillar 2 and 3.
         """
-        from .sbs_self_improve import sbs_phase_transition_health_impl
-        result = sbs_phase_transition_health_impl(as_findings=as_findings)
+        db = _get_db(ctx)
+        result = db.phase_transition_health(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2936,8 +2795,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Identifies backward transitions, retries, and correction keywords
         in session data. Use during self-improve for Pillar 1 and 3.
         """
-        from .sbs_self_improve import sbs_interruption_analysis_impl
-        result = sbs_interruption_analysis_impl(as_findings=as_findings)
+        db = _get_db(ctx)
+        result = db.interruption_analysis(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2955,8 +2814,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Reports failure rates, override patterns, and common failure types.
         Use during self-improve for Pillar 4.
         """
-        from .sbs_self_improve import sbs_gate_failures_impl
-        result = sbs_gate_failures_impl(as_findings=as_findings)
+        db = _get_db(ctx)
+        result = db.gate_failures(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -2974,8 +2833,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Identifies noisy tags and tags correlated with actual problems.
         Use during self-improve for Pillar 4.
         """
-        from .sbs_self_improve import sbs_tag_effectiveness_impl
-        result = sbs_tag_effectiveness_impl(as_findings=as_findings)
+        db = _get_db(ctx)
+        result = db.tag_effectiveness(as_findings=as_findings)
         return result.model_dump_json(indent=2)
 
     @mcp.tool(
@@ -3000,8 +2859,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         links them with user answers, and correlates with archive state.
         Use during self-improve for Pillar 1 (user effectiveness).
         """
-        from .sbs_self_improve import sbs_question_analysis_impl
-        result = sbs_question_analysis_impl(
+        db = _get_db(ctx)
+        result = db.question_analysis(
             since=since, until=until, skill=skill, limit=limit
         )
         return result.model_dump_json(indent=2)
@@ -3025,8 +2884,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Returns question counts by skill, header, and most common options
         selected. Use during self-improve for Pillar 1 (user effectiveness).
         """
-        from .sbs_self_improve import sbs_question_stats_impl
-        result = sbs_question_stats_impl(since=since, until=until)
+        db = _get_db(ctx)
+        result = db.question_stats(since=since, until=until)
         return result.model_dump_json(indent=2)
 
     # =========================================================================
@@ -3052,29 +2911,26 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         Returns:
             SkillStatusResult with active_skill, substate, can_start_new, etc.
         """
-        index = load_archive_index()
+        db = _get_db(ctx)
+        skill, substate = db.get_global_state()
 
-        active_skill = None
-        substate = None
-        phase_started_at = None
         entries_in_phase = 0
+        phase_started_at = None
 
-        if index.global_state:
-            active_skill = index.global_state.get("skill")
-            substate = index.global_state.get("substate")
-            phase_started_at = index.global_state.get("phase_started_at")
+        if skill:
+            # Count entries since the most recent phase_start for this skill
+            recent = db.get_entries(limit=100)
+            for e in recent:
+                gs = e.get("global_state") or {}
+                if gs.get("skill") == skill:
+                    entries_in_phase += 1
+                else:
+                    break
 
-            # Count entries since phase started
-            if phase_started_at:
-                # Find entries after phase_started_at
-                for entry in index.entries.values():
-                    if entry.created_at > phase_started_at:
-                        entries_in_phase += 1
-
-        can_start_new = active_skill is None
+        can_start_new = skill is None
 
         return SkillStatusResult(
-            active_skill=active_skill,
+            active_skill=skill,
             substate=substate,
             can_start_new=can_start_new,
             entries_in_phase=entries_in_phase,
@@ -3120,15 +2976,15 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             SkillStartResult with success, error, archive_entry_id, and new global_state
         """
         # Check current state first
-        index = load_archive_index()
-        if index.global_state and index.global_state.get("skill"):
-            current_skill = index.global_state.get("skill")
+        db = _get_db(ctx)
+        current_skill, _ = db.get_global_state()
+        if current_skill:
             return SkillStartResult(
                 success=False,
                 error=f"Cannot start '{skill}': skill '{current_skill}' is already active. "
                       f"Use sbs_skill_end to finish the current skill first.",
                 archive_entry_id=None,
-                global_state=index.global_state,
+                global_state={"skill": current_skill, "substate": _},
             )
 
         # Prepare global state
@@ -3153,14 +3009,14 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 global_state=None,
             )
 
-        # Reload to get the updated state with phase_started_at
-        index = load_archive_index()
+        # Invalidate to pick up the new state
+        db.invalidate()
 
         return SkillStartResult(
             success=True,
             error=None,
             archive_entry_id=entry_id,
-            global_state=index.global_state,
+            global_state=new_state,
         )
 
     @mcp.tool(
@@ -3201,9 +3057,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             SkillTransitionResult with success, from_phase, to_phase, and archive_entry_id
         """
         # Check current state
-        index = load_archive_index()
-        current_skill = index.global_state.get("skill") if index.global_state else None
-        current_substate = index.global_state.get("substate") if index.global_state else None
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
 
         if current_skill != skill:
             return SkillTransitionResult(
@@ -3268,6 +3123,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 archive_entry_id=None,
             )
 
+        db.invalidate()
+
         return SkillTransitionResult(
             success=True,
             error=None,
@@ -3309,8 +3166,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             SkillEndResult with success, error, and archive_entry_id
         """
         # Check current state
-        index = load_archive_index()
-        current_skill = index.global_state.get("skill") if index.global_state else None
+        db = _get_db(ctx)
+        current_skill, _ = db.get_global_state()
 
         if current_skill != skill:
             return SkillEndResult(
@@ -3333,6 +3190,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 error=error or "Archive upload failed",
                 archive_entry_id=None,
             )
+
+        db.invalidate()
 
         return SkillEndResult(
             success=True,
@@ -3388,9 +3247,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             SkillFailResult with success, reason, and failed_phase
         """
         # Check current state
-        index = load_archive_index()
-        current_skill = index.global_state.get("skill") if index.global_state else None
-        current_substate = index.global_state.get("substate") if index.global_state else None
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
 
         if current_skill != skill:
             return SkillFailResult(
@@ -3417,6 +3275,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 reason=reason,
                 failed_phase=current_substate,
             )
+
+        db.invalidate()
 
         return SkillFailResult(
             success=True,
@@ -3471,9 +3331,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             SkillHandoffResult with success, from/to details, and archive_entry_id
         """
         # Check current state
-        index = load_archive_index()
-        current_skill = index.global_state.get("skill") if index.global_state else None
-        current_substate = index.global_state.get("substate") if index.global_state else None
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
 
         if current_skill != from_skill:
             return SkillHandoffResult(
@@ -3512,6 +3371,8 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 to_substate=to_substate,
                 archive_entry_id=None,
             )
+
+        db.invalidate()
 
         return SkillHandoffResult(
             success=True,
@@ -3563,42 +3424,65 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             )
 
         try:
-            index = load_archive_index()
-            archive_path = ARCHIVE_DIR / "archive_index.json"
+            db = _get_db(ctx)
+            skill, substate = db.get_global_state()
 
             # Build tags
             entry_tags = [f"improvement:{cat}"]
 
             # Build auto_tags from current state
             auto_tags = ["trigger:improvement"]
-            gs = index.global_state
-            if gs:
-                skill = gs.get("skill")
-                substate = gs.get("substate")
-                if skill:
-                    auto_tags.append(f"skill:{skill}")
+            if skill:
+                auto_tags.append(f"skill:{skill}")
                 if substate:
                     auto_tags.append(f"phase:{substate}")
             else:
                 auto_tags.append("skill:none")
                 auto_tags.append("phase:idle")
 
-            # Create lightweight entry
+            gs = {"skill": skill, "substate": substate} if skill else None
+
+            # Write directly to archive_index.json (lightweight, no subprocess)
+            archive_path = ARCHIVE_DIR / "archive_index.json"
             now = _time.time()
             entry_id = str(int(now))
-            entry = ArchiveEntry(
-                entry_id=entry_id,
-                created_at=_dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
-                project="SBSMonorepo",
-                trigger="improvement",
-                notes=observation,
-                tags=entry_tags,
-                auto_tags=auto_tags,
-                global_state=gs,
-            )
 
-            index.add_entry(entry)
-            index.save(archive_path)
+            # Read current index, add entry, save
+            data: Dict[str, Any] = {}
+            if archive_path.exists():
+                with open(archive_path) as f:
+                    data = json.load(f)
+
+            entries = data.setdefault("entries", {})
+            entries[entry_id] = {
+                "entry_id": entry_id,
+                "created_at": _dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
+                "project": "SBSMonorepo",
+                "trigger": "improvement",
+                "notes": observation,
+                "tags": entry_tags,
+                "auto_tags": auto_tags,
+                "global_state": gs,
+                "screenshots": [],
+                "build_run_id": None,
+                "quality_scores": {},
+                "quality_delta": None,
+                "state_transition": None,
+                "epoch_summary": None,
+                "gate_validation": None,
+                "issue_refs": [],
+                "pr_refs": [],
+                "repo_commits": {},
+                "rubric_id": None,
+                "synced_to_icloud": False,
+                "added_at": _dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
+            }
+
+            with open(archive_path, "w") as f:
+                json.dump(data, f, indent=2)
+
+            # Invalidate DuckDB so next read picks up the new entry
+            db.invalidate()
 
             all_tags = entry_tags + auto_tags
             return ImprovementCaptureResult(
