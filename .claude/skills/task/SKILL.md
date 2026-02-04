@@ -68,6 +68,45 @@ When invoked as `/task crush` (with or without issue numbers):
 
 **Gate validation:** Same gates apply as normal `/task`. All selected issues must pass their respective validation before closure.
 
+### Auto Mode (`/task --auto`)
+
+When invoked with `--auto` flag or driven programmatically by `/converge`:
+
+**Skipped phases:**
+- **Alignment:** Scope is provided externally (QA ledger failures, explicit description, or issue context)
+- **Planning:** Go directly to execution — scope is bounded and pre-analyzed
+
+**Modified behavior:**
+| Behavior | Normal Mode | Auto Mode |
+|----------|------------|-----------|
+| Alignment Q&A | Interactive | Skipped — scope pre-defined |
+| Plan approval | User approves | Skipped — no plan generated |
+| Gate pass | User confirms | Auto-continue |
+| Gate failure | Pause for approval | **Still pauses** (safety valve) |
+| Issue closure | Prompt user | Auto-close on success |
+| PR merge | Confirm with user | Auto-merge on gate pass |
+
+**Substates in auto mode:**
+```
+execution → finalization → handoff
+```
+
+Planning is skipped entirely — the MCP server's planning enforcement is bypassed when `--auto` is active (the skill transitions directly from start to execution).
+
+**Restrictions:**
+- Only valid when scope is bounded (QA failures, specific issue fixes, well-defined changes)
+- Cannot be used for open-ended feature work or architectural changes
+- Gate failures still require manual intervention (safety valve preserved)
+- If driven by `/converge`, the converge skill handles gate failure escalation
+
+**Archive tracking:** Auto mode uses the same archive protocol. Phase transitions are recorded, but `alignment` and `planning` substates are skipped. The archive entry records `auto_mode: true` in metadata.
+
+**Invocation examples:**
+```
+/task --auto --scope "Fix CSS color mismatches from QA ledger"
+/task --auto #42   # Auto-fix issue 42 without alignment/planning
+```
+
 ---
 
 ## Mandatory Archive Protocol
