@@ -303,6 +303,16 @@ Introspection and self-improvement across hierarchy levels.
 
 **Location:** `.claude/skills/introspect/SKILL.md`
 
+### `/converge`
+
+Autonomous QA convergence loop. Runs QA evaluation, fixes failures, rebuilds, and repeats until 100% pass rate or max iterations (default: 3).
+
+**Usage:** `/converge GCR`, `/converge SBSTest`, `/converge PNT --max-iter 5`
+
+**Workflow:** Setup → [Eval → Fix → Rebuild]×N → Report
+
+**Location:** `.claude/skills/converge/SKILL.md`
+
 ---
 
 ## Technical Details

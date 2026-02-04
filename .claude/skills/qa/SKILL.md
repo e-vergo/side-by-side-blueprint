@@ -350,3 +350,37 @@ All findings are surfaced in dialogue. Nothing is silently ignored.
 - **Running without a server**: Always verify the server is running before navigating
 - **Mixing automated and manual checks**: This skill handles visual/interactive only; do not duplicate T1-T8 validator work
 - **Logging uncertain bugs**: Only `sbs_issue_log` for clear, unambiguous failures. Uncertain observations go in the findings list, not as issues
+
+---
+
+## Cross-Skill Integration
+
+### Machine-Readable Output
+
+The `qa_ledger.json` output format is stable and designed for consumption by other skills:
+
+- **Location:** `dev/storage/<project>/qa_ledger.json`
+- **Format version:** `1.0` (backward-compatible changes only)
+- **Findings prefix convention:** Each finding string starts with `FAIL:`, `WARN:`, or `PASS:` followed by the criterion ID
+- **Issue references:** `summary.issues_logged` contains GitHub issue numbers created during the run
+
+Other skills (particularly `/converge`) can read this ledger to determine:
+1. Which criteria failed (parse findings for `FAIL:` prefix)
+2. What the overall pass rate is (`summary.passed / summary.total_criteria`)
+3. Which pages need attention (`pages.<name>.status == "fail"`)
+4. Which issues were already logged (`summary.issues_logged`)
+
+### Converge Mode
+
+When `/converge` drives QA evaluation, it reuses `/qa`'s evaluation logic and output format:
+
+- Same criteria from `criteria.py` are evaluated
+- Same browser tools are used for verification
+- Same `qa_ledger.json` format is written
+- Same issue logging via `sbs_issue_log` occurs for clear failures
+
+The `/qa` skill itself does not change when driven by `/converge` — the converge skill implements its own QA evaluation loop using the same tools and criteria. This avoids nested skill invocations while maintaining evaluation consistency.
+
+### Standalone Usage
+
+`/qa` remains fully functional as a standalone skill. The cross-skill integration is additive — no existing behavior changes.
