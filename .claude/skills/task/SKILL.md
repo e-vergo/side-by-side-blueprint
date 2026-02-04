@@ -97,6 +97,8 @@ Phase topics
 
 **Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during alignment when independent exploration tasks are needed (e.g., reading different repos simultaneously). All agents are read-only during alignment — no file modifications before plan approval.
 
+**Exploration differentiation:** When spawning multiple exploration agents, each must target a **distinct investigation dimension**. Examples of distinct dimensions: "check if CSS exists" vs "trace the call chain from entry point to output" vs "check test coverage for feature X". Single-question explorations ("does X exist?") should use 1 agent, not N. Redundant confirmation of the same fact across multiple agents is wasted work.
+
 **REQUIRED:** After completing alignment, transition to planning:
 
 ```bash
