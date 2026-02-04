@@ -53,6 +53,29 @@ class OracleQueryResult(BaseModel):
     )
 
 
+class AskOracleResult(BaseModel):
+    """Unified oracle result with optional archive and quality context."""
+
+    file_matches: List[OracleMatch] = Field(
+        default_factory=list, description="File matches from oracle search"
+    )
+    concepts: List[OracleConcept] = Field(
+        default_factory=list, description="Related concepts found"
+    )
+    archive_context: Optional[Dict[str, Any]] = Field(
+        None, description="Recent archive activity touching matched projects/files"
+    )
+    quality_snapshot: Optional[Dict[str, Any]] = Field(
+        None, description="Latest quality scores for relevant projects"
+    )
+    related_issues: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Related GitHub issues (populated by calling tool)"
+    )
+    raw_section: Optional[str] = Field(
+        None, description="Raw markdown section if exact match found"
+    )
+
+
 # =============================================================================
 # Archive State Tools
 # =============================================================================
