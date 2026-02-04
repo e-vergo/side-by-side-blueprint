@@ -420,9 +420,10 @@ Self-improvement operates on a hierarchy of introspection levels:
 |-------|------|-------------|-----------|----------|
 | L1 | Session Retrospective | `/update-and-archive` (Part -1) | `dev/storage/archive/retrospectives/<id>.md` | Single session: user patterns, alignment gaps, plan execution |
 | L2 | Self-Improvement Summary | `/self-improve` (Phase 5: Archive) | `dev/storage/archive/summaries/<id>.md` | Multiple L1 docs: cross-session patterns, behavioral trends |
-| L(N) | (Future) | Higher-order analysis | TBD | Multiple L(N-1) docs: structural insights across improvement cycles |
+| L3 | Meta-Improvement Analysis | `/introspect 3` | `dev/storage/archive/meta-summaries/L3-<id>.md` | Multiple L2 docs: skill evolution, recurring friction, intervention effectiveness |
+| L(N) | Higher-Order Analysis | `/introspect <N>` (N >= 4) | `dev/storage/archive/meta-summaries/L<N>-<id>.md` | Multiple L(N-1) docs: structural insights across improvement cycles |
 
-**Key design principle:** Each level reads the outputs of the level below. L2 reads all L1 documents since the last self-improve cycle. A future L3 would read all L2 documents since the last L3 cycle.
+**Key design principle:** Each level reads the outputs of the level below. L2 reads all L1 documents since the last self-improve cycle. L3 reads all L2 documents since the last L3 cycle via `/introspect 3`.
 
 **Why this matters:** Single-session retrospectives (L1) capture observations while context is hot but cannot see cross-session patterns. The self-improvement summary (L2) synthesizes across sessions and can identify trends invisible to any single retrospective -- e.g., "the user has answered the same type of question 5 times across 3 sessions, suggesting a documentation gap."
 
