@@ -29,7 +29,7 @@ The active development environment for **agentic and project-specific developmen
 
 - **Archive system** - Event log, state machine, context provider
 - **Validators** - T1-T8 quality scoring, visual compliance
-- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (51 tools: 18 Lean + 33 SBS)
+- **MCP tools** - Lean LSP integration via sbs-lsp-mcp (55 tools: 18 Lean + 37 SBS)
 - **Skills** - `/task`, `/update-and-archive` workflow definitions
 - **Agents** - `sbs-developer`, `sbs-oracle` agent specifications
 
@@ -54,11 +54,11 @@ The archive system that tracks your work is itself being developed in this repo.
 - Quality scoring applies to both product and meta-tooling work
 - Context injection means you benefit from what previous agents learned
 
-### Critical requirement - one agent at a time
-- Execept for the `/update-and-archive` skill, there will only ever be one agent working on the repo at a time
-- This eliminates the signifigant overhead required in preventing collisions
-- Helps reduce costs
-- Allows for meaningful human oversight will allowing large amounts of autonomy to the agents
+### Agent Concurrency
+- Default: one `sbs-developer` agent at a time (alignment, planning, finalization phases)
+- Exception: up to 4 concurrent `sbs-developer` agents during `/task` execution phase when the approved plan specifies parallel waves
+- Multiple read-only exploration agents may run in parallel at all times
+- This design eliminates collision overhead while allowing parallelism when plans guarantee non-overlapping file scopes
 
 
 ---
@@ -94,13 +94,13 @@ When you modify:
 
 You are changing the environment for all future work. Think carefully.
 
-### The Single-Agent Constraint Is Architectural
+### Agent Concurrency Is Architectural
 
-Agents are spawned sequentially, never in parallel. This is not a limitation - it's a foundation:
-- Archive state remains consistent
+Default single-agent execution with controlled parallelism during task execution:
+- Archive state remains consistent (single writer at a time for state transitions)
 - No race conditions on ledgers
 - Context injection works reliably
-- Epochs have clear boundaries
+- Up to 4 parallel agents during execution phase when the plan specifies non-overlapping scopes
 
 ---
 
