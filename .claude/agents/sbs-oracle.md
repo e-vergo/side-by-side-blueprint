@@ -30,6 +30,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | [storage & tooling hub](../../dev/storage/readme.md) | `toolchain/SBS-Test/README.md` | Tooling & Archive System |
 | `@[blueprint]` attributes | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | `global_state` | `dev/storage/README.md` | State Machine Fields |
+| `io(message)` | `CLAUDE.md` | Improvement Opportunity Shorthand |
+| `io` | `CLAUDE.md` | Improvement Opportunity Shorthand |
 | `sbs archive upload` | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
 | `state_transition` | `dev/storage/README.md` | State Machine Fields |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
