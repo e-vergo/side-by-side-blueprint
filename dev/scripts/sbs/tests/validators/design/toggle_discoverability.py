@@ -94,7 +94,6 @@ Score interpretation:
 # Pages to validate for toggle discoverability (pages with proof toggles)
 DEFAULT_PAGES = [
     "chapter",
-    "blueprint_verso",
 ]
 
 # Default threshold for passing

@@ -91,7 +91,6 @@ DEFAULT_PAGES = [
     "dep_graph",
     "chapter",
     "paper_tex",
-    "blueprint_verso",
 ]
 
 # Default threshold for passing

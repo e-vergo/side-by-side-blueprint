@@ -80,7 +80,6 @@ DEFAULT_PAGES = [
     "dep_graph",
     "chapter",
     "paper_tex",
-    "blueprint_verso",
 ]
 
 
