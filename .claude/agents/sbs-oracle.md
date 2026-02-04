@@ -415,6 +415,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | why immediate capture? | `toolchain/Dress/README.md` | Phase 1: Per-Declaration Capture (During Elaboration) |
 | why validation matters: | `toolchain/Dress/README.md` | Overview |
 | wiener-ikehara tauberian theorem | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
+| workflow (l2): | `CLAUDE.md` | `/introspect` |
+| workflow (l3+): | `CLAUDE.md` | `/introspect` |
 | workflow: | `CLAUDE.md` | `/task` |
 | zebra striping | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 | zulip browsing | `forks/sbs-lsp-mcp/README.md` | Overview |
@@ -548,6 +550,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `tagging/hooks/session_profiler.py` | Session behavioral profiling hook |
 | `tagging/hooks/signal_detector.py` | Anomaly detection hook |
 | `tagging/rules.yaml` | 50 declarative rules mapping fields to tags |
+| `taxonomy.yaml` | Unified taxonomy (27 dimensions, 243 entries; archive tags filtered by `contexts`) |
 
 ### subverso
 
