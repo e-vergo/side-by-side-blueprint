@@ -207,6 +207,7 @@ class ServeResult(BaseModel):
     url: Optional[str] = Field(None, description="Server URL (e.g., 'http://localhost:8000')")
     pid: Optional[int] = Field(None, description="Process ID of server")
     project: Optional[str] = Field(None, description="Project being served")
+    error: Optional[str] = Field(None, description="Error message if operation failed")
 
 
 # =============================================================================
