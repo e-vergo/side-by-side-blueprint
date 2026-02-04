@@ -243,6 +243,23 @@ When working with rubrics or validation, consult the hub first.
 
 ---
 
+## Documentation Consultation Protocol
+
+Before modifying code in these subsystems, read the relevant documentation first:
+
+| Subsystem | Read First |
+|-----------|-----------|
+| Archive / tagging | `dev/markdowns/permanent/Archive_Orchestration_and_Agent_Harmony.md` |
+| Build pipeline | `dev/markdowns/permanent/ARCHITECTURE.md` |
+| Validation / quality | `dev/storage/README.md` (already referenced above) |
+| Skills / orchestration | `.claude/skills/<skill>/SKILL.md` + `CLAUDE.md` "Custom Skills" section |
+| CSS / theme | `sbs-developer.md` "CSS Architecture" section (above) |
+| Lean toolchain | `dev/markdowns/permanent/ARCHITECTURE.md` "Build Pipeline" section |
+
+This prevents repeated mistakes from writing code that contradicts documented patterns.
+
+---
+
 ## /oracle Skill for Codebase Questions
 
 When you need to know "where is X?" or "how does Y work?", invoke `/oracle` BEFORE searching:

@@ -133,6 +133,11 @@ Phase topics
 - Validation requirements
 - Affected repositories
 
+**For tasks producing artifacts (builds, screenshots, CSS, templates):**
+- Probe for quantitative success criteria: "What score/threshold defines success?"
+- Map criteria to specific gate definitions (T1-T8, test counts, regression bounds)
+- If user doesn't specify, propose defaults based on affected repos
+
 **Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during alignment when independent exploration tasks are needed (e.g., reading different repos simultaneously). All agents are read-only during alignment — no file modifications before plan approval.
 
 **Exploration differentiation:** When spawning multiple exploration agents, each must target a **distinct investigation dimension**. Examples of distinct dimensions: "check if CSS exists" vs "trace the call chain from entry point to output" vs "check test coverage for feature X". Single-question explorations ("does X exist?") should use 1 agent, not N. Redundant confirmation of the same fact across multiple agents is wasted work.
@@ -158,6 +163,10 @@ Claude presents:
 3. Success criteria mapped to ledger checks
 4. Estimated scope (files, repos, complexity)
 
+**Pre-flight checklist (REQUIRED before finalizing plan):**
+- Read CLAUDE.md "Known Limitations" section — verify plan doesn't conflict with documented limitations
+- Check open issues (`sbs_issue_list`) for related/duplicate work
+
 **Agent concurrency:** Up to 4 `sbs-developer` agents may run in parallel during planning for independent analysis tasks (e.g., exploring affected repos, prototyping approaches in separate files).
 
 ### Gate Definition (REQUIRED)
@@ -175,6 +184,8 @@ gates:
 ```
 
 Plans without gates are incomplete. Define appropriate gates based on task scope.
+
+**Taxonomy changes:** Plans modifying `dev/storage/labels/taxonomy.yaml` or tag dimensions MUST include taxonomy tests in gates (`pytest sbs/tests/pytest/test_taxonomy.py -v`).
 
 **Test Tiers:**
 - `evergreen`: Tests marked with `@pytest.mark.evergreen` - fast, reliable, always run
