@@ -1053,6 +1053,34 @@ The default posture is: implement what was asked, at the complexity level implie
 
 ---
 
+## CLI Gotchas
+
+### gh CLI Repository Inference
+
+When working inside showcase project directories (GCR, PNT), `gh` infers the wrong repository from the git remote. This has caused agents to post comments and actions to the wrong repo.
+
+**Always use `--repo` on all `gh` commands targeting the SBS monorepo:**
+
+```bash
+gh issue comment 123 --repo e-vergo/Side-By-Side-Blueprint --body "..."
+gh pr create --repo e-vergo/Side-By-Side-Blueprint ...
+gh api repos/e-vergo/Side-By-Side-Blueprint/issues/123/comments
+```
+
+This applies to all `gh` subcommands: `issue`, `pr`, `api`, `label`, `release`, etc.
+
+---
+
+## Testing Standards
+
+- Tests MUST import and call actual functions, not simulate their behavior
+- Integration tests over unit tests for MCP tools and CLI commands
+- If a function cannot be imported directly (e.g., MCP tool handler), test through the CLI or subprocess
+- Simulation tests (reimplementing logic inline to verify understanding) are explicitly prohibited -- they mirror bugs instead of catching them
+- When testing MCP repo tools: `cd forks/sbs-lsp-mcp && .venv/bin/pytest tests/ -v`
+
+---
+
 ## Anti-Patterns
 
 - Don't create scratch files - work in repo files
