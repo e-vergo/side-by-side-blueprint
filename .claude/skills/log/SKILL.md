@@ -25,7 +25,7 @@ Rapidly capture bugs, features, and ideas as GitHub issues without breaking flow
 
 ## Labels
 
-**Available labels:** Read `dev/storage/labels/taxonomy.yaml` for the full label list, counts, and dimensions. The taxonomy is the source of truth -- do not hardcode label counts or enumerate all labels here.
+**Available labels:** Read `dev/storage/taxonomy.yaml` for the full label list, counts, and dimensions. The taxonomy is the source of truth -- do not hardcode label counts or enumerate all labels here.
 
 Each issue receives labels from multiple dimensions:
 
@@ -49,7 +49,7 @@ Multiple labels per dimension are allowed when the issue genuinely spans categor
 
 ### Type Inference from Keywords
 
-**Note:** Label names in the tables below must match `dev/storage/labels/taxonomy.yaml`. If the taxonomy changes (labels renamed, added, or removed), update these tables to match.
+**Note:** Label names in the tables below must match `dev/storage/taxonomy.yaml`. If the taxonomy changes (labels renamed, added, or removed), update these tables to match.
 
 When type is not explicit, scan the input for these keywords:
 

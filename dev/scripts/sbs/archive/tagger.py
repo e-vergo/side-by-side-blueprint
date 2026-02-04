@@ -26,16 +26,18 @@ VALID_SCOPES = {"entry", "session", "both"}
 # ---------------------------------------------------------------------------
 
 _TAXONOMY_CACHE: Optional[dict[str, dict]] = None
-_TAXONOMY_PATH = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "tagging" / "agent_state_taxonomy.yaml"
+_TAXONOMY_PATH = Path(__file__).resolve().parent.parent.parent.parent / "storage" / "taxonomy.yaml"
 
 
 def load_agent_state_taxonomy(
     path: Optional[Path] = None,
 ) -> dict[str, dict]:
-    """Load and cache the agent-state taxonomy.
+    """Load and cache the agent-state taxonomy from the unified taxonomy file.
+
+    Filters to entries whose ``contexts`` include ``"archive"`` or ``"both"``.
 
     Returns a flat dict of ``{tag_name: {"description": str, "dimension": str, "scope": str}}``
-    for every tag defined in the taxonomy YAML.
+    for every archive-context entry defined in the unified taxonomy YAML.
     """
     global _TAXONOMY_CACHE
     if _TAXONOMY_CACHE is not None:
@@ -43,14 +45,17 @@ def load_agent_state_taxonomy(
 
     taxonomy_path = path or _TAXONOMY_PATH
     if not taxonomy_path.exists():
-        raise FileNotFoundError(f"Agent-state taxonomy not found at {taxonomy_path}")
+        raise FileNotFoundError(f"Unified taxonomy not found at {taxonomy_path}")
 
     with open(taxonomy_path) as f:
         data = yaml.safe_load(f)
 
     result: dict[str, dict] = {}
     for dim_name, dim_data in data.get("dimensions", {}).items():
-        for tag_entry in dim_data.get("tags", []):
+        for tag_entry in dim_data.get("entries", []):
+            contexts = tag_entry.get("contexts", [])
+            if "archive" not in contexts and "both" not in contexts:
+                continue
             tag_name = tag_entry["name"]
             result[tag_name] = {
                 "description": tag_entry.get("description", ""),

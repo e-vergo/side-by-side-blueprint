@@ -541,10 +541,9 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `dev/scripts/sbs/labels/__init__.py` | Taxonomy loader, validator, color lookup |
 | `dev/scripts/sbs/labels/sync.py` | GitHub label sync (create/update, never delete) |
 | `dev/scripts/sbs/tests/pytest/test_taxonomy.py` | Taxonomy tests (evergreen tier) |
-| `dev/storage/labels/taxonomy.yaml` | Canonical taxonomy definition |
+| `dev/storage/taxonomy.yaml` | Unified taxonomy (issues + archive, v3.0) |
 | `ledger.py` | `QualityScoreLedger`, `MetricScore`, persistence |
 | `reset.py` | Repo-change detection, metric invalidation |
-| `tagging/agent_state_taxonomy.yaml` | Canonical taxonomy definition (16 dimensions, ~128 tags) |
 | `tagging/hooks/outcome_tagger.py` | Outcome classification hook |
 | `tagging/hooks/session_profiler.py` | Session behavioral profiling hook |
 | `tagging/hooks/signal_detector.py` | Anomaly detection hook |

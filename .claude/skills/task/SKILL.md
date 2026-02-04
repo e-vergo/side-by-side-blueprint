@@ -187,7 +187,7 @@ gates:
 
 Plans without gates are incomplete. Define appropriate gates based on task scope.
 
-**Taxonomy changes:** Plans modifying `dev/storage/labels/taxonomy.yaml` or tag dimensions MUST include taxonomy tests in gates (`pytest sbs/tests/pytest/test_taxonomy.py -v`).
+**Taxonomy changes:** Plans modifying `dev/storage/taxonomy.yaml` or tag dimensions MUST include taxonomy tests in gates (`pytest sbs/tests/pytest/test_taxonomy.py -v`).
 
 **Test Tiers:**
 - `evergreen`: Tests marked with `@pytest.mark.evergreen` - fast, reliable, always run

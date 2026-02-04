@@ -674,7 +674,7 @@ State cleared. Returning to idle.
 ## L2 Labels
 
 Issues created by `/introspect 2` use the enriched label taxonomy defined in
-`dev/storage/labels/taxonomy.yaml`. Every issue includes `origin:self-improve`
+`dev/storage/taxonomy.yaml`. Every issue includes `origin:self-improve`
 and `ai-authored`, plus labels from the type, area, pillar, impact, and friction
 dimensions as inferred from the finding content (see Finding-to-Label Mapping
 in L2 Phase 4 above).

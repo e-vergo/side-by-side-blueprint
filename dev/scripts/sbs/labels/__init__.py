@@ -1,8 +1,9 @@
 """
 Label taxonomy loader for the SBS project.
 
-Loads the taxonomy definition from dev/storage/labels/taxonomy.yaml and
-provides utilities for validation, lookup, and enumeration.
+Loads the unified taxonomy definition from dev/storage/taxonomy.yaml and
+provides utilities for validation, lookup, and enumeration. Supports
+context filtering (issues, archive, both) for the unified taxonomy.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -30,9 +31,12 @@ def _find_repo_root() -> Path:
     raise RuntimeError("Could not find repo root (no CLAUDE.md found in ancestors)")
 
 
+TAXONOMY_PATH = _find_repo_root() / "dev" / "storage" / "taxonomy.yaml"
+
+
 def _taxonomy_path() -> Path:
     """Return the absolute path to taxonomy.yaml."""
-    return _find_repo_root() / "dev" / "storage" / "labels" / "taxonomy.yaml"
+    return TAXONOMY_PATH
 
 
 # =============================================================================
@@ -51,25 +55,61 @@ def load_taxonomy() -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
+def _reset_taxonomy_cache() -> None:
+    """Reset the taxonomy cache (for testing)."""
+    load_taxonomy.cache_clear()
+
+
+# =============================================================================
+# Context Matching Helpers
+# =============================================================================
+
+
+def _entry_matches_context(entry: dict, context: Optional[str]) -> bool:
+    """Check if an entry matches the given context filter.
+
+    Args:
+        entry: A taxonomy entry dict with a ``contexts`` field.
+        context: One of ``"issues"``, ``"archive"``, or ``None`` (match all).
+
+    Returns:
+        True if the entry should be included for the given context.
+    """
+    if context is None:
+        return True
+    contexts = entry.get("contexts", [])
+    return context in contexts or "both" in contexts
+
+
 # =============================================================================
 # Label Enumeration
 # =============================================================================
 
 
-def get_all_labels() -> list[str]:
-    """Return a flat list of all label names across all dimensions and standalone."""
+def get_all_labels(context: Optional[str] = None) -> list[str]:
+    """Return a flat list of all entry names across all dimensions and standalone.
+
+    Args:
+        context: Optional filter -- ``"issues"`` for GH labels, ``"archive"``
+                 for auto-tags, or ``None`` for all entries.
+
+    Returns:
+        List of entry name strings.
+    """
     taxonomy = load_taxonomy()
     labels: list[str] = []
 
-    # Dimension labels
+    # Dimension entries
     dimensions = taxonomy.get("dimensions", {})
     for dim_data in dimensions.values():
-        for label in dim_data.get("labels", []):
-            labels.append(label["name"])
+        for entry in dim_data.get("entries", []):
+            if _entry_matches_context(entry, context):
+                labels.append(entry["name"])
 
-    # Standalone labels
-    for label in taxonomy.get("standalone", []):
-        labels.append(label["name"])
+    # Standalone entries
+    for entry in taxonomy.get("standalone", []):
+        if _entry_matches_context(entry, context):
+            labels.append(entry["name"])
 
     return labels
 
@@ -89,13 +129,13 @@ def get_dimension_for_label(label_name: str) -> str | None:
     # Check dimensions
     dimensions = taxonomy.get("dimensions", {})
     for dim_name, dim_data in dimensions.items():
-        for label in dim_data.get("labels", []):
-            if label["name"] == label_name:
+        for entry in dim_data.get("entries", []):
+            if entry["name"] == label_name:
                 return dim_name
 
     # Check standalone
-    for label in taxonomy.get("standalone", []):
-        if label["name"] == label_name:
+    for entry in taxonomy.get("standalone", []):
+        if entry["name"] == label_name:
             return "standalone"
 
     return None
@@ -135,14 +175,14 @@ def get_label_color(label_name: str) -> str | None:
     dimensions = taxonomy.get("dimensions", {})
     for dim_data in dimensions.values():
         dim_color = dim_data.get("color")
-        for label in dim_data.get("labels", []):
-            if label["name"] == label_name:
-                return label.get("color", dim_color)
+        for entry in dim_data.get("entries", []):
+            if entry["name"] == label_name:
+                return entry.get("color", dim_color)
 
     # Check standalone
-    for label in taxonomy.get("standalone", []):
-        if label["name"] == label_name:
-            return label.get("color")
+    for entry in taxonomy.get("standalone", []):
+        if entry["name"] == label_name:
+            return entry.get("color")
 
     return None
 
@@ -162,22 +202,24 @@ def get_label_info(label_name: str) -> dict[str, Any] | None:
     dimensions = taxonomy.get("dimensions", {})
     for dim_name, dim_data in dimensions.items():
         dim_color = dim_data.get("color")
-        for label in dim_data.get("labels", []):
-            if label["name"] == label_name:
+        for entry in dim_data.get("entries", []):
+            if entry["name"] == label_name:
                 return {
-                    "name": label["name"],
-                    "description": label.get("description", ""),
-                    "color": label.get("color", dim_color),
+                    "name": entry["name"],
+                    "description": entry.get("description", ""),
+                    "color": entry.get("color", dim_color),
                     "dimension": dim_name,
+                    "contexts": entry.get("contexts", []),
                 }
 
-    for label in taxonomy.get("standalone", []):
-        if label["name"] == label_name:
+    for entry in taxonomy.get("standalone", []):
+        if entry["name"] == label_name:
             return {
-                "name": label["name"],
-                "description": label.get("description", ""),
-                "color": label.get("color"),
+                "name": entry["name"],
+                "description": entry.get("description", ""),
+                "color": entry.get("color"),
                 "dimension": "standalone",
+                "contexts": entry.get("contexts", []),
             }
 
     return None
