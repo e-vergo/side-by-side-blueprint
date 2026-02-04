@@ -270,6 +270,16 @@ Quick capture of bugs, features, and ideas to GitHub Issues.
 
 **Location:** `.claude/skills/log/SKILL.md`
 
+### `/qa`
+
+Live interactive QA against a running SBS blueprint site. Browser-driven visual and interactive verification using compliance criteria and the test catalog.
+
+**Usage:** `/qa`, `/qa SBSTest`, or `/qa SBSTest dashboard dep_graph`
+
+**Workflow:** Setup (ensure server, navigate) -> Review (per-page checks) -> Report (structured findings)
+
+**Location:** `.claude/skills/qa/SKILL.md`
+
 ### `/update-and-archive`
 
 Documentation refresh and porcelain state. Runs automatically at end of `/task`.
@@ -334,6 +344,11 @@ For implementation details, file locations, and build internals, see:
 | `sbs_question_analysis` | Extract AskUserQuestion interactions from sessions |
 | `sbs_question_stats` | Aggregate question usage statistics |
 | `sbs_inspect_project` | Prepare context for visual QA |
+| `browser_navigate` | Navigate to URL with persistent active page |
+| `browser_click` | Click element on active page |
+| `browser_screenshot` | Capture screenshot of active page |
+| `browser_evaluate` | Run JavaScript on active page |
+| `browser_get_elements` | Query DOM elements on active page |
 | `sbs_successful_sessions` | Mine successful session patterns |
 | `sbs_comparative_analysis` | Compare session characteristics |
 | `sbs_system_health` | System health metrics |

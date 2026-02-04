@@ -1,6 +1,6 @@
 # sbs-lsp-mcp
 
-SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 41 SBS-specific tools and 3 Zulip browsing tools while preserving all 18 Lean proof-writing capabilities.
+SBS-enhanced Lean LSP MCP Server. A fork of [lean-lsp-mcp](https://github.com/nomen/lean-lsp-mcp) that adds 41 SBS-specific tools, 5 browser automation tools, and 3 Zulip browsing tools while preserving all 18 Lean proof-writing capabilities.
 
 ## Overview
 
@@ -16,6 +16,7 @@ This package extends the upstream lean-lsp-mcp with SBS-specific tools for:
 - **Self-improve analysis**: Mine session patterns, analyze skill lifecycle, detect interruptions
 - **Question analysis**: Extract and aggregate AskUserQuestion interactions from sessions
 - **Skill management**: Start, transition, end, fail, and handoff skill sessions with global state tracking
+- **Browser automation**: General-purpose browser tools with persistent active page for stateful browsing sessions
 - **Zulip browsing**: Search and browse Leanprover Zulip anonymously via browser automation
 
 ## Installation
@@ -77,7 +78,7 @@ Or if globally installed:
 }
 ```
 
-## Tools (62 Total)
+## Tools (67 Total)
 
 ### Lean Tools (18)
 
@@ -180,6 +181,18 @@ Tools for mining session data and analyzing agent behavior. The first 6 provide 
 | `sbs_skill_end` | Release global state, ending the skill session |
 | `sbs_skill_fail` | Record skill failure with reason and release global state |
 | `sbs_skill_handoff` | Atomic end-one-start-another skill transition |
+
+### Browser Tools (5)
+
+General-purpose browser automation tools with a persistent active page pattern. Unlike Zulip tools (which create ephemeral pages per call), these maintain a persistent page across calls for stateful browsing sessions.
+
+| Tool | Description |
+|------|-------------|
+| `browser_navigate` | Navigate to a URL, creating a persistent active page |
+| `browser_click` | Click an element on the active page by CSS selector |
+| `browser_screenshot` | Capture screenshot of the active page |
+| `browser_evaluate` | Run JavaScript on the active page |
+| `browser_get_elements` | Query DOM elements on the active page |
 
 ### Zulip Tools (3)
 
@@ -335,6 +348,73 @@ sbs_search_entries(tags=["build", "visual-change"])
 
 # Combined filters
 sbs_search_entries(project="SBSTest", trigger="build", limit=10)
+```
+
+### Browser Tools
+
+#### `browser_navigate`
+
+Navigate to a URL, creating a persistent active page.
+
+```python
+# Navigate to local dev server
+browser_navigate(url="http://localhost:8000")
+# Returns: title, url, status
+
+# Navigate to a specific page
+browser_navigate(url="http://localhost:8000/dep_graph.html")
+```
+
+#### `browser_screenshot`
+
+Capture screenshot of the active page.
+
+```python
+# Screenshot with auto-generated path
+browser_screenshot()
+
+# Screenshot to specific path
+browser_screenshot(path="/tmp/screenshot.png")
+
+# Full page screenshot
+browser_screenshot(full_page=True)
+```
+
+#### `browser_click`
+
+Click an element on the active page.
+
+```python
+# Click by CSS selector
+browser_click(selector=".theme-toggle")
+
+# Click a specific node
+browser_click(selector="#node-thm-main")
+```
+
+#### `browser_evaluate`
+
+Run JavaScript on the active page.
+
+```python
+# Get computed styles
+browser_evaluate(expression="getComputedStyle(document.querySelector('.status-dot')).backgroundColor")
+
+# Check element visibility
+browser_evaluate(expression="document.querySelector('.modal').style.display")
+```
+
+#### `browser_get_elements`
+
+Query DOM elements on the active page.
+
+```python
+# Get all status dots
+browser_get_elements(selector=".status-dot")
+# Returns: list of ElementInfo with tag, text, attributes, bounding box
+
+# Get specific elements
+browser_get_elements(selector=".sidebar-item.active", limit=5)
 ```
 
 ### Zulip Tools

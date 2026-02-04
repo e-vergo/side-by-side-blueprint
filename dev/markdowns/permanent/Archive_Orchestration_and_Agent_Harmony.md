@@ -186,6 +186,11 @@ alignment -> planning -> execution -> finalization
 retrospective -> readme-wave -> oracle-regen -> porcelain -> archive-upload
 ```
 
+**`/qa` skill:**
+```
+setup -> review -> report
+```
+
 **`/self-improve` skill:**
 ```
 discovery -> selection -> dialogue -> logging -> archive
@@ -323,7 +328,7 @@ The `sbs-lsp-mcp` fork (located at `forks/sbs-lsp-mcp/`) extends `lean-lsp-mcp` 
 
 **Design principle:** General-purpose tools, not hyper-specific agents.
 
-**Implementation:** 62 total tools (18 Lean + 41 SBS + 3 Zulip). See `forks/sbs-lsp-mcp/README.md` for full documentation.
+**Implementation:** 67 total tools (18 Lean + 41 SBS + 5 Browser + 3 Zulip). See `forks/sbs-lsp-mcp/README.md` for full documentation.
 
 ### Retained Capabilities (from lean-lsp-mcp)
 
@@ -336,7 +341,7 @@ All existing Lean tools remain available:
 - `lean_local_search` - Declaration search
 - `lean_leansearch` / `lean_loogle` / `lean_leanfinder` - Mathlib search
 
-### Added Capabilities (41 SBS-specific Tools + 3 Zulip)
+### Added Capabilities (41 SBS-specific Tools + 5 Browser + 3 Zulip)
 
 Tools organized by category:
 
@@ -350,6 +355,7 @@ Tools organized by category:
 | **GitHub** | `sbs_issue_create`, `sbs_issue_log`, `sbs_issue_list`, `sbs_issue_get`, `sbs_issue_close`, `sbs_issue_summary`, `sbs_pr_create`, `sbs_pr_list`, `sbs_pr_get`, `sbs_pr_merge` | Issue and PR management (including agent-optimized logging) |
 | **Skills** | `sbs_skill_status`, `sbs_skill_start`, `sbs_skill_transition`, `sbs_skill_end`, `sbs_skill_fail`, `sbs_skill_handoff` | Skill state machine (including failure recording and atomic handoffs) |
 | **Questions** | `sbs_question_analysis`, `sbs_question_stats` | AskUserQuestion interaction analysis |
+| **Browser** | `browser_navigate`, `browser_click`, `browser_screenshot`, `browser_evaluate`, `browser_get_elements` | Persistent active page for stateful browsing |
 | **Zulip** | `zulip_search`, `zulip_fetch_thread`, `zulip_screenshot` | Lean Zulip integration |
 
 ### Why a Fork?
@@ -665,6 +671,7 @@ Each markdown file owns specific concerns and delegates to others.
 | [`.claude/agents/sbs-oracle.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-oracle.md) | Auto-generated concept index, file purpose map | (auto-generated from READMEs via `/update-and-archive`) |
 | [`.claude/skills/task/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md) | Workflow phases, validator specs, grab-bag mode | (self-contained skill definition) |
 | [`.claude/skills/oracle/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/oracle/SKILL.md) | Zero-shot codebase Q&A using compiled knowledge base | (self-contained skill definition) |
+| [`.claude/skills/qa/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/qa/SKILL.md) | Live browser-driven QA against running SBS sites | (self-contained skill definition) |
 | [`.claude/skills/update-and-archive/SKILL.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/update-and-archive/SKILL.md) | README wave structure, archive triggers, Oracle regeneration, porcelain state | (self-contained skill definition) |
 | [`dev/storage/README.md`](/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/README.md) | CLI command reference, validator infrastructure, quality scoring | Repository READMEs for component details |
 

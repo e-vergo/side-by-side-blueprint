@@ -324,7 +324,7 @@ For build commands, screenshot capture, compliance validation, archive managemen
 
 ### MCP Tools
 
-The `sbs-lsp-mcp` server (located at `forks/sbs-lsp-mcp/`) provides 62 tools: 18 Lean tools for proof development, 41 SBS tools for orchestration, testing, archive management, GitHub integration, and self-improve analysis, plus 3 Zulip browsing tools. Notable tools include `sbs_issue_log` (agent-optimized issue logging with auto-populated archive context), `sbs_skill_handoff` (atomic skill-to-skill transitions), `sbs_question_analysis`/`sbs_question_stats` (AskUserQuestion interaction analysis), and `sbs_inspect_project` (visual QA context preparation). See the server README for full documentation.
+The `sbs-lsp-mcp` server (located at `forks/sbs-lsp-mcp/`) provides 67 tools: 18 Lean tools for proof development, 41 SBS tools for orchestration, testing, archive management, GitHub integration, and self-improve analysis, 5 browser automation tools for stateful browsing sessions, plus 3 Zulip browsing tools. Notable tools include `sbs_issue_log` (agent-optimized issue logging with auto-populated archive context), `sbs_skill_handoff` (atomic skill-to-skill transitions), `sbs_question_analysis`/`sbs_question_stats` (AskUserQuestion interaction analysis), `sbs_inspect_project` (visual QA context preparation), and `browser_navigate`/`browser_click`/`browser_screenshot`/`browser_evaluate`/`browser_get_elements` (persistent active page pattern for QA workflows). See the server README for full documentation.
 
 ### One-Click Build Scripts
 
