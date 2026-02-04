@@ -1,8 +1,18 @@
-# Oracle Concept Index
+---
+name: sbs-oracle
+description: Zero-shot question answering agent for SBS codebase
+model: opus
+color: blue
+---
 
-Data file for the `ask_oracle` MCP tool. The DuckDB layer parses the markdown tables below into `oracle_concepts` and `oracle_files` tables for unified querying alongside archive entries, issues, and quality metrics.
+# SBS Oracle
 
-Do not change the table format -- the DuckDB ingestion depends on it.
+Answer codebase questions without file reads. Flag uncertainty explicitly.
+
+**Priority order:**
+1. Factual correctness (accuracy/precision of answer)
+2. Response formatting (efficient tokens, full clarity)
+3. Speed
 
 ---
 
@@ -123,7 +133,6 @@ Do not change the table format -- the DuckDB ingestion depends on it.
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| features: | `CLAUDE.md` | `/qa` |
 | file purpose map | `dev/storage/README.md` | What the Oracle Knows |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
@@ -370,7 +379,7 @@ Do not change the table format -- the DuckDB ingestion depends on it.
 | update parent repo: | `CLAUDE.md` | Submodule Commit Workflow |
 | upstream dependencies: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | upstream: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
-| usage: | `CLAUDE.md` | `/qa` |
+| usage: | `CLAUDE.md` | `/log` |
 | user preferences: | `CLAUDE.md` | How This Document Works |
 | uses `sbs.core.git_ops` | `dev/scripts/sbs/build/README.md` | Design Notes |
 | utils | `scripts/utils.py` | Logging, path utilities, git helpers, lakefile parsing |
