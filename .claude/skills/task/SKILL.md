@@ -14,6 +14,8 @@ version: 3.0.0
 | `/task` | Lists open issues, offers choice OR freeform description |
 | `/task #42` | Loads issue #42 as task context |
 | `/task <description>` | Uses description as task (no issue linkage) |
+| `/task crush` | Batch issue resolution — loads all open issues, proposes triage plan |
+| `/task crush #1 #5` | Same, scoped to specified issues only |
 
 ### Issue-Driven Invocation
 
@@ -29,6 +31,42 @@ When invoked without arguments (`/task`):
    - "Describe a new task" option for freeform
 3. If user selects an issue, proceed as issue-driven
 4. If user describes new task, proceed without issue linkage
+
+### Crush Mode (Batch Issue Resolution)
+
+When invoked as `/task crush` (with or without issue numbers):
+
+**Argument parsing:** The `crush` keyword is detected before the description fallthrough. Remaining args after `crush` are parsed for `#N` issue references.
+- `/task crush` → operates on all open issues
+- `/task crush #1 #5 #12` → scoped to issues 1, 5, and 12 only
+
+**Workflow:**
+
+1. **Pre-load issues:**
+   - Call `sbs_issue_summary()` MCP tool to get all open issues with metadata (type, area, labels, age)
+   - If specific issue numbers follow `crush`, filter results to those issues
+   - Otherwise, operate on all open issues
+
+2. **Gather oracle context (parallel):**
+   - Spawn up to 4 read-only Explore agents, each taking a batch of issues
+   - Each agent calls `sbs_oracle_query` for its batch and reads relevant files
+   - Each reports back per issue: affected files, estimated complexity (trivial/moderate/significant), recommended wave type (direct/fix/docs/code)
+
+3. **Propose triage plan:**
+   - Present issues grouped by recommended wave type:
+     - **Wave 0 (direct):** Issues closable via MCP queries alone (duplicates, already-fixed, informational)
+     - **Wave 1 (fix):** Bug fixes with known root causes
+     - **Wave 2 (docs):** Documentation or guidance changes
+     - **Wave 3 (code):** Moderate-scope implementation work
+   - For each issue show: `#number - title (age, complexity, wave)`
+   - Use AskUserQuestion with multi-select to let user include/exclude issues
+   - Ask user to approve the proposed wave grouping
+
+4. **On approval:** Transition to normal `/task` planning phase with all selected issues as `issue_refs`. The existing Triage Wave Structure (in the Execution section) applies for organizing execution waves.
+
+**Archive tracking:** Crush mode uses the same archive protocol as normal `/task` — all phase transitions are recorded. The `issue_refs` field tracks all selected issues throughout the session.
+
+**Gate validation:** Same gates apply as normal `/task`. All selected issues must pass their respective validation before closure.
 
 ---
 
