@@ -1030,9 +1030,9 @@ The dashboard displays a single-column layout without the chapter panel sidebar.
 
 ## Autonomous Issue Logging
 
-When encountering clear bugs during implementation, log them immediately via `sbs_issue_create` MCP tool:
+When encountering clear bugs during implementation, log them immediately via `sbs_issue_log` MCP tool:
 
-    sbs_issue_create(
+    sbs_issue_log(
         title="Brief description of the bug",
         body="Details about what was observed and where",
         labels=["bug:functional", "area:sbs:graph"]

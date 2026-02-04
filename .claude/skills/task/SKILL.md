@@ -209,7 +209,7 @@ Fully autonomous:
    - Retry failed agent once
    - If retry fails, pause for re-approval
 6. Continue until all waves complete
-7. **Autonomous bug logging:** When agents discover bugs during execution, they should log them immediately via `sbs_issue_create` MCP tool without pausing work. This preserves discovery context and keeps the backlog current.
+7. **Autonomous bug logging:** When agents discover bugs during execution, they should log them immediately via `sbs_issue_log` MCP tool without pausing work. This preserves discovery context and keeps the backlog current.
 
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
