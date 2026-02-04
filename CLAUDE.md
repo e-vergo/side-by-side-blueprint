@@ -23,13 +23,13 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 |----------------|----------------------|
 | Discusses requirements with user | Executes ALL implementation tasks |
 | Decomposes and plans work | Has deep architectural knowledge |
-| Spawns agents (one at a time; up to 4 during /task execution) | Works within defined scope |
+| Spawns agents (up to 4 concurrent during /task and /self-improve) | Works within defined scope |
 | Synthesizes results | Reports outcomes |
 
-**Phase-Aware Agent Concurrency:**
-- `sbs-developer` is the ONLY implementation agent
-- **Default:** One `sbs-developer` agent at a time (alignment, planning, finalization phases)
-- **Exception:** During `/task` execution phase, up to 4 concurrent `sbs-developer` agents are allowed when the approved plan specifies parallel waves
+**Multiagent Concurrency:**
+- `sbs-developer` is the ONLY implementation agent type (writes files, interacts with archival system)
+- **Up to 4 concurrent `sbs-developer` agents** are allowed during ALL phases of `/task` (alignment, planning, execution, finalization) and during `/self-improve`, when the approved plan or skill definition specifies parallel work
+- Files targeted by parallel agents must not overlap
 - Multiple read-only exploration agents may run in parallel alongside at all times
 
 ---
@@ -143,7 +143,7 @@ Spawn an agent for:
 4. Synthesize results for user
 5. Repeat if needed
 
-**Parallel spawning (execution phase only):** During `/task` execution, up to 4 agents may be spawned in a single message with multiple Task tool calls, per the approved plan's wave structure.
+**Parallel spawning:** During `/task` (all phases) and `/self-improve`, up to 4 agents may be spawned in a single message with multiple Task tool calls, per the approved plan's wave structure. Collision avoidance is the plan's responsibility -- parallel agents must target non-overlapping files/repos.
 
 ### Visual Verification Requirement
 
@@ -433,7 +433,25 @@ This assumption is safe and should inform how you interpret ambiguous instructio
 
 ### Proactive Bug Logging
 
-When encountering clear bugs during work, log them autonomously via `/log` without waiting for user direction. This applies when there's unambiguous evidence of a real bug (error messages, broken behavior, failing tests). Gray areas still require confirmation.
+When encountering clear bugs during work, log them autonomously via `sbs_issue_log` MCP tool without waiting for user direction. This applies when there's unambiguous evidence of a real bug (error messages, broken behavior, failing tests). Gray areas still require confirmation. Prefer `sbs_issue_log` over `/log` for autonomous logging -- it auto-populates archive context and requires zero user interaction.
+
+---
+
+### Multiagent Behavior Definition
+
+**What constitutes "multiagent behavior":** Multiple `sbs-developer` agents running concurrently, where each agent writes files and/or interacts with the archival system. Read-only exploration agents do not count as multiagent behavior.
+
+**When multiagent is allowed:**
+- All `/task` phases: alignment, planning, execution, finalization
+- `/self-improve` skill: discovery and logging phases
+- Up to 4 concurrent agents per wave
+- Non-overlapping file targets required
+
+**When multiagent is NOT allowed:**
+- `/log` (atomic, single-agent operation)
+- `/update-and-archive` (sequential by design)
+- `/oracle` (read-only, no agents needed)
+- Outside of any active skill (idle state)
 
 ---
 
