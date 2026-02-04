@@ -247,3 +247,74 @@ def has_overlapping_nodes(dep_graph: dict) -> bool:
                 return True
 
     return False
+
+
+def collect_all_ids(html: str) -> set[str]:
+    """Extract all id= attribute values from HTML using BeautifulSoup."""
+    soup = parse_html(html)
+    return {tag["id"] for tag in soup.find_all(attrs={"id": True}) if tag["id"]}
+
+
+def collect_fragment_links(html: str) -> set[str]:
+    """Extract all href='#...' fragment targets (without the #)."""
+    soup = parse_html(html)
+    links = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.startswith("#") and len(href) > 1:
+            links.add(href[1:])
+    return links
+
+
+def collect_relative_links(html: str) -> set[str]:
+    """Extract all href='./X.html' relative page link targets."""
+    soup = parse_html(html)
+    links = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if href.startswith("./") and href.endswith(".html"):
+            links.add(href[2:])  # Remove "./"
+    return links
+
+
+def extract_css_block_variables(css: str, selector: str) -> set[str]:
+    """Extract CSS variable names defined within a specific selector block."""
+    variables = set()
+    # Find the block for the selector
+    escaped = re.escape(selector)
+    pattern = escaped + r'\s*\{([^}]+)\}'
+    match = re.search(pattern, css, re.DOTALL)
+    if match:
+        block = match.group(1)
+        for var_match in re.finditer(r'(--[\w-]+)\s*:', block):
+            variables.add(var_match.group(1))
+    return variables
+
+
+def get_dressed_decl_paths(site, node_id: str) -> dict[str, Path]:
+    """Resolve paths to dressed declaration artifacts for a node.
+
+    Searches the dressed directory tree for declaration files matching the node_id.
+    Returns dict mapping filenames to paths (e.g., {"decl.json": Path(...), "decl.html": Path(...)}).
+    """
+    paths = {}
+    dressed_dir = site.dressed_dir
+    if not dressed_dir.exists():
+        return paths
+
+    # Try original node_id and hyphenated version
+    # Filesystem uses hyphens where node IDs use colons (e.g., bracket:complex -> bracket-complex)
+    candidates = [node_id]
+    if ":" in node_id:
+        candidates.append(node_id.replace(":", "-"))
+
+    for candidate in candidates:
+        for decl_dir in dressed_dir.rglob(candidate):
+            if decl_dir.is_dir():
+                for f in decl_dir.iterdir():
+                    if f.is_file() and f.name.startswith("decl."):
+                        paths[f.name] = f
+                if paths:
+                    return paths
+
+    return paths
