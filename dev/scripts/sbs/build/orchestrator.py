@@ -38,6 +38,7 @@ from sbs.build.caching import (
     get_cached_build,
     save_to_cache,
     restore_from_cache,
+    has_dressed_artifacts,
     has_lean_changes,
     save_lean_hash,
     get_lean_sources_hash,
@@ -551,11 +552,28 @@ class BuildOrchestrator:
         lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
         log.success("Blueprint facet built")
 
-    def _build_project_internal(self) -> None:
-        """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
-        if not self.config.force_lake and not has_lean_changes(
+    def _needs_project_build(self) -> bool:
+        """Check if the project needs a (re)build.
+
+        Returns True when any of:
+        - force_lake is set
+        - Lean sources changed since last build
+        - Per-declaration dressed artifacts are missing (e.g. after clean_artifacts)
+        """
+        if self.config.force_lake:
+            return True
+        if has_lean_changes(
             self.config.project_root, self.config.cache_dir, self.config.project_name
         ):
+            return True
+        if not has_dressed_artifacts(self.config.project_root):
+            log.info("Per-declaration dressed artifacts missing — forcing rebuild")
+            return True
+        return False
+
+    def _build_project_internal(self) -> None:
+        """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
+        if not self._needs_project_build():
             log.info("Skipping project build: Lean sources unchanged")
             return
 
@@ -790,9 +808,7 @@ class BuildOrchestrator:
             self._end_phase("build_toolchain")
 
             # Fetch mathlib cache (extracted from build_project for granular timing)
-            if self.config.force_lake or has_lean_changes(
-                self.config.project_root, self.config.cache_dir, self.config.project_name
-            ):
+            if self._needs_project_build():
                 self._start_phase("fetch_mathlib_cache")
                 fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
                 self._end_phase("fetch_mathlib_cache")
@@ -805,9 +821,7 @@ class BuildOrchestrator:
             self._end_phase("build_project")
 
             # Build blueprint facet
-            if self.config.force_lake or has_lean_changes(
-                self.config.project_root, self.config.cache_dir, self.config.project_name
-            ):
+            if self._needs_project_build():
                 self._start_phase("build_blueprint")
                 lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
                 self._end_phase("build_blueprint")

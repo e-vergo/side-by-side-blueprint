@@ -107,6 +107,28 @@ def load_lean_hash(cache_dir: Path, repo_name: str) -> Optional[str]:
     return None
 
 
+def has_dressed_artifacts(project_root: Path) -> bool:
+    """Check if per-declaration dressed artifacts exist.
+
+    Returns True if the dressed/ directory contains at least one
+    per-declaration subdirectory (a directory containing decl.json).
+
+    This is used to force a rebuild when clean_artifacts() has removed
+    dressed/ but Lean sources haven't changed (so has_lean_changes
+    would skip the build).
+    """
+    dressed_dir = project_root / ".lake" / "build" / "dressed"
+    if not dressed_dir.exists():
+        return False
+
+    # Walk one level: dressed/{Module/...}/{label}/decl.json
+    # We need to find at least one decl.json anywhere under dressed/
+    for decl_json in dressed_dir.rglob("decl.json"):
+        return True
+
+    return False
+
+
 def has_lean_changes(repo_path: Path, cache_dir: Path, repo_name: str) -> bool:
     """Check if Lean sources have changed since last successful build.
 
