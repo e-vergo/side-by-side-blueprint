@@ -102,7 +102,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dashboard stat discrepancies: | `toolchain/Runway/README.md` | Debugging Tips |
 | debug | `forks/sbs-lsp-mcp/README.md` | Environment Variables |
 | declarative rules | `dev/storage/README.md` | Auto-Tagging |
-| default: | `CLAUDE.md` | Orchestration Model |
 | dep graph node click * | `storage/dep_graph_node_click_*.png` | Node modal views |
 | dep graph zoom * | `storage/dep_graph_zoom_*.png` | Zoom in/out/fit states |
 | dependency graph | `toolchain/SBS-Test/README.md` | What to Inspect |
@@ -126,7 +125,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | epoch | `dev/storage/README.md` | Epoch Semantics |
 | epoch summary structure: | `dev/storage/README.md` | Epoch Semantics |
 | evergreen | `dev/storage/README.md` | Test Organization System |
-| exception: | `CLAUDE.md` | Orchestration Model |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
@@ -204,6 +202,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | module references | `toolchain/Runway/README.md` | Features |
 | motivation: | `toolchain/Dress/README.md` | Connectivity (`findComponents`) |
 | multi-page chapter navigation | `toolchain/Runway/README.md` | Features |
+| multiagent concurrency: | `CLAUDE.md` | Orchestration Model |
 | myproject.chapter.module | `toolchain/Runway/README.md` | Module Reference Support |
 | naming: | `dev/storage/README.md` | Archive System |
 | never delete or replace a plan without explicit user direction. | `CLAUDE.md` | Planning Discipline |
@@ -239,7 +238,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | papermetadata | `toolchain/Runway/README.md` | Module Architecture |
 | papernodeinfo | `toolchain/Runway/README.md` | Key Module Details |
 | papernodeinfoext | `toolchain/Runway/README.md` | Key Module Details |
-| parallel spawning (execution phase only): | `CLAUDE.md` | Spawning Protocol |
+| parallel spawning: | `CLAUDE.md` | Spawning Protocol |
 | parent project: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
 | part of the [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) monorepo. | `toolchain/Dress/README.md` | Overview |
 | pdf compilation | `toolchain/Runway/README.md` | Features |
@@ -247,7 +246,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | per-session data: | `dev/storage/README.md` | Rich Data Extraction |
 | per-snapshot aggregates: | `dev/storage/README.md` | Rich Data Extraction |
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
-| phase-aware agent concurrency: | `CLAUDE.md` | Orchestration Model |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
 | pr integration: | `CLAUDE.md` | `/task` |
@@ -262,6 +260,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | pytest tests | `dev/storage/README.md` | What test-catalog Shows |
 | python hooks | `dev/storage/README.md` | Auto-Tagging |
 | qualityscoreledger | `dev/storage/README.md` | Implementation |
+| question analysis | `forks/sbs-lsp-mcp/README.md` | Overview |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | rebuild and re-capture | `CLAUDE.md` | Standard Workflow |
@@ -370,6 +369,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | two-pass edge processing: | `toolchain/Dress/README.md` | Phase 3: Manifest Generation (CLI) |
 | uncommitted changes | `dev/storage/README.md` | What It Checks |
 | unpushed commits | `dev/storage/README.md` | What It Checks |
+| up to 4 concurrent `sbs-developer` agents | `CLAUDE.md` | Orchestration Model |
 | update configuration: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | update imports: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | update parent repo: | `CLAUDE.md` | Submodule Commit Workflow |
@@ -398,11 +398,14 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | visual regression baseline | `toolchain/SBS-Test/README.md` | Purpose |
 | visual verification is mandatory for ui work. | `CLAUDE.md` | Visual Verification Requirement |
 | weakpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
+| what constitutes "multiagent behavior": | `CLAUDE.md` | Multiagent Behavior Definition |
 | what gets backed up: | `dev/storage/README.md` | iCloud Sync |
 | what it does: | `toolchain/Runway/README.md` | build (default) |
 | what runway does not do: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | what to explore: | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
 | when claude asks questions: | `CLAUDE.md` | Communication Format |
+| when multiagent is allowed: | `CLAUDE.md` | Multiagent Behavior Definition |
+| when multiagent is not allowed: | `CLAUDE.md` | Multiagent Behavior Definition |
 | when to use sbs-test: | `toolchain/SBS-Test/README.md` | Role in Pipeline |
 | why immediate capture? | `toolchain/Dress/README.md` | Phase 1: Per-Declaration Capture (During Elaboration) |
 | why validation matters: | `toolchain/Dress/README.md` | Overview |
