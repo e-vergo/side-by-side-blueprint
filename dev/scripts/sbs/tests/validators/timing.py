@@ -75,13 +75,19 @@ class TimingValidator(BaseValidator):
 
     Expected context.extra keys:
         phase_timings: dict[str, float] - Phase name to seconds mapping
+        archive_timings: dict[str, float] - Archive operation timings
         timing_thresholds: dict[str, float] - Optional max seconds per phase
+            Keys prefixed with "archive_" check archive_timings instead.
 
     Recorded metrics:
-        phase_timings: dict[str, float] - All phase durations
-        total_seconds: float - Sum of all phase times
-        slowest_phase: str - Name of the slowest phase
-        slowest_duration: float - Duration of the slowest phase
+        phase_timings: dict[str, float] - All build phase durations
+        total_seconds: float - Sum of all build phase times
+        slowest_phase: str - Name of the slowest build phase
+        slowest_duration: float - Duration of the slowest build phase
+        archive_phase_timings: dict[str, float] - Archive operation durations
+        archive_total_seconds: float - Sum of all archive phase times
+        archive_slowest_phase: str - Name of the slowest archive phase
+        archive_slowest_duration: float - Duration of the slowest archive phase
         threshold_violations: list[dict] - Phases exceeding thresholds
     """
 
@@ -105,7 +111,10 @@ class TimingValidator(BaseValidator):
         if not phase_timings and context.build_log:
             phase_timings = _parse_build_log_timings(context.build_log)
 
-        # Calculate aggregate metrics
+        # Get archive timing data
+        archive_timings: dict[str, float] = context.extra.get("archive_timings", {})
+
+        # Calculate aggregate metrics for build phases
         total_seconds = sum(phase_timings.values()) if phase_timings else 0.0
 
         slowest_phase = ""
@@ -114,36 +123,63 @@ class TimingValidator(BaseValidator):
             slowest_phase = max(phase_timings, key=phase_timings.get)  # type: ignore
             slowest_duration = phase_timings[slowest_phase]
 
-        # Check thresholds
+        # Check thresholds (split between build and archive phases)
         thresholds: dict[str, float] = context.extra.get("timing_thresholds", {})
         violations: list[dict[str, Any]] = []
         findings: list[str] = []
 
         for phase, threshold in thresholds.items():
-            actual = phase_timings.get(phase)
-            if actual is not None and actual > threshold:
-                violations.append(
-                    {
-                        "phase": phase,
-                        "actual": actual,
-                        "threshold": threshold,
-                        "exceeded_by": actual - threshold,
-                    }
-                )
-                findings.append(
-                    f"Phase '{phase}' took {actual:.2f}s "
-                    f"(threshold: {threshold:.2f}s, exceeded by {actual - threshold:.2f}s)"
-                )
+            if phase.startswith("archive_"):
+                # Archive phase threshold
+                archive_phase = phase[len("archive_"):]
+                actual = archive_timings.get(archive_phase, 0.0)
+                if actual > threshold:
+                    violations.append(
+                        {
+                            "phase": phase,
+                            "actual": actual,
+                            "threshold": threshold,
+                            "exceeded_by": actual - threshold,
+                        }
+                    )
+                    findings.append(
+                        f"Archive phase '{archive_phase}' took {actual:.2f}s "
+                        f"(threshold: {threshold:.2f}s, exceeded by {actual - threshold:.2f}s)"
+                    )
+            else:
+                # Build phase threshold
+                actual = phase_timings.get(phase)
+                if actual is not None and actual > threshold:
+                    violations.append(
+                        {
+                            "phase": phase,
+                            "actual": actual,
+                            "threshold": threshold,
+                            "exceeded_by": actual - threshold,
+                        }
+                    )
+                    findings.append(
+                        f"Phase '{phase}' took {actual:.2f}s "
+                        f"(threshold: {threshold:.2f}s, exceeded by {actual - threshold:.2f}s)"
+                    )
 
         # Build metrics dict
-        metrics = {
+        metrics: dict[str, Any] = {
             "phase_timings": phase_timings,
             "total_seconds": total_seconds,
             "slowest_phase": slowest_phase,
             "slowest_duration": slowest_duration,
             "threshold_violations": violations,
             "phase_count": len(phase_timings),
+            "archive_phase_timings": archive_timings,
         }
+
+        # Add archive aggregate metrics
+        if archive_timings:
+            metrics["archive_total_seconds"] = round(sum(archive_timings.values()), 3)
+            archive_slowest = max(archive_timings, key=archive_timings.get)  # type: ignore
+            metrics["archive_slowest_phase"] = archive_slowest
+            metrics["archive_slowest_duration"] = archive_timings[archive_slowest]
 
         # Add summary findings even when passing
         if phase_timings and not violations:
@@ -154,6 +190,11 @@ class TimingValidator(BaseValidator):
                 findings.append(
                     f"Slowest phase: '{slowest_phase}' at {slowest_duration:.2f}s"
                 )
+        if archive_timings and not violations:
+            archive_total = sum(archive_timings.values())
+            findings.append(
+                f"Archive time: {archive_total:.2f}s across {len(archive_timings)} phases"
+            )
 
         # Pass if no thresholds violated (or no thresholds defined)
         passed = len(violations) == 0
