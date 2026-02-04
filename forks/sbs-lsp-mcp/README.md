@@ -113,7 +113,7 @@ Tools for Side-by-Side Blueprint development workflows:
 
 | Tool | Description |
 |------|-------------|
-| `sbs_oracle_query` | Query the SBS Oracle for file/concept info |
+| `ask_oracle` | Unified query: concept index + archive + quality metrics |
 | `sbs_archive_state` | Get current orchestration state |
 | `sbs_epoch_summary` | Get epoch statistics |
 | `sbs_context` | Build context block for agents |
@@ -208,18 +208,18 @@ Tools for browsing Leanprover Zulip anonymously (requires `ZULIP_ENABLED=1`):
 
 ### Oracle Tools
 
-#### `sbs_oracle_query`
+#### `ask_oracle`
 
-Query the SBS Oracle for file locations and concept information.
+Unified query across concept index, archive entries, issues, and quality metrics via DuckDB.
 
 ```python
 # Find where graph layout is implemented
-sbs_oracle_query(query="graph layout")
-# Returns: Dress/Graph/Layout.lean
+ask_oracle(query="graph layout")
+# Returns: concept index matches + related archive entries
 
-# Find status color model
-sbs_oracle_query(query="status color")
-# Returns: documentation about 6-status color model
+# Find status color model with quality data
+ask_oracle(query="status color", include_quality=True)
+# Returns: concept matches + quality metric history
 ```
 
 ### Archive Tools

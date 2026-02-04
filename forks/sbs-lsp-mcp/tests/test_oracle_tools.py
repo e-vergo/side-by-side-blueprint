@@ -1,111 +1,33 @@
-"""Tests for SBS Oracle tools."""
+"""Tests for SBS Oracle tools (ask_oracle via DuckDB)."""
 
 from typing import Any, Dict
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-
-class TestOracleQuery:
-    """Tests for sbs_oracle_query tool."""
-
-    def test_query_returns_file_matches(
-        self, mock_oracle_content: str, mock_parsed_oracle: Dict[str, Any]
-    ) -> None:
-        """Query should return file matches for path-like queries."""
-        # Import here to avoid import errors if SBS modules not available
-        from sbs_lsp_mcp.sbs_utils import parse_oracle_sections, search_oracle
-
-        sections = parse_oracle_sections(mock_oracle_content)
-        results = search_oracle(sections, "Layout.lean", max_results=5)
-
-        # Should find Dress/Graph/Layout.lean
-        file_results = [r for r in results if r["file"]]
-        assert len(file_results) >= 1
-        assert any("Layout.lean" in r["file"] for r in file_results)
-
-    def test_query_returns_concept_matches(
-        self, mock_oracle_content: str
-    ) -> None:
-        """Query should return concept matches for concept names."""
-        from sbs_lsp_mcp.sbs_utils import parse_oracle_sections, search_oracle
-
-        sections = parse_oracle_sections(mock_oracle_content)
-        results = search_oracle(sections, "Sugiyama", max_results=5)
-
-        # Should find Sugiyama layout concept
-        assert len(results) >= 1
-        # Either as a file match or concept match (case insensitive check)
-        found_sugiyama = any(
-            "sugiyama" in (r.get("context", "") or r.get("file", "")).lower()
-            for r in results
-        )
-        assert found_sugiyama, f"Should find Sugiyama in results: {results}"
-
-    def test_query_empty_returns_empty(self) -> None:
-        """Empty query returns empty results."""
-        from sbs_lsp_mcp.sbs_utils import search_oracle
-
-        sections = {"file_map": {}, "concept_index": [], "sections": {}}
-        results = search_oracle(sections, "", max_results=5)
-
-        assert results == []
-
-    def test_query_fuzzy_matching(
-        self, mock_oracle_content: str
-    ) -> None:
-        """Fuzzy matching works for partial terms."""
-        from sbs_lsp_mcp.sbs_utils import parse_oracle_sections, search_oracle
-
-        sections = parse_oracle_sections(mock_oracle_content)
-        # Query with partial word
-        results = search_oracle(sections, "graph", max_results=10)
-
-        # Should find graph-related items
-        assert len(results) >= 1
-        found_graph = any(
-            "graph" in (r.get("context", "").lower() or r.get("file", "").lower())
-            for r in results
-        )
-        assert found_graph, f"Should find graph in results: {results}"
-
-    def test_query_case_insensitive(
-        self, mock_oracle_content: str
-    ) -> None:
-        """Query is case insensitive."""
-        from sbs_lsp_mcp.sbs_utils import parse_oracle_sections, search_oracle
-
-        sections = parse_oracle_sections(mock_oracle_content)
-
-        # Query with different cases
-        results_lower = search_oracle(sections, "layout", max_results=5)
-        results_upper = search_oracle(sections, "LAYOUT", max_results=5)
-        results_mixed = search_oracle(sections, "Layout", max_results=5)
-
-        # All should return similar results
-        assert len(results_lower) == len(results_upper)
-        assert len(results_lower) == len(results_mixed)
+from sbs_lsp_mcp.sbs_models import AskOracleResult, OracleConcept, OracleMatch
 
 
-class TestOracleQueryResult:
-    """Tests for OracleQueryResult model."""
+class TestAskOracleResult:
+    """Tests for AskOracleResult model."""
 
     def test_empty_result_structure(self) -> None:
         """Empty result should have correct structure."""
-        from sbs_lsp_mcp.sbs_models import OracleQueryResult
+        result = AskOracleResult(
+            file_matches=[], concepts=[], raw_section=None
+        )
 
-        result = OracleQueryResult(matches=[], concepts=[], raw_section=None)
-
-        assert result.matches == []
+        assert result.file_matches == []
         assert result.concepts == []
         assert result.raw_section is None
+        assert result.archive_context is None
+        assert result.quality_snapshot is None
+        assert result.related_issues is None
 
-    def test_result_with_matches(self) -> None:
-        """Result with matches should serialize correctly."""
-        from sbs_lsp_mcp.sbs_models import OracleConcept, OracleMatch, OracleQueryResult
-
-        result = OracleQueryResult(
-            matches=[
+    def test_result_with_file_matches(self) -> None:
+        """Result with file matches serializes correctly."""
+        result = AskOracleResult(
+            file_matches=[
                 OracleMatch(
                     file="Dress/Graph/Layout.lean",
                     lines="10-50",
@@ -117,8 +39,123 @@ class TestOracleQueryResult:
             raw_section="## Concepts\nSugiyama layout...",
         )
 
-        assert len(result.matches) == 1
-        assert result.matches[0].file == "Dress/Graph/Layout.lean"
-        assert result.matches[0].relevance == 0.9
+        assert len(result.file_matches) == 1
+        assert result.file_matches[0].file == "Dress/Graph/Layout.lean"
+        assert result.file_matches[0].relevance == 0.9
         assert len(result.concepts) == 1
         assert result.concepts[0].name == "Sugiyama"
+
+    def test_result_with_archive_context(self) -> None:
+        """Result with archive context includes project activity."""
+        result = AskOracleResult(
+            file_matches=[],
+            concepts=[],
+            archive_context={
+                "recent_entries": 5,
+                "projects_touched": ["SBSTest", "GCR"],
+            },
+        )
+
+        assert result.archive_context is not None
+        assert result.archive_context["recent_entries"] == 5
+
+    def test_result_with_quality_snapshot(self) -> None:
+        """Result with quality snapshot includes scores."""
+        result = AskOracleResult(
+            file_matches=[],
+            concepts=[],
+            quality_snapshot={
+                "overall": 85.0,
+                "T5": {"value": 100.0, "passed": True},
+            },
+        )
+
+        assert result.quality_snapshot is not None
+        assert result.quality_snapshot["overall"] == 85.0
+
+    def test_result_with_related_issues(self) -> None:
+        """Result with related issues includes issue data."""
+        result = AskOracleResult(
+            file_matches=[],
+            concepts=[],
+            related_issues=[
+                {"number": 42, "title": "Fix graph layout", "state": "open"},
+                {"number": 43, "title": "Status color mismatch", "state": "closed"},
+            ],
+        )
+
+        assert result.related_issues is not None
+        assert len(result.related_issues) == 2
+        assert result.related_issues[0]["number"] == 42
+
+    def test_full_result(self) -> None:
+        """Full result with all fields populated."""
+        result = AskOracleResult(
+            file_matches=[
+                OracleMatch(
+                    file="Dress/Graph/Layout.lean",
+                    context="Graph layout algorithm",
+                    relevance=0.95,
+                )
+            ],
+            concepts=[
+                OracleConcept(name="Sugiyama layout", section="Concepts"),
+            ],
+            archive_context={"recent_entries": 3},
+            quality_snapshot={"overall": 90.0},
+            related_issues=[{"number": 10, "title": "Test", "state": "open"}],
+            raw_section="## Architecture\n...",
+        )
+
+        assert len(result.file_matches) == 1
+        assert len(result.concepts) == 1
+        assert result.archive_context is not None
+        assert result.quality_snapshot is not None
+        assert result.related_issues is not None
+        assert result.raw_section is not None
+
+
+class TestOracleMatchModel:
+    """Tests for OracleMatch model validation."""
+
+    def test_match_without_lines(self) -> None:
+        """Match without line range is valid."""
+        match = OracleMatch(
+            file="some/file.lean",
+            context="Description",
+            relevance=0.5,
+        )
+        assert match.lines is None
+
+    def test_match_with_lines(self) -> None:
+        """Match with line range stores correctly."""
+        match = OracleMatch(
+            file="some/file.lean",
+            lines="10-50",
+            context="Description",
+            relevance=0.8,
+        )
+        assert match.lines == "10-50"
+
+
+class TestOracleConceptModel:
+    """Tests for OracleConcept model."""
+
+    def test_concept_creation(self) -> None:
+        """Concept creates with required fields."""
+        concept = OracleConcept(name="Sugiyama", section="Concepts")
+        assert concept.name == "Sugiyama"
+        assert concept.section == "Concepts"
+
+
+class TestLegacyOracleQueryResult:
+    """Tests for the legacy OracleQueryResult model (still in sbs_models)."""
+
+    def test_legacy_model_exists(self) -> None:
+        """OracleQueryResult still exists for backward compatibility."""
+        from sbs_lsp_mcp.sbs_models import OracleQueryResult
+
+        result = OracleQueryResult(matches=[], concepts=[], raw_section=None)
+        assert result.matches == []
+        assert result.concepts == []
+        assert result.raw_section is None

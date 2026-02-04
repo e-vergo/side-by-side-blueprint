@@ -354,7 +354,7 @@ Tools organized by category:
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
-| **Oracle** | `sbs_oracle_query` | Query compiled knowledge base |
+| **Oracle** | `ask_oracle` | Unified query: concept index + archive + quality metrics |
 | **Archive** | `sbs_archive_state`, `sbs_context`, `sbs_epoch_summary`, `sbs_search_entries`, `sbs_analysis_summary`, `sbs_entries_since_self_improve` | State, context, and history |
 | **Self-Improve** | `sbs_successful_sessions`, `sbs_comparative_analysis`, `sbs_system_health`, `sbs_user_patterns`, `sbs_skill_stats`, `sbs_phase_transition_health`, `sbs_interruption_analysis`, `sbs_gate_failures`, `sbs_tag_effectiveness` | Structured analysis for self-improvement |
 | **Testing** | `sbs_run_tests`, `sbs_validate_project` | Pytest and T1-T8 validators |

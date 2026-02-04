@@ -189,7 +189,7 @@ sbs_skill_transition(skill="converge", to_phase="fix-<N>")
    | `visual` | Edit CSS visual properties | `dress-blueprint-action/assets/css/common.css` |
 
 3. **For each failure category:**
-   1. Query `sbs_oracle_query` for affected files
+   1. Query `ask_oracle` for affected files
    2. Spawn `sbs-developer` agent(s) with specific fix instructions (up to 4 concurrent, non-overlapping files)
    3. Each agent receives: criterion ID, expected value, actual value, affected file paths
 
@@ -330,7 +330,7 @@ All errors are surfaced in dialogue. Nothing is silently ignored.
 | `sbs_skill_transition` | Move between phases |
 | `sbs_skill_end` | Complete converge and clear state |
 | `sbs_skill_fail` | Record failure and release state |
-| `sbs_oracle_query` | Find affected files for fixes |
+| `ask_oracle` | Find affected files for fixes |
 | `sbs_issue_log` | Log bugs discovered during eval |
 
 ### File Tools

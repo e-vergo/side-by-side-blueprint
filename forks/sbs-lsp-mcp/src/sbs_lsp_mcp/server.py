@@ -31,6 +31,7 @@ from sbs_lsp_mcp.client_utils import (
     setup_client_for_file,
     startup_client,
 )
+from sbs_lsp_mcp.duckdb_layer import DuckDBLayer
 from sbs_lsp_mcp.file_utils import get_file_contents
 from sbs_lsp_mcp.instructions import INSTRUCTIONS
 from sbs_lsp_mcp.sbs_tools import register_sbs_tools
@@ -126,6 +127,8 @@ class AppContext:
     browser_context: "BrowserContext | None" = None
     # Persistent active page for general browser tools
     active_page: "Page | None" = None
+    # DuckDB query layer (lifespan-scoped)
+    duckdb_layer: DuckDBLayer | None = None
 
 
 @asynccontextmanager
@@ -173,6 +176,19 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
             except Exception as e:
                 logger.warning(f"Failed to start Playwright browser: {e}")
 
+        # Initialize DuckDB layer
+        duckdb_layer: DuckDBLayer | None = None
+        try:
+            from sbs_lsp_mcp.sbs_utils import SBS_ROOT, ARCHIVE_DIR
+            duckdb_layer = DuckDBLayer(
+                archive_dir=ARCHIVE_DIR,
+                session_dir=Path.home() / ".claude" / "projects",
+                oracle_path=SBS_ROOT / ".claude" / "agents" / "sbs-oracle.md",
+            )
+            logger.info("DuckDB layer initialized (lazy-load on first query)")
+        except Exception as e:
+            logger.warning(f"Failed to initialize DuckDB layer: {e}")
+
         context = AppContext(
             lean_project_path=lean_project_path,
             client=None,
@@ -189,10 +205,18 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
             loogle_local_available=loogle_local_available,
             browser=browser,
             browser_context=browser_context,
+            duckdb_layer=duckdb_layer,
         )
         yield context
     finally:
         logger.info("Closing Lean LSP client")
+
+        # Close DuckDB layer
+        if hasattr(context, 'duckdb_layer') and context.duckdb_layer:
+            try:
+                context.duckdb_layer.close()
+            except Exception:
+                pass
 
         if context.client:
             context.client.close()
