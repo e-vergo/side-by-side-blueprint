@@ -463,6 +463,17 @@ When encountering clear bugs during work, log them autonomously via `sbs_issue_l
 
 ---
 
+### Improvement Opportunity Shorthand
+
+Users may type `IO` or `IO(message)` to flag improvement opportunities:
+
+- **`IO`** — Infer the improvement observation from recent conversation context. Summarize the key insight in 1-2 sentences, then call `sbs_improvement_capture` with the inferred observation.
+- **`IO(message)`** — Use the provided message directly as the observation. Call `sbs_improvement_capture(observation="<message>")`.
+
+In both cases, infer the most appropriate category from context: `process`, `interaction`, `workflow`, `tooling`, or `other`. Do not ask the user to confirm — capture immediately and report what was logged.
+
+---
+
 ### Multiagent Behavior Definition
 
 **What constitutes "multiagent behavior":** Multiple `sbs-developer` agents running concurrently, where each agent writes files and/or interacts with the archival system. Read-only exploration agents do not count as multiagent behavior.
