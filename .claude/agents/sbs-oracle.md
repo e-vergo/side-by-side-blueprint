@@ -59,6 +59,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | blueprint-specific: | `toolchain/Runway/README.md` | Supported LaTeX Commands |
 | blueprintsite | `toolchain/Runway/README.md` | Module Architecture |
 | brackets | `forks/verso/README.md` | 3. Rainbow Bracket Highlighting (`src/verso/Verso/Code/Highlighted.lean`) |
+| browser automation | `forks/sbs-lsp-mcp/README.md` | Overview |
 | build & run | `showcase/PrimeNumberTheoremAnd/README.md` | Quick Links |
 | build and verify: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | build phases are standalone functions | `dev/scripts/sbs/build/README.md` | Design Notes |
