@@ -213,6 +213,17 @@ Fully autonomous:
 6. Continue until all waves complete
 7. **Autonomous bug logging:** When agents discover bugs during execution, they should log them immediately via `sbs_issue_log` MCP tool without pausing work. This preserves discovery context and keeps the backlog current.
 
+### Triage Wave Structure
+
+For batch-closure tasks (multiple issues in one session), organize execution waves by **operation type**, not by issue number:
+
+1. **Wave 0 (direct operations):** Quick closures, investigations that need only MCP queries -- no agents needed
+2. **Wave 1 (uniform fixes):** Bug fixes with known root causes -- parallel agents where files don't overlap
+3. **Wave 2 (documentation):** Guidance additions, prose changes -- parallel agents on separate files
+4. **Wave 3 (code changes):** Moderate-scope implementation work -- sequential if files overlap
+
+Uniform-complexity waves complete more predictably than mixed-complexity waves. When triaging, group issues by what kind of work they require, not by their issue number or priority.
+
 **REQUIRED:** After all waves complete and gates pass, transition to finalization:
 
 ```bash
@@ -451,6 +462,16 @@ The compliance validation uses a bidirectional agent-script pattern:
 4. Script updates `compliance_ledger.json` with results
 
 **Why this pattern**: Scripts never call AI APIs. Agents never bypass scripts for state changes. This pattern satisfies both constraints while enabling AI-powered validation.
+
+### Test Cleanup on Feature Removal
+
+When a plan includes removing a feature, capability, or surface area, the plan **must** include a cleanup step:
+
+1. Grep the test suite for references to the removed feature (function names, page types, CSS classes, etc.)
+2. Update or remove test assertions that reference the removed feature
+3. Verify no tests pass vacuously (testing something that no longer exists)
+
+This step is mandatory in the plan -- not a post-hoc fix during execution. Feature removal consistently causes test failures from stale assertions when this step is omitted.
 
 ---
 
