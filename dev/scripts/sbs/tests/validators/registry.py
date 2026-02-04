@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
+import sys
 from typing import Callable, Optional, Type, TypeVar
 
 from .base import Validator
@@ -171,7 +172,7 @@ def register_validator(cls: V) -> V:
     return cls
 
 
-def discover_validators() -> int:
+def discover_validators(force_reload: bool = False) -> int:
     """Import all validator modules to trigger registration.
 
     Scans the validators package for modules and imports them. Each module
@@ -179,14 +180,23 @@ def discover_validators() -> int:
 
     Also recursively scans subpackages (e.g., sbs.tests.validators.design).
 
+    Args:
+        force_reload: If True, clear existing registrations and reload
+            already-imported modules via importlib.reload(). This picks up
+            mid-session source edits that sys.modules caching would hide.
+
     Returns:
         Number of validators discovered and registered.
 
     Note:
-        This function is idempotent - calling it multiple times won't
-        re-register validators (they'll raise ValueError on duplicate).
+        Without force_reload, this function is idempotent - calling it
+        multiple times won't re-register validators (they'll raise
+        ValueError on duplicate).
     """
     import sbs.tests.validators as validators_pkg
+
+    if force_reload:
+        registry.clear()
 
     initial_count = len(registry)
 
@@ -210,11 +220,16 @@ def discover_validators() -> int:
             full_name = f"{package_name}.{module_info.name}"
 
             try:
-                module = importlib.import_module(full_name)
+                if force_reload and full_name in sys.modules:
+                    importlib.reload(sys.modules[full_name])
+                else:
+                    module = importlib.import_module(full_name)
 
                 # If it's a package, recurse into it
-                if module_info.ispkg and hasattr(module, "__path__"):
-                    _import_recursive(full_name, module.__path__)
+                if module_info.ispkg:
+                    mod = sys.modules.get(full_name)
+                    if mod and hasattr(mod, "__path__"):
+                        _import_recursive(full_name, mod.__path__)
 
             except ImportError as e:
                 # Log but don't fail - allows partial discovery
