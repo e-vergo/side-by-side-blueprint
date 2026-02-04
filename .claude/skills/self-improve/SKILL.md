@@ -60,6 +60,25 @@ This sets `global_state` to `null`, returning system to idle.
 
 ---
 
+## Agent Concurrency
+
+`/self-improve` supports multiagent execution:
+- **Up to 4 `sbs-developer` agents** may run concurrently during discovery and logging phases
+- Useful for: parallel pillar analysis (each agent queries different analysis tools), parallel issue creation
+- Collision avoidance: agents must target independent analysis dimensions or issue creation
+
+**Phase-specific guidance:**
+
+| Phase | Concurrency | Use Case |
+|-------|-------------|----------|
+| discovery | Up to 4 agents | Each agent analyzes a different pillar |
+| selection | 1 agent (user interaction) | Interactive selection requires single thread |
+| dialogue | 1 agent (user interaction) | Refinement requires single thread |
+| logging | Up to 4 agents | Parallel issue creation via `sbs_issue_log` |
+| archive | 1 agent | Final summary is sequential |
+
+---
+
 ## Phase 1: Discovery
 
 **Purpose:** Query archive, identify patterns, generate findings.
@@ -177,20 +196,19 @@ python3 -m sbs archive upload --trigger skill \
 
 For each confirmed improvement:
 1. Infer labels from the finding (see Finding-to-Label Mapping below)
-2. Create issue via `sbs_issue_create`:
+2. Create issue via `sbs_issue_log`:
    - Title: Clear, actionable description
    - Body: Context from dialogue, recommended approach
-   - Labels: `["origin:self-improve", "ai-authored", ...inferred labels]`
+   - Labels: `["origin:self-improve", ...inferred labels]` (`origin:agent` and `ai-authored` are auto-added by the tool)
 3. Track created issue numbers
 
 Example call:
 ```python
-sbs_issue_create(
+sbs_issue_log(
     title="Add tool call batching guidance to sbs-developer agent",
     body="...",
     labels=[
         "origin:self-improve",
-        "ai-authored",
         "feature:enhancement",
         "area:devtools:skills",
         "pillar:claude-execution",
@@ -407,7 +425,8 @@ All analysis is organized across four pillars:
 
 | Tool | Use For |
 |------|---------|
-| `sbs_issue_create` | Create improvement issues |
+| `sbs_issue_log` | Create improvement issues (preferred -- auto-populates context) |
+| `sbs_issue_create` | Create issues when manual label control needed |
 | `sbs_issue_list` | Check for duplicate issues |
 
 ---
