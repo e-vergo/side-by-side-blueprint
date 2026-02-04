@@ -392,11 +392,18 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 
 ### Doing Mode Detection
 
-When the orchestrator has executed 3+ Bash calls in sequence, recognize this as "doing mode":
-- User is actively working, not looking to delegate
-- Avoid spawning agents during these sequences
+Recognize "doing mode" when any of these signals are present:
+- Orchestrator has executed 3+ Bash calls in sequence
+- User is making direct file edits (VSCode selections, IDE interactions between messages)
+- User rejected a previous agent spawn offer in this session
+- User is making changes between messages (editing files outside of Claude)
+
+When doing mode is detected:
+- Do not spawn agents -- the user is actively working
 - Wait for a natural pause before offering delegation
 - If you must suggest an agent, phrase as an offer: "Would you like me to delegate this?"
+
+**Before spawning any agent during execution phase**, explicitly check for doing mode signals. This check is mandatory -- not a suggestion.
 
 ---
 

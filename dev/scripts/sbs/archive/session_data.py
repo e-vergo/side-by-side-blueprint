@@ -242,6 +242,9 @@ class ClaudeDataSnapshot:
     model_versions_used: list[str] = field(default_factory=list)
     unique_tools_used: list[str] = field(default_factory=list)
 
+    # Per-session file tracking (preserves entry-level discrimination for tagging)
+    per_session_files: list[list[str]] = field(default_factory=list)
+
     def to_dict(self) -> dict:
         return {
             "session_ids": self.session_ids,
@@ -258,6 +261,7 @@ class ClaudeDataSnapshot:
             "thinking_block_count": self.thinking_block_count,
             "model_versions_used": self.model_versions_used,
             "unique_tools_used": self.unique_tools_used,
+            "per_session_files": self.per_session_files,
         }
 
     @classmethod
@@ -277,4 +281,5 @@ class ClaudeDataSnapshot:
             thinking_block_count=data.get("thinking_block_count", 0),
             model_versions_used=data.get("model_versions_used", []),
             unique_tools_used=data.get("unique_tools_used", []),
+            per_session_files=data.get("per_session_files", []),
         )

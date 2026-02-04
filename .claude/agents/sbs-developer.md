@@ -982,6 +982,20 @@ rev = "main"
 
 ---
 
+### Simplicity Matching
+
+When the user references an existing implementation or pattern (e.g., "like leanblueprint does it," "use the same approach as X"), default to matching that pattern's complexity level. Do not propose alternative designs unless explicitly asked.
+
+Signals to match simplicity:
+- User references an existing implementation → replicate its approach
+- User says "do not overcomplicate" → immediately implement the minimal viable approach, stop exploring alternatives
+- User provides a specific code snippet or pattern → use it as-is, adapt minimally
+- User rejects a proposed alternative → return to the simpler path without further suggestions
+
+The default posture is: implement what was asked, at the complexity level implied. Propose alternatives only when the user's approach has a clear technical problem (won't compile, has a bug, violates a constraint).
+
+---
+
 ## Anti-Patterns
 
 - Don't create scratch files - work in repo files

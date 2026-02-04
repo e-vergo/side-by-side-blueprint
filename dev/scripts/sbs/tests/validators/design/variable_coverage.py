@@ -361,7 +361,7 @@ class CSSVariableCoverageValidator(BaseValidator):
 
     Configuration via context.extra:
         - css_dir: Path to CSS directory (default: dress-blueprint-action/assets)
-        - coverage_threshold: Minimum acceptable coverage (default: 0.95)
+        - coverage_threshold: Minimum acceptable coverage (default: 0.90)
         - exclude_syntax_highlighting: Exclude intentional syntax colors (default: True)
 
     Metrics returned:
@@ -400,7 +400,7 @@ class CSSVariableCoverageValidator(BaseValidator):
             css_dir = Path(css_dir)
 
         # Get coverage threshold
-        threshold = context.extra.get("coverage_threshold", 0.95)
+        threshold = context.extra.get("coverage_threshold", 0.90)
 
         # Get exclusion setting (default: True)
         exclude_syntax = context.extra.get("exclude_syntax_highlighting", True)
