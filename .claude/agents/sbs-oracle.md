@@ -20,20 +20,15 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 
 | Concept | Primary Location | Notes |
 |---------|-----------------|-------|
-| * hover token | `storage/*_hover_token.png` | Token hover popup |
-| * proof toggle | `storage/*_proof_toggle.png` | Proof expanded state |
-| * theme toggle | `storage/*_theme_toggle.png` | Dark mode variant |
 | 6-status color model: | `CLAUDE.md` | Quick Reference |
 | 6-status tracking | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | >100 node optimizations | `toolchain/Dress/README.md` | Performance Characteristics |
 | [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | [storage & tooling hub](../../dev/storage/readme.md) | `toolchain/SBS-Test/README.md` | Tooling & Archive System |
 | `@[blueprint]` attributes | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
-| `global_state` | `dev/storage/README.md` | State Machine Fields |
 | `io(message)` | `CLAUDE.md` | Improvement Opportunity Shorthand |
 | `io` | `CLAUDE.md` | Improvement Opportunity Shorthand |
 | `sbs archive upload` | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
-| `state_transition` | `dev/storage/README.md` | State Machine Fields |
 | a proof that typechecks is not necessarily the proof you intended | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | absolute imports | `dev/scripts/README.md` | Design Principles |
 | agentic and project-specific development tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
@@ -42,7 +37,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | always use `python build.py` for builds | `CLAUDE.md` | Standards |
 | archive inspection | `forks/sbs-lsp-mcp/README.md` | Overview |
 | archive system | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
-| archiveentry | `dev/storage/README.md` | Archive Entries |
 | at least | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | at most | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
 | attribution | `toolchain/Runway/README.md` | Runway |
@@ -50,7 +44,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | automatic dependency inference | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | backward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
 | base.py | `dev/scripts/sbs/tests/README.md` | validators/ |
-| basevalidator | `dev/storage/README.md` | Creating Custom Validators |
 | before spawning any agent during execution phase | `CLAUDE.md` | Doing Mode Detection |
 | being tracked by the tools they're building | `dev/markdowns/living/README.md` | Why This Matters for Agents |
 | block | `toolchain/Runway/README.md` | LaTeX Parsing Modules |
@@ -74,20 +67,16 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | capture | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | capture: | `CLAUDE.md` | Standard Workflow |
 | centralized complexity | `toolchain/dress-blueprint-action/README.md` | Design Philosophy |
-| changed files list | `dev/storage/README.md` | What It Checks |
 | chapter pages | `toolchain/SBS-Test/README.md` | What to Inspect |
 | chapterinfo | `toolchain/Runway/README.md` | Module Architecture |
 | check results | `SBS-Test/checkResults.connected` | false (due to disconnected cycle) |
-| cli commands | `dev/storage/README.md` | What test-catalog Shows |
 | clone and rename: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | cmd.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
-| colon-delimited hierarchical format | `dev/storage/README.md` | Agent-State Tag Taxonomy (v2.0) |
 | color source of truth | `toolchain/dress-blueprint-action/README.md` | 6-Status Color Model |
 | color source of truth: | `CLAUDE.md` | Quick Reference |
 | commit inside the submodule: | `CLAUDE.md` | Submodule Commit Workflow |
 | complete feature coverage | `toolchain/SBS-Test/README.md` | Purpose |
 | complex analysis approach | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
-| concept index | `dev/storage/README.md` | What the Oracle Knows |
 | config | `toolchain/Runway/README.md` | Module Architecture |
 | configurable arguments: | `CLAUDE.md` | Oracle-First Approach |
 | configuration loading | `toolchain/Runway/README.md` | Processing Steps |
@@ -98,16 +87,11 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | core components: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | core palette | `toolchain/dress-blueprint-action/README.md` | CSS Variables |
 | core responsibilities: | `toolchain/Dress/README.md` | Overview |
-| cross-repo impact | `dev/storage/README.md` | What the Oracle Knows |
 | css (embedded in `highlightingstyle`): | `forks/verso/README.md` | 3. Rainbow Bracket Highlighting (`src/verso/Verso/Code/Highlighted.lean`) |
-| current score: | `dev/storage/README.md` | Quality Scoring |
 | dashboard | `toolchain/SBS-Test/README.md` | What to Inspect |
 | dashboard homepage | `toolchain/Runway/README.md` | Features |
 | dashboard stat discrepancies: | `toolchain/Runway/README.md` | Debugging Tips |
 | debug | `forks/sbs-lsp-mcp/README.md` | Environment Variables |
-| declarative rules | `dev/storage/README.md` | Auto-Tagging |
-| dep graph node click * | `storage/dep_graph_node_click_*.png` | Node modal views |
-| dep graph zoom * | `storage/dep_graph_zoom_*.png` | Zoom in/out/fit states |
 | dependency graph | `toolchain/SBS-Test/README.md` | What to Inspect |
 | depgraph.lean | `toolchain/Runway/README.md` | Key Module Details |
 | design/ | `dev/scripts/sbs/tests/README.md` | validators/ |
@@ -126,14 +110,10 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | dress-blueprint-action | `CLAUDE.md` | Repository Map |
 | during ci | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | environment lookup with suffix matching | `forks/subverso/README.md` | Identifier Resolution |
-| epoch | `dev/storage/README.md` | Epoch Semantics |
-| epoch summary structure: | `dev/storage/README.md` | Epoch Semantics |
-| evergreen | `dev/storage/README.md` | Test Organization System |
 | expected build time: | `toolchain/SBS-Test/README.md` | Local Development |
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
-| file purpose map | `dev/storage/README.md` | What the Oracle Knows |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | fork of [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect) | `forks/LeanArchitect/README.md` | LeanArchitect |
@@ -143,7 +123,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | github action | `toolchain/dress-blueprint-action/README.md` | Overview |
 | github integration | `forks/sbs-lsp-mcp/README.md` | Overview |
 | goal: | `CLAUDE.md` | Aggressive Delegation |
-| gotchas | `dev/storage/README.md` | What the Oracle Knows |
 | graceful degradation | `toolchain/Runway/README.md` | Design Principles |
 | graph | `toolchain/Runway/README.md` | Module Architecture |
 | graph layout | `toolchain/SBS-Test/README.md` | Testing Points |
@@ -155,7 +134,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | highlighting accounts for 93-99% of total build time | `forks/subverso/README.md` | Fork Purpose |
 | highlightstate | `toolchain/Dress/README.md` | SubVerso Integration |
 | how it works: | `toolchain/Runway/README.md` | Module Reference Support |
-| how-to patterns | `dev/storage/README.md` | What the Oracle Knows |
 | html generation | `toolchain/Runway/README.md` | Processing Steps |
 | if you act on a preference below and the user pushes back, say so explicitly. | `CLAUDE.md` | Meta-Cognitive Expectations |
 | implementation: | `forks/verso/README.md` | 3. Rainbow Bracket Highlighting (`src/verso/Verso/Code/Highlighted.lean`) |
@@ -197,10 +175,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | mathjax compatibility | `toolchain/Runway/README.md` | Design Principles |
 | mcp tool usage (via sbs-lsp-mcp): | `CLAUDE.md` | Quick Reference |
 | mcp tools | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
-| mcp tools (11) | `dev/storage/README.md` | What test-catalog Shows |
 | mediumpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | messages | `toolchain/Runway/README.md` | Dashboard (index.html) |
-| metricscore | `dev/storage/README.md` | Implementation |
 | minimal dependencies | `dev/scripts/sbs/core/README.md` | Design Principles |
 | module reference support | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | module references | `toolchain/Runway/README.md` | Features |
@@ -208,7 +184,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | multi-page chapter navigation | `toolchain/Runway/README.md` | Features |
 | multiagent concurrency: | `CLAUDE.md` | Orchestration Model |
 | myproject.chapter.module | `toolchain/Runway/README.md` | Module Reference Support |
-| naming: | `dev/storage/README.md` | Archive System |
 | never delete or replace a plan without explicit user direction. | `CLAUDE.md` | Planning Discipline |
 | new branches without upstream tracking | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
 | no circular dependencies | `dev/scripts/README.md` | Design Principles |
@@ -247,8 +222,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | part of the [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) monorepo. | `toolchain/Dress/README.md` | Overview |
 | pdf compilation | `toolchain/Runway/README.md` | Features |
 | pdf tex | `Runway/pdf_tex.html` | PDF viewer page with embedded PDF |
-| per-session data: | `dev/storage/README.md` | Rich Data Extraction |
-| per-snapshot aggregates: | `dev/storage/README.md` | Rich Data Extraction |
 | performance at scale | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | placeholder expansion | `toolchain/Runway/README.md` | Processing Steps |
 | placeholder system | `toolchain/Runway/README.md` | Key Development Patterns |
@@ -261,9 +234,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | project notes | `toolchain/Runway/README.md` | Dashboard (index.html) |
 | proof dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
 | prototype status | `toolchain/Runway/README.md` | Runway |
-| pytest tests | `dev/storage/README.md` | What test-catalog Shows |
-| python hooks | `dev/storage/README.md` | Auto-Tagging |
-| qualityscoreledger | `dev/storage/README.md` | Implementation |
 | question analysis | `forks/sbs-lsp-mcp/README.md` | Overview |
 | rainbow bracket highlighting | `forks/verso/README.md` | Fork Purpose |
 | rainbow brackets | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
@@ -281,7 +251,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | rubric.py | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubriccriterion | `dev/scripts/sbs/tests/README.md` | rubrics/ |
 | rubricevaluation | `dev/scripts/sbs/tests/README.md` | rubrics/ |
-| run from: | `dev/storage/README.md` | Quick Reference |
 | runway | `CLAUDE.md` | Repository Map |
 | runway.json | `toolchain/dress-blueprint-action/README.md` | Project Requirements |
 | runway/assets.lean | `toolchain/Runway/README.md` | Module Architecture |
@@ -325,7 +294,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | site output | `toolchain/SBS-Test/README.md` | Testing Points |
 | sitebuilder | `toolchain/Runway/README.md` | Module Architecture |
 | skill management | `forks/sbs-lsp-mcp/README.md` | Overview |
-| skill substates: | `dev/storage/README.md` | State Machine Fields |
 | skills | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | soundness guarantee: | `toolchain/Runway/README.md` | manifest.json Schema |
 | statement dependencies | `forks/LeanArchitect/README.md` | Dependency Inference |
@@ -338,7 +306,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | subverso: | `forks/verso/README.md` | Dependencies |
 | template | `toolchain/Runway/README.md` | Key Module Details |
 | template for new projects | `toolchain/SBS-Test/README.md` | Purpose |
-| temporary | `dev/storage/README.md` | Test Organization System |
 | terence tao | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | terence tao, january 2026 | `toolchain/dress-blueprint-action/README.md` | Motivation |
 | test_cli.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
@@ -355,7 +322,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | these preferences guide all decision-making, planning, and actions. follow them unless the user explicitly directs otherwise. | `CLAUDE.md` | User Preferences |
 | this is a fork of the original [pnt+](https://github.com/alexkontorovich/primenumbertheoremand) project with [side-by-side blueprint](https://github.com/e-vergo/side-by-side-blueprint) integration. | `showcase/PrimeNumberTheoremAnd/README.md` |  |
 | this is lean software development, not proof writing. | `CLAUDE.md` | Project Context |
-| this is the central reference for all monorepo tooling. | `dev/storage/README.md` | Side-by-Side Blueprint: Archive & Tooling Hub |
 | this monorepo is the primary location for development of the side-by-side blueprint project. | `dev/markdowns/living/README.md` | Side-by-Side Blueprint Monorepo |
 | three parallel approaches: | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | timing breakdown | `toolchain/Dress/README.md` | Phase 1: Per-Declaration Capture (During Elaboration) |
@@ -371,8 +337,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | track | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | traversem | `toolchain/Runway/README.md` | Module Architecture |
 | two-pass edge processing: | `toolchain/Dress/README.md` | Phase 3: Manifest Generation (CLI) |
-| uncommitted changes | `dev/storage/README.md` | What It Checks |
-| unpushed commits | `dev/storage/README.md` | What It Checks |
 | up to 4 concurrent `sbs-developer` agents | `CLAUDE.md` | Orchestration Model |
 | update configuration: | `toolchain/SBS-Test/README.md` | Using as a Template |
 | update imports: | `toolchain/SBS-Test/README.md` | Using as a Template |
@@ -388,7 +352,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | validation checks | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | validation display | `toolchain/Runway/README.md` | Features |
 | validation testing | `toolchain/SBS-Test/README.md` | Purpose |
-| validationcontext | `dev/storage/README.md` | Validator Runner |
 | validationresult | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validator | `dev/scripts/sbs/tests/README.md` | validators/ |
 | validators | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
@@ -403,7 +366,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | visual verification is mandatory for ui work. | `CLAUDE.md` | Visual Verification Requirement |
 | weakpnt | `showcase/PrimeNumberTheoremAnd/README.md` | Project Overview |
 | what constitutes "multiagent behavior": | `CLAUDE.md` | Multiagent Behavior Definition |
-| what gets backed up: | `dev/storage/README.md` | iCloud Sync |
 | what it does: | `toolchain/Runway/README.md` | build (default) |
 | what runway does not do: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | what to explore: | `showcase/General_Crystallographic_Restriction/README.md` | The Crystallographic Restriction Theorem |
@@ -535,22 +497,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | `dev/markdowns/permanent/GRAND_VISION.md` | SBS in the age of AI-assisted mathematics |
 | `dev/storage/TEST_CATALOG.md` | Auto-generated testable components catalog |
 
-### storage
-
-| File | Purpose |
-|------|---------|
-| `dev/scripts/sbs/labels/__init__.py` | Taxonomy loader, validator, color lookup |
-| `dev/scripts/sbs/labels/sync.py` | GitHub label sync (create/update, never delete) |
-| `dev/scripts/sbs/tests/pytest/test_taxonomy.py` | Taxonomy tests (evergreen tier) |
-| `dev/storage/taxonomy.yaml` | Unified taxonomy (issues + archive, v3.0) |
-| `ledger.py` | `QualityScoreLedger`, `MetricScore`, persistence |
-| `reset.py` | Repo-change detection, metric invalidation |
-| `tagging/hooks/outcome_tagger.py` | Outcome classification hook |
-| `tagging/hooks/session_profiler.py` | Session behavioral profiling hook |
-| `tagging/hooks/signal_detector.py` | Anomaly detection hook |
-| `tagging/rules.yaml` | 50 declarative rules mapping fields to tags |
-| `taxonomy.yaml` | Unified taxonomy (27 dimensions, 243 entries; archive tags filtered by `contexts`) |
-
 ### subverso
 
 | File | Purpose |
@@ -594,15 +540,6 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 2. Chapter list auto-expands only when `data-blueprint-page` attribute is on `<body>`
 3. Check `currentSlug` matches a chapter slug
 4. Verify `chapters` array is populated
-
-</details>
-
-<details>
-<summary><strong>Creating Custom Validators</strong></summary>
-
-See `scripts/sbs/tests/validators/base.py` for the `BaseValidator` class and `@register_validator` decorator.
-
----
 
 </details>
 
