@@ -35,6 +35,8 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | agents | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | alex kontorovich | `showcase/PrimeNumberTheoremAnd/README.md` | Original PNT+ Project |
 | always use `python build.py` for builds | `CLAUDE.md` | Standards |
+| approach | `CLAUDE.md` | Standard Header Taxonomy |
+| architecture | `CLAUDE.md` | Standard Header Taxonomy |
 | archive inspection | `forks/sbs-lsp-mcp/README.md` | Overview |
 | archive system | `dev/markdowns/living/README.md` | 2. Meta-Tooling Development |
 | at least | `toolchain/SBS-Test/README.md` | Motivation: The Tao Incident |
@@ -80,6 +82,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | config | `toolchain/Runway/README.md` | Module Architecture |
 | configurable arguments: | `CLAUDE.md` | Oracle-First Approach |
 | configuration loading | `toolchain/Runway/README.md` | Processing Steps |
+| confirm | `CLAUDE.md` | Standard Header Taxonomy |
 | conftest.py | `dev/scripts/sbs/tests/README.md` | pytest/ |
 | connectivity validation | `showcase/PrimeNumberTheoremAnd/README.md` | What This Fork Demonstrates |
 | containment search | `forks/subverso/README.md` | Identifier Resolution |
@@ -114,9 +117,11 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | expected layout times: | `toolchain/Dress/README.md` | Performance Characteristics |
 | fast iteration | `toolchain/SBS-Test/README.md` | Purpose |
 | feature set: | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
+| finalize | `CLAUDE.md` | Standard Header Taxonomy |
 | for full upstream documentation, see [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect). | `forks/LeanArchitect/README.md` | LeanArchitect |
 | for local development | `toolchain/dress-blueprint-action/README.md` | Asset Integration |
 | fork of [hanwenzhu/leanarchitect](https://github.com/hanwenzhu/leanarchitect) | `forks/LeanArchitect/README.md` | LeanArchitect |
+| format | `CLAUDE.md` | Standard Header Taxonomy |
 | forward direction: | `showcase/General_Crystallographic_Restriction/README.md` | Proof Strategy |
 | general crystallographic restriction | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | git ops | `scripts/git_ops.py` | Git status, diff, and sync operations |
@@ -153,6 +158,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | large-scale integration | `showcase/PrimeNumberTheoremAnd/README.md` | Related Projects |
 | large-scale integration example | `showcase/PrimeNumberTheoremAnd/README.md` | Side-by-Side Blueprint Integration |
 | latex parsing | `toolchain/Runway/README.md` | Processing Steps |
+| layout | `CLAUDE.md` | Standard Header Taxonomy |
 | lean source skip: | `CLAUDE.md` | Direct Build Script Usage |
 | lean: | `forks/verso/README.md` | Dependencies |
 | leanarchitect | `CLAUDE.md` | Repository Map |
@@ -183,6 +189,7 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | motivation: | `toolchain/Dress/README.md` | Connectivity (`findComponents`) |
 | multi-page chapter navigation | `toolchain/Runway/README.md` | Features |
 | multiagent concurrency: | `CLAUDE.md` | Orchestration Model |
+| multiselect guidance: | `CLAUDE.md` | AskUserQuestion Best Practices |
 | myproject.chapter.module | `toolchain/Runway/README.md` | Module Reference Support |
 | never delete or replace a plan without explicit user direction. | `CLAUDE.md` | Planning Discipline |
 | new branches without upstream tracking | `CLAUDE.md` | Git Push Restriction (Archival-First Design) |
@@ -277,11 +284,13 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | sbs-lsp-mcp | `CLAUDE.md` | Repository Map |
 | sbs-test | `CLAUDE.md` | Repository Map |
 | sbsblueprint | `forks/verso/README.md` | Fork Purpose |
+| scope | `CLAUDE.md` | Standard Header Taxonomy |
 | screenshot capture is the first reflex for any visual/css/layout issue. | `CLAUDE.md` | Visual Testing |
 | screenshots: | `toolchain/SBS-Test/README.md` | Archive & Metrics |
 | sectioninfo | `toolchain/Runway/README.md` | Module Architecture |
 | security testing | `toolchain/SBS-Test/README.md` | Purpose |
 | see: | `toolchain/SBS-Test/README.md` | Run compliance validation |
+| select | `CLAUDE.md` | Standard Header Taxonomy |
 | self-improve analysis | `forks/sbs-lsp-mcp/README.md` | Overview |
 | side-by-side blueprint | `showcase/General_Crystallographic_Restriction/README.md` | Attribution |
 | side-by-side blueprint tool | `dev/markdowns/living/README.md` | 1. Tool Development |
@@ -344,11 +353,14 @@ Answer codebase questions without file reads. Flag uncertainty explicitly.
 | upstream dependencies: | `toolchain/Runway/README.md` | Role in the Toolchain |
 | upstream: | `forks/subverso/README.md` | SubVerso (Side-by-Side Blueprint Fork) |
 | usage: | `CLAUDE.md` | `/log` |
+| use askuserquestion when: | `CLAUDE.md` | AskUserQuestion Best Practices |
+| use freeform when: | `CLAUDE.md` | AskUserQuestion Best Practices |
 | user preferences: | `CLAUDE.md` | How This Document Works |
 | uses `sbs.core.git_ops` | `dev/scripts/sbs/build/README.md` | Design Notes |
 | utils | `scripts/utils.py` | Logging, path utilities, git helpers, lakefile parsing |
 | validate | `dev/scripts/sbs/tests/compliance/README.md` | Workflow |
 | validate: | `CLAUDE.md` | Standard Workflow |
+| validation | `CLAUDE.md` | Standard Header Taxonomy |
 | validation checks | `showcase/General_Crystallographic_Restriction/README.md` | Documentation Toolchain |
 | validation display | `toolchain/Runway/README.md` | Features |
 | validation testing | `toolchain/SBS-Test/README.md` | Purpose |
