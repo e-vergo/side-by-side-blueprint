@@ -442,6 +442,56 @@ When doing mode is detected:
 
 ---
 
+### Structured User Interactions
+
+#### AskUserQuestion Best Practices
+
+**Use AskUserQuestion when:**
+- Decision has 2-4 clear options
+- User preference will inform future similar decisions
+- Consistency is important (e.g., scope, approach, gate selection)
+- Binary confirmation needed
+
+**Use freeform when:**
+- Response requires creativity/nuance
+- Options aren't enumerable
+- User is describing something new
+
+**multiSelect guidance:**
+- Use for "select all that apply" questions
+- Phrase appropriately ("Which X do you want?" not "What X do you want?")
+- Limit to related options within same category
+
+#### Standard Header Taxonomy
+
+Use these headers for common question types to enable preference aggregation:
+
+| Header | Use For |
+|--------|---------|
+| `Confirm` | Binary yes/no, approval |
+| `Scope` | Task/feature boundaries |
+| `Approach` | Strategy selection |
+| `Select` | Priority/choice from list |
+| `Finalize` | Completion confirmation |
+| `Validation` | Gates, tests, criteria |
+| `Next Step` | What happens next |
+| `Layout` | Visual arrangement |
+| `Format` | Output style |
+| `Architecture` | Design decisions |
+
+Avoid ad-hoc headers like "Scope check" or "Task scope". Use the standard header "Scope" to enable preference aggregation.
+
+#### Skill Preamble Injection Pattern
+
+When starting a skill that benefits from preference context:
+1. Query `sbs_question_stats(skill="<skill>")` for top user selections
+2. Query `sbs_question_analysis(skill="<skill>", limit=5)` for recent patterns
+3. Inject insights into agent prompts or pre-populate likely options
+
+Example: For `/task`, if user historically selects "All gates" 80% of the time, pre-check that option.
+
+---
+
 ### Planning Discipline
 
 - **Never delete or replace a plan without explicit user direction.** Default behavior is to update the current plan or append to it.
