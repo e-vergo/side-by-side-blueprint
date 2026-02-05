@@ -35,6 +35,7 @@ from sbs_lsp_mcp.duckdb_layer import DuckDBLayer
 from sbs_lsp_mcp.file_utils import get_file_contents
 from sbs_lsp_mcp.instructions import INSTRUCTIONS
 from sbs_lsp_mcp.sbs_tools import register_sbs_tools
+from sbs_lsp_mcp.skill_tools import register_skill_tools
 from sbs_lsp_mcp.loogle import LoogleManager, loogle_remote
 from sbs_lsp_mcp.models import (
     AttemptResult,
@@ -260,6 +261,9 @@ mcp = FastMCP(**mcp_kwargs)
 
 # Register SBS-specific tools
 register_sbs_tools(mcp)
+
+# Register skill-level tools (task, log, qa, introspect, converge, etc.)
+register_skill_tools(mcp)
 
 # Register Zulip browsing tools (if enabled)
 if os.environ.get("ZULIP_ENABLED", "").lower() in ("1", "true", "yes"):
