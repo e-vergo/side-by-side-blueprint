@@ -3077,9 +3077,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 "execution": {"finalization"},
             },
             "update-and-archive": {
-                "retrospective": {"readme-wave"},
-                "readme-wave": {"oracle-regen"},
-                "oracle-regen": {"porcelain"},
+                "retrospective": {"porcelain"},
                 "porcelain": {"archive-upload"},
             },
         }

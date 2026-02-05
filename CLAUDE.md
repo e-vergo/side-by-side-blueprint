@@ -237,68 +237,77 @@ python -m sbs design-check --project SBSTest
 
 ---
 
-## Custom Skills
+## Skill MCP Tools
 
-### `/task`
+Skills are implemented as MCP tools in `sbs-lsp-mcp`. Invoke via slash commands or direct MCP tool calls.
 
-General-purpose agentic task execution with validation. Invoke manually.
+### `sbs_task` (`/task`)
 
-**Workflow:** Alignment (Q&A) -> Planning -> Execution -> Finalization -> /update-and-archive
+General-purpose agentic task execution with validation.
+
+**Workflow:** Alignment (Q&A) -> Planning -> Execution -> Finalization -> update-and-archive
 
 **PR Integration:** Creates a PR at plan approval (for configured repos), merges at finalization. Tracks PR numbers in archive entries.
 
-Accepts issue numbers: `/task #42` loads issue context and prompts to close on completion.
+**Arguments:**
+- `issue_refs`: Optional list of GitHub issue numbers to load context from
+- `description`: Optional task description
 
-**Location:** `.claude/skills/task/SKILL.md`
-
-### `/log`
+### `sbs_log` (`/log`)
 
 Quick capture of bugs, features, and ideas to GitHub Issues.
 
-**Usage:** `/log <description>` - parses input, infers type, asks for missing details.
+**Arguments:**
+- `description`: Issue description (parsed for type/area inference)
+- `label`: Optional explicit type label (bug, feature, idea)
+- `area`: Optional explicit area label
 
-**Location:** `.claude/skills/log/SKILL.md`
+### `sbs_qa` (`/qa`)
 
-### `/qa`
+Live interactive QA against a running SBS blueprint site. Browser-driven visual and interactive verification.
 
-Live interactive QA against a running SBS blueprint site. Browser-driven visual and interactive verification using compliance criteria and the test catalog.
-
-**Usage:** `/qa`, `/qa SBSTest`, or `/qa SBSTest dashboard dep_graph`
+**Arguments:**
+- `project`: Project name (SBSTest, GCR, PNT)
+- `pages`: Optional list of specific pages to check
 
 **Workflow:** Setup (ensure server, navigate) -> Review (per-page checks) -> Report (structured findings)
 
-**Location:** `.claude/skills/qa/SKILL.md`
-
-### `/update-and-archive`
+### `sbs_update_and_archive` (`/update-and-archive`)
 
 Documentation refresh and porcelain state. Runs automatically at end of `/task`.
 
-**Location:** `.claude/skills/update-and-archive/SKILL.md`
+**Workflow:** Retrospective -> README wave -> Oracle regen -> Porcelain -> Archive upload
 
-### `/introspect`
+### `sbs_introspect` (`/introspect`)
 
 Introspection and self-improvement across hierarchy levels.
 
-**Usage:**
-- `/introspect 2` -- L2 self-improvement cycle (discovery, selection, dialogue, logging, archive)
-- `/introspect 2 --dry-run` -- Discovery only, no issue creation
-- `/introspect 3` -- Reads L2 summaries, produces L3 meta-analysis
-- `/introspect N` -- Reads L(N-1) documents, produces L(N) meta-analysis (N >= 3)
+**Arguments:**
+- `level`: Hierarchy level (2 for L2 self-improvement, 3+ for meta-analysis)
+- `dry_run`: If true, discovery only without issue creation
 
 **Workflow (L2):** Discovery -> Selection -> Dialogue -> Logging -> Archive
 **Workflow (L3+):** Ingestion -> Synthesis -> Archive
 
-**Location:** `.claude/skills/introspect/SKILL.md`
+### `sbs_converge` (`/converge`)
 
-### `/converge`
+Autonomous QA convergence loop with in-loop introspection.
 
-Autonomous QA convergence loop with in-loop introspection. Runs QA evaluation, fixes failures, reflects on outcomes, rebuilds, and repeats until 100% pass rate or max iterations (default: 3). Hands off to L3 meta-analysis on completion.
+**Arguments:**
+- `project`: Project name (SBSTest, GCR, PNT)
+- `max_iterations`: Maximum fix iterations (default: 3)
 
-**Usage:** `/converge GCR`, `/converge SBSTest`, `/converge PNT --max-iter 5`
+**Workflow:** Setup -> [Eval -> Fix -> Introspect -> Rebuild]xN -> Report -> L3
 
-**Workflow:** Setup → [Eval → Fix → Introspect → Rebuild]×N → Report → L3
+### `sbs_divination`
 
-**Location:** `.claude/skills/converge/SKILL.md`
+Forecasting tool for predicting test outcomes and system behavior.
+
+**Arguments:**
+- `question`: Natural language question about expected outcomes
+- `context`: Optional additional context
+
+**Archived SKILL.md files:** Original prompt-based skill definitions preserved at `dev/skills/archive/`
 
 ---
 
@@ -367,6 +376,17 @@ For implementation details, file locations, and build internals, see:
 | `sbs_comparative_analysis` | Compare session characteristics |
 | `sbs_system_health` | System health metrics |
 | `sbs_user_patterns` | User interaction patterns |
+
+*Skill Tools (invoke via slash commands or MCP):*
+| Tool | Use For |
+|------|---------|
+| `sbs_task` | General-purpose task execution with validation |
+| `sbs_log` | Quick capture of issues/ideas to GitHub |
+| `sbs_qa` | Live interactive QA against blueprint site |
+| `sbs_introspect` | Self-improvement across hierarchy levels |
+| `sbs_converge` | Autonomous QA convergence loop |
+| `sbs_update_and_archive` | Documentation refresh and porcelain state |
+| `sbs_divination` | Forecasting test outcomes and system behavior |
 
 ---
 

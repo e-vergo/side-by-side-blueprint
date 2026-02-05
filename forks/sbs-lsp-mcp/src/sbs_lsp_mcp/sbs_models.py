@@ -1151,3 +1151,149 @@ class InspectResult(BaseModel):
     pages_with_screenshots: int = Field(
         default=0, description="Pages that have screenshot files"
     )
+
+
+# =============================================================================
+# Skill Tool Result Models
+# =============================================================================
+
+
+class TaskResult(BaseModel):
+    """Result from sbs_task skill tool invocation."""
+
+    success: bool = Field(description="Whether the phase completed successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    phase_completed: Optional[str] = Field(
+        None, description="Phase that was completed (start, plan, execute, finalize)"
+    )
+    next_action: Optional[str] = Field(
+        None, description="Suggested next action for the orchestrator"
+    )
+    gate_results: List[str] = Field(
+        default_factory=list, description="Gate validation results (passed checks)"
+    )
+    gate_failures: List[str] = Field(
+        default_factory=list, description="Gate validation failures"
+    )
+    requires_approval: bool = Field(
+        default=False, description="Whether user approval is needed before proceeding"
+    )
+    pr_number: Optional[int] = Field(
+        None, description="PR number if one was created"
+    )
+    issue_refs: List[int] = Field(
+        default_factory=list, description="Associated GitHub issue numbers"
+    )
+    agents_to_spawn: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Agent spawn specifications for execution phase"
+    )
+
+
+class LogResult(BaseModel):
+    """Result from sbs_log skill tool invocation."""
+
+    success: bool = Field(description="Whether the issue was created successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    issue_number: Optional[int] = Field(None, description="Created issue number")
+    issue_url: Optional[str] = Field(None, description="Created issue URL")
+    labels_applied: List[str] = Field(
+        default_factory=list, description="Labels that were applied to the issue"
+    )
+
+
+class QAResult(BaseModel):
+    """Result from sbs_qa skill tool invocation."""
+
+    success: bool = Field(description="Whether the QA phase completed successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    phase_completed: Optional[str] = Field(
+        None, description="Phase that was completed (setup, review, report)"
+    )
+    page_status: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Status per page: page_name -> 'pass' | 'fail' | 'warn'",
+    )
+    issues_logged: List[int] = Field(
+        default_factory=list, description="Issue numbers created during QA"
+    )
+
+
+class IntrospectResult(BaseModel):
+    """Result from sbs_introspect skill tool invocation."""
+
+    success: bool = Field(description="Whether the introspection phase completed")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    level: int = Field(default=2, description="Introspection level (2, 3, etc.)")
+    phase_completed: Optional[str] = Field(
+        None,
+        description="Phase completed (discovery, selection, dialogue, logging, archive for L2)",
+    )
+    findings_count: int = Field(
+        default=0, description="Number of findings/observations captured"
+    )
+    issues_created: List[int] = Field(
+        default_factory=list, description="Issue numbers created during introspection"
+    )
+
+
+class ConvergeResult(BaseModel):
+    """Result from sbs_converge skill tool invocation."""
+
+    success: bool = Field(description="Whether the convergence phase completed")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    phase_completed: Optional[str] = Field(
+        None, description="Phase completed (setup, eval, fix, introspect, rebuild, report)"
+    )
+    iteration: int = Field(default=0, description="Current iteration number")
+    pass_rate: float = Field(
+        default=0.0, description="Current QA pass rate (0.0-1.0)"
+    )
+    pass_rate_history: List[float] = Field(
+        default_factory=list, description="Pass rate at each iteration"
+    )
+    exit_reason: Optional[str] = Field(
+        None,
+        description="Why convergence stopped: 'converged', 'plateau', 'max_iterations', 'build_failure'",
+    )
+
+
+class UpdateArchiveResult(BaseModel):
+    """Result from sbs_update_and_archive skill tool invocation."""
+
+    success: bool = Field(description="Whether the phase completed successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    phase_completed: Optional[str] = Field(
+        None, description="Phase completed (retrospective, porcelain, upload)"
+    )
+    retrospective_written: bool = Field(
+        default=False, description="Whether retrospective document was written"
+    )
+    repos_committed: List[str] = Field(
+        default_factory=list, description="Repos that were committed during porcelain"
+    )
+    archive_entry_id: Optional[str] = Field(
+        None, description="Archive entry ID from upload phase"
+    )
+
+
+class DivinationResult(BaseModel):
+    """Result from sbs_divination tool invocation."""
+
+    success: bool = Field(description="Whether divination completed successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    query: str = Field(default="", description="The query that was processed")
+    files_explored: List[Dict[str, str]] = Field(
+        default_factory=list,
+        description="Files explored: [{path, relevance, summary}]",
+    )
+    patterns: List[str] = Field(
+        default_factory=list,
+        description="Patterns/conventions identified from exploration",
+    )
+    archive_context: Optional[Dict[str, Any]] = Field(
+        None, description="Relevant archive context for the query"
+    )
+    suggestions: List[str] = Field(
+        default_factory=list,
+        description="Actionable suggestions based on exploration",
+    )
