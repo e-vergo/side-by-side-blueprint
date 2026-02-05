@@ -1821,7 +1821,12 @@ class DuckDBLayer:
         )
 
     def _correlate_question_with_skill(self, timestamp: Optional[str]) -> tuple[Optional[str], Optional[str]]:
-        """Find active skill/substate at a given timestamp using skill_intervals view."""
+        """Find active skill/substate at a given timestamp.
+
+        Uses the most recent archive entry with a skill before or at the given
+        timestamp. This approach handles gaps between substates correctly,
+        unlike the skill_intervals view which only covers exact entry times.
+        """
         if not timestamp:
             return None, None
         assert self._conn is not None
@@ -1832,11 +1837,20 @@ class DuckDBLayer:
         except (ValueError, TypeError):
             return None, None
 
+        # Archive entries are stored as naive UTC timestamps. Strip timezone
+        # from the question timestamp to ensure correct comparison in DuckDB.
+        # Without this, DuckDB treats naive timestamps as local time, causing
+        # a timezone offset mismatch.
+        if ts.tzinfo is not None:
+            ts = ts.replace(tzinfo=None)
+
+        # Find the most recent entry with a skill that was recorded before or
+        # at this timestamp. This gives us the skill/substate that was active.
         row = self._conn.execute("""
-            SELECT skill, substate FROM skill_intervals
-            WHERE start_ts <= ? AND (end_ts IS NULL OR ? <= end_ts)
-            ORDER BY start_ts DESC LIMIT 1
-        """, [ts, ts]).fetchone()
+            SELECT gs_skill, gs_substate FROM entries
+            WHERE gs_skill IS NOT NULL AND created_at <= ?
+            ORDER BY created_at DESC LIMIT 1
+        """, [ts]).fetchone()
 
         if row:
             return row[0], row[1]
