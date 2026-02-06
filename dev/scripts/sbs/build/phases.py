@@ -6,7 +6,6 @@ Individual build operations that can be orchestrated together.
 
 from __future__ import annotations
 
-import os
 import re
 import shutil
 import subprocess
@@ -179,17 +178,19 @@ def fetch_mathlib_cache(project_root: Path, dry_run: bool = False) -> None:
 
 
 def build_project_with_dress(project_root: Path, dry_run: bool = False) -> None:
-    """Build the Lean project with dressed artifacts (BLUEPRINT_DRESS=1)."""
+    """Build the Lean project with dressed artifacts.
+
+    Dress artifact writing is now unconditional for @[blueprint] declarations,
+    so no BLUEPRINT_DRESS env var is needed. This function is kept with its
+    original name for backward compatibility with the orchestrator.
+    """
     if dry_run:
-        log.info("[DRY-RUN] Would run: BLUEPRINT_DRESS=1 lake build")
+        log.info("[DRY-RUN] Would run: lake build")
         return
 
-    env = os.environ.copy()
-    env["BLUEPRINT_DRESS"] = "1"
     subprocess.run(
         ["lake", "build"],
         cwd=project_root,
-        env=env,
         check=True,
     )
 

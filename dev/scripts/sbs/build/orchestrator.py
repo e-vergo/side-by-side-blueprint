@@ -631,7 +631,7 @@ class BuildOrchestrator:
                 save_lean_hash(self.config.cache_dir, name, lean_hash)
 
     def build_project(self) -> None:
-        """Build the project with dressed artifacts (legacy method for compatibility)."""
+        """Build the project (legacy method for compatibility)."""
         log.header("Fetching mathlib cache")
         fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
 
@@ -816,14 +816,14 @@ class BuildOrchestrator:
         return True
 
     def _build_project_internal(self) -> None:
-        """Build the Lean project with dressed artifacts (without cache fetch or blueprint)."""
+        """Build the Lean project (artifact writing is unconditional for @[blueprint] decls)."""
         if not self._needs_project_build():
             log.info("Skipping project build: Lean sources unchanged")
             return
 
-        log.header("Building Lean project with dressed artifacts")
+        log.header("Building Lean project")
         build_project_with_dress(self.config.project_root, self.config.dry_run)
-        log.success("Project built with dressed artifacts")
+        log.success("Project built")
 
         # Record Lean hash for future skip detection
         lean_hash = get_lean_sources_hash(self.config.project_root)
