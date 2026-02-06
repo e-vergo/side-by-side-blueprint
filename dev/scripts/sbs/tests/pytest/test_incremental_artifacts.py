@@ -21,16 +21,11 @@ Behavioral model:
   - Cross-module isolation: changes to one module do not affect artifacts in
     other modules.
 
-Note on BLUEPRINT_DRESS: Until SBS-Test's lake-manifest.json is updated to
-reference a Dress version with always-active hooks (#247), BLUEPRINT_DRESS=1
-must be set for artifact generation. This test sets it in the build environment.
-
 Test tier: dev (involves full Lake builds, ~30-90s each)
 """
 
 from __future__ import annotations
 
-import os
 import subprocess
 import time
 from pathlib import Path
@@ -61,10 +56,10 @@ BLUEPRINT_LEAN_PATH = SBS_TEST_ROOT / "SBSTest" / "Blueprint.lean"
 
 
 def lake_build(cwd: Path, timeout: int = 300) -> subprocess.CompletedProcess[str]:
-    """Run `lake build` with BLUEPRINT_DRESS=1 in the given directory.
+    """Run `lake build` in the given directory.
 
-    Sets BLUEPRINT_DRESS=1 to enable artifact generation (required until
-    SBS-Test's manifest references always-active Dress).
+    Dress hooks are always-active (#247), so no special environment
+    variables are needed for artifact generation.
 
     Args:
         cwd: Working directory (should contain lakefile.toml)
@@ -76,15 +71,12 @@ def lake_build(cwd: Path, timeout: int = 300) -> subprocess.CompletedProcess[str
     Raises:
         subprocess.TimeoutExpired: If build exceeds timeout
     """
-    env = os.environ.copy()
-    env["BLUEPRINT_DRESS"] = "1"
     result = subprocess.run(
         ["lake", "build"],
         cwd=cwd,
         capture_output=True,
         text=True,
         timeout=timeout,
-        env=env,
     )
     return result
 
@@ -163,7 +155,7 @@ def artifacts_for_module(mtimes: dict[str, float], module_name: str) -> dict[str
 
 @pytest.fixture(scope="module")
 def baseline_build() -> None:
-    """Ensure SBS-Test has a clean BLUEPRINT_DRESS=1 build before incremental tests.
+    """Ensure SBS-Test has a clean build before incremental tests.
 
     This runs once per test module (scope="module") and establishes
     the baseline state that all tests build upon. It must produce
