@@ -63,6 +63,8 @@ Examples:
   sbs labels list                # Show label taxonomy tree
   sbs labels sync --dry-run      # Preview GitHub label sync
   sbs labels validate bug:visual # Validate label names
+  sbs watch --project SBSTest    # Watch for changes and regenerate
+  sbs dev --project SBSTest      # Dev server with live reload
         """,
     )
 
@@ -671,6 +673,69 @@ Examples:
         help="Filter pytest tests by tier",
     )
 
+    # --- watch ---
+    watch_parser = subparsers.add_parser(
+        "watch",
+        help="Watch for changes and incrementally regenerate site",
+        description="Monitor files for changes and trigger minimal regeneration.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Change types and actions:
+  CSS/JS assets       -> Copy to _site (instant)
+  Dressed artifacts   -> Regenerate affected pages
+  Runway templates    -> Full page regeneration
+  Graph topology      -> Re-layout graph + regen pages
+  Status-only change  -> Recolor graph nodes
+  runway.json         -> Full rebuild
+
+Examples:
+  sbs watch --project SBSTest          # Watch with default port
+  sbs watch --project GCR --port 9000  # Custom port
+        """,
+    )
+    watch_parser.add_argument(
+        "--project",
+        required=True,
+        help="Project name (SBSTest, GCR, PNT) or path to project directory",
+    )
+    watch_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for dev server (default: 8000)",
+    )
+
+    # --- dev ---
+    dev_parser = subparsers.add_parser(
+        "dev",
+        help="Dev server with HTTP serving, file watching, and WebSocket live reload",
+        description="Combined dev server: serves the site, watches for changes, and pushes live reloads to connected browsers.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+HTTP server injects a small script into HTML responses that connects
+to a WebSocket server. When file changes trigger regeneration, all
+connected browsers are notified to reload.
+
+  CSS-only changes  -> Hot-swap stylesheets (no full reload)
+  Everything else   -> Full page reload
+
+Examples:
+  sbs dev --project SBSTest          # Default port 8000, WS on 8001
+  sbs dev --project GCR --port 9000  # HTTP on 9000, WS on 9001
+        """,
+    )
+    dev_parser.add_argument(
+        "--project",
+        required=True,
+        help="Project name (SBSTest, GCR, PNT) or path to project directory",
+    )
+    dev_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for HTTP server (default: 8000). WebSocket uses port+1.",
+    )
+
     return parser
 
 
@@ -1001,6 +1066,14 @@ def main(argv: list[str] | None = None) -> int:
 
         elif args.command == "test-catalog":
             return cmd_test_catalog(args)
+
+        elif args.command == "watch":
+            from sbs.commands.watch import cmd_watch
+            return cmd_watch(args)
+
+        elif args.command == "dev":
+            from sbs.commands.dev import cmd_dev
+            return cmd_dev(args)
 
         else:
             log.error(f"Unknown command: {args.command}")
