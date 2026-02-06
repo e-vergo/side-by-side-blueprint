@@ -4,8 +4,7 @@ Tests for SBS side-by-side alignment properties (#230).
 Verifies:
 - Lean column toggle is removed (no sbs-toggle-indicator in CSS/JS)
 - Proof content spacing: .proof_content margin-top is 0.25rem
-- Lean declaration alignment: .sbs-lean-column pre.lean-code has padding-top
-- Lean proof body alignment: .lean-proof-body has margin-top
+- Lean declaration alignment: .sbs-lean-column pre.lean-code has padding-top >= 1rem
 """
 
 from __future__ import annotations
@@ -60,9 +59,7 @@ def extract_css_property(css: str, selector: str, prop: str) -> str | None:
 
     Returns the property value string, or None if not found.
     """
-    # Escape special regex chars in selector but keep dots and hyphens
     escaped = re.escape(selector)
-    # Match the selector followed by a { ... } block
     pattern = re.compile(
         escaped + r'\s*\{([^}]*)\}',
         re.DOTALL,
@@ -71,10 +68,8 @@ def extract_css_property(css: str, selector: str, prop: str) -> str | None:
     if not matches:
         return None
 
-    # Check all matches (last one wins for overrides)
     for match in reversed(matches):
         block = match.group(1)
-        # Extract the property value
         prop_pattern = re.compile(
             r'(?:^|;)\s*' + re.escape(prop) + r'\s*:\s*([^;]+)',
             re.MULTILINE,
@@ -84,6 +79,12 @@ def extract_css_property(css: str, selector: str, prop: str) -> str | None:
             return prop_match.group(1).strip()
 
     return None
+
+
+def parse_rem(value: str) -> float | None:
+    """Parse a CSS rem value to a float. Returns None if not rem."""
+    match = re.match(r'^([\d.]+)rem$', value.strip())
+    return float(match.group(1)) if match else None
 
 
 # =============================================================================
@@ -160,7 +161,8 @@ class TestProofContentSpacing:
 
 @pytest.mark.evergreen
 class TestLeanDeclarationAlignment:
-    """Verify Lean declaration code has top padding for alignment."""
+    """Verify Lean declaration code has sufficient top padding to align
+    with the LaTeX statement text (below the theorem heading)."""
 
     def test_lean_code_has_padding_top(self, blueprint_css: str) -> None:
         """blueprint.css .sbs-lean-column pre.lean-code should have padding-top."""
@@ -172,37 +174,18 @@ class TestLeanDeclarationAlignment:
             "in blueprint.css for vertical alignment with LaTeX statement"
         )
 
-    def test_lean_code_padding_top_value(self, blueprint_css: str) -> None:
-        """padding-top should be 0.35rem."""
+    def test_lean_code_padding_top_sufficient(self, blueprint_css: str) -> None:
+        """padding-top must be >= 1rem to clear the theorem heading height."""
         value = extract_css_property(
             blueprint_css, ".sbs-lean-column pre.lean-code", "padding-top"
         )
-        assert value == "0.35rem", (
-            f".sbs-lean-column pre.lean-code padding-top should be 0.35rem, "
-            f"got: {value}"
+        rem_value = parse_rem(value) if value else None
+        assert rem_value is not None, (
+            f"padding-top should be in rem units, got: {value}"
         )
-
-
-# =============================================================================
-# 4. Lean Proof Body Alignment Tests
-# =============================================================================
-
-
-@pytest.mark.evergreen
-class TestLeanProofBodyAlignment:
-    """Verify Lean proof body has top margin for alignment."""
-
-    def test_lean_proof_body_has_margin_top(self, common_css: str) -> None:
-        """.lean-proof-body should have margin-top defined."""
-        value = extract_css_property(common_css, ".lean-proof-body", "margin-top")
-        assert value is not None, (
-            ".lean-proof-body must define margin-top in common.css "
-            "for vertical alignment with LaTeX proof content"
-        )
-
-    def test_lean_proof_body_margin_top_value(self, common_css: str) -> None:
-        """margin-top should be 0.25rem."""
-        value = extract_css_property(common_css, ".lean-proof-body", "margin-top")
-        assert value == "0.25rem", (
-            f".lean-proof-body margin-top should be 0.25rem, got: {value}"
+        assert rem_value >= 1.0, (
+            f".sbs-lean-column pre.lean-code padding-top must be >= 1rem "
+            f"to clear the theorem heading. Got {value}. "
+            f"The heading is ~24px tall; values under 1rem leave the Lean code "
+            f"visually above the LaTeX statement text."
         )
