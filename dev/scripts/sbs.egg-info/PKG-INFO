@@ -8,3 +8,5 @@ Requires-Dist: click>=8.0
 Requires-Dist: pyyaml>=6.0.3
 Requires-Dist: rich>=13.0
 Requires-Dist: toml>=0.10
+Requires-Dist: watchdog>=3.0
+Requires-Dist: websockets>=12.0
