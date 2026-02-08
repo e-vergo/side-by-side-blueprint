@@ -24,8 +24,9 @@ Side-by-Side-Blueprint/
     General_Crystallographic_Restriction/  # 57 nodes, paper generation
     PrimeNumberTheoremAnd/                 # 591 nodes, large-scale
   dev/                      # Development tooling
-    scripts/                # sbs CLI and Python tooling
-    storage/                # Archive (screenshots, metrics, rubrics)
+    build-sbs-test.sh       # One-click SBS-Test build
+    build-gcr.sh            # One-click GCR build
+    build-pnt.sh            # One-click PNT build
     .refs/                  # Detailed reference docs
     markdowns/              # Public documentation (this file)
     build-sbs-test.sh       # One-click SBS-Test build
@@ -302,31 +303,7 @@ git = "https://github.com/e-vergo/verso.git"
 rev = "main"
 ```
 
-## Quality Validation
-
-The toolchain includes an 8-dimensional quality scoring system:
-
-**Deterministic Tests (T1, T2, T5, T6):** CLI execution, ledger population, status color matching, CSS variable coverage
-
-**Heuristic Tests (T3, T4, T7, T8):** Dashboard clarity, toggle discoverability, jarring-free check, professional score
-
-**Current Score:** 91.77/100 (as of 2026-02-01)
-
-Design validators in `dev/scripts/sbs/tests/validators/design/` automate quality checks. Run with:
-```bash
-cd /Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts
-/opt/homebrew/bin/pytest sbs/tests/pytest/ -v
-```
-
-## Tooling
-
-For build commands, screenshot capture, compliance validation, archive management, and custom rubrics, see the [Storage & Tooling Hub](../storage/README.md).
-
-### MCP Tools
-
-The `lean-lsp-mcp` server provides 18 Lean tools for proof development. The `sls-mcp` server (located at `forks/sls-mcp/`) provides 49 tools: SLS tools for orchestration, testing, archive management, GitHub integration, and self-improve analysis, 5 browser automation tools for stateful browsing sessions, plus 3 Zulip browsing tools. Notable tools include `sls_issue_log` (agent-optimized issue logging with auto-populated archive context), `sls_skill_handoff` (atomic skill-to-skill transitions), `sls_question_analysis`/`sls_question_stats` (AskUserQuestion interaction analysis), `sls_inspect_project` (visual QA context preparation), and `browser_navigate`/`browser_click`/`browser_screenshot`/`browser_evaluate`/`browser_get_elements` (persistent active page pattern for QA workflows). See the server README for full documentation.
-
-### One-Click Build Scripts
+## Build Scripts
 
 From the monorepo root:
 
@@ -336,16 +313,6 @@ From the monorepo root:
 ./dev/build-pnt.sh        # PNT (~20 min)
 ```
 
-These scripts wrap `python dev/scripts/build.py` with the correct working directory.
-
-Build options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--force-lake`
-
-**Lean Source Skip:** The build script auto-detects whether `.lean` files changed since the last successful build. If unchanged, Lake build phases are skipped. Use `--force-lake` to override.
-
-### Performance Instrumentation
-
-Archive uploads (`sbs archive upload`) instrument every phase via `TimingContext` (`sbs/core/timing.py`). Timings are recorded in the `archive_timings` field of each entry and visualized in `archive_timing_trends.png`. Git pushes run in parallel via `ThreadPoolExecutor`; iCloud sync runs asynchronously (fire-and-forget).
-
 ## Document Taxonomy
 
 Documentation is organized into three categories, each with distinct characteristics and update expectations.
@@ -354,7 +321,7 @@ Documentation is organized into three categories, each with distinct characteris
 
 | Category | Location | Change Frequency | Meaning of Changes |
 |----------|----------|------------------|-------------------|
-| **Permanent** | `dev/markdowns/permanent/` | Months+ | Architectural shifts - changes affect agent behavior and assumptions |
+| **Permanent** | `dev/markdowns/permanent/` | Months+ | Architectural shifts - significant design changes |
 | **Living** | `dev/markdowns/living/` | Days to weeks | Progress updates - normal development activity |
 | **Generated** | Various locations | On source change | Informational - regenerate from source when needed |
 
@@ -365,9 +332,8 @@ Architectural bedrock. Changes are significant events, not routine updates.
 | Document | Purpose |
 |----------|---------|
 | `ARCHITECTURE.md` | Build pipeline, component responsibilities, dependency chain |
-| `Archive_Orchestration_and_Agent_Harmony.md` | Script-agent boundary, archive roles, state machine model |
 | `GOALS.md` | Project vision, problem statement, target audience |
-| `GRAND_VISION.md` | Broader vision: SBS in the age of AI-assisted mathematics |
+| `GRAND_VISION.md` | Broader vision for formalization documentation |
 
 ### Living Documents
 
@@ -375,33 +341,18 @@ Current state and evolving documentation. Changes are expected and normal.
 
 | Document | Purpose |
 |----------|---------|
-| `README.md` | Meta-document for agents about monorepo purpose |
+| `README.md` | Monorepo overview and project structure |
 | `MVP.md` | Current minimum viable product definition |
-
-### Generated Documents
-
-Auto-produced from code or other sources. Manual edits will be overwritten.
-
-| File | Source | Generator |
-|------|--------|-----------|
-| `.claude/agents/sbs-oracle.md` | All repository READMEs | `sbs oracle compile` |
-| `dev/storage/{project}/QUALITY_SCORE.md` | Validator results | Quality scoring system |
-| `dev/storage/COMPLIANCE_STATUS.md` | Compliance ledger | Compliance validation |
 
 ### Decision Guide
 
 When creating or updating documentation:
 
-1. **Auto-generated from code?** -> Generated category (ensure regeneration pipeline exists)
-2. **Changes frequently with progress?** -> Living category (`dev/markdowns/living/`)
-3. **Fundamental architectural decision?** -> Permanent category (`dev/markdowns/permanent/`)
-4. **Reference for agents that should be stable?** -> Permanent category
+1. **Changes frequently with progress?** -> Living category (`dev/markdowns/living/`)
+2. **Fundamental architectural decision?** -> Permanent category (`dev/markdowns/permanent/`)
 
 ## Related Documents
 
-- [GRAND_VISION.md](GRAND_VISION.md) - Broader vision: SBS in the age of AI-assisted mathematics
+- [GRAND_VISION.md](GRAND_VISION.md) - Broader vision for formalization documentation
 - [GOALS.md](GOALS.md) - Project vision and design goals
-- [README.md](../living/README.md) - Agent-facing monorepo overview
-- [Archive_Orchestration_and_Agent_Harmony.md](Archive_Orchestration_and_Agent_Harmony.md) - Script-agent boundary, archive roles
-- [dev/storage/README.md](../../storage/README.md) - Central tooling hub
-- [dev/.refs/ARCHITECTURE.md](../../.refs/ARCHITECTURE.md) - Detailed technical reference
+- [README.md](../living/README.md) - Monorepo overview
