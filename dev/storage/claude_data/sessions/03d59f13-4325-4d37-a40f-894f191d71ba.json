@@ -48,9 +48,9 @@
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#60</command-args>",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
     "signature:ErACCkYICxgCKkBPZmkN...",
-    "signature:EqYDCkYICxgCKkB8IllG..."
+    "signature:EqYDCkYICxgCKkB8IllG...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

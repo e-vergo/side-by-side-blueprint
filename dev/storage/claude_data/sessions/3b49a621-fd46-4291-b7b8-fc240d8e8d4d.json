@@ -135,12 +135,12 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "Write",
-    "Read",
     "mcp__sbs-lsp__sbs_improvement_capture",
     "Task",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash",
+    "Read",
+    "Write"
   ],
   "files_read": [
     "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg",
@@ -159,20 +159,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EpoGCkYICxgCKkASVgxm...",
-    "signature:Eo4JCkYICxgCKkBIgEV9...",
     "signature:EqQCCkYICxgCKkAk/m8n...",
     "signature:EroHCkYICxgCKkBms4C+...",
-    "signature:EtAJCkYICxgCKkB7tapo...",
     "signature:EtwGCkYICxgCKkCFFWZH...",
+    "signature:EtAJCkYICxgCKkB7tapo...",
+    "signature:EqMJCkYICxgCKkBOVgH2...",
+    "signature:Eo4DCkYICxgCKkDE+kIx...",
+    "signature:Eo4JCkYICxgCKkBIgEV9...",
+    "signature:EqIDCkYICxgCKkBAoOVq...",
+    "signature:EpoGCkYICxgCKkASVgxm...",
     "signature:EqQFCkYICxgCKkCtOYkh...",
     "signature:Ep4FCkYICxgCKkCoD8u6...",
-    "signature:Eo4DCkYICxgCKkDE+kIx...",
-    "signature:EqIDCkYICxgCKkBAoOVq...",
-    "signature:Et4ECkYICxgCKkCQslx0...",
+    "claude-sonnet-4-5-20250929",
     "signature:EvcGCkYICxgCKkBRKN5g...",
-    "signature:EqMJCkYICxgCKkBOVgH2...",
-    "claude-sonnet-4-5-20250929"
+    "signature:Et4ECkYICxgCKkCQslx0..."
   ],
   "thinking_blocks": [
     {

@@ -86,13 +86,13 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>bug sidebar text layout is too tight, reduce text size slightly and increase vertical spacing</command-args>",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
+    "signature:EukBCkYICxgCKkBQJb/z...",
     "signature:EooMCkYICxgCKkAiwroc...",
     "signature:EtABCkYICxgCKkCqcgSF...",
-    "signature:Eq0CCkYICxgCKkAS3Rle...",
-    "signature:EukBCkYICxgCKkBQJb/z...",
     "signature:Ev0BCkYICxgCKkA3Y5kS...",
-    "signature:EpkHCkYICxgCKkDsfAFn..."
+    "signature:EpkHCkYICxgCKkDsfAFn...",
+    "signature:Eq0CCkYICxgCKkAS3Rle...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

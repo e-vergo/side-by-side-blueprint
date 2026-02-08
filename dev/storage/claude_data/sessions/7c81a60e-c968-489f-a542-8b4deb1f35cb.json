@@ -92,8 +92,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
     "Bash",
+    "mcp__sbs-lsp__sbs_issue_create",
     "AskUserQuestion"
   ],
   "files_read": [],
@@ -106,12 +106,12 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>housekeeping: we need to refactor our set of tests. everything seems to work as is, but there are some obvious op\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:Ev8PCkYICxgCKkDiIgbK...",
-    "claude-opus-4-5-20251101",
     "signature:EqQJCkYICxgCKkAkB5/W...",
-    "signature:EpAECkYICxgCKkDQTuTJ...",
+    "signature:Ev8PCkYICxgCKkDiIgbK...",
     "signature:Ev4BCkYICxgCKkDB0ZPQ...",
-    "signature:EtYBCkYICxgCKkDKV3XI..."
+    "signature:EtYBCkYICxgCKkDKV3XI...",
+    "signature:EpAECkYICxgCKkDQTuTJ...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {
