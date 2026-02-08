@@ -151,8 +151,12 @@ def find_sbs_containers(html: str) -> list[dict[str, Any]]:
     containers = []
 
     for container in soup.select(".sbs-container"):
-        latex_col = container.select_one(".sbs-latex-column")
-        lean_col = container.select_one(".sbs-lean-column")
+        # New 3-row grid structure: .sbs-statement (row 2 col 1), .sbs-signature (row 2 col 2)
+        statement_cell = container.select_one(".sbs-statement")
+        signature_cell = container.select_one(".sbs-signature")
+        # Fallback to legacy column classes for dep graph modals / Verso
+        latex_col = statement_cell or container.select_one(".sbs-latex-column")
+        lean_col = signature_cell or container.select_one(".sbs-lean-column")
 
         containers.append({
             "id": container.get("id", ""),

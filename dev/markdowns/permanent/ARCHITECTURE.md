@@ -57,9 +57,9 @@ Components work together to produce formalization documentation:
 | **Dress** | `toolchain/Dress/` | Artifact generation, rainbow brackets, dependency graph layout, stats computation, validation |
 | **Runway** | `toolchain/Runway/` | Site generator with dashboard, PDF/paper generation, module reference support |
 | **Verso** | `forks/verso/` | Document framework with SBSBlueprint and VersoPaper genres |
-| **dress-blueprint-action** | `toolchain/dress-blueprint-action/` | GitHub Action (432 lines, 14 steps) + CSS/JS assets (3,805 lines) |
-| **SBS-Test** | `toolchain/SBS-Test/` | Minimal test project (33 nodes, all 6 status colors, validation testing) |
-| **General_Crystallographic_Restriction** | `showcase/General_Crystallographic_Restriction/` | Production example with full paper generation (57 nodes) |
+| **dress-blueprint-action** | `toolchain/dress-blueprint-action/` | GitHub Action (506 lines, 14 steps) + CSS/JS assets (4,185 lines) |
+| **SBS-Test** | `toolchain/SBS-Test/` | Minimal test project (49 nodes, all 6 status colors, validation testing) |
+| **General_Crystallographic_Restriction** | `showcase/General_Crystallographic_Restriction/` | Production example with full paper generation (128 nodes) |
 | **PrimeNumberTheoremAnd** | `showcase/PrimeNumberTheoremAnd/` | Large-scale integration (591 annotations) |
 
 ## Dependency Chain
@@ -232,8 +232,8 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 | Project | Nodes | Layout Time | Total Build |
 |---------|-------|-------------|-------------|
-| SBS-Test | 33 | <1s | ~2 min |
-| GCR | 57 | ~2s | ~5 min |
+| SBS-Test | 49 | <1s | ~2 min |
+| GCR | 128 | ~2s | ~5 min |
 | PNT | 591 | ~15s | ~20 min |
 
 ## CI/CD Architecture
@@ -242,7 +242,7 @@ SubVerso highlighting dominates build time. Cannot be deferred (info trees are e
 
 - **Manual triggers only**: `workflow_dispatch` - user controls deployments
 - **Simplified workflows**: ~30 lines per project
-- **Centralized complexity**: `dress-blueprint-action` (432 lines, 14 steps)
+- **Centralized complexity**: `dress-blueprint-action` (506 lines, 14 steps)
 - **No GitHub Actions mathlib cache**: relies on mathlib server (`lake exe cache get`)
 
 ### Action Inputs

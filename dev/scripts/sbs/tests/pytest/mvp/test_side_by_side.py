@@ -31,7 +31,7 @@ class TestSideBySideDisplay:
             assert container["has_lean"], f"Missing Lean column in {container['id']}"
 
     def test_sbs_latex_left_lean_right(self, sbstest_site: SiteArtifacts):
-        """2. Column order is correct (LaTeX left, Lean right)."""
+        """2. Grid cell order: heading before spacer, statement before signature."""
         pages = sbstest_site.list_pages()
         chapter_pages = [p for p in pages if "main" in p.lower() or "status" in p.lower()]
         if not chapter_pages:
@@ -44,10 +44,18 @@ class TestSideBySideDisplay:
             children = list(container.children)
             # Filter to actual div elements with classes
             elements = [c for c in children if hasattr(c, "get") and c.get("class")]
-            if len(elements) >= 2:
-                first_classes = " ".join(elements[0].get("class", []))
-                # LaTeX column should come first
-                assert "latex" in first_classes.lower(), "LaTeX column should be first"
+            if len(elements) >= 4:
+                classes = [" ".join(e.get("class", [])) for e in elements]
+                # New 3-row grid: heading, spacer, statement, signature, proof-latex, proof-lean
+                # First element should be heading (LaTeX side)
+                assert "sbs-heading" in classes[0], (
+                    f"First grid cell should be sbs-heading, got: {classes[0]}"
+                )
+                # Statement should come before signature
+                stmt_idx = next((i for i, c in enumerate(classes) if "sbs-statement" in c), -1)
+                sig_idx = next((i for i, c in enumerate(classes) if "sbs-signature" in c), -1)
+                if stmt_idx >= 0 and sig_idx >= 0:
+                    assert stmt_idx < sig_idx, "Statement should come before signature in DOM"
 
     def test_sbs_proof_toggle_exists(self, sbstest_site: SiteArtifacts):
         """3. Proof toggle controls exist for synchronization."""

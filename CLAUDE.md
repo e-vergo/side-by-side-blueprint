@@ -69,12 +69,12 @@ The SBS formalization toolchain and SLS orchestration framework are planned for 
 | `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
 | `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
 | `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
-| `forks/` | **sbs-lsp-mcp** | MCP server (62 tools: 18 Lean + 41 SBS + 3 Zulip) |
+| `forks/` | **sbs-lsp-mcp** | MCP server (67 tools: 18 Lean + 41 SBS + 5 Browser + 3 Zulip) |
 | `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
 | `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
-| `toolchain/` | **SBS-Test** | Minimal test project (33 nodes) |
-| `toolchain/` | **dress-blueprint-action** | CI/CD action (432 lines) + CSS/JS assets (3,805 lines) |
-| `showcase/` | **GCR** | Production example with paper (57 nodes) |
+| `toolchain/` | **SBS-Test** | Minimal test project (49 nodes) |
+| `toolchain/` | **dress-blueprint-action** | CI/CD action (506 lines) + CSS/JS assets (4,185 lines) |
+| `showcase/` | **GCR** | Production example with paper (128 nodes) |
 | `showcase/` | **PNT** | Large-scale integration (591 annotations) |
 | `dev/scripts/` | - | Python tooling (sbs CLI) |
 | `dev/storage/` | - | Build metrics, screenshots, session archives |

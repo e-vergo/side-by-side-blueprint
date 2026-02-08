@@ -131,8 +131,10 @@ Controlled parallelism across all workflow phases:
 | Skill | Invocation | Purpose |
 |-------|------------|---------|
 | task | `/task` | General-purpose agentic task execution |
+| log | `/log` | Quick capture of bugs, features, ideas to GitHub Issues |
 | qa | `/qa` | Live interactive browser-driven QA |
 | converge | `/converge` | Autonomous QA convergence loop (eval/fix/rebuild) |
+| introspect | `/introspect` | Self-improvement across hierarchy levels |
 | update-and-archive | `/update-and-archive` | Documentation refresh, porcelain state |
 
 ### Agent Types
@@ -141,6 +143,7 @@ Controlled parallelism across all workflow phases:
 |-------|---------|
 | `sbs-developer` | Implementation work with deep architectural knowledge |
 | `sbs-oracle` | Pre-compiled codebase knowledge for instant Q&A |
+| `sbs-self-improve` | Background introspection after task sessions (L0-LN hierarchy) |
 
 ---
 

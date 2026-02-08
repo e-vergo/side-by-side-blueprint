@@ -1,10 +1,10 @@
 """
-Tests for SBS side-by-side alignment properties (#230).
+Tests for SBS side-by-side alignment properties (#230, #244).
 
 Verifies:
 - Lean column toggle is removed (no sbs-toggle-indicator in CSS/JS)
 - Proof content spacing: .proof_content margin-top is 0.25rem
-- Lean declaration alignment: .sbs-lean-column pre.lean-code has padding-top >= 1rem
+- Grid structure: .sbs-container uses 3-row grid layout (#244)
 """
 
 from __future__ import annotations
@@ -160,32 +160,51 @@ class TestProofContentSpacing:
 
 
 @pytest.mark.evergreen
-class TestLeanDeclarationAlignment:
-    """Verify Lean declaration code has sufficient top padding to align
-    with the LaTeX statement text (below the theorem heading)."""
+class TestGridStructure:
+    """Verify .sbs-container uses 3-row grid layout (#244).
 
-    def test_lean_code_has_padding_top(self, blueprint_css: str) -> None:
-        """blueprint.css .sbs-lean-column pre.lean-code should have padding-top."""
-        value = extract_css_property(
-            blueprint_css, ".sbs-lean-column pre.lean-code", "padding-top"
-        )
+    The 3-row grid aligns LaTeX statements with Lean signatures and
+    LaTeX proofs with Lean proof bodies without padding hacks."""
+
+    def test_sbs_container_has_grid_rows(self, common_css: str) -> None:
+        """common.css .sbs-container should define grid-template-rows."""
+        value = extract_css_property(common_css, ".sbs-container", "grid-template-rows")
         assert value is not None, (
-            ".sbs-lean-column pre.lean-code must define padding-top "
-            "in blueprint.css for vertical alignment with LaTeX statement"
+            ".sbs-container must define grid-template-rows for 3-row layout (#244)"
+        )
+        assert "auto" in value, (
+            f".sbs-container grid-template-rows should use 'auto' rows, got: {value}"
         )
 
-    def test_lean_code_padding_top_sufficient(self, blueprint_css: str) -> None:
-        """padding-top must be >= 1rem to clear the theorem heading height."""
-        value = extract_css_property(
-            blueprint_css, ".sbs-lean-column pre.lean-code", "padding-top"
+    def test_sbs_heading_grid_placement(self, common_css: str) -> None:
+        """.sbs-heading should be placed in row 1, column 1."""
+        row = extract_css_property(common_css, ".sbs-heading", "grid-row")
+        col = extract_css_property(common_css, ".sbs-heading", "grid-column")
+        assert row is not None and "1" in row, (
+            f".sbs-heading must be in grid-row 1, got: {row}"
         )
-        rem_value = parse_rem(value) if value else None
-        assert rem_value is not None, (
-            f"padding-top should be in rem units, got: {value}"
+        assert col is not None and "1" in col, (
+            f".sbs-heading must be in grid-column 1, got: {col}"
         )
-        assert rem_value >= 1.0, (
-            f".sbs-lean-column pre.lean-code padding-top must be >= 1rem "
-            f"to clear the theorem heading. Got {value}. "
-            f"The heading is ~24px tall; values under 1rem leave the Lean code "
-            f"visually above the LaTeX statement text."
+
+    def test_sbs_statement_grid_placement(self, common_css: str) -> None:
+        """.sbs-statement should be placed in row 2, column 1."""
+        row = extract_css_property(common_css, ".sbs-statement", "grid-row")
+        col = extract_css_property(common_css, ".sbs-statement", "grid-column")
+        assert row is not None and "2" in row, (
+            f".sbs-statement must be in grid-row 2, got: {row}"
+        )
+        assert col is not None and "1" in col, (
+            f".sbs-statement must be in grid-column 1, got: {col}"
+        )
+
+    def test_sbs_signature_grid_placement(self, common_css: str) -> None:
+        """.sbs-signature should be placed in row 2, column 2."""
+        row = extract_css_property(common_css, ".sbs-signature", "grid-row")
+        col = extract_css_property(common_css, ".sbs-signature", "grid-column")
+        assert row is not None and "2" in row, (
+            f".sbs-signature must be in grid-row 2, got: {row}"
+        )
+        assert col is not None and "2" in col, (
+            f".sbs-signature must be in grid-column 2, got: {col}"
         )

@@ -28,7 +28,7 @@ class TestSideBySideContent:
     """Tests for the substance of side-by-side displays."""
 
     def test_latex_columns_have_math_content(self, sbstest_site: SiteArtifacts):
-        """Most pages with .sbs-latex-column contain math markup."""
+        """Most pages with .sbs-statement contain math markup."""
         require_bs4()
         chapters = get_chapter_pages(sbstest_site)
         assert chapters, "No chapter pages found"
@@ -40,7 +40,8 @@ class TestSideBySideContent:
             if not html:
                 continue
             soup = parse_html(html)
-            cols = soup.select(".sbs-latex-column")
+            # New grid structure uses .sbs-statement; fallback to .sbs-latex-column
+            cols = soup.select(".sbs-statement") or soup.select(".sbs-latex-column")
             if not cols:
                 continue
             pages_checked += 1
@@ -62,7 +63,7 @@ class TestSideBySideContent:
             if page_has_math:
                 pages_with_math += 1
 
-        assert pages_checked > 0, "No chapter pages have .sbs-latex-column elements"
+        assert pages_checked > 0, "No chapter pages have .sbs-statement elements"
         # Not all pages have traditional LaTeX math (e.g. bracket demo).
         # At least half of pages with columns should have math content.
         assert pages_with_math >= pages_checked // 2, (
@@ -70,7 +71,7 @@ class TestSideBySideContent:
         )
 
     def test_lean_columns_have_code(self, sbstest_site: SiteArtifacts):
-        """Every .sbs-lean-column contains a pre.lean-code block with text."""
+        """Every .sbs-signature contains a pre.lean-code block with text."""
         require_bs4()
         chapters = get_chapter_pages(sbstest_site)
         assert chapters, "No chapter pages found"
@@ -81,18 +82,20 @@ class TestSideBySideContent:
             if not html:
                 continue
             soup = parse_html(html)
-            for col in soup.select(".sbs-lean-column"):
+            # New grid structure uses .sbs-signature; fallback to .sbs-lean-column
+            cols = soup.select(".sbs-signature") or soup.select(".sbs-lean-column")
+            for col in cols:
                 found_any = True
                 code_block = col.select_one("pre.lean-code")
                 assert code_block is not None, (
-                    f"Lean column on page '{page_name}' missing pre.lean-code"
+                    f"Lean signature cell on page '{page_name}' missing pre.lean-code"
                 )
                 text = code_block.get_text(strip=True)
                 assert len(text) > 0, (
                     f"pre.lean-code on page '{page_name}' is empty"
                 )
 
-        assert found_any, "No .sbs-lean-column elements found across chapter pages"
+        assert found_any, "No .sbs-signature elements found across chapter pages"
 
     def test_lean_code_has_keywords(self, sbstest_site: SiteArtifacts):
         """Lean code blocks contain at least one declaration keyword."""
