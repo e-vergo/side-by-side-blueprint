@@ -60,31 +60,141 @@ Strange Loop Station is the orchestration framework that was extracted from the 
 
 SLS still builds and manages SBS formalization projects (SBS-Test, GCR, PNT). The SBS toolchain (Dress, Runway, LeanArchitect, etc.) remains in the SBS monorepo; SLS orchestrates builds against it.
 
-### Planned Separation
+---
 
-The SBS formalization toolchain and SLS orchestration framework are being separated into distinct repositories. See [SBS_SLS_SEPARATION.md](dev/markdowns/permanent/SBS_SLS_SEPARATION.md) for the comprehensive architecture document.
+## Dual-Repo Architecture
+
+SBS and SLS are now separate repositories. SLS is the **development workstation** that wraps SBS as a submodule.
+
+### Repo Topology
+
+```
+SLS-Strange-Loop-Station/          (private, development workstation)
+├── SBS/                           (submodule -> e-vergo/Side-By-Side-Blueprint)
+│   ├── toolchain/                 (Dress, Runway, SBS-Test, dress-blueprint-action)
+│   ├── showcase/                  (GCR, PNT)
+│   └── forks/                     (LeanArchitect, subverso, verso)
+├── forks/
+│   ├── sls-mcp/                   (SLS orchestration MCP server)
+│   └── vscode-lean4/              (development tooling)
+├── dev/
+│   ├── scripts/                   (sbs + sls CLIs, build tooling, tests, oracle)
+│   ├── storage/                   (submodule -> sbs-storage)
+│   └── markdowns/                 (living + permanent docs)
+├── sbs-mcp/                       (SBS build/quality MCP server)
+├── .claude/agents/                (sbs-developer, sbs-oracle, sbs-self-improve)
+└── CLAUDE.md                      (this file)
+```
+
+**SBS repo** (`e-vergo/Side-By-Side-Blueprint`) is **pure Lean** — no Python, no MCP, no AI tooling. It's what the Lean community sees: toolchain submodules, showcase projects, and a clean README. All development infrastructure lives in SLS.
+
+### Submodule Sync Workflow
+
+SBS changes follow a **commit-inside-then-update-parent** pattern:
+
+1. **Make changes** inside `SBS/toolchain/Dress/` (or any SBS submodule-of-submodule)
+2. **Commit inside the submodule**: `cd SBS/toolchain/Dress && git add -A && git commit -m "..."`
+3. **Update SBS pointer**: `cd SBS && git add toolchain/Dress && git commit -m "chore: update Dress"`
+4. **Push SBS**: `cd SBS && git push` (pure Lean changes visible to the community)
+5. **Update SLS pointer**: `cd ../.. && git add SBS && git commit -m "chore: update SBS submodule"`
+6. **Push SLS**: via `sls archive upload` (triggers full porcelain check)
+
+**Key rule**: SBS commits should be clean, descriptive, and standalone — they're public. SLS commits can reference internal context (issue numbers, session IDs, agent names).
+
+`ensure_porcelain()` in archive upload handles steps 3-6 automatically for dirty submodules.
+
+### Build Tooling Paths
+
+All Python build tooling lives in SLS, not SBS.
+
+| What | Path (from SLS root) | Notes |
+|------|---------------------|-------|
+| Build orchestrator | `dev/scripts/sbs/build/orchestrator.py` | Main build logic |
+| Build entry point | `dev/scripts/build.py` | CLI wrapper |
+| Shell scripts | `dev/build-sbs-test.sh`, `dev/build-gcr.sh`, `dev/build-pnt.sh` | One-click builds |
+| SBS CLI | `python3 -m sbs` | Build commands (capture, validate, compliance, etc.) |
+| SLS CLI | `python3 -m sls` | Orchestration commands (archive, labels, watch, etc.) |
+| Lean projects | `SBS/toolchain/SBS-Test/`, `SBS/showcase/GCR/`, etc. | Inside SBS submodule |
+
+**`SBS_ROOT` resolution**: The `SBS_ROOT` environment variable tells all tooling where the SBS repo is. In SLS context, `.mcp.json` sets it to the SBS submodule path. The auto-detect heuristic walks up looking for `CLAUDE.md` + `forks/`, which finds the SLS root — build scripts then locate Lean projects via `SBS_ROOT` or relative paths.
+
+### MCP Server Topology
+
+Three MCP servers provide tools, each with a distinct role:
+
+| Server | Package | Tools | Audience |
+|--------|---------|-------|----------|
+| `lean-lsp` | `lean-lsp-mcp` | 18 Lean LSP tools | Any Lean project (domain-agnostic) |
+| `sbs-mcp` | `sbs-mcp` | 8 SBS build/quality tools | SBS toolchain development |
+| `sls-mcp` | `sls-mcp` | 49 SLS orchestration + 5 browser + 3 Zulip | SLS workflow management |
+
+**Tool name conventions:**
+- `lean_*` — Lean language server tools (no prefix change)
+- `sbs_*` — SBS build tools (build_project, validate_project, etc.)
+- `sls_*` — SLS orchestration tools (archive_state, skill_start, issue_log, etc.)
+- `browser_*` / `zulip_*` — Integration tools (in sls-mcp)
+
+**MCP prefix in tool calls:**
+- `mcp__lean-lsp__lean_goal` (Lean tools)
+- `mcp__sbs-mcp__sbs_build_project` (SBS tools)
+- `mcp__sls-mcp__sls_archive_state` (SLS tools)
+
+### Agent Context Switching
+
+When a Claude Code session opens, it's in one of two contexts:
+
+| Context | Working Directory | CLAUDE.md | Available CLIs | MCP Servers |
+|---------|------------------|-----------|----------------|-------------|
+| **SLS** (primary) | `SLS-Strange-Loop-Station/` | Full orchestration instructions (this file) | `sbs` + `sls` | lean-lsp + sbs-mcp + sls-mcp |
+| **SBS** (rare, public contributions) | `Side-By-Side-Blueprint/` | None (pure Lean repo) | None | None |
+
+**Almost all work happens in SLS context.** Direct SBS context is only for:
+- Accepting external PRs from the Lean community
+- Reviewing the public-facing state of the repo
+- Testing the SBS repo in isolation (no SLS tooling available)
+
+**Agents always operate in SLS context** — `sbs-developer` agents write files within the SLS working tree (including the `SBS/` submodule). They have access to all MCP tools, both CLIs, and the full archive system.
+
+### Shared Infrastructure: sbs-core
+
+The `sbs-core` Python package (`/Users/eric/GitHub/sbs-core/`) provides shared utilities used by both `sbs` and `sls` CLIs:
+- `sbs_core.utils` — `SBS_ROOT`, `REPO_PATHS`, logging, git utilities
+- `sbs_core.git_ops` — Git status, sync, PR strategies
+- `sbs_core.branch_ops` — Feature branch management
+- `sbs_core.timing` — Build phase timing
+- `sbs_core.ledger` — `UnifiedLedger`, `BuildMetrics`, metric persistence
+
+Both repos install it via `pip install -e /Users/eric/GitHub/sbs-core`.
 
 ---
 
-## Repository Map (SBS Toolchain)
+## Repository Map
 
-SLS orchestrates builds of these SBS repositories:
+### SBS Submodule (at `SBS/`)
 
-| Directory | Repo | Purpose |
-|-----------|------|---------|
-| `forks/` | **subverso** | Syntax highlighting (O(1) indexed lookups) |
-| `forks/` | **verso** | Document framework (SBSBlueprint/VersoPaper genres) |
-| `forks/` | **LeanArchitect** | `@[blueprint]` attribute (8 metadata + 3 status options) |
-| `forks/` | **lean-lsp-mcp** | Lean LSP MCP server (18 Lean tools) |
-| `forks/` | **sls-mcp** | SLS orchestration MCP server (41 SLS + 5 Browser + 3 Zulip tools) |
-| `toolchain/` | **Dress** | Artifact generation + graph layout + validation |
-| `toolchain/` | **Runway** | Site generator + dashboard + paper/PDF |
-| `toolchain/` | **SBS-Test** | Minimal test project (49 nodes) |
-| `toolchain/` | **dress-blueprint-action** | CI/CD action (506 lines) + CSS/JS assets (4,185 lines) |
-| `showcase/` | **GCR** | Production example with paper (128 nodes) |
-| `showcase/` | **PNT** | Large-scale integration (591 annotations) |
-| `dev/scripts/` | - | Python tooling (sbs CLI) |
-| `dev/storage/` | - | Build metrics, screenshots, session archives |
+| Directory | Purpose |
+|-----------|---------|
+| `SBS/forks/subverso` | Syntax highlighting (O(1) indexed lookups) |
+| `SBS/forks/verso` | Document framework (SBSBlueprint genre) |
+| `SBS/forks/LeanArchitect` | `@[blueprint]` attribute (8 metadata + 3 status options) |
+| `SBS/toolchain/Dress` | Artifact generation + graph layout + validation |
+| `SBS/toolchain/Runway` | Site generator + dashboard + paper/PDF |
+| `SBS/toolchain/SBS-Test` | Minimal test project (49 nodes) |
+| `SBS/toolchain/dress-blueprint-action` | CI/CD action + CSS/JS assets |
+| `SBS/showcase/GCR` | Production example with paper (128 nodes) |
+| `SBS/showcase/PNT` | Large-scale integration (591 annotations) |
+
+### SLS-Specific
+
+| Directory | Purpose |
+|-----------|---------|
+| `forks/sls-mcp` | SLS MCP server (49 SLS + 5 browser + 3 Zulip tools) |
+| `forks/vscode-lean4` | Development fork (blueprint infoview panel) |
+| `sbs-mcp/` | SBS build/quality MCP server (8 tools) |
+| `dev/scripts/` | Python tooling (sbs + sls CLIs, build, tests, oracle) |
+| `dev/storage/` | Build metrics, screenshots, session archives |
+| `dev/markdowns/` | Living and permanent documentation |
+| `.claude/agents/` | Agent definitions |
 
 ### SBS Dependency Chain
 
@@ -132,8 +242,8 @@ Changes to upstream repos require rebuilding downstream. The build script handle
 ### Direct Build Script Usage
 
 ```bash
-cd /Users/eric/GitHub/SLS-Strange-Loop-Station/toolchain/SBS-Test
-python ../../dev/scripts/build.py
+cd /Users/eric/GitHub/SLS-Strange-Loop-Station/SBS/toolchain/SBS-Test
+python ../../../dev/scripts/build.py
 ```
 
 Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--skip-lake`
