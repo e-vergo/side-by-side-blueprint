@@ -13,6 +13,7 @@ This module contains SBS-specific MCP tools for:
 - Skill management tools (sbs_skill_status, sbs_skill_start, sbs_skill_transition, sbs_skill_end)
 """
 
+import difflib
 import json
 import os
 import signal
@@ -20,7 +21,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional, Tuple
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
@@ -84,6 +85,84 @@ from .sbs_utils import (
 def _get_db(ctx: Context) -> DuckDBLayer:
     """Extract the DuckDBLayer from the MCP lifespan context."""
     return ctx.request_context.lifespan_context.duckdb_layer
+
+
+# Label pre-validation cache: (timestamp, frozenset of label names)
+_REPO_LABELS_CACHE: Optional[tuple] = None
+_REPO_LABELS_CACHE_TTL = 300  # 5 minutes
+
+
+def _get_repo_labels(repo: str) -> set:
+    """Fetch valid label names from the GitHub repository with caching.
+
+    Returns a set of label name strings. On failure, returns an empty set.
+    """
+    global _REPO_LABELS_CACHE
+
+    # Check cache freshness
+    if _REPO_LABELS_CACHE is not None:
+        cached_ts, cached_repo, cached_labels = _REPO_LABELS_CACHE
+        if cached_repo == repo and (time.time() - cached_ts) < _REPO_LABELS_CACHE_TTL:
+            return cached_labels
+
+    try:
+        result = subprocess.run(
+            [
+                "gh", "label", "list",
+                "--repo", repo,
+                "--json", "name",
+                "--limit", "200",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            return set()
+        data = json.loads(result.stdout)
+        labels = {item["name"] for item in data if "name" in item}
+        _REPO_LABELS_CACHE = (time.time(), repo, labels)
+        return labels
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError, KeyError):
+        return set()
+
+
+def _validate_labels(
+    labels: List[str], repo: str
+) -> tuple:
+    """Validate labels against the repository's label set.
+
+    Returns:
+        (valid_labels, invalid_with_suggestions) where invalid_with_suggestions
+        is a list of (invalid_label, [suggestions]) tuples.
+    """
+    repo_labels = _get_repo_labels(repo)
+    if not repo_labels:
+        # Cannot validate -- allow all labels through (graceful degradation)
+        return labels, []
+
+    valid = []
+    invalid_with_suggestions: List[tuple] = []
+    repo_labels_list = sorted(repo_labels)
+
+    for label in labels:
+        if label in repo_labels:
+            valid.append(label)
+        else:
+            # Find close matches via substring and difflib
+            suggestions = []
+            # Substring matches
+            for rl in repo_labels_list:
+                if label.lower() in rl.lower() or rl.lower() in label.lower():
+                    suggestions.append(rl)
+            # difflib close matches (if no substring matches found)
+            if not suggestions:
+                suggestions = difflib.get_close_matches(
+                    label, repo_labels_list, n=3, cutoff=0.4
+                )
+            invalid_with_suggestions.append((label, suggestions[:3]))
+
+    return valid, invalid_with_suggestions
 
 
 def register_sbs_tools(mcp: FastMCP) -> None:
@@ -1239,21 +1318,14 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         }
         normalized_project = project_map.get(project, project) if project else None
 
-        # Handle since format: convert ISO timestamp to entry_id format
-        resolved_since = since
-        if since and "-" in since:
-            try:
-                dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
-                resolved_since = dt.strftime("%Y%m%d%H%M%S")
-            except ValueError:
-                resolved_since = _dir_format_to_entry_id(since)
-
+        # Pass since directly to DuckDB layer -- it handles datetime conversion
+        # for ISO strings, old-format entry IDs, and unix timestamp entry IDs.
         db = _get_db(ctx)
         # DuckDB layer handles filtering; we request a generous limit to count total
         all_matched = db.get_entries(
             project=normalized_project,
             tags=tags,
-            since=resolved_since,
+            since=since,
             trigger=trigger,
             limit=10000,  # Get all to count total
         )
@@ -1583,7 +1655,23 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 resolved_labels.append(label)
             if area:
                 resolved_labels.append(f"area:{area}")
-        cmd.extend(["--label", ",".join(resolved_labels)])
+
+        # Validate labels against repository
+        valid_labels, invalid_labels = _validate_labels(resolved_labels, GITHUB_REPO)
+        if invalid_labels:
+            suggestions_msg = "; ".join(
+                f"'{inv}' (did you mean: {', '.join(repr(s) for s in suggs)})"
+                if suggs else f"'{inv}' (no close matches found)"
+                for inv, suggs in invalid_labels
+            )
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=f"Invalid labels: {suggestions_msg}",
+            )
+
+        cmd.extend(["--label", ",".join(valid_labels)])
 
         try:
             result = subprocess.run(
@@ -1705,12 +1793,28 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         if labels:
             resolved_labels.extend(labels)
 
+        # Validate labels against repository
+        valid_labels, invalid_labels = _validate_labels(resolved_labels, GITHUB_REPO)
+        if invalid_labels:
+            suggestions_msg = "; ".join(
+                f"'{inv}' (did you mean: {', '.join(repr(s) for s in suggs)})"
+                if suggs else f"'{inv}' (no close matches found)"
+                for inv, suggs in invalid_labels
+            )
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
+                error=f"Invalid labels: {suggestions_msg}",
+            )
+
         cmd = [
             "gh", "issue", "create",
             "--repo", GITHUB_REPO,
             "--title", title,
             "--body", full_body,
-            "--label", ",".join(resolved_labels),
+            "--label", ",".join(valid_labels),
         ]
 
         try:

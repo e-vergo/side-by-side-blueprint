@@ -225,8 +225,8 @@ class DuckDBLayer:
             CREATE OR REPLACE VIEW skill_sessions AS
             WITH lagged AS (
                 SELECT *,
-                    LAG(state_transition) OVER (ORDER BY entry_id) AS prev_transition,
-                    LAG(gs_skill) OVER (ORDER BY entry_id) AS prev_skill
+                    LAG(state_transition) OVER (ORDER BY created_at NULLS LAST) AS prev_transition,
+                    LAG(gs_skill) OVER (ORDER BY created_at NULLS LAST) AS prev_skill
                 FROM entries WHERE gs_skill IS NOT NULL
             ),
             boundaries AS (
@@ -236,7 +236,7 @@ class DuckDBLayer:
                               AND (prev_transition IN ('phase_end','handoff','phase_fail')
                                    OR prev_skill IS NULL
                                    OR prev_skill != gs_skill)
-                        THEN 1 ELSE 0 END) OVER (ORDER BY entry_id) AS session_id
+                        THEN 1 ELSE 0 END) OVER (ORDER BY created_at NULLS LAST) AS session_id
                 FROM lagged
             )
             SELECT * FROM boundaries
@@ -549,6 +549,46 @@ class DuckDBLayer:
         rows = result.fetchall()
         return [self._row_to_entry_dict(row, columns) for row in rows]
 
+    @staticmethod
+    def _resolve_since_to_datetime(since: str) -> Optional[datetime]:
+        """Convert a ``since`` value to a datetime for ``created_at`` comparison.
+
+        Accepts:
+        - ISO 8601 timestamps (``2026-02-01T00:00:00``, with optional ``Z``/offset)
+        - Old-format entry IDs (``YYYYMMDDHHMMSS``, 14 digits)
+        - Unix-timestamp entry IDs (10-digit strings)
+
+        Returns ``None`` if the value cannot be parsed.
+        """
+        if not since:
+            return None
+
+        # Try ISO format first (contains '-')
+        if "-" in since:
+            try:
+                return datetime.fromisoformat(since.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                pass
+
+        # Pure digits: old entry_id (14 chars) or unix timestamp (10 chars)
+        if since.isdigit():
+            if len(since) == 14:
+                # YYYYMMDDHHMMSS
+                try:
+                    return datetime.strptime(since, "%Y%m%d%H%M%S").replace(
+                        tzinfo=timezone.utc
+                    )
+                except ValueError:
+                    pass
+            elif len(since) <= 12:
+                # Unix timestamp (seconds since epoch)
+                try:
+                    return datetime.fromtimestamp(int(since), tz=timezone.utc)
+                except (ValueError, OSError, OverflowError):
+                    pass
+
+        return None
+
     # ------------------------------------------------------------------
     # Core access methods
     # ------------------------------------------------------------------
@@ -609,7 +649,7 @@ class DuckDBLayer:
         trigger: Optional[str] = None,
         limit: int = 20,
     ) -> list[dict]:
-        """Filter entries. Tags use ANY match. ORDER BY entry_id DESC."""
+        """Filter entries. Tags use ANY match. ORDER BY created_at DESC."""
         self.ensure_loaded()
         assert self._conn is not None
         conditions: list[str] = []
@@ -626,8 +666,14 @@ class DuckDBLayer:
                 params.extend([tag, tag])
             conditions.append(f"({' OR '.join(tag_clauses)})")
         if since:
-            conditions.append("entry_id > ?")
-            params.append(since)
+            since_dt = self._resolve_since_to_datetime(since)
+            if since_dt is not None:
+                conditions.append("created_at > ?")
+                params.append(since_dt)
+            else:
+                # Fallback: treat as entry_id for backwards compat
+                conditions.append("entry_id > ?")
+                params.append(since)
         if trigger:
             conditions.append("trigger = ?")
             params.append(trigger)
@@ -636,9 +682,18 @@ class DuckDBLayer:
         if conditions:
             where = "WHERE " + " AND ".join(conditions)
 
-        query = f"SELECT * FROM entries {where} ORDER BY entry_id DESC LIMIT ?"
+        query = f"SELECT * FROM entries {where} ORDER BY created_at DESC NULLS LAST LIMIT ?"
         params.append(limit)
         return self._fetch_entries(query, params)
+
+    def _entry_id_to_created_at(self, entry_id: str) -> Optional[datetime]:
+        """Look up the ``created_at`` timestamp for a given entry_id."""
+        assert self._conn is not None
+        row = self._conn.execute(
+            "SELECT created_at FROM entries WHERE entry_id = ? LIMIT 1",
+            [entry_id],
+        ).fetchone()
+        return row[0] if row and row[0] else None
 
     def get_epoch_entries(self, epoch_entry_id: Optional[str] = None) -> list[dict]:
         """Get entries in an epoch.
@@ -652,30 +707,51 @@ class DuckDBLayer:
             meta = self._conn.execute(
                 "SELECT last_epoch_entry FROM index_metadata LIMIT 1"
             ).fetchone()
-            start_id = (meta[0] if meta and meta[0] else "0")
+            start_id = (meta[0] if meta and meta[0] else None)
+            if start_id:
+                start_ts = self._entry_id_to_created_at(start_id)
+                if start_ts:
+                    return self._fetch_entries(
+                        "SELECT * FROM entries WHERE created_at > ? "
+                        "ORDER BY created_at ASC",
+                        [start_ts],
+                    )
+            # Fallback: no epoch boundary found, return all entries
             return self._fetch_entries(
-                "SELECT * FROM entries WHERE entry_id > ? ORDER BY entry_id ASC",
-                [start_id],
+                "SELECT * FROM entries ORDER BY created_at ASC"
             )
         else:
+            # Look up the created_at of the target epoch entry
+            epoch_ts = self._entry_id_to_created_at(epoch_entry_id)
+            if epoch_ts is None:
+                return []
+
             # Find the previous epoch boundary (skill-triggered entry before this one)
             rows = self._conn.execute(
-                "SELECT entry_id FROM entries WHERE trigger = 'skill' AND entry_id < ? "
-                "ORDER BY entry_id DESC LIMIT 1",
-                [epoch_entry_id],
+                "SELECT created_at FROM entries WHERE trigger = 'skill' "
+                "AND created_at < ? AND created_at IS NOT NULL "
+                "ORDER BY created_at DESC LIMIT 1",
+                [epoch_ts],
             ).fetchall()
-            start_id = rows[0][0] if rows else "0"
-            return self._fetch_entries(
-                "SELECT * FROM entries WHERE entry_id > ? AND entry_id <= ? "
-                "ORDER BY entry_id ASC",
-                [start_id, epoch_entry_id],
-            )
+            if rows and rows[0][0]:
+                start_ts = rows[0][0]
+                return self._fetch_entries(
+                    "SELECT * FROM entries WHERE created_at > ? AND created_at <= ? "
+                    "ORDER BY created_at ASC",
+                    [start_ts, epoch_ts],
+                )
+            else:
+                return self._fetch_entries(
+                    "SELECT * FROM entries WHERE created_at <= ? "
+                    "ORDER BY created_at ASC",
+                    [epoch_ts],
+                )
 
     def get_entries_by_project(self, project: str) -> list[dict]:
-        """All entries for a project, ordered by entry_id DESC."""
+        """All entries for a project, ordered by created_at DESC."""
         self.ensure_loaded()
         return self._fetch_entries(
-            "SELECT * FROM entries WHERE project = ? ORDER BY entry_id DESC",
+            "SELECT * FROM entries WHERE project = ? ORDER BY created_at DESC NULLS LAST",
             [project],
         )
 
@@ -695,8 +771,10 @@ class DuckDBLayer:
     # ------------------------------------------------------------------
 
     def _get_all_entries_sorted(self) -> list[dict]:
-        """Get all entries sorted by entry_id ASC (for session grouping etc)."""
-        return self._fetch_entries("SELECT * FROM entries ORDER BY entry_id ASC")
+        """Get all entries sorted by created_at ASC (for session grouping etc)."""
+        return self._fetch_entries(
+            "SELECT * FROM entries ORDER BY created_at ASC NULLS LAST"
+        )
 
     def analysis_summary(self) -> AnalysisSummary:
         """Replaces ``sbs_analysis_summary_impl``."""
@@ -839,13 +917,20 @@ class DuckDBLayer:
 
         # Get entries since
         if last_si_entry:
-            since_entries = self._fetch_entries(
-                "SELECT * FROM entries WHERE entry_id > ? ORDER BY entry_id DESC",
-                [last_si_entry],
-            )
+            si_ts = self._entry_id_to_created_at(last_si_entry)
+            if si_ts:
+                since_entries = self._fetch_entries(
+                    "SELECT * FROM entries WHERE created_at > ? "
+                    "ORDER BY created_at DESC NULLS LAST",
+                    [si_ts],
+                )
+            else:
+                since_entries = self._fetch_entries(
+                    "SELECT * FROM entries ORDER BY created_at DESC NULLS LAST"
+                )
         else:
             since_entries = self._fetch_entries(
-                "SELECT * FROM entries ORDER BY entry_id DESC"
+                "SELECT * FROM entries ORDER BY created_at DESC NULLS LAST"
             )
 
         # Filter out retroactive
@@ -1963,7 +2048,7 @@ class DuckDBLayer:
         archive_context = None
         if include_archive:
             recent = self._fetch_entries(
-                "SELECT * FROM entries ORDER BY entry_id DESC LIMIT 5"
+                "SELECT * FROM entries ORDER BY created_at DESC NULLS LAST LIMIT 5"
             )
             if recent:
                 archive_context = {
@@ -1978,7 +2063,7 @@ class DuckDBLayer:
         if include_quality:
             row = self._conn.execute(
                 "SELECT quality_overall, quality_scores FROM entries "
-                "WHERE quality_overall IS NOT NULL ORDER BY entry_id DESC LIMIT 1"
+                "WHERE quality_overall IS NOT NULL ORDER BY created_at DESC NULLS LAST LIMIT 1"
             ).fetchone()
             if row:
                 scores = row[1]
@@ -2029,7 +2114,7 @@ class DuckDBLayer:
         if "quality" in sections_to_include:
             row = self._conn.execute(
                 "SELECT quality_overall, entry_id FROM entries "
-                "WHERE quality_overall IS NOT NULL ORDER BY entry_id DESC LIMIT 1"
+                "WHERE quality_overall IS NOT NULL ORDER BY created_at DESC NULLS LAST LIMIT 1"
             ).fetchone()
             if row:
                 lines.append("## Quality")
@@ -2038,7 +2123,7 @@ class DuckDBLayer:
 
         if "recent" in sections_to_include:
             recent = self._fetch_entries(
-                "SELECT * FROM entries ORDER BY entry_id DESC LIMIT 10"
+                "SELECT * FROM entries ORDER BY created_at DESC NULLS LAST LIMIT 10"
             )
             lines.append("## Recent Archive Activity")
             lines.append("")

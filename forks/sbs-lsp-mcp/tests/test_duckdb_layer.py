@@ -301,8 +301,12 @@ class TestCoreAccess:
     def test_get_entries_no_filter(self, db_layer: DuckDBLayer):
         entries = db_layer.get_entries(limit=100)
         assert len(entries) == 5
-        # Should be DESC order
-        assert entries[0]["entry_id"] >= entries[-1]["entry_id"]
+        # Should be DESC order by created_at (most recent first)
+        for i in range(len(entries) - 1):
+            ca_cur = entries[i].get("created_at", "")
+            ca_next = entries[i + 1].get("created_at", "")
+            if ca_cur and ca_next:
+                assert ca_cur >= ca_next
 
     def test_get_entries_filter_project(self, db_layer: DuckDBLayer):
         entries = db_layer.get_entries(project="SBSTest")
@@ -320,9 +324,23 @@ class TestCoreAccess:
         assert entries[0]["entry_id"] == "20260131102119"
 
     def test_get_entries_filter_since(self, db_layer: DuckDBLayer):
+        # Use ISO timestamp relative to fixture data:
+        # entry 20260131120000 has created_at = now - 1hr
+        # We want entries AFTER that point, so use (now - 1hr) as since
+        since_ts = (datetime.now() - timedelta(hours=1)).isoformat()
+        entries = db_layer.get_entries(since=since_ts)
+        # Should get entries with created_at > (now-1hr): 140000 (now-30min) and 150000 (now)
+        assert len(entries) == 2
+        ids = {e["entry_id"] for e in entries}
+        assert "20260131140000" in ids
+        assert "20260131150000" in ids
+
+    def test_get_entries_filter_since_old_entry_id_format(self, db_layer: DuckDBLayer):
+        # Verify old YYYYMMDDHHMMSS format still works (parsed to datetime)
         entries = db_layer.get_entries(since="20260131120000")
-        assert all(e["entry_id"] > "20260131120000" for e in entries)
-        assert len(entries) == 2  # 140000 and 150000
+        # 20260131120000 = 2026-01-31T12:00:00 UTC -- all fixture entries have
+        # created_at relative to now(), so all should be after that fixed date
+        assert len(entries) >= 2
 
     def test_get_entries_limit(self, db_layer: DuckDBLayer):
         entries = db_layer.get_entries(limit=2)
@@ -332,7 +350,8 @@ class TestCoreAccess:
         # Current epoch: entries after last_epoch_entry "20260130100000"
         entries = db_layer.get_epoch_entries()
         assert len(entries) == 4  # All entries after epoch close
-        assert all(e["entry_id"] > "20260130100000" for e in entries)
+        # Verify none of the returned entries is the epoch boundary itself
+        assert all(e["entry_id"] != "20260130100000" for e in entries)
 
     def test_get_epoch_entries_by_id(self, db_layer: DuckDBLayer):
         # The epoch that 20260131120000 closes: entries between previous skill trigger and this ID
