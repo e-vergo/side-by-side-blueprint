@@ -6,6 +6,14 @@
       "env": {
         "ZULIP_ENABLED": "1"
       }
+    },
+    "vscode": {
+      "command": "npx",
+      "args": ["github:malvex/mcp-server-vscode"]
+    },
+    "vscode-mcp": {
+      "command": "npx",
+      "args": ["-y", "@vscode-mcp/vscode-mcp-server@latest"]
     }
   }
 }
