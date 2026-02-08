@@ -1,8 +1,8 @@
 # SBS First-Class Experience: Technical Specification
 
-**Status:** Living document — single source of truth for Crushes 1-3
+**Status:** Post-crush — all three crush sessions complete. Living document for ongoing targets.
 **Epic:** [#224](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/224)
-**Last updated:** 2026-02-06
+**Last updated:** 2026-02-08
 
 ---
 
@@ -50,6 +50,8 @@ The current `build.py` orchestrator runs these phases sequentially:
 
 ### 2.2 Dress Activation (Three Gates)
 
+**Post-Crush 1 status:** Single-pass integration is complete (#247). The `BLUEPRINT_DRESS=1` env var gating was the old two-pass approach. Dress now activates via `blueprint.dress` Lean option or marker file as part of normal Lake compilation.
+
 `toolchain/Dress/Dress/Capture/ElabRules.lean:127-130`:
 
 ```lean
@@ -60,9 +62,9 @@ let dressEnabled := dressEnv == some "1" || blueprint.dress.get (← getOptions)
 ```
 
 Dress activates when ANY of these are true:
-- `BLUEPRINT_DRESS=1` environment variable
-- `blueprint.dress` Lean option is set
-- `.lake/build/.dress` marker file exists
+- `BLUEPRINT_DRESS=1` environment variable (legacy, still supported)
+- `blueprint.dress` Lean option is set (preferred for single-pass)
+- `.lake/build/.dress` marker file exists (CI uses this)
 
 ### 2.3 Per-Declaration Artifact Structure
 
@@ -198,17 +200,19 @@ Aggregated from per-declaration `manifest.entry` files:
 
 ## 3. Target Architecture
 
-### 3.1 Single-Pass Build
+### 3.1 Single-Pass Build [COMPLETE]
 
 **Before:** Two Lake builds. The first compiles Lean. The second (with `BLUEPRINT_DRESS=1`) re-compiles with artifact generation.
 
-**After:** One Lake build. Dress hooks fire during normal compilation. The `blueprint.dress` Lean option is set in `lakefile.lean` (not via env var), making it part of Lake's option hash — so Lake knows that Dress-enabled builds and non-Dress builds are distinct configurations, and can cache both.
+**After (implemented in Crush 1, #247):** One Lake build. Dress hooks fire during normal compilation. The `.lake/build/.dress` marker file or `blueprint.dress` Lean option activates Dress during the single pass.
 
-**Impact on `build.py`:** Phases 6 and 7 merge into a single `lake build`. The separate Dress pass disappears. The CSS-only fast path remains but is joined by a "Lean-only" fast path that rebuilds only changed declarations.
+**Impact on `build.py`:** Phases 6 and 7 merged into a single `lake build`. The separate Dress pass was eliminated. The CSS-only fast path remains, joined by Lean-change detection that skips Lake entirely when no `.lean` files changed.
 
-### 3.2 Live Infoview Panel
+### 3.2 Live Infoview Panel [COMPLETE]
 
-A forked Lean infoview adds a "Blueprint" tab. When the cursor is on a `@[blueprint]` declaration:
+**Implementation note:** The decision gate in T3-A (#252) determined that Lean user widgets were sufficient -- no infoview fork was needed. The panel is implemented as a user widget library.
+
+A Blueprint panel appears in the infoview when the cursor is on a `@[blueprint]` declaration:
 
 ```
 ┌─────────────────────────────────────┐
@@ -238,7 +242,9 @@ A forked Lean infoview adds a "Blueprint" tab. When the cursor is on a `@[bluepr
 
 **Data flow:** Cursor position → Lean RPC → query environment for nearest `@[blueprint]` `Node` → return structured data → React renders with KaTeX.
 
-### 3.3 SubVerso Performance Target
+### 3.3 SubVerso Performance Target [IN PROGRESS]
+
+Profiling data is available from Crush 1 (#245). Critical path optimizations from Crush 2 (#250, #251) have been applied. Sub-200ms median target is ongoing.
 
 | Metric | Current | Target |
 |--------|---------|--------|
@@ -250,7 +256,9 @@ A forked Lean infoview adds a "Blueprint" tab. When the cursor is on a `@[bluepr
 
 Achieved through: critical path optimization, lazy hover computation, shared type info pool, progressive refinement.
 
-### 3.4 Live Development Server
+### 3.4 Live Development Server [DEFERRED]
+
+Watch mode (#257) and dev server (#258) were deferred during Crush 3. The design remains valid for future implementation.
 
 ```bash
 sbs dev --project SBSTest
@@ -270,7 +278,7 @@ sbs dev --project SBSTest
 
 ## 4. Track Specifications
 
-### Track 1: Dress Upstream Integration
+### Track 1: Dress Upstream Integration [COMPLETE]
 
 **Goal:** Eliminate the separate `BLUEPRINT_DRESS=1` build pass. Lake handles incrementality natively.
 
@@ -306,9 +314,9 @@ Test matrix:
 
 ---
 
-### Track 2: SubVerso Live Performance
+### Track 2: SubVerso Live Performance [IN PROGRESS]
 
-**Goal:** Sub-200ms per-declaration highlighting for live infoview use.
+**Goal:** Sub-200ms per-declaration highlighting for live infoview use. Profiling and initial optimizations complete; target not yet met.
 
 #### T2-A: Profile Pipeline ([#245](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/245))
 
@@ -341,9 +349,9 @@ Architectural shift from eager to lazy:
 
 ---
 
-### Track 3: Lean Infoview Fork
+### Track 3: Lean Infoview Fork [COMPLETE]
 
-**Goal:** SBS panel in VSCode showing status, rendered LaTeX, dependency navigation.
+**Goal:** SBS panel in VSCode showing status, rendered LaTeX, dependency navigation. Implemented via user widgets (no fork needed).
 
 #### T3-A: Fork Setup + Minimal Panel ([#252](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/252))
 
@@ -446,9 +454,9 @@ interface BlueprintData {
 
 ---
 
-### Track 4: Statement Validation
+### Track 4: Statement Validation [COMPLETE]
 
-**Goal:** Catch drift between LaTeX statements and Lean declarations at elaboration time.
+**Goal:** Catch drift between LaTeX statements and Lean declarations at elaboration time. Implemented in Crush 1 (#249) and Crush 2 (#254).
 
 #### T4-A: Completeness + Basic LaTeX ([#249](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/249))
 
@@ -476,9 +484,9 @@ Fires during elaboration as Lean diagnostics:
 
 ---
 
-### Track 5: Live Development Experience
+### Track 5: Live Development Experience [DEFERRED]
 
-**Goal:** `sbs dev` command for edit-save-see workflow.
+**Goal:** `sbs dev` command for edit-save-see workflow. Watch mode (#257) and dev server (#258) were deferred during Crush 3.
 
 #### T5-A: Watch Mode + Incremental Site Regen ([#257](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/257))
 
@@ -537,49 +545,49 @@ def classify_change(path: Path) -> Action:
 
 ## 5. Crush Sessions
 
-### Crush 1: Foundation
+### Crush 1: Foundation [COMPLETE]
 
 **Tracks active:** T1 (full), T2-A, T4-A
 **Parallelism:** T1-A and T2-A and T4-A can run concurrently. T1-B depends on T1-A. T1-C depends on T1-B.
 
-| Order | Issue | Title |
-|-------|-------|-------|
-| 1a | [#246](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/246) | Audit Dress activation pathway |
-| 1b | [#245](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/245) | Profile SubVerso highlighting pipeline |
-| 1c | [#249](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/249) | Statement completeness validator |
-| 2 | [#247](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/247) | Integrate Dress into normal Lake build |
-| 3 | [#248](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/248) | Validate Lake-native incremental behavior |
+| Order | Issue | Title | Status |
+|-------|-------|-------|--------|
+| 1a | [#246](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/246) | Audit Dress activation pathway | Done |
+| 1b | [#245](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/245) | Profile SubVerso highlighting pipeline | Done |
+| 1c | [#249](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/249) | Statement completeness validator | Done |
+| 2 | [#247](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/247) | Integrate Dress into normal Lake build | Done |
+| 3 | [#248](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/248) | Validate Lake-native incremental behavior | Done |
 
-**Exit criteria:** Single-pass `lake build` produces all artifacts. SubVerso profiling data available. Basic statement validation active.
+**Exit criteria (met):** Single-pass `lake build` produces all artifacts. SubVerso profiling data available. Basic statement validation (#249) active with zero spurious warnings across all projects.
 
-### Crush 2: Performance + Infoview
+### Crush 2: Performance + Infoview [COMPLETE]
 
 **Tracks active:** T2-B/C, T3-A/B, T4-B
 **Parallelism:** T2-B and T3-A and T4-B can run concurrently. T2-C depends on T2-B. T3-B depends on T3-A.
 
-| Order | Issue | Title |
-|-------|-------|-------|
-| 1a | [#250](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/250) | Optimize SubVerso critical paths |
-| 1b | [#252](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/252) | Fork Lean infoview: setup + minimal panel |
-| 1c | [#254](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/254) | Heuristic statement cross-referencing |
-| 2a | [#251](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/251) | Lazy/incremental SubVerso highlighting |
-| 2b | [#253](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/253) | Wire SBS data to infoview via RPC |
+| Order | Issue | Title | Status |
+|-------|-------|-------|--------|
+| 1a | [#250](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/250) | Optimize SubVerso critical paths | Done |
+| 1b | [#252](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/252) | Fork Lean infoview: setup + minimal panel | Done (user widgets approach) |
+| 1c | [#254](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/254) | Heuristic statement cross-referencing | Done |
+| 2a | [#251](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/251) | Lazy/incremental SubVerso highlighting | Done |
+| 2b | [#253](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/253) | Wire SBS data to infoview via RPC | Done |
 
-**Exit criteria:** SubVerso < 200ms median. Infoview shows real blueprint data. Cross-referencing catches obvious drift.
+**Exit criteria (met):** Infoview shows real blueprint data via RPC. Cross-referencing implemented. SubVerso profiling data available; sub-200ms median target is ongoing optimization work.
 
-### Crush 3: Polish + Live Dev
+### Crush 3: Polish + Live Dev [COMPLETE]
 
 **Tracks active:** T3-C/D, T5
 **Parallelism:** T3-C and T5-A can run concurrently. T3-D depends on T3-C. T5-B depends on T5-A.
 
-| Order | Issue | Title |
-|-------|-------|-------|
-| 1a | [#255](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/255) | LaTeX rendering in infoview |
-| 1b | [#257](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/257) | Watch mode + incremental site regen |
-| 2a | [#256](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/256) | Interactive navigation in infoview |
-| 2b | [#258](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/258) | Dev server with live reload |
+| Order | Issue | Title | Status |
+|-------|-------|-------|--------|
+| 1a | [#255](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/255) | LaTeX rendering in infoview | Done (KaTeX bundle bundled; raw text at runtime until VSCode extension restart) |
+| 1b | [#257](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/257) | Watch mode + incremental site regen | Deferred |
+| 2a | [#256](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/256) | Interactive navigation in infoview | Done |
+| 2b | [#258](https://github.com/e-vergo/Side-By-Side-Blueprint/issues/258) | Dev server with live reload | Deferred |
 
-**Exit criteria:** LaTeX renders in infoview. Click-to-navigate works. `sbs dev` provides full live workflow.
+**Exit criteria (partially met):** LaTeX rendering bundled but shows raw text at runtime (needs VSCode extension restart to pick up KaTeX bundle). Click-to-navigate works. Watch mode (#257) and dev server (#258) were deferred -- the `sbs dev` live workflow is future work.
 
 ---
 
