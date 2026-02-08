@@ -437,6 +437,7 @@ Displays single-column layout without chapter panel sidebar. Intentional - contr
 ### Agent Orchestration
 
 - **Subagent spawning:** `sbs-developer.md` may spawn specialized subagents. Always use Opus 4.5; clones of the orchestrating agent are acceptable.
+- **Block-wait mandatory:** NEVER use `run_in_background=true` when spawning `sbs-developer` agents. Always block-wait for agent completion. Background execution causes lost synchronization and dead time. This was learned from Crush 2 session (#253-#254).
 - **Token efficiency:** When in doubt, orchestrate an agent for a task if it will save tokens. Period.
 
 ### Doing Mode Detection

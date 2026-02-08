@@ -107,6 +107,394 @@ def _run_archive_upload(
         return False, None, str(e)
 
 
+# Visual file patterns for detecting visual changes in task finalization
+_VISUAL_FILE_PATTERNS = [
+    "assets/",
+    "common.css",
+    "blueprint.css",
+    "paper.css",
+    "dep_graph.css",
+    "plastex.js",
+    "verso-code.js",
+    "Theme.lean",
+    "Render.lean",
+    "DepGraph.lean",
+    "SideBySide.lean",
+    "Svg.lean",
+]
+
+# Tags that indicate visual changes
+_VISUAL_TAGS = [
+    "css",
+    "visual",
+    "layout",
+    "template",
+    "theme",
+    "styling",
+    "graph",
+    "dashboard",
+]
+
+
+def _detect_visual_changes(db: "DuckDBLayer") -> bool:
+    """Detect whether the current epoch contains visual changes.
+
+    Checks two signals:
+    1. Archive entry tags containing visual-related keywords
+    2. repo_commits referencing visual file patterns
+
+    Returns:
+        True if visual changes were detected in the current epoch.
+    """
+    try:
+        entries = db.get_epoch_entries()
+    except Exception:
+        return False
+
+    for entry in entries:
+        # Check tags
+        tags = entry.get("tags", [])
+        if isinstance(tags, str):
+            try:
+                tags = json.loads(tags)
+            except (json.JSONDecodeError, TypeError):
+                tags = []
+
+        for tag in tags:
+            tag_lower = str(tag).lower()
+            if any(vt in tag_lower for vt in _VISUAL_TAGS):
+                return True
+
+        # Check repo_commits for visual file paths
+        repo_commits = entry.get("repo_commits", {})
+        if isinstance(repo_commits, str):
+            try:
+                repo_commits = json.loads(repo_commits)
+            except (json.JSONDecodeError, TypeError):
+                repo_commits = {}
+
+        if isinstance(repo_commits, dict):
+            for _repo, commit_info in repo_commits.items():
+                files = []
+                if isinstance(commit_info, dict):
+                    files = commit_info.get("files", [])
+                elif isinstance(commit_info, list):
+                    files = commit_info
+
+                for filepath in files:
+                    filepath_str = str(filepath)
+                    if any(pat in filepath_str for pat in _VISUAL_FILE_PATTERNS):
+                        return True
+
+    return False
+
+
+def _run_visual_validators(project: str = "SBSTest") -> Dict[str, Any]:
+    """Run T5 (status color match) and T6 (CSS variable coverage) validators.
+
+    Returns:
+        Dict with 'passed', 'failed', 'total', 'details' keys.
+    """
+    scripts_dir = SBS_ROOT / "dev" / "scripts"
+    cmd = [
+        "/opt/homebrew/bin/python3", "-m", "pytest",
+        "sbs/tests/pytest/validators/test_color_match.py",
+        "sbs/tests/pytest/validators/test_variable_coverage.py",
+        "-v", "--tb=short", "-q",
+    ]
+
+    result_info: Dict[str, Any] = {
+        "passed": 0,
+        "failed": 0,
+        "total": 0,
+        "details": [],
+    }
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=str(scripts_dir),
+            timeout=120,
+        )
+
+        output = result.stdout + result.stderr
+
+        # Parse pytest summary line: "X passed, Y failed in Z.ZZs"
+        summary_match = re.search(
+            r"(\d+) passed(?:.*?(\d+) failed)?",
+            output,
+        )
+        if summary_match:
+            result_info["passed"] = int(summary_match.group(1) or 0)
+            result_info["failed"] = int(summary_match.group(2) or 0)
+
+        result_info["total"] = result_info["passed"] + result_info["failed"]
+
+        # Extract FAILED lines for details
+        for line in output.split("\n"):
+            line = line.strip()
+            if line.startswith("FAILED") or ("FAILED" in line and "::" in line):
+                result_info["details"].append(line)
+
+    except subprocess.TimeoutExpired:
+        result_info["details"].append("T5/T6 validators timed out after 120s")
+    except Exception as e:
+        result_info["details"].append(f"T5/T6 validator error: {str(e)}")
+
+    return result_info
+
+
+def _parse_l3_findings(summary_content: str) -> List[Dict[str, str]]:
+    """Extract actionable findings from L3+ meta-analysis markdown.
+
+    Looks for structured patterns:
+    - Numbered lists under "## Findings", "## Actions", "## Recommendations"
+    - Lines starting with "- **" or "- [ ]" as action items
+    - Bold text as titles followed by description
+
+    Returns:
+        List of dicts with 'title' and 'body' keys, max 5 findings.
+    """
+    findings: List[Dict[str, str]] = []
+    if not summary_content:
+        return findings
+
+    # Split into sections by ## headers
+    sections = re.split(r"^##\s+", summary_content, flags=re.MULTILINE)
+
+    # Look for actionable sections
+    actionable_headers = [
+        "finding", "action", "recommend", "issue", "improvement",
+        "observation", "concern", "suggestion",
+    ]
+
+    for section in sections:
+        lines = section.strip().split("\n")
+        if not lines:
+            continue
+
+        header = lines[0].lower().strip()
+        is_actionable = any(ah in header for ah in actionable_headers)
+        if not is_actionable:
+            continue
+
+        # Parse numbered or bulleted items from the section body
+        current_title = ""
+        current_body_lines: List[str] = []
+
+        for line in lines[1:]:
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            # Match numbered items: "1. Title" or "1. **Title**: description"
+            num_match = re.match(r"^\d+\.\s+(.+)", stripped)
+            # Match bullet items: "- **Title**: description" or "- [ ] Title"
+            bullet_match = re.match(r"^[-*]\s+(.+)", stripped)
+
+            if num_match or bullet_match:
+                # Save previous finding
+                if current_title:
+                    body = "\n".join(current_body_lines).strip()
+                    findings.append({"title": current_title, "body": body})
+
+                content = (num_match or bullet_match).group(1)  # type: ignore[union-attr]
+
+                # Extract title from bold: "**Title**: rest"
+                bold_match = re.match(r"\*\*(.+?)\*\*[:\s]*(.*)", content)
+                checkbox_match = re.match(r"\[[ x]\]\s*(.*)", content)
+
+                if bold_match:
+                    current_title = bold_match.group(1).strip()
+                    current_body_lines = [bold_match.group(2).strip()] if bold_match.group(2).strip() else []
+                elif checkbox_match:
+                    current_title = checkbox_match.group(1).strip()
+                    current_body_lines = []
+                else:
+                    # Use the whole line as title (truncate if too long)
+                    current_title = content[:120].strip()
+                    current_body_lines = []
+            elif current_title:
+                # Continuation line for current item
+                current_body_lines.append(stripped)
+
+        # Save the last finding
+        if current_title:
+            body = "\n".join(current_body_lines).strip()
+            findings.append({"title": current_title, "body": body})
+
+    # Deduplicate by title similarity and limit to 5
+    seen_titles: set = set()
+    unique_findings: List[Dict[str, str]] = []
+    for f in findings:
+        title_key = f["title"].lower().strip()
+        if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            unique_findings.append(f)
+
+    return unique_findings[:5]
+
+
+def _deduplicate_against_open_issues(
+    findings: List[Dict[str, str]],
+) -> List[Dict[str, str]]:
+    """Filter findings that match existing open GitHub issues by title similarity.
+
+    Queries open issues and removes findings whose titles closely match
+    existing issue titles (case-insensitive substring match).
+
+    Returns:
+        Filtered list of findings that don't duplicate existing issues.
+    """
+    if not findings:
+        return findings
+
+    # Fetch open issues
+    try:
+        result = subprocess.run(
+            [
+                "gh", "issue", "list",
+                "--repo", GITHUB_REPO,
+                "--json", "title",
+                "--limit", "100",
+                "--state", "open",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        if result.returncode != 0:
+            # Cannot check for duplicates -- allow all through
+            return findings
+
+        existing = json.loads(result.stdout)
+        existing_titles = [
+            item.get("title", "").lower().strip()
+            for item in existing
+            if isinstance(item, dict)
+        ]
+    except Exception:
+        # Cannot check -- allow all through
+        return findings
+
+    novel: List[Dict[str, str]] = []
+    for finding in findings:
+        title_lower = finding["title"].lower().strip()
+        is_duplicate = False
+        for existing_title in existing_titles:
+            # Check substring match in both directions
+            if (
+                title_lower in existing_title
+                or existing_title in title_lower
+                # Also check word overlap > 60%
+                or _word_overlap(title_lower, existing_title) > 0.6
+            ):
+                is_duplicate = True
+                break
+        if not is_duplicate:
+            novel.append(finding)
+
+    return novel
+
+
+def _word_overlap(a: str, b: str) -> float:
+    """Calculate word overlap ratio between two strings."""
+    words_a = set(a.split())
+    words_b = set(b.split())
+    if not words_a or not words_b:
+        return 0.0
+    intersection = words_a & words_b
+    return len(intersection) / min(len(words_a), len(words_b))
+
+
+def _create_l3_issues(
+    findings: List[Dict[str, str]],
+    level: int,
+) -> tuple[List[int], Optional[int]]:
+    """Create GitHub issues for L3+ findings and an epic linking them.
+
+    Args:
+        findings: List of {title, body} dicts to create issues for.
+        level: Introspection level (3, 4, etc.)
+
+    Returns:
+        (issue_numbers, epic_number) - list of created issue numbers and epic issue number.
+    """
+    created_numbers: List[int] = []
+
+    for finding in findings:
+        title = f"[L{level}] {finding['title']}"
+        body = finding.get("body", "") or "(No details provided)"
+        body += f"\n\n---\nOrigin: L{level} meta-analysis finding\nLabel: `origin:self-improve`"
+
+        try:
+            result = subprocess.run(
+                [
+                    "gh", "issue", "create",
+                    "--repo", GITHUB_REPO,
+                    "--title", title,
+                    "--body", body,
+                    "--label", "origin:self-improve,ai-authored",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                url = result.stdout.strip()
+                if "/issues/" in url:
+                    try:
+                        num = int(url.split("/issues/")[-1])
+                        created_numbers.append(num)
+                    except ValueError:
+                        pass
+        except Exception:
+            continue
+
+    # Create epic issue linking all child issues
+    epic_number: Optional[int] = None
+    if len(created_numbers) >= 2:
+        epic_title = f"[L{level}] Meta-analysis findings ({datetime.now().strftime('%Y-%m-%d')})"
+        issue_links = "\n".join(f"- #{num}" for num in created_numbers)
+        epic_body = (
+            f"## L{level} Meta-Analysis Findings\n\n"
+            f"Auto-created from L{level} introspection.\n\n"
+            f"### Linked Issues\n{issue_links}\n\n"
+            f"---\nOrigin: L{level} meta-analysis epic\n"
+            f"Label: `origin:self-improve`"
+        )
+
+        try:
+            result = subprocess.run(
+                [
+                    "gh", "issue", "create",
+                    "--repo", GITHUB_REPO,
+                    "--title", epic_title,
+                    "--body", epic_body,
+                    "--label", "origin:self-improve,ai-authored",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                url = result.stdout.strip()
+                if "/issues/" in url:
+                    try:
+                        epic_number = int(url.split("/issues/")[-1])
+                    except ValueError:
+                        pass
+        except Exception:
+            pass
+
+    return created_numbers, epic_number
+
+
 # Project name normalization map
 _PROJECT_MAP = {
     "SBSTest": "SBSTest",
@@ -752,6 +1140,30 @@ def register_skill_tools(mcp: FastMCP) -> None:
                     if not gate_result.all_pass:
                         requires_approval = True
 
+            # Auto-run T5/T6 validators if visual changes detected (soft gate)
+            visual_validator_results: Optional[Dict[str, Any]] = None
+            if _detect_visual_changes(db):
+                visual_validator_results = _run_visual_validators()
+                if visual_validator_results["failed"] > 0:
+                    # Soft gate: warn but don't block
+                    for detail in visual_validator_results.get("details", []):
+                        gate_results.append(f"[WARN] Visual validator: {detail}")
+                    gate_results.append(
+                        f"[WARN] T5/T6 visual validators: "
+                        f"{visual_validator_results['passed']} passed, "
+                        f"{visual_validator_results['failed']} failed "
+                        f"(soft gate - not blocking finalization)"
+                    )
+                elif visual_validator_results["total"] > 0:
+                    gate_results.append(
+                        f"T5/T6 visual validators: "
+                        f"{visual_validator_results['passed']}/{visual_validator_results['total']} passed"
+                    )
+                else:
+                    gate_results.append(
+                        "T5/T6 visual validators: no tests collected (check test paths)"
+                    )
+
             # If gates pass (or no gates), proceed to handoff
             if not requires_approval:
                 # Merge PR if one exists
@@ -1313,7 +1725,7 @@ def register_skill_tools(mcp: FastMCP) -> None:
 
         # Dispatch based on level: L2 vs L3+
         if level >= 3:
-            return _introspect_l3_plus(ctx, db, level, phase, summary_content)
+            return _introspect_l3_plus(ctx, db, level, phase, summary_content, dry_run)
         else:  # level == 2
             return _introspect_l2(ctx, db, phase, dry_run, selected_findings, refined_issues, summary_content)
 
@@ -1600,6 +2012,7 @@ def register_skill_tools(mcp: FastMCP) -> None:
         level: int,
         phase: str,
         summary_content: Optional[str],
+        dry_run: bool = False,
     ) -> IntrospectResult:
         """L3+ meta-analysis workflow: ingestion -> synthesis -> archive."""
 
@@ -1752,6 +2165,18 @@ def register_skill_tools(mcp: FastMCP) -> None:
                     phase_completed=None,
                 )
 
+            # Auto-create GitHub issues for actionable L3+ findings
+            issues_created: List[int] = []
+            if not dry_run and content:
+                findings = _parse_l3_findings(content)
+                if findings:
+                    novel_findings = _deduplicate_against_open_issues(findings)
+                    if novel_findings:
+                        created, epic = _create_l3_issues(novel_findings, level)
+                        issues_created = created
+                        if epic:
+                            issues_created.append(epic)
+
             # End the skill
             success, entry_id, error = _run_archive_upload(
                 trigger="skill",
@@ -1765,6 +2190,7 @@ def register_skill_tools(mcp: FastMCP) -> None:
                 error=None,
                 level=level,
                 phase_completed="archive",
+                issues_created=issues_created,
             )
 
         else:

@@ -7,6 +7,8 @@ color: pink
 
 Development agent for the Side-by-Side Blueprint toolchain. Has deep knowledge of the repository architecture, build pipeline, and Verso patterns.
 
+**IMPORTANT:** This agent must NEVER be spawned with `run_in_background=true`. The orchestrator must always block-wait for completion.
+
 ## Gated Environment
 
 You operate within a structured, phased workflow. Global state determines what actions are appropriate. Check your context before acting.
