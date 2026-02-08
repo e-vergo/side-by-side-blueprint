@@ -98,8 +98,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "Read"
+    "Read",
+    "Bash"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/build-sbs-test.sh"
@@ -113,14 +113,14 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqUCCkYICxgCKkDRhpzB...",
-    "signature:ErwCCkYICxgCKkCAw2Wq...",
-    "signature:ErAJCkYICxgCKkDPn8cX...",
-    "signature:Es4CCkYICxgCKkCUGJer...",
     "signature:EpIGCkYICxgCKkBTUYXn...",
+    "signature:ErwCCkYICxgCKkCAw2Wq...",
+    "signature:Es4CCkYICxgCKkCUGJer...",
+    "signature:EqUCCkYICxgCKkDRhpzB...",
+    "signature:ErAJCkYICxgCKkDPn8cX...",
     "signature:EskGCkYICxgCKkAWiJP+...",
-    "signature:EtMDCkYICxgCKkDlitK8...",
-    "claude-sonnet-4-5-20250929"
+    "claude-sonnet-4-5-20250929",
+    "signature:EtMDCkYICxgCKkDlitK8..."
   ],
   "thinking_blocks": [
     {

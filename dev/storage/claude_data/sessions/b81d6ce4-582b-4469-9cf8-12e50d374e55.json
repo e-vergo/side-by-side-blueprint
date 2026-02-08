@@ -387,14 +387,14 @@
     }
   ],
   "tools_used": [
-    "WebSearch",
+    "AskUserQuestion",
+    "Glob",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "Task\" subagent_type=\"Explore",
     "Read",
     "Bash",
-    "Task\" subagent_type=\"Explore",
-    "Glob",
     "Edit",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "AskUserQuestion",
+    "WebSearch",
     "WebFetch",
     "mcp__sbs-lsp__sbs_issue_list"
   ],
@@ -413,8 +413,8 @@
   "session_summary": null,
   "model_versions": [
     "signature:EpMECkYICxgCKkAM6OOD...",
-    "claude-opus-4-6",
-    "signature:EtcFCkYICxgCKkAUyLBc..."
+    "signature:EtcFCkYICxgCKkAUyLBc...",
+    "claude-opus-4-6"
   ],
   "thinking_blocks": [
     {
