@@ -319,6 +319,24 @@ Wrapping CLI tools in a webview is a standard extension pattern (GitLens wraps g
 
 ---
 
+## Self-Improvement Agent
+
+The `sbs-self-improve` agent runs autonomously after every `/task` session. It is NOT triggered by a UI button — it runs automatically via the orchestrator.
+
+### VSCode Extension Integration
+
+The extension should observe task completion events and auto-trigger the self-improve agent. This is a background operation:
+- No UI indicator needed (silent background work)
+- No user interaction
+- Failures are logged but never surface to the user
+- Findings appear as GitHub issues automatically
+
+### Hierarchy
+
+Geometric 4x decay: L0 (every session) -> L1 (every 4) -> L2 (every 16) -> L(N) (every 4^N).
+
+---
+
 ## Open Questions
 
 1. **MCP tool access from extension:** Call Python MCP tools directly via child process, or run MCP server as a sidecar and use JSON-RPC?

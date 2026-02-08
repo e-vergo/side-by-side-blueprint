@@ -960,6 +960,104 @@ class DuckDBLayer:
             count=len(entries_since),
         )
 
+    def compute_self_improve_level(self, multiplier: int = 4) -> int:
+        """Compute the introspection level based on geometric 4x decay.
+
+        Counts entries tagged with level:L0, level:L1, etc.
+        If there are >= multiplier L0 entries since the last L1, level is at least 1.
+        If there are >= multiplier L1 entries since the last L2, level is at least 2.
+        And so on.
+
+        Returns the highest level where the entry count >= multiplier.
+        Level 0 is always the minimum (every task gets at least L0).
+        """
+        self.ensure_loaded()
+        assert self._conn is not None
+
+        level = 0
+        current_level = 0
+
+        while True:
+            level_tag = f"level:L{current_level}"
+            next_level_tag = f"level:L{current_level + 1}"
+
+            # Find the most recent L(N+1) entry
+            last_higher = self._conn.execute(
+                """
+                SELECT MAX(created_at) FROM entries
+                WHERE list_contains(tags, ?) OR list_contains(auto_tags, ?)
+                """,
+                [next_level_tag, next_level_tag],
+            ).fetchone()[0]
+
+            # Count L(N) entries since that timestamp
+            if last_higher:
+                count = self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM entries
+                    WHERE (list_contains(tags, ?) OR list_contains(auto_tags, ?))
+                    AND created_at > ?
+                    """,
+                    [level_tag, level_tag, last_higher],
+                ).fetchone()[0]
+            else:
+                # No higher-level entry exists yet -- count all entries at this level
+                count = self._conn.execute(
+                    """
+                    SELECT COUNT(*) FROM entries
+                    WHERE list_contains(tags, ?) OR list_contains(auto_tags, ?)
+                    """,
+                    [level_tag, level_tag],
+                ).fetchone()[0]
+
+            if count >= multiplier:
+                level = current_level + 1
+                current_level += 1
+            else:
+                break
+
+        return level
+
+    def get_self_improve_findings(self, level: int) -> list[str]:
+        """Get paths to finding documents at a given level.
+
+        Looks for files matching dev/storage/archive/self-improve/L{level}-*.md
+        """
+        findings_dir = self._archive_dir.parent / "archive" / "self-improve"
+        if not findings_dir.exists():
+            return []
+
+        pattern = f"L{level}-*.md"
+        return sorted(str(p) for p in findings_dir.glob(pattern))
+
+    def get_improvement_captures(self, since_entry_id: Optional[str] = None) -> list[dict]:
+        """Get improvement observations (IO captures) since a given entry.
+
+        IO captures are entries with trigger='improvement' or tags containing 'improvement'.
+        """
+        self.ensure_loaded()
+        assert self._conn is not None
+
+        improvement_filter = (
+            "(trigger = 'improvement' "
+            "OR list_contains(tags, 'improvement') "
+            "OR list_contains(auto_tags, 'improvement'))"
+        )
+
+        if since_entry_id:
+            since_dt = self._resolve_since_to_datetime(since_entry_id)
+            if since_dt:
+                return self._fetch_entries(
+                    f"SELECT * FROM entries WHERE {improvement_filter} "
+                    "AND created_at > ? ORDER BY created_at DESC",
+                    [since_dt],
+                )
+
+        return self._fetch_entries(
+            f"SELECT * FROM entries WHERE {improvement_filter} "
+            "ORDER BY created_at DESC",
+        )
+
     def successful_sessions(self) -> SuccessPatterns:
         """Replaces ``sbs_successful_sessions_impl``."""
         self.ensure_loaded()

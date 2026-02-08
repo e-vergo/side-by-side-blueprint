@@ -32,6 +32,18 @@ The top-level chat is the **orchestrator**. It does not implement--it coordinate
 - Files targeted by parallel agents must not overlap
 - Multiple read-only exploration agents may run in parallel alongside at all times
 
+### Post-Task Self-Improvement
+
+After every `/task` session completes (success or failure), the orchestrator spawns `sbs-self-improve` in the background. The orchestrator does NOT wait for completion. This ensures every task session triggers at least L0 introspection.
+
+The introspection hierarchy uses geometric 4x decay:
+| Level | Trigger | Input |
+|-------|---------|-------|
+| L0 | Every task session | Session transcript + recent entries |
+| L1 | Every 4 sessions | All L0 findings since last L1 |
+| L2 | Every 16 sessions | All L1 findings since last L2 |
+| L(N) | Every 4^N sessions | All L(N-1) findings since last L(N) |
+
 ---
 
 ## Project Context
@@ -309,6 +321,17 @@ Forecasting tool for predicting test outcomes and system behavior.
 
 **Archived SKILL.md files:** Original prompt-based skill definitions preserved at `dev/skills/archive/`
 
+### `sbs_self_improve`
+
+Computes introspection level and assembles context for the sbs-self-improve background agent.
+
+**Arguments:**
+- `multiplier`: Geometric decay multiplier (default: 4). Level N triggers every 4^N sessions.
+
+**Returns:** `SelfImproveContext` with computed level, session transcript path, entries since last level, lower-level findings, open issues, and improvement captures.
+
+**Usage:** Called by the `sbs-self-improve` agent at the start of each run. Not typically called directly by the orchestrator.
+
 ---
 
 ## Technical Details
@@ -376,6 +399,7 @@ For implementation details, file locations, and build internals, see:
 | `sbs_comparative_analysis` | Compare session characteristics |
 | `sbs_system_health` | System health metrics |
 | `sbs_user_patterns` | User interaction patterns |
+| `sbs_self_improve` | Get introspection context for background self-improve agent |
 
 *Skill Tools (invoke via slash commands or MCP):*
 | Tool | Use For |

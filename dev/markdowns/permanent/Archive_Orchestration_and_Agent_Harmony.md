@@ -736,6 +736,14 @@ CLAUDE.md
                                                     (tooling hub)
 ```
 
+### sbs-self-improve
+
+**Purpose:** Background autonomous introspection
+**Trigger:** Auto-spawned after every /task completion
+**Interaction:** None (fully autonomous)
+**Output:** Finding documents in dev/storage/archive/self-improve/, GitHub issues via sbs_issue_log
+**Level:** Computed via geometric 4x decay (L0-L(N))
+
 ---
 
 ## Schema Reference

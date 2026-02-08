@@ -710,6 +710,34 @@ class SelfImproveEntries(BaseModel):
     )
 
 
+class SelfImproveContext(BaseModel):
+    """Context blob for the sbs-self-improve agent.
+
+    Assembled by sbs_self_improve() MCP tool based on computed level.
+    """
+
+    level: int = Field(description="Computed level (0, 1, 2, ...)")
+    multiplier: int = Field(default=4, description="Geometric decay multiplier")
+    session_transcript_path: Optional[str] = Field(
+        None, description="Path to JSONL for L0"
+    )
+    entries_since_last_level: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Archive entries at current level"
+    )
+    lower_level_findings: List[str] = Field(
+        default_factory=list, description="Paths to L(N-1) finding documents"
+    )
+    open_issues: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Open GitHub issues for correlation"
+    )
+    improvement_captures: List[Dict[str, Any]] = Field(
+        default_factory=list, description="IO() captures since last run"
+    )
+    archive_state: Dict[str, Any] = Field(
+        default_factory=dict, description="Current archive state"
+    )
+
+
 class SuccessPattern(BaseModel):
     """A successful interaction pattern identified from archive analysis."""
 

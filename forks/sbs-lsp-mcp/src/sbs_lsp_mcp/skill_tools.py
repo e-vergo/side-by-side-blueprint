@@ -32,6 +32,7 @@ from .sbs_models import (
     IntrospectResult,
     LogResult,
     QAResult,
+    SelfImproveContext,
     TaskResult,
     UpdateArchiveResult,
 )
@@ -1729,6 +1730,104 @@ def register_skill_tools(mcp: FastMCP) -> None:
         else:  # level == 2
             return _introspect_l2(ctx, db, phase, dry_run, selected_findings, refined_issues, summary_content)
 
+    @mcp.tool(
+        "sbs_self_improve",
+        annotations=ToolAnnotations(
+            title="SBS Self-Improve Context",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sbs_self_improve(
+        ctx: Context,
+        multiplier: Annotated[
+            int,
+            Field(description="Geometric decay multiplier (default 4)"),
+        ] = 4,
+    ) -> SelfImproveContext:
+        """Compute introspection level and assemble context for the sbs-self-improve agent.
+
+        Called by the sbs-self-improve agent at the start of each run.
+        Computes the appropriate level based on geometric 4x decay,
+        then assembles the context blob with session transcripts,
+        lower-level findings, open issues, and improvement captures.
+        """
+        db = _get_db(ctx)
+
+        # Compute level
+        level = db.compute_self_improve_level(multiplier=multiplier)
+
+        # Get archive state
+        metadata = db.get_metadata()
+        archive_state = metadata
+
+        # For L0: find the latest session transcript (JSONL)
+        session_transcript_path = None
+        if level == 0:
+            sessions_dir = SBS_ROOT / "dev" / "storage" / "claude_data" / "sessions"
+            if sessions_dir.exists():
+                jsonl_files = sorted(
+                    sessions_dir.glob("*.jsonl"),
+                    key=lambda p: p.stat().st_mtime,
+                    reverse=True,
+                )
+                if jsonl_files:
+                    session_transcript_path = str(jsonl_files[0])
+
+        # Get entries since last self-improve at this level
+        entries_result = db.entries_since_self_improve()
+        entries = entries_result.entries_since
+
+        # For L1+: get lower-level findings
+        lower_findings: List[str] = []
+        if level >= 1:
+            lower_findings = db.get_self_improve_findings(level - 1)
+
+        # Get open issues for correlation
+        open_issues: List[Dict[str, Any]] = []
+        try:
+            result = subprocess.run(
+                [
+                    "gh", "issue", "list", "--repo", GITHUB_REPO, "--state", "open",
+                    "--json", "number,title,labels", "--limit", "50",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if result.returncode == 0:
+                open_issues = json.loads(result.stdout)
+        except Exception:
+            pass
+
+        # Get improvement captures
+        improvement_captures = db.get_improvement_captures()
+
+        return SelfImproveContext(
+            level=level,
+            multiplier=multiplier,
+            session_transcript_path=session_transcript_path,
+            entries_since_last_level=[
+                {
+                    "entry_id": e.entry_id,
+                    "notes": (e.notes or "")[:200],
+                    "tags": e.tags,
+                    "created_at": str(e.created_at),
+                }
+                for e in entries[:50]
+            ],
+            lower_level_findings=lower_findings,
+            open_issues=open_issues,
+            improvement_captures=[
+                {
+                    "entry_id": e.get("entry_id", ""),
+                    "notes": (e.get("notes") or "")[:200],
+                }
+                for e in improvement_captures[:20]
+            ],
+            archive_state=archive_state,
+        )
 
     def _introspect_l2(
         ctx: Context,
