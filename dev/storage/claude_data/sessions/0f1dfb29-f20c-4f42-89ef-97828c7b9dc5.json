@@ -1,0 +1,27 @@
+{
+  "session_id": "0f1dfb29-f20c-4f42-89ef-97828c7b9dc5",
+  "project_path": "",
+  "started_at": "",
+  "ended_at": "",
+  "message_count": 0,
+  "user_messages": 0,
+  "assistant_messages": 0,
+  "tool_calls": [],
+  "tools_used": [],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [
+    "/Users/eric/.claude/plans/witty-skipping-sparkle.md"
+  ],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": null,
+  "session_summary": null,
+  "model_versions": [],
+  "thinking_blocks": [],
+  "message_usage": null,
+  "parent_uuid_chain": [],
+  "stop_reasons": []
+}

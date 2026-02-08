@@ -1,0 +1,27 @@
+{
+  "session_id": "545aaa20-ad14-4cc5-b5ec-b8d4a6c57958",
+  "project_path": "",
+  "started_at": "",
+  "ended_at": "",
+  "message_count": 0,
+  "user_messages": 0,
+  "assistant_messages": 0,
+  "tool_calls": [],
+  "tools_used": [],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [
+    "/Users/eric/.claude/plans/modular-greeting-kurzweil.md"
+  ],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": null,
+  "session_summary": null,
+  "model_versions": [],
+  "thinking_blocks": [],
+  "message_usage": null,
+  "parent_uuid_chain": [],
+  "stop_reasons": []
+}

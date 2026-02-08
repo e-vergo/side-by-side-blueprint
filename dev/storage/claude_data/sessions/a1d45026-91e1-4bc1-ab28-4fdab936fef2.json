@@ -1,0 +1,88 @@
+{
+  "session_id": "a1d45026-91e1-4bc1-ab28-4fdab936fef2",
+  "project_path": "",
+  "started_at": "2026-02-04T00:45:20.065Z",
+  "ended_at": "2026-02-04T00:45:34.488Z",
+  "message_count": 8,
+  "user_messages": 4,
+  "assistant_messages": 4,
+  "tool_calls": [
+    {
+      "tool_name": "AskUserQuestion",
+      "timestamp": "2026-02-04T00:45:30.592Z",
+      "duration_ms": null,
+      "success": false,
+      "error": "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.",
+      "input_summary": "{\"questions\": [{\"question\": \"Can you elaborate on what 'update mcp scope' means? What change is needed?\", \"header\": \"Details\", \"options\": [{\"label\": \"Add new MCP tools\", \"description\": \"New tools need...",
+      "input_full": {
+        "questions": [
+          {
+            "question": "Can you elaborate on what 'update mcp scope' means? What change is needed?",
+            "header": "Details",
+            "options": [
+              {
+                "label": "Add new MCP tools",
+                "description": "New tools need to be added to the MCP server"
+              },
+              {
+                "label": "Remove/deprecate tools",
+                "description": "Some MCP tools are outdated or unused"
+              },
+              {
+                "label": "Change tool permissions",
+                "description": "Adjust what tools can access or modify"
+              },
+              {
+                "label": "Update tool documentation",
+                "description": "MCP tool descriptions or parameters need updating"
+              }
+            ],
+            "multiSelect": false
+          }
+        ]
+      },
+      "result_content": "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.",
+      "result_type": "error",
+      "tool_use_id": "toolu_011dhwMUkzF4VaPRz9VmR9eb"
+    }
+  ],
+  "tools_used": [
+    "AskUserQuestion"
+  ],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": null,
+  "session_summary": null,
+  "model_versions": [
+    "signature:ErUFCkYICxgCKkAYuJfD...",
+    "claude-opus-4-5-20251101"
+  ],
+  "thinking_blocks": [
+    {
+      "content": "The user wants to log an issue about \"update mcp scope\". Let me parse this input.\n\n\"update mcp scope\" - this seems like it could be a feature or idea about updating the MCP scope/tools. Let me infer:\n\n- Type: Could be \"feature:enhancement\" (improve/update) or \"housekeeping:tooling\" (tooling). \"update\" maps to feature:enhancement.\n- Area: \"mcp\" maps to area:devtools:mcp\n\nLet me present the confirmation to the user.\n\nWait, \"update mcp scope\" is pretty terse. I should ask what they mean more specifically to get a good title/body.",
+      "signature": "ErUFCkYICxgCKkAYuJfD3BmS/bGfmfLuIvd6qpbPCl5tfFvlZ/WMJ8ZUx4QHh1A4vkgnhDDe08aEjFYSppMeg27alYgHBdy5UH2SEgz4JbgJd/stny5THx0aDKfH/W5NevsEw1JuwyIwbypJBxAONACh+bBQWDHQ6opsFryanM+mM8++wGer1apIB36xBHKVOBDS1N69l/XOKpwEQiPKRh0rrmdtthWSqjhW+wXEXGGkV3mDV919k5axbO9PUQF97XiycQig3x/bhLAVxJgHWXeERaZ0gUuIZEPkqtICP+g3NojoN0LNHc1Une64yXJKXzdapkxDiGoqEWSC7PcPXX3C/CDmmk2J5iIUDESGXyg2ybkmStNuiTKWpjz+bGs+iB1fcfv6IbPnKteNksxyvFAtzUxEqsM+0GphiWn4pCfM5ppem8Zu/3+rU//zuAx8ADFv1MaRBF4SiCCSin46DOw98rZIqvLggFSPjQYvSa7scc+yQgtedCCq25UV4G6M9pJBIcBXlYJGPArovnQFzYHqlOOPctCtJ7XTGIwzoM+Uh8MZ+UKJOM6/KckiXAG8co9YTp4EU2yDNSLLbZPIlZes+v7gaxuclykOMoKRHR9tSo3+uyY95ax7KnLIUdlbuQStOnPVjPAztaQ3P/yEQ3LmxxQ6sMlXlcGAq0GB1aNAW4AaElVifLab6SRMhHGAm8VvoXOTRka5awFXQVCeNnHOJIuV0KBFfGBIgudcDhgD1vQAeBb4mobCLXfnurC1sbs1VfyyDT80fbQ6QAnwyoA5n39aLt96k8jTazBO8kuz/p0k77dAMjv70zgJDjREziVw3BG5r1u/vNDbfj0TdWFLIDnvEXYf1j5nHBsVIry+mCwUTnViFEh6sfetTbpRPxFTPeedVDfaYthWIXflH5uXU+gkB2lRGAE=",
+      "timestamp": "2026-02-04T00:45:26.662Z"
+    }
+  ],
+  "message_usage": {
+    "input_tokens": 12,
+    "output_tokens": 36,
+    "cache_creation_input_tokens": 126536,
+    "cache_read_input_tokens": 55916
+  },
+  "parent_uuid_chain": [
+    "d11aee8b-641c-4ca8-b8be-beda2583f8b8",
+    "f3e601ca-5ec5-4cda-ac38-159e3c7faef4",
+    "0b029690-6642-495c-966d-8a3bceb8d4c7",
+    "7006405d-41ca-45da-a4e4-473c180fdcad",
+    "f1cbcbc5-66a0-49ed-b21a-bccd26742499",
+    "eb77401f-3682-45cf-8a16-d4a60087e1f0",
+    "4494fd8a-3591-4527-a204-a06e6484da5d"
+  ],
+  "stop_reasons": []
+}
