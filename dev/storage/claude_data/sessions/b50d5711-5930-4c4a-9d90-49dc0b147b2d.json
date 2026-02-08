@@ -881,22 +881,22 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Skill",
-    "Task",
-    "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "Bash",
     "Read",
+    "Bash",
     "TodoWrite",
-    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_pr_create",
     "mcp__sbs-lsp__sbs_issue_get",
+    "Task",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "Skill",
+    "Write",
     "mcp__sbs-lsp__sbs_run_tests",
-    "Write"
+    "ExitPlanMode",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "AskUserQuestion"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md"
@@ -909,22 +909,22 @@
     "toolu_01HgyhjEWCAgguyEQSmZSAmM"
   ],
   "plan_files": [
-    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
-    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
+    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
+    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#48</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:EuACCkYICxgCKkDQ7uPv...",
-    "signature:Et8GCkYICxgCKkDnKIvH...",
+    "claude-opus-4-5-20251101",
     "signature:EoMDCkYICxgCKkCxJJ9k...",
+    "signature:EuACCkYICxgCKkDQ7uPv...",
+    "signature:ErwPCkYICxgCKkCWAD0c...",
     "signature:EtkICkYICxgCKkBy3Nnj...",
     "signature:Ev8CCkYICxgCKkCehsDo...",
-    "signature:ErYFCkYICxgCKkDqWJBT...",
-    "signature:ErwPCkYICxgCKkCWAD0c...",
-    "claude-opus-4-5-20251101"
+    "signature:Et8GCkYICxgCKkDnKIvH...",
+    "signature:ErYFCkYICxgCKkDqWJBT..."
   ],
   "thinking_blocks": [
     {

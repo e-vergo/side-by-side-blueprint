@@ -319,18 +319,18 @@
     }
   ],
   "tools_used": [
-    "TaskOutput",
-    "ExitPlanMode",
-    "Task",
     "Read",
+    "TaskOutput",
     "Bash",
+    "Task",
+    "ExitPlanMode",
     "Edit"
   ],
   "files_read": [
-    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/scripts/build.py",
+    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
     "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
   ],
   "files_written": [],
@@ -338,8 +338,8 @@
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "subagent_ids": [
-    "toolu_01Lku8D6XxvwErckoZ19gsMY",
-    "toolu_01QpZxmePtB83d6fnCVRPR83"
+    "toolu_01QpZxmePtB83d6fnCVRPR83",
+    "toolu_01Lku8D6XxvwErckoZ19gsMY"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
@@ -350,19 +350,19 @@
   "first_prompt": "Implement the following plan:  # Plan: Add Orchestration Details to Release Plan  ## Task Add an \"Orchestration Model\" section to `/Users/eric/.claude/plans/mighty-exploring-sunrise.md` that details:\u2026",
   "session_summary": "Add Orchestration to Release Plan",
   "model_versions": [
+    "claude-opus-4-5-20251101",
+    "signature:Eq0CCkYICxgCKkB2wQ/X...",
+    "signature:EuACCkYICxgCKkB44FLc...",
+    "signature:EpcFCkYICxgCKkAXjg15...",
     "signature:Et0ICkYICxgCKkC78RBy...",
     "signature:EqoCCkYICxgCKkCIND8L...",
-    "signature:EtkDCkYICxgCKkDK07YV...",
-    "signature:ErQGCkYICxgCKkCV/UZH...",
-    "signature:ErUECkYICxgCKkAw58ZC...",
-    "signature:EpcFCkYICxgCKkAXjg15...",
-    "signature:EuACCkYICxgCKkB44FLc...",
-    "signature:EqYDCkYICxgCKkAv+fVY...",
-    "signature:Eq0CCkYICxgCKkB2wQ/X...",
     "signature:EvcDCkYICxgCKkDYUOSP...",
+    "signature:ErUECkYICxgCKkAw58ZC...",
     "signature:ErgECkYICxgCKkC40Pvn...",
+    "signature:EqYDCkYICxgCKkAv+fVY...",
+    "signature:ErQGCkYICxgCKkCV/UZH...",
     "signature:ErwFCkYICxgCKkC/OZUI...",
-    "claude-opus-4-5-20251101"
+    "signature:EtkDCkYICxgCKkDK07YV..."
   ],
   "thinking_blocks": [
     {
