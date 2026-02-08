@@ -56,6 +56,10 @@ Building tooling that:
 
 **This is Lean software development, not proof writing.** MCP tools are used differently here.
 
+### Planned Separation
+
+The SBS formalization toolchain and SLS orchestration framework are planned for separation into distinct repositories. See [SBS_SLS_SEPARATION.md](dev/markdowns/permanent/SBS_SLS_SEPARATION.md) for the comprehensive architecture document.
+
 ---
 
 ## Repository Map

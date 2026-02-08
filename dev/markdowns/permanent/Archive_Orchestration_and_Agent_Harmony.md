@@ -1,5 +1,7 @@
 # Archive, Orchestration, and Agent Harmony
 
+> **Note:** This document describes the SLS orchestration architecture, which is planned for separation from the SBS formalization toolchain. See [SBS_SLS_SEPARATION.md](SBS_SLS_SEPARATION.md) for the separation plan.
+
 This document describes how scripts and agents interact in the Side-by-Side Blueprint codebase. It defines the boundaries, explains the workflows, and documents the invariants that keep the system coherent.
 
 ---
