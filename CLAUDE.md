@@ -401,6 +401,22 @@ For implementation details, file locations, and build internals, see:
 | `sbs_user_patterns` | User interaction patterns |
 | `sbs_self_improve` | Get introspection context for background self-improve agent |
 
+*VSCode Tools (via vscode and vscode-mcp):*
+| Tool | Use For |
+|------|---------|
+| `get_diagnostics` | LSP errors/warnings from VSCode |
+| `get_symbol_lsp_info` | Symbol type info + hover data |
+| `get_references` | Find all references to a symbol |
+| `rename_symbol` | Rename across files via LSP |
+| `execute_command` | Run VSCode commands programmatically |
+| `open_files` | Open files in VSCode editor |
+| `health_check` | Verify VSCode MCP connection |
+
+**When to use VSCode MCP tools vs sbs-lsp tools:**
+- Use VSCode MCP for real-time LSP diagnostics, symbol info, and refactoring
+- Use sbs-lsp Lean tools for Lean-specific operations (goal state, hover info, completions)
+- VSCode MCP tools require the VSCode MCP bridge extension to be running
+
 *Skill Tools (invoke via slash commands or MCP):*
 | Tool | Use For |
 |------|---------|
@@ -535,11 +551,36 @@ When starting a skill that benefits from preference context:
 
 Example: For `/task`, if user historically selects "All gates" 80% of the time, pre-check that option.
 
+#### AskUserQuestion Effectiveness Patterns
+
+Based on observed session patterns (715 questions across 140 sessions):
+
+- **Most effective headers:** `Scope` (60 uses), `Approach` (48), `Confirm` (39) -- these lead to fastest resolution and clearest user answers
+- **Optimal option count:** 2-3 options. 4 options only when choices are genuinely distinct.
+- **Binary decisions work best** with concrete implications described per option -- `Confirm` questions with "Yes, proceed" are the most-selected single option (12 times)
+- **Freeform overrides signal option mismatch:** When users bypass options to type freeform answers (observed in `Architecture` and `Scope` questions), it indicates the options didn't match their mental model. Prefer freeform in ambiguous situations.
+- **Multi-select is underused:** Only 10.8% of questions use multi-select (77 of 715). When applicable, it reduces follow-up questions.
+- **65% of sessions have zero questions** -- most work proceeds without user interaction. Questions should be reserved for genuine decision points, not information gathering.
+
 ---
 
 ### Planning Discipline
 
 - **Never delete or replace a plan without explicit user direction.** Default behavior is to update the current plan or append to it.
+
+### Explore-Before-Decompose Pattern
+
+When a `/task` involves architectural planning or multi-feature scoping (not direct implementation):
+
+1. **Explore first:** Spawn an Explore agent to survey relevant infrastructure before decomposing
+2. **The agent reports:** What exists, what's missing, key files, risk level
+3. **Orchestrator synthesizes:** Use exploration results to ground the decomposition in reality
+4. **User validates:** Present findings alongside proposed decomposition
+
+This pattern was validated during Epic #224 scoping, where deep exploration before decomposition produced plans the user called "well researched and thought out." Ad-hoc exploration that happens to work should be standardized.
+
+**When to apply:** Task description involves words like "plan", "scope", "design", "architect", "restructure", or when the task spans 3+ repos.
+**When to skip:** Task is a focused bug fix, single-file change, or the user gave very specific instructions.
 
 ---
 

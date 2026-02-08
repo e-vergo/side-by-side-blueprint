@@ -143,6 +143,28 @@ Each repository has clear responsibilities. Cross-cutting concerns are minimized
 | **Runway** | Site generation, HTML templates, dashboard, sidebar, paper/PDF | Graph layout, artifact capture |
 | **dress-blueprint-action** | CSS/JS assets, CI/CD workflows, GitHub Pages deployment | Lean code, rendering logic |
 
+### Dual Rendering Paths in Runway
+
+Runway has two parallel code paths for rendering declarations that MUST stay synchronized:
+
+1. **Structured AST path** (`Runway/Html/Render.lean`) — For standalone LaTeX documents
+2. **Traverse path** (`Runway/Traverse.lean` → `Runway/Render.lean` → `Runway/SideBySide.lean`) — For blueprint chapters
+
+#### Field Addition Checklist
+
+When adding new fields to `Node` or `NodeInfo`:
+
+- [ ] Update `Dress/Graph/Build.lean` (node construction)
+- [ ] Update `Runway/Html/Render.lean` (structured AST path)
+- [ ] Update `Runway/Traverse.lean` (traverse field extraction)
+- [ ] Update `Runway/Render.lean` (render field usage)
+- [ ] Update `Runway/SideBySide.lean` (side-by-side display)
+- [ ] Update `Dress/Declaration.lean` (HTML artifact)
+- [ ] Update `Dress/Latex.lean` (TeX artifact, base64-encoded)
+- [ ] Rebuild SBS-Test to verify both paths
+
+**Historical context:** During #265 (above/below fields), initially only the structured AST path was updated. End-to-end validation caught the gap, requiring 6 additional files in a fix wave. This checklist prevents the same class of bug.
+
 ## Agent Parallelism
 
 - **Up to 4 `sbs-developer` instances** may run concurrently during any phase of `/task` (alignment, planning, execution, finalization) and during `/introspect`, when the approved plan or skill definition specifies parallel work
@@ -1087,6 +1109,14 @@ This applies to all `gh` subcommands: `issue`, `pr`, `api`, `label`, `release`, 
 - Don't use negative margins for full-width highlights - use `::before` pseudo-elements
 - Don't define status colors in CSS - Lean is the source of truth
 - Don't use direct `git push` - hooks deny it by design. All pushes go through the orchestrator's archival process (`sbs archive upload`). If you need to push, report the need to the orchestrator.
+
+---
+
+### Lean Namespace Gotchas
+
+- **Double-namespacing:** `def X.foo` inside `namespace X` creates `X.X.foo`, not `X.foo`. Always verify fully qualified names with `#check @X.foo`.
+- **RPC method names:** The string passed to `@[server_rpc_method]` must match exactly what the client uses. Verify registration name matches expected name.
+- **This was discovered during Epic #224:** The `Architect.blueprintInfo` RPC was accidentally registered as `Architect.Architect.blueprintInfo` because the function was defined inside `namespace Architect`.
 
 ---
 
