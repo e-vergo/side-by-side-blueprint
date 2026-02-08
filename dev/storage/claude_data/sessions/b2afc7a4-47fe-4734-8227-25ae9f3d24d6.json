@@ -54,10 +54,10 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>housekeeping: permissions review to enforce key behaviors (git actions, lake controls) to happen through our cust\u2026",
   "session_summary": null,
   "model_versions": [
+    "signature:ErELCkYICxgCKkADyYMJ...",
     "signature:EvgBCkYICxgCKkAWR+cX...",
     "signature:EtABCkYICxgCKkCqcgSF...",
-    "claude-opus-4-5-20251101",
-    "signature:ErELCkYICxgCKkADyYMJ..."
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

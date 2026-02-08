@@ -880,23 +880,23 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_start",
-    "AskUserQuestion",
-    "EnterPlanMode",
-    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_archive_state",
     "TodoWrite",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "Read",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "Bash",
-    "Task",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Write",
+    "EnterPlanMode",
     "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_skill_start",
     "Skill",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "Bash",
+    "Read",
+    "Write",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md"
@@ -917,14 +917,14 @@
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#48</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:EtkICkYICxgCKkBy3Nnj...",
-    "signature:ErYFCkYICxgCKkDqWJBT...",
-    "signature:EuACCkYICxgCKkDQ7uPv...",
-    "signature:Ev8CCkYICxgCKkCehsDo...",
     "signature:EoMDCkYICxgCKkCxJJ9k...",
-    "signature:Et8GCkYICxgCKkDnKIvH...",
+    "claude-opus-4-5-20251101",
+    "signature:Ev8CCkYICxgCKkCehsDo...",
     "signature:ErwPCkYICxgCKkCWAD0c...",
-    "claude-opus-4-5-20251101"
+    "signature:EtkICkYICxgCKkBy3Nnj...",
+    "signature:Et8GCkYICxgCKkDnKIvH...",
+    "signature:EuACCkYICxgCKkDQ7uPv...",
+    "signature:ErYFCkYICxgCKkDqWJBT..."
   ],
   "thinking_blocks": [
     {

@@ -136,15 +136,15 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Read",
     "Bash",
+    "Read",
     "Write",
-    "Task"
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png",
-    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
+    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png"
   ],
   "files_written": [
     "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
@@ -160,19 +160,19 @@
   "session_summary": null,
   "model_versions": [
     "signature:EqQCCkYICxgCKkAk/m8n...",
-    "signature:Ep4FCkYICxgCKkCoD8u6...",
-    "signature:EpoGCkYICxgCKkASVgxm...",
-    "signature:EqQFCkYICxgCKkCtOYkh...",
-    "signature:EqMJCkYICxgCKkBOVgH2...",
-    "signature:Eo4DCkYICxgCKkDE+kIx...",
-    "signature:EvcGCkYICxgCKkBRKN5g...",
-    "signature:EtAJCkYICxgCKkB7tapo...",
-    "signature:Et4ECkYICxgCKkCQslx0...",
-    "signature:EtwGCkYICxgCKkCFFWZH...",
-    "signature:EroHCkYICxgCKkBms4C+...",
     "signature:Eo4JCkYICxgCKkBIgEV9...",
+    "signature:Eo4DCkYICxgCKkDE+kIx...",
+    "signature:EqMJCkYICxgCKkBOVgH2...",
+    "signature:EqQFCkYICxgCKkCtOYkh...",
+    "signature:EqIDCkYICxgCKkBAoOVq...",
+    "signature:EpoGCkYICxgCKkASVgxm...",
+    "signature:EtwGCkYICxgCKkCFFWZH...",
+    "signature:EvcGCkYICxgCKkBRKN5g...",
+    "signature:Et4ECkYICxgCKkCQslx0...",
     "claude-sonnet-4-5-20250929",
-    "signature:EqIDCkYICxgCKkBAoOVq..."
+    "signature:EroHCkYICxgCKkBms4C+...",
+    "signature:EtAJCkYICxgCKkB7tapo...",
+    "signature:Ep4FCkYICxgCKkCoD8u6..."
   ],
   "thinking_blocks": [
     {
