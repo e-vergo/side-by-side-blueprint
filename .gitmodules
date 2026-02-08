@@ -25,3 +25,12 @@
 [submodule "showcase/PrimeNumberTheoremAnd"]
 	path = showcase/PrimeNumberTheoremAnd
 	url = https://github.com/e-vergo/PrimeNumberTheoremAnd.git
+[submodule "dev/storage"]
+	path = dev/storage
+	url = https://github.com/e-vergo/sbs-storage.git
+[submodule "forks/vscode-lean4"]
+	path = forks/vscode-lean4
+	url = https://github.com/e-vergo/vscode-lean4.git
+[submodule "SBS"]
+	path = SBS
+	url = https://github.com/e-vergo/Side-By-Side-Blueprint.git

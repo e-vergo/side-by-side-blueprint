@@ -1,0 +1,3842 @@
+"""SLS-specific tool implementations.
+
+This module contains SLS MCP tools for:
+- Oracle querying (ask_oracle)
+- Archive state inspection (sls_archive_state, sls_epoch_summary)
+- Context generation (sls_context)
+- Testing tools (sls_run_tests, sls_validate_project)
+- Build tools (sls_build_project, sls_serve_project)
+- Investigation tools (sls_last_screenshot, sls_visual_history, sls_search_entries)
+- Inspect tools (sls_inspect_project)
+- GitHub tools (sls_issue_*, sls_pr_*)
+- Self-improve tools (sls_analysis_summary, sls_entries_since_self_improve)
+- Skill management tools (sls_skill_status, sls_skill_start, sls_skill_transition, sls_skill_end)
+"""
+
+import difflib
+import json
+import os
+import signal
+import subprocess
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Annotated, Any, Dict, List, Optional, Tuple
+
+from mcp.server.fastmcp import Context, FastMCP
+from mcp.types import ToolAnnotations
+from pydantic import Field
+
+from .duckdb_layer import DuckDBLayer
+from .sls_models import (
+    AnalysisFinding,
+    AnalysisSummary,
+    ArchiveEntrySummary,
+    ArchiveStateResult,
+    AskOracleResult,
+    ContextResult,
+    EpochSummaryResult,
+    GitHubIssue,
+    GitHubPullRequest,
+    HistoryEntry,
+    ImprovementCaptureResult,
+    InspectResult,
+    IssueCloseResult,
+    IssueCreateResult,
+    IssueGetResult,
+    IssueLogResult,
+    IssueListResult,
+    IssueSummaryItem,
+    IssueSummaryResult,
+    OracleConcept,
+    OracleMatch,
+    PageInspection,
+    PRCreateResult,
+    PRGetResult,
+    PRListResult,
+    PRMergeResult,
+    SBSBuildResult,
+    SBSValidationResult,
+    ScreenshotResult,
+    SearchResult,
+    SelfImproveEntries,
+    ServeResult,
+    SkillEndResult,
+    SkillFailResult,
+    SkillHandoffResult,
+    SkillStartResult,
+    SkillStatusResult,
+    SkillTransitionResult,
+    TestFailure,
+    TestResult,
+    ValidatorScore,
+    VisualChange,
+    VisualHistoryResult,
+)
+from .sls_utils import (
+    ARCHIVE_DIR,
+    SBS_ROOT,
+    compute_hash,
+    get_archived_screenshot,
+    get_screenshot_path,
+)
+
+
+def _get_db(ctx: Context) -> DuckDBLayer:
+    """Extract the DuckDBLayer from the MCP lifespan context."""
+    return ctx.request_context.lifespan_context.duckdb_layer
+
+
+# Label pre-validation cache: (timestamp, frozenset of label names)
+_REPO_LABELS_CACHE: Optional[tuple] = None
+_REPO_LABELS_CACHE_TTL = 300  # 5 minutes
+
+
+def _get_repo_labels(repo: str) -> set:
+    """Fetch valid label names from the GitHub repository with caching.
+
+    Returns a set of label name strings. On failure, returns an empty set.
+    """
+    global _REPO_LABELS_CACHE
+
+    # Check cache freshness
+    if _REPO_LABELS_CACHE is not None:
+        cached_ts, cached_repo, cached_labels = _REPO_LABELS_CACHE
+        if cached_repo == repo and (time.time() - cached_ts) < _REPO_LABELS_CACHE_TTL:
+            return cached_labels
+
+    try:
+        result = subprocess.run(
+            [
+                "gh", "label", "list",
+                "--repo", repo,
+                "--json", "name",
+                "--limit", "200",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if result.returncode != 0:
+            return set()
+        data = json.loads(result.stdout)
+        labels = {item["name"] for item in data if "name" in item}
+        _REPO_LABELS_CACHE = (time.time(), repo, labels)
+        return labels
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError, KeyError):
+        return set()
+
+
+def _validate_labels(
+    labels: List[str], repo: str
+) -> tuple:
+    """Validate labels against the repository's label set.
+
+    Returns:
+        (valid_labels, invalid_with_suggestions) where invalid_with_suggestions
+        is a list of (invalid_label, [suggestions]) tuples.
+    """
+    repo_labels = _get_repo_labels(repo)
+    if not repo_labels:
+        # Cannot validate -- allow all labels through (graceful degradation)
+        return labels, []
+
+    valid = []
+    invalid_with_suggestions: List[tuple] = []
+    repo_labels_list = sorted(repo_labels)
+
+    for label in labels:
+        if label in repo_labels:
+            valid.append(label)
+        else:
+            # Find close matches via substring and difflib
+            suggestions = []
+            # Substring matches
+            for rl in repo_labels_list:
+                if label.lower() in rl.lower() or rl.lower() in label.lower():
+                    suggestions.append(rl)
+            # difflib close matches (if no substring matches found)
+            if not suggestions:
+                suggestions = difflib.get_close_matches(
+                    label, repo_labels_list, n=3, cutoff=0.4
+                )
+            invalid_with_suggestions.append((label, suggestions[:3]))
+
+    return valid, invalid_with_suggestions
+
+
+def register_sls_tools(mcp: FastMCP) -> None:
+    """Register all SBS-specific tools with the MCP server.
+
+    Args:
+        mcp: The FastMCP server instance to register tools on.
+    """
+
+    GITHUB_REPO = "e-vergo/Side-By-Side-Blueprint"
+
+    @mcp.tool(
+        "ask_oracle",
+        annotations=ToolAnnotations(
+            title="SBS Oracle Query",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def ask_oracle(
+        ctx: Context,
+        query: Annotated[str, Field(description="Natural language query to search oracle")],
+        max_results: Annotated[int, Field(description="Maximum results to return", ge=1)] = 10,
+        result_type: Annotated[str, Field(description="Filter results: 'files', 'concepts', or 'all'")] = "all",
+        scope: Annotated[Optional[str], Field(description="Limit to repo/section, e.g. 'Dress', 'Runway'")] = None,
+        include_raw_section: Annotated[bool, Field(description="Include full section content for exact matches")] = False,
+        min_relevance: Annotated[float, Field(description="Minimum relevance score (0.0-1.0)", ge=0.0, le=1.0)] = 0.0,
+        fuzzy: Annotated[bool, Field(description="Enable fuzzy matching for typos")] = False,
+        include_archive: Annotated[bool, Field(description="Include recent archive activity touching matched projects/files")] = False,
+        include_quality: Annotated[bool, Field(description="Include latest quality scores for relevant projects")] = False,
+        include_issues: Annotated[bool, Field(description="Include related GitHub issues")] = False,
+    ) -> AskOracleResult:
+        """Query the SBS Oracle for file locations and concept information.
+
+        Searches the compiled oracle (sbs-oracle.md) for matching files and concepts.
+        Use for finding where things are in the codebase or understanding project structure.
+
+        Examples:
+        - "graph layout" -> finds Dress/Graph/Layout.lean
+        - "status color" -> finds color model documentation
+        - "archive entry" -> finds entry.py and related files
+        """
+        db = _get_db(ctx)
+        result = db.oracle_query(
+            query=query,
+            max_results=max_results,
+            result_type=result_type,
+            scope=scope,
+            min_relevance=min_relevance,
+            fuzzy=fuzzy,
+            include_archive=include_archive,
+            include_quality=include_quality,
+        )
+
+        # Handle include_raw_section (read from oracle file directly)
+        if include_raw_section:
+            oracle_path = db._oracle_path
+            if oracle_path.exists():
+                content = oracle_path.read_text()
+                query_lower = query.lower()
+                current_section = None
+                section_lines: List[str] = []
+                found_section = None
+                for line in content.split("\n"):
+                    if line.startswith("## "):
+                        if found_section:
+                            break
+                        current_section = line[3:].strip()
+                        if query_lower in current_section.lower():
+                            found_section = current_section
+                            section_lines = []
+                            continue
+                    elif found_section:
+                        section_lines.append(line)
+                if found_section:
+                    result.raw_section = f"## {found_section}\n" + "\n".join(section_lines)
+
+        # Handle include_issues (query GitHub via gh CLI)
+        if include_issues:
+            try:
+                gh_result = subprocess.run(
+                    ["gh", "issue", "list", "--repo", GITHUB_REPO,
+                     "--search", query, "--json", "number,title,state,labels",
+                     "--limit", "5"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                if gh_result.returncode == 0:
+                    issues = json.loads(gh_result.stdout)
+                    if issues:
+                        result.related_issues = issues
+            except Exception:
+                pass
+
+        return result
+
+    @mcp.tool(
+        "sls_archive_state",
+        annotations=ToolAnnotations(
+            title="SBS Archive State",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_archive_state(ctx: Context) -> ArchiveStateResult:
+        """Get current orchestration state from the archive.
+
+        Returns the global state machine status, last epoch entry, and count of entries
+        in the current epoch. Use to understand what skill/substate is active and how
+        much work has accumulated since last /update-and-archive.
+
+        The global_state field shows:
+        - null: System is idle (between tasks)
+        - {skill: "task", substate: "alignment"}: In /task skill, alignment phase
+        - {skill: "update-and-archive", substate: "execution"}: In /update-and-archive
+        """
+        db = _get_db(ctx)
+        meta = db.get_metadata()
+        current_epoch_entries = db.get_epoch_entries(epoch_entry_id=None)
+
+        # Derive last epoch timestamp from the last epoch entry
+        last_epoch_timestamp = None
+        last_epoch_id = meta.get("last_epoch_entry")
+        if last_epoch_id:
+            entry = db.get_entry(last_epoch_id)
+            if entry:
+                last_epoch_timestamp = entry.get("created_at")
+
+        return ArchiveStateResult(
+            global_state=meta.get("global_state"),
+            last_epoch_entry=last_epoch_id,
+            last_epoch_timestamp=last_epoch_timestamp,
+            entries_in_current_epoch=len(current_epoch_entries),
+            total_entries=meta.get("total_entries", 0),
+            projects=meta.get("projects", []),
+        )
+
+    @mcp.tool(
+        "sls_epoch_summary",
+        annotations=ToolAnnotations(
+            title="SBS Epoch Summary",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_epoch_summary(
+        ctx: Context,
+        epoch_entry_id: Annotated[
+            Optional[str],
+            Field(description="Entry ID that closed the epoch (omit for current)"),
+        ] = None,
+    ) -> EpochSummaryResult:
+        """Get aggregate statistics for an epoch.
+
+        An epoch is the set of entries between two /update-and-archive invocations.
+        Returns counts, visual changes, tags used, and other summary data.
+
+        Use this to understand:
+        - How much work happened in a period
+        - What visual changes occurred
+        - Which projects were touched
+        - What tags were applied
+        """
+        db = _get_db(ctx)
+        entries = db.get_epoch_entries(epoch_entry_id)
+
+        if not entries:
+            return EpochSummaryResult(
+                epoch_id=epoch_entry_id or "current",
+                started_at="",
+                ended_at="",
+                entries=0,
+                builds=0,
+                visual_changes=[],
+                tags_used=[],
+                projects_touched=[],
+            )
+
+        # Entries already sorted ASC by entry_id from DuckDB
+        sorted_entries = entries
+
+        # Compute aggregates from dicts
+        visual_changes: List[VisualChange] = []
+        for e in sorted_entries:
+            screenshots = e.get("screenshots") or []
+            if screenshots:
+                visual_changes.append(VisualChange(
+                    entry_id=e["entry_id"],
+                    screenshots=screenshots,
+                    timestamp=e.get("created_at", ""),
+                ))
+
+        # Collect tags
+        all_tags: set[str] = set()
+        for e in sorted_entries:
+            for t in (e.get("tags") or []) + (e.get("auto_tags") or []):
+                all_tags.add(t)
+        tags_used = sorted(all_tags)
+
+        # Collect projects
+        projects_touched = sorted({e.get("project", "") for e in sorted_entries if e.get("project")})
+
+        # Count builds
+        builds = sum(1 for e in sorted_entries if e.get("trigger") == "build")
+
+        # Time bounds
+        started_at = sorted_entries[0].get("created_at", "")
+        ended_at = sorted_entries[-1].get("created_at", "")
+
+        return EpochSummaryResult(
+            epoch_id=epoch_entry_id or "current",
+            started_at=started_at,
+            ended_at=ended_at,
+            entries=len(sorted_entries),
+            builds=builds,
+            visual_changes=visual_changes,
+            tags_used=tags_used,
+            projects_touched=projects_touched,
+        )
+
+    @mcp.tool(
+        "sls_context",
+        annotations=ToolAnnotations(
+            title="SBS Context Block",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_context(
+        ctx: Context,
+        include: Annotated[
+            Optional[List[str]],
+            Field(description="Sections to include: state, epoch, quality, recent"),
+        ] = None,
+        max_entries: Annotated[
+            int,
+            Field(description="Max recent entries to include", ge=1),
+        ] = 10,
+    ) -> ContextResult:
+        """Build a formatted context block for agent injection.
+
+        Generates a markdown-formatted context block containing selected information
+        from the archive. Use this to inject context into agent prompts.
+
+        Available sections:
+        - state: Current global state and active skill/substate
+        - epoch: Summary of current epoch
+        - quality: Latest quality scores (if available)
+        - recent: Recent entries summary
+
+        Default includes all sections if none specified.
+        """
+        if include is None:
+            include = ["state", "epoch", "quality", "recent"]
+
+        db = _get_db(ctx)
+        context_block = db.build_context_block(include)
+
+        # Count entries referenced
+        entry_count = 0
+        if "epoch" in include:
+            entry_count += len(db.get_epoch_entries())
+        if "recent" in include:
+            entry_count += min(max_entries, db.get_metadata().get("total_entries", 0))
+
+        return ContextResult(
+            context_block=context_block,
+            entry_count=entry_count,
+            time_range=None,
+        )
+
+    # =========================================================================
+    # Testing Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_run_tests",
+        annotations=ToolAnnotations(
+            title="SBS Run Tests",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_run_tests(
+        ctx: Context,
+        path: Annotated[
+            Optional[str],
+            Field(description="Test path relative to dev/scripts (default: sbs/tests/pytest)"),
+        ] = None,
+        filter: Annotated[
+            Optional[str],
+            Field(description="Pytest -k filter pattern"),
+        ] = None,
+        tier: Annotated[
+            Optional[str],
+            Field(description="Test tier to run: evergreen, dev, temporary, or all (default: all)"),
+        ] = None,
+        verbose: Annotated[
+            bool,
+            Field(description="Show verbose output"),
+        ] = False,
+        repo: Annotated[
+            Optional[str],
+            Field(description="Repo to test: 'mcp' for sls-mcp. Default: dev/scripts"),
+        ] = None,
+    ) -> TestResult:
+        """Run pytest suite and return structured results.
+
+        Runs tests in the SBS dev/scripts directory. Returns pass/fail counts
+        and details about any failures.
+
+        Examples:
+        - Run all tests: sls_run_tests()
+        - Run specific tests: sls_run_tests(filter="test_color")
+        - Run tests in a specific path: sls_run_tests(path="sbs/tests/pytest/validators")
+        - Run only evergreen tests: sls_run_tests(tier="evergreen")
+        - Run MCP repo tests: sls_run_tests(repo="mcp")
+        """
+        REPO_CONFIGS = {
+            "mcp": {
+                "root": SBS_ROOT / "forks" / "sls-mcp",
+                "pytest": SBS_ROOT / "forks" / "sls-mcp" / ".venv" / "bin" / "pytest",
+                "default_test_path": "tests",
+            },
+        }
+
+        if repo is not None:
+            if repo not in REPO_CONFIGS:
+                return TestResult(
+                    passed=0,
+                    failed=0,
+                    errors=1,
+                    skipped=0,
+                    duration_seconds=0.0,
+                    failures=[
+                        TestFailure(
+                            test_name="ERROR",
+                            message=f"Unknown repo '{repo}'. Valid repos: {', '.join(sorted(REPO_CONFIGS))}",
+                            file=None,
+                            line=None,
+                        )
+                    ],
+                )
+            cfg = REPO_CONFIGS[repo]
+            scripts_dir = cfg["root"]
+            test_path = path or cfg["default_test_path"]
+            cmd = [str(cfg["pytest"]), test_path]
+        else:
+            scripts_dir = SBS_ROOT / "dev" / "scripts"
+            test_path = path or "sbs/tests/pytest"
+            cmd = ["python", "-m", "pytest", test_path]
+
+        if filter:
+            cmd.extend(["-k", filter])
+
+        # Add tier marker filter if specified
+        if tier and tier != "all":
+            cmd.extend(["-m", tier])
+
+        if verbose:
+            cmd.append("-v")
+
+        # Try to use json-report plugin for structured output
+        cmd.extend(["--tb=short", "-q"])
+
+        start_time = time.time()
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=scripts_dir,
+                capture_output=True,
+                text=True,
+                timeout=300,  # 5 minute timeout
+            )
+            duration = time.time() - start_time
+
+            # Parse output to extract counts
+            output = result.stdout + result.stderr
+            passed, failed, errors, skipped = _parse_pytest_output(output)
+            failures = _extract_failures(output)
+
+            return TestResult(
+                passed=passed,
+                failed=failed,
+                errors=errors,
+                skipped=skipped,
+                duration_seconds=round(duration, 2),
+                failures=failures,
+            )
+
+        except subprocess.TimeoutExpired:
+            return TestResult(
+                passed=0,
+                failed=0,
+                errors=1,
+                skipped=0,
+                duration_seconds=300.0,
+                failures=[
+                    TestFailure(
+                        test_name="TIMEOUT",
+                        message="Test execution timed out after 5 minutes",
+                        file=None,
+                        line=None,
+                    )
+                ],
+            )
+        except Exception as e:
+            return TestResult(
+                passed=0,
+                failed=0,
+                errors=1,
+                skipped=0,
+                duration_seconds=time.time() - start_time,
+                failures=[
+                    TestFailure(
+                        test_name="ERROR",
+                        message=str(e),
+                        file=None,
+                        line=None,
+                    )
+                ],
+            )
+
+    @mcp.tool(
+        "sls_validate_project",
+        annotations=ToolAnnotations(
+            title="SBS Validate Project",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_validate_project(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name: SBSTest, GCR, or PNT"),
+        ],
+        validators: Annotated[
+            Optional[List[str]],
+            Field(description="Validators to run (T1-T8), default: T5,T6"),
+        ] = None,
+    ) -> SBSValidationResult:
+        """Run T1-T8 validators on a project.
+
+        Validators check various quality dimensions:
+        - T1: CLI Execution (10%)
+        - T2: Ledger Population (10%)
+        - T5: Status Color Match (15%)
+        - T6: CSS Variable Coverage (15%)
+        - T3: Dashboard Clarity (10%) [heuristic]
+        - T4: Toggle Discoverability (10%) [heuristic]
+        - T7: Jarring-Free Check (15%) [heuristic]
+        - T8: Professional Score (15%) [heuristic]
+
+        Default runs T5 and T6 (deterministic tests).
+        """
+        scripts_dir = SBS_ROOT / "dev" / "scripts"
+
+        # Normalize project name
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        # Default validators
+        if validators is None:
+            validators = ["T5", "T6"]
+
+        # Normalize validator names (accept T5, t5, t5-color-match, etc.)
+        validator_ids = []
+        for v in validators:
+            v_upper = v.upper()
+            if v_upper.startswith("T") and v_upper[1:].isdigit():
+                validator_ids.append(v_upper)
+            elif v.startswith("t") and "-" in v:
+                # Extract T number from t5-color-match format
+                num = v.split("-")[0][1:]
+                validator_ids.append(f"T{num}")
+            else:
+                validator_ids.append(v_upper)
+
+        # Run validation via sbs validate-all command
+        # This is the simplest approach - use the existing CLI
+        cmd = ["python", "-m", "sbs", "validate-all", "--project", normalized_project]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=scripts_dir,
+                capture_output=True,
+                text=True,
+                timeout=120,  # 2 minute timeout
+            )
+
+            # Parse output to extract scores
+            output = result.stdout + result.stderr
+            results, overall_score, passed = _parse_validation_output(output, validator_ids)
+
+            return SBSValidationResult(
+                overall_score=overall_score,
+                passed=passed,
+                results=results,
+                timestamp=datetime.now().isoformat(),
+            )
+
+        except subprocess.TimeoutExpired:
+            return SBSValidationResult(
+                overall_score=0.0,
+                passed=False,
+                results={
+                    "error": ValidatorScore(
+                        value=0.0,
+                        passed=False,
+                        stale=False,
+                        findings=["Validation timed out after 2 minutes"],
+                    )
+                },
+                timestamp=datetime.now().isoformat(),
+            )
+        except Exception as e:
+            return SBSValidationResult(
+                overall_score=0.0,
+                passed=False,
+                results={
+                    "error": ValidatorScore(
+                        value=0.0,
+                        passed=False,
+                        stale=False,
+                        findings=[f"Validation error: {str(e)}"],
+                    )
+                },
+                timestamp=datetime.now().isoformat(),
+            )
+
+    # =========================================================================
+    # Build Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_build_project",
+        annotations=ToolAnnotations(
+            title="SBS Build Project",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_build_project(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name: SBSTest, GCR, or PNT"),
+        ],
+        dry_run: Annotated[
+            bool,
+            Field(description="Show what would be done without building"),
+        ] = False,
+        skip_cache: Annotated[
+            bool,
+            Field(description="Skip lake cache"),
+        ] = False,
+    ) -> SBSBuildResult:
+        """Trigger build.py for a project.
+
+        Runs the full build pipeline for a showcase project. This includes
+        Lake build, artifact generation, and site generation.
+
+        WARNING: Full builds can take several minutes:
+        - SBS-Test: ~2 minutes
+        - GCR: ~5 minutes
+        - PNT: ~20 minutes
+        """
+        # Map project names to paths
+        project_paths = {
+            "SBSTest": SBS_ROOT / "toolchain" / "SBS-Test",
+            "sbs-test": SBS_ROOT / "toolchain" / "SBS-Test",
+            "GCR": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction",
+            "gcr": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction",
+            "General_Crystallographic_Restriction": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction",
+            "PNT": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd",
+            "pnt": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd",
+            "PrimeNumberTheoremAnd": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd",
+        }
+
+        project_path = project_paths.get(project)
+        if not project_path:
+            return SBSBuildResult(
+                success=False,
+                duration_seconds=0.0,
+                build_run_id=None,
+                errors=[f"Unknown project: {project}. Valid: SBSTest, GCR, PNT"],
+                warnings=[],
+                project=project,
+                manifest_path=None,
+            )
+
+        if not project_path.exists():
+            return SBSBuildResult(
+                success=False,
+                duration_seconds=0.0,
+                build_run_id=None,
+                errors=[f"Project path does not exist: {project_path}"],
+                warnings=[],
+                project=project,
+                manifest_path=None,
+            )
+
+        # Build command
+        scripts_dir = SBS_ROOT / "dev" / "scripts"
+        cmd = ["python", str(scripts_dir / "build.py")]
+
+        if dry_run:
+            cmd.append("--dry-run")
+        if skip_cache:
+            cmd.append("--skip-cache")
+
+        start_time = time.time()
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=project_path,
+                capture_output=True,
+                text=True,
+                timeout=1800,  # 30 minute timeout
+            )
+            duration = time.time() - start_time
+
+            output = result.stdout + result.stderr
+            success = result.returncode == 0
+
+            # Extract build_run_id from output if present
+            build_run_id = _extract_build_run_id(output)
+
+            # Extract errors and warnings
+            errors = []
+            warnings = []
+            for line in output.split("\n"):
+                if "[ERROR]" in line or "error:" in line.lower():
+                    errors.append(line.strip())
+                elif "[WARN]" in line or "warning:" in line.lower():
+                    warnings.append(line.strip())
+
+            # Check for manifest
+            manifest_path = project_path / ".lake" / "build" / "runway" / "manifest.json"
+            manifest_str = str(manifest_path) if manifest_path.exists() else None
+
+            return SBSBuildResult(
+                success=success,
+                duration_seconds=round(duration, 2),
+                build_run_id=build_run_id,
+                errors=errors[:10],  # Limit to 10
+                warnings=warnings[:10],  # Limit to 10
+                project=project,
+                manifest_path=manifest_str,
+            )
+
+        except subprocess.TimeoutExpired:
+            return SBSBuildResult(
+                success=False,
+                duration_seconds=1800.0,
+                build_run_id=None,
+                errors=["Build timed out after 30 minutes"],
+                warnings=[],
+                project=project,
+                manifest_path=None,
+            )
+        except Exception as e:
+            return SBSBuildResult(
+                success=False,
+                duration_seconds=time.time() - start_time,
+                build_run_id=None,
+                errors=[str(e)],
+                warnings=[],
+                project=project,
+                manifest_path=None,
+            )
+
+    @mcp.tool(
+        "sls_serve_project",
+        annotations=ToolAnnotations(
+            title="SBS Serve Project",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_serve_project(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name: SBSTest, GCR, or PNT"),
+        ],
+        action: Annotated[
+            str,
+            Field(description="Action: start, stop, or status"),
+        ],
+        port: Annotated[
+            int,
+            Field(description="Port number"),
+        ] = 8000,
+    ) -> ServeResult:
+        """Start or check status of local dev server.
+
+        Serves the built site from the project's .lake/build/runway directory.
+        Actions:
+        - start: Start server on specified port
+        - stop: Stop running server
+        - status: Check if server is running
+        """
+        # Map project names to site paths
+        site_paths = {
+            "SBSTest": SBS_ROOT / "toolchain" / "SBS-Test" / ".lake" / "build" / "runway",
+            "sbs-test": SBS_ROOT / "toolchain" / "SBS-Test" / ".lake" / "build" / "runway",
+            "GCR": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "gcr": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "General_Crystallographic_Restriction": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "PNT": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
+            "pnt": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
+            "PrimeNumberTheoremAnd": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
+        }
+
+        site_path = site_paths.get(project)
+        if not site_path:
+            return ServeResult(
+                running=False,
+                url=None,
+                pid=None,
+                project=project,
+                error=f"Unknown project '{project}'. Valid projects: SBSTest, GCR, PNT",
+            )
+
+        # Normalize project name for state file
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        # State file for tracking servers
+        state_dir = Path.home() / ".cache" / "sls-mcp"
+        state_dir.mkdir(parents=True, exist_ok=True)
+        state_file = state_dir / "servers.json"
+
+        # Load current state
+        servers = {}
+        if state_file.exists():
+            try:
+                servers = json.loads(state_file.read_text())
+            except Exception:
+                servers = {}
+
+        if action == "status":
+            # Check if server is running
+            server_info = servers.get(normalized_project)
+            if server_info:
+                pid = server_info.get("pid")
+                if pid and _is_process_running(pid):
+                    return ServeResult(
+                        running=True,
+                        url=f"http://localhost:{server_info.get('port', 8000)}",
+                        pid=pid,
+                        project=normalized_project,
+                    )
+                else:
+                    # Clean up stale entry
+                    del servers[normalized_project]
+                    state_file.write_text(json.dumps(servers))
+
+            return ServeResult(
+                running=False,
+                url=None,
+                pid=None,
+                project=normalized_project,
+            )
+
+        elif action == "stop":
+            # Stop the server
+            server_info = servers.get(normalized_project)
+            if server_info:
+                pid = server_info.get("pid")
+                if pid:
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass  # Already dead
+
+                del servers[normalized_project]
+                state_file.write_text(json.dumps(servers))
+
+            return ServeResult(
+                running=False,
+                url=None,
+                pid=None,
+                project=normalized_project,
+            )
+
+        elif action == "start":
+            # Check if already running
+            server_info = servers.get(normalized_project)
+            if server_info:
+                pid = server_info.get("pid")
+                if pid and _is_process_running(pid):
+                    return ServeResult(
+                        running=True,
+                        url=f"http://localhost:{server_info.get('port', port)}",
+                        pid=pid,
+                        project=normalized_project,
+                    )
+
+            # Check if site directory exists
+            if not site_path.exists():
+                return ServeResult(
+                    running=False,
+                    url=None,
+                    pid=None,
+                    project=normalized_project,
+                    error=f"No build output found at {site_path}. Run sls_build_project first.",
+                )
+
+            # Check if port is already in use
+            try:
+                import socket
+
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.5)
+                    result = s.connect_ex(("localhost", port))
+                    if result == 0:
+                        return ServeResult(
+                            running=False,
+                            url=None,
+                            pid=None,
+                            project=normalized_project,
+                            error=f"Port {port} already in use",
+                        )
+            except Exception:
+                pass  # If check fails, proceed and let Popen report the error
+
+            # Start server
+            try:
+                process = subprocess.Popen(
+                    ["python3", "-m", "http.server", str(port)],
+                    cwd=site_path,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                    start_new_session=True,
+                )
+
+                # Save state
+                servers[normalized_project] = {
+                    "pid": process.pid,
+                    "port": port,
+                    "site_path": str(site_path),
+                    "started_at": datetime.now().isoformat(),
+                }
+                state_file.write_text(json.dumps(servers))
+
+                # Give it a moment to start
+                time.sleep(0.5)
+
+                if _is_process_running(process.pid):
+                    # Freshness check on build artifacts
+                    warning = None
+                    project_root = site_path.parent.parent.parent  # .lake/build/runway -> project root
+                    manifest = project_root / ".lake" / "build" / "dressed" / "manifest.json"
+                    if manifest.exists():
+                        age_hours = (time.time() - manifest.stat().st_mtime) / 3600
+                        if age_hours > 24:
+                            warning = f"Build artifacts are {age_hours:.0f}h old. Consider running sls_build_project."
+
+                    return ServeResult(
+                        running=True,
+                        url=f"http://localhost:{port}",
+                        pid=process.pid,
+                        project=normalized_project,
+                        warning=warning,
+                    )
+                else:
+                    # Process died — try to capture stderr
+                    stderr_output = ""
+                    if process.stderr:
+                        try:
+                            stderr_output = process.stderr.read().decode(
+                                "utf-8", errors="replace"
+                            )
+                        except Exception:
+                            pass
+                    error_msg = f"Server process exited immediately"
+                    if stderr_output.strip():
+                        error_msg += f": {stderr_output.strip()}"
+                    return ServeResult(
+                        running=False,
+                        url=None,
+                        pid=None,
+                        project=normalized_project,
+                        error=error_msg,
+                    )
+
+            except Exception as e:
+                return ServeResult(
+                    running=False,
+                    url=None,
+                    pid=None,
+                    project=normalized_project,
+                    error=f"Failed to start server: {e}",
+                )
+
+        else:
+            # Unknown action
+            return ServeResult(
+                running=False,
+                url=None,
+                pid=None,
+                project=normalized_project,
+                error=f"Unknown action '{action}'. Valid actions: start, stop, status",
+            )
+
+    # =========================================================================
+    # Investigation Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_last_screenshot",
+        annotations=ToolAnnotations(
+            title="SBS Last Screenshot",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_last_screenshot(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name (SBSTest, GCR, PNT)"),
+        ],
+        page: Annotated[
+            str,
+            Field(description="Page name (dashboard, dep_graph, paper_tex, pdf_tex, chapter, etc.)"),
+        ],
+    ) -> ScreenshotResult:
+        """Get most recent screenshot for a page WITHOUT building.
+
+        Returns the path to the latest captured screenshot for a given project/page
+        combination. This allows viewing previous build results without triggering
+        a new build.
+
+        Common page names:
+        - dashboard: Main project dashboard
+        - dep_graph: Dependency graph visualization
+        - paper_tex: Paper from TeX source
+        - pdf_tex: PDF from TeX source
+        - paper_verso: Paper from Verso source
+        - blueprint_verso: Blueprint from Verso source
+        - chapter: First chapter page
+        """
+        # Normalize project name
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        # Get screenshot path
+        screenshot_path = get_screenshot_path(normalized_project, page)
+
+        if not screenshot_path.exists():
+            return ScreenshotResult(
+                image_path="",
+                entry_id="",
+                captured_at="",
+                hash=None,
+                page=page,
+                project=normalized_project,
+            )
+
+        # Load capture metadata
+        capture_json_path = screenshot_path.parent / "capture.json"
+        captured_at = ""
+        entry_id = ""
+
+        if capture_json_path.exists():
+            try:
+                capture_data = json.loads(capture_json_path.read_text())
+                captured_at = capture_data.get("timestamp", "")
+                # Convert timestamp to entry_id format
+                if captured_at:
+                    # Parse ISO timestamp and convert to entry_id format
+                    try:
+                        dt = datetime.fromisoformat(captured_at)
+                        entry_id = dt.strftime("%Y%m%d%H%M%S")
+                    except ValueError:
+                        entry_id = ""
+            except (json.JSONDecodeError, IOError):
+                pass
+
+        # Compute hash for change detection
+        file_hash = compute_hash(screenshot_path)
+
+        return ScreenshotResult(
+            image_path=str(screenshot_path),
+            entry_id=entry_id,
+            captured_at=captured_at,
+            hash=file_hash,
+            page=page,
+            project=normalized_project,
+        )
+
+    @mcp.tool(
+        "sls_visual_history",
+        annotations=ToolAnnotations(
+            title="SBS Visual History",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_visual_history(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name (SBSTest, GCR, PNT)"),
+        ],
+        page: Annotated[
+            str,
+            Field(description="Page name (dashboard, dep_graph, paper_tex, etc.)"),
+        ],
+        limit: Annotated[
+            int,
+            Field(description="Number of entries to include", ge=1),
+        ] = 5,
+    ) -> VisualHistoryResult:
+        """See how a page looked across recent archive entries.
+
+        Returns a history of screenshots for a page, with hash comparison to
+        identify which entries had visual changes. Useful for tracking when
+        visual changes occurred.
+        """
+        # Normalize project name
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        db = _get_db(ctx)
+        project_entries = db.get_entries_by_project(normalized_project)
+
+        # Build history entries
+        history: List[HistoryEntry] = []
+        total_with_screenshots = 0
+
+        for entry in project_entries:
+            screenshots = entry.get("screenshots") or []
+            if page + ".png" in screenshots or page in screenshots:
+                total_with_screenshots += 1
+
+                if len(history) < limit:
+                    dir_name = _entry_id_to_dir_format(entry["entry_id"])
+                    screenshot_path = ARCHIVE_DIR / normalized_project / "archive" / dir_name / f"{page}.png"
+
+                    hash_map = {}
+                    if screenshot_path.exists():
+                        file_hash = compute_hash(screenshot_path)
+                        if file_hash:
+                            hash_map[page] = file_hash
+
+                    all_tags = (entry.get("tags") or []) + (entry.get("auto_tags") or [])
+                    history.append(
+                        HistoryEntry(
+                            entry_id=entry["entry_id"],
+                            timestamp=entry.get("created_at", ""),
+                            screenshots=[f"{page}.png"],
+                            hash_map=hash_map,
+                            tags=all_tags,
+                        )
+                    )
+
+        return VisualHistoryResult(
+            project=normalized_project,
+            history=history,
+            total_count=total_with_screenshots,
+        )
+
+    @mcp.tool(
+        "sls_search_entries",
+        annotations=ToolAnnotations(
+            title="SBS Search Entries",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_search_entries(
+        ctx: Context,
+        project: Annotated[
+            Optional[str],
+            Field(description="Filter by project name (SBSTest, GCR, PNT)"),
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Field(description="Filter by tags (any match)"),
+        ] = None,
+        since: Annotated[
+            Optional[str],
+            Field(description="Entry ID or ISO timestamp to filter from"),
+        ] = None,
+        trigger: Annotated[
+            Optional[str],
+            Field(description="Filter by trigger type (build, manual, skill)"),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description="Maximum entries to return", ge=1),
+        ] = 20,
+    ) -> SearchResult:
+        """Search archive entries by various criteria.
+
+        Flexible search across the archive. All filters are optional and combined
+        with AND logic. Returns entries sorted by timestamp descending.
+
+        For tags, matches if ANY tag in the list matches (OR within tags).
+        """
+        # Normalize project name if provided
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project) if project else None
+
+        # Pass since directly to DuckDB layer -- it handles datetime conversion
+        # for ISO strings, old-format entry IDs, and unix timestamp entry IDs.
+        db = _get_db(ctx)
+        # DuckDB layer handles filtering; we request a generous limit to count total
+        all_matched = db.get_entries(
+            project=normalized_project,
+            tags=tags,
+            since=since,
+            trigger=trigger,
+            limit=10000,  # Get all to count total
+        )
+
+        total_count = len(all_matched)
+        limited_entries = all_matched[:limit]
+
+        summaries = [
+            ArchiveEntrySummary(
+                entry_id=e["entry_id"],
+                created_at=e.get("created_at", ""),
+                project=e.get("project", ""),
+                trigger=e.get("trigger", ""),
+                tags=(e.get("tags") or []) + (e.get("auto_tags") or []),
+                has_screenshots=bool(e.get("screenshots")),
+                notes_preview=(e.get("notes") or "")[:100],
+                build_run_id=e.get("build_run_id"),
+            )
+            for e in limited_entries
+        ]
+
+        filters_dict: Dict[str, Any] = {}
+        if normalized_project:
+            filters_dict["project"] = normalized_project
+        if tags:
+            filters_dict["tags"] = tags
+        if since:
+            filters_dict["since"] = since
+        if trigger:
+            filters_dict["trigger"] = trigger
+
+        return SearchResult(
+            entries=summaries,
+            total_count=total_count,
+            query=None,
+            filters=filters_dict,
+        )
+
+    # =========================================================================
+    # Inspect Tools
+    # =========================================================================
+
+    # Standard page names per project.  All projects share the core set;
+    # GCR adds paper_tex / pdf_tex, and Verso pages are discovered by
+    # checking for existing screenshots.
+    _CORE_PAGES = ["dashboard", "dep_graph", "chapter"]
+    _TEX_PAGES = ["paper_tex", "pdf_tex"]
+    _VERSO_PAGES = ["paper_verso", "blueprint_verso"]
+
+    _SUGGESTED_PROMPTS: Dict[str, str] = {
+        "dashboard": (
+            "Check: stats accuracy, key theorems display, navigation links, "
+            "overall layout, dark/light theme"
+        ),
+        "dep_graph": (
+            "Check: node colors match 6-status model, edges visible, "
+            "layout not overlapping, zoom/pan controls present"
+        ),
+        "paper_tex": (
+            "Check: LaTeX rendering quality, section numbering, references, "
+            "verification badges"
+        ),
+        "pdf_tex": "Check: PDF rendering, page breaks, margins, fonts",
+        "chapter": (
+            "Check: side-by-side display alignment, proof toggle functionality, "
+            "syntax highlighting, responsive behavior"
+        ),
+        "paper_verso": (
+            "Check: Verso markup rendering, theorem displays, navigation"
+        ),
+        "blueprint_verso": (
+            "Check: Verso markup rendering, leanNode displays, navigation"
+        ),
+    }
+
+    @mcp.tool(
+        "sls_inspect_project",
+        annotations=ToolAnnotations(
+            title="Inspect project for visual QA",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_inspect_project(
+        ctx: Context,
+        project: Annotated[
+            str,
+            Field(description="Project name: SBSTest, GCR, or PNT"),
+        ],
+        pages: Annotated[
+            Optional[List[str]],
+            Field(description="Specific pages to inspect, or all if omitted"),
+        ] = None,
+        include_issue_context: Annotated[
+            bool,
+            Field(description="Load open+closed issues for context"),
+        ] = True,
+    ) -> InspectResult:
+        """Prepare comprehensive context for agent-driven visual QA.
+
+        Gathers screenshots, issue context, and quality baselines so a calling
+        agent can perform intelligent visual assessment.  Does NOT trigger
+        builds or captures -- reads existing data only.
+
+        Examples:
+        - sls_inspect_project(project="SBSTest")
+        - sls_inspect_project(project="GCR", pages=["dashboard", "dep_graph"])
+        - sls_inspect_project(project="PNT", include_issue_context=False)
+        """
+        # --- normalise project name ---
+        project_map = {
+            "SBSTest": "SBSTest",
+            "sbs-test": "SBSTest",
+            "GCR": "GCR",
+            "gcr": "GCR",
+            "General_Crystallographic_Restriction": "GCR",
+            "PNT": "PNT",
+            "pnt": "PNT",
+            "PrimeNumberTheoremAnd": "PNT",
+        }
+        normalized_project = project_map.get(project, project)
+
+        # --- determine page list ---
+        if pages is not None:
+            page_list = pages
+        else:
+            # Start with core pages, then probe for optional pages
+            page_list = list(_CORE_PAGES)
+            # Add TeX pages if screenshots exist
+            for p in _TEX_PAGES:
+                if get_screenshot_path(normalized_project, p).exists():
+                    page_list.append(p)
+            # Add Verso pages if screenshots exist
+            for p in _VERSO_PAGES:
+                if get_screenshot_path(normalized_project, p).exists():
+                    page_list.append(p)
+
+        # --- gather page inspections ---
+        page_inspections: List[PageInspection] = []
+        pages_with_screenshots = 0
+
+        for page_name in page_list:
+            screenshot_path = get_screenshot_path(normalized_project, page_name)
+            exists = screenshot_path.exists()
+            if exists:
+                pages_with_screenshots += 1
+
+            page_inspections.append(
+                PageInspection(
+                    page_name=page_name,
+                    screenshot_path=str(screenshot_path) if exists else None,
+                    screenshot_exists=exists,
+                    suggested_prompt=_SUGGESTED_PROMPTS.get(page_name, ""),
+                )
+            )
+
+        # --- issue context ---
+        open_issues: List[Dict[str, Any]] = []
+        closed_issues: List[Dict[str, Any]] = []
+
+        if include_issue_context:
+            gh_repo = "e-vergo/Side-By-Side-Blueprint"
+
+            # Fetch open issues
+            try:
+                result = subprocess.run(
+                    [
+                        "gh", "issue", "list",
+                        "--repo", gh_repo,
+                        "--state", "open",
+                        "--json", "number,title,labels,body",
+                        "--limit", "50",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    for item in json.loads(result.stdout):
+                        label_names = []
+                        for lbl in item.get("labels", []):
+                            if isinstance(lbl, dict):
+                                label_names.append(lbl.get("name", ""))
+                            elif isinstance(lbl, str):
+                                label_names.append(lbl)
+                        body = item.get("body") or ""
+                        open_issues.append({
+                            "number": item.get("number", 0),
+                            "title": item.get("title", ""),
+                            "labels": label_names,
+                            "body_summary": body[:200],
+                        })
+            except (subprocess.TimeoutExpired, Exception):
+                pass
+
+            # Fetch recently closed issues (for regression awareness)
+            try:
+                result = subprocess.run(
+                    [
+                        "gh", "issue", "list",
+                        "--repo", gh_repo,
+                        "--state", "closed",
+                        "--json", "number,title,labels",
+                        "--limit", "20",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    for item in json.loads(result.stdout):
+                        label_names = []
+                        for lbl in item.get("labels", []):
+                            if isinstance(lbl, dict):
+                                label_names.append(lbl.get("name", ""))
+                            elif isinstance(lbl, str):
+                                label_names.append(lbl)
+                        closed_issues.append({
+                            "number": item.get("number", 0),
+                            "title": item.get("title", ""),
+                            "labels": label_names,
+                        })
+            except (subprocess.TimeoutExpired, Exception):
+                pass
+
+        # --- quality scores ---
+        quality_scores: Optional[Dict[str, Any]] = None
+        quality_ledger_path = (
+            SBS_ROOT / "dev" / "storage" / normalized_project / "quality_ledger.json"
+        )
+        if quality_ledger_path.exists():
+            try:
+                ledger_data = json.loads(quality_ledger_path.read_text())
+                scores_raw = ledger_data.get("scores", {})
+                quality_scores = {}
+                for metric_id, score_data in scores_raw.items():
+                    quality_scores[metric_id] = {
+                        "value": score_data.get("value"),
+                        "passed": score_data.get("passed"),
+                        "stale": score_data.get("stale", False),
+                        "findings": score_data.get("findings", []),
+                    }
+            except (json.JSONDecodeError, IOError):
+                pass
+
+        return InspectResult(
+            project=normalized_project,
+            pages=page_inspections,
+            open_issues=open_issues,
+            closed_issues=closed_issues,
+            quality_scores=quality_scores,
+            total_pages=len(page_inspections),
+            pages_with_screenshots=pages_with_screenshots,
+        )
+
+    # =========================================================================
+    # GitHub Issue Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_issue_create",
+        annotations=ToolAnnotations(
+            title="SBS Issue Create",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_create(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="Issue title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="Issue body/description"),
+        ] = None,
+        labels: Annotated[
+            Optional[List[str]],
+            Field(
+                description=(
+                    "List of labels from taxonomy dimensions: "
+                    "origin:*, bug:*/feature:*/idea:*/behavior/housekeeping:*/investigation, "
+                    "area:sbs:*/area:devtools:*/area:lean:*, loop:*, impact:*, "
+                    "scope:*, pillar:*, project:*, friction:*"
+                ),
+            ),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="(Legacy) Issue label: bug, feature, or idea"),
+        ] = None,
+        area: Annotated[
+            Optional[str],
+            Field(description="(Legacy) Area label: sbs, devtools, or misc"),
+        ] = None,
+    ) -> IssueCreateResult:
+        """Create a new GitHub issue in the SBS repository.
+
+        Creates an issue in e-vergo/Side-By-Side-Blueprint.
+
+        When `labels` is provided, uses those labels plus `ai-authored`.
+        When `labels` is not provided, falls back to legacy `label` + `area` params.
+
+        Examples:
+        - sls_issue_create(title="Bug in graph layout", labels=["bug:visual", "area:sbs:graph"])
+        - sls_issue_create(title="Add dark mode", labels=["feature:new", "area:sbs:theme", "impact:visual"])
+        - sls_issue_create(title="Fix Verso export", label="bug", area="sbs")
+        """
+        # Attribution footer for AI transparency
+        attribution = "\n\n---\n🤖 Created with [Claude Code](https://claude.ai/code)"
+        full_body = (body or "") + attribution
+
+        cmd = ["gh", "issue", "create", "--repo", GITHUB_REPO, "--title", title]
+        cmd.extend(["--body", full_body])
+
+        # Always add ai-authored label
+        resolved_labels = ["ai-authored"]
+        if labels:
+            # New taxonomy-aware path
+            resolved_labels.extend(labels)
+        else:
+            # Legacy fallback: single label + area prefix
+            if label:
+                resolved_labels.append(label)
+            if area:
+                resolved_labels.append(f"area:{area}")
+
+        # Validate labels against repository
+        valid_labels, invalid_labels = _validate_labels(resolved_labels, GITHUB_REPO)
+        if invalid_labels:
+            suggestions_msg = "; ".join(
+                f"'{inv}' (did you mean: {', '.join(repr(s) for s in suggs)})"
+                if suggs else f"'{inv}' (no close matches found)"
+                for inv, suggs in invalid_labels
+            )
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=f"Invalid labels: {suggestions_msg}",
+            )
+
+        cmd.extend(["--label", ",".join(valid_labels)])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueCreateResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    error=result.stderr.strip() or "Failed to create issue",
+                )
+
+            # Parse URL from output (e.g., "https://github.com/e-vergo/Side-By-Side-Blueprint/issues/123")
+            url = result.stdout.strip()
+            number = None
+            if url and "/issues/" in url:
+                try:
+                    number = int(url.split("/issues/")[-1])
+                except ValueError:
+                    pass
+
+            return IssueCreateResult(
+                success=True,
+                number=number,
+                url=url,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_issue_log",
+        annotations=ToolAnnotations(
+            title="SBS Issue Log (Autonomous)",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_log(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="Issue title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="Issue body/description"),
+        ] = None,
+        labels: Annotated[
+            Optional[List[str]],
+            Field(
+                description=(
+                    "Labels from taxonomy. origin:agent is always added automatically."
+                ),
+            ),
+        ] = None,
+    ) -> IssueLogResult:
+        """Log a GitHub issue autonomously with archive context.
+
+        Creates an issue in e-vergo/Side-By-Side-Blueprint with automatic
+        archive context metadata attached. Designed for agent use without
+        user interaction. Always adds ``origin:agent`` and ``ai-authored`` labels.
+
+        Examples:
+        - sls_issue_log(title="Bug in graph layout", labels=["bug:visual", "area:sbs:graph"])
+        - sls_issue_log(title="CSS variable missing", body="Details...", labels=["bug:visual"])
+        """
+        # Build archive context block
+        context_attached = False
+        context_block = ""
+        try:
+            db = _get_db(ctx)
+            skill, substate = db.get_global_state()
+            global_state = {"skill": skill, "substate": substate} if skill else None
+            state_str = json.dumps(global_state) if global_state else '"idle"'
+            epoch_entries = db.get_epoch_entries()
+            epoch_count = len(epoch_entries)
+            meta = db.get_metadata()
+            last_epoch = meta.get("last_epoch_entry") or "unknown"
+
+            context_block = (
+                "\n\n---\n"
+                "**Agent Context (auto-populated)**\n"
+                f"- Global State: {state_str}\n"
+                f"- Current Epoch Entries: {epoch_count}\n"
+                f"- Last Epoch: {last_epoch}\n"
+            )
+            context_attached = True
+        except Exception:
+            # Archive load failure is non-fatal
+            pass
+
+        # Attribution footer
+        attribution = "\n\n---\n\U0001f916 Logged autonomously via sls_issue_log"
+
+        full_body = (body or "") + context_block + attribution
+
+        # Resolve labels: always include origin:agent and ai-authored
+        resolved_labels = ["ai-authored", "origin:agent"]
+        if labels:
+            resolved_labels.extend(labels)
+
+        # Validate labels against repository
+        valid_labels, invalid_labels = _validate_labels(resolved_labels, GITHUB_REPO)
+        if invalid_labels:
+            suggestions_msg = "; ".join(
+                f"'{inv}' (did you mean: {', '.join(repr(s) for s in suggs)})"
+                if suggs else f"'{inv}' (no close matches found)"
+                for inv, suggs in invalid_labels
+            )
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
+                error=f"Invalid labels: {suggestions_msg}",
+            )
+
+        cmd = [
+            "gh", "issue", "create",
+            "--repo", GITHUB_REPO,
+            "--title", title,
+            "--body", full_body,
+            "--label", ",".join(valid_labels),
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueLogResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    context_attached=context_attached,
+                    error=result.stderr.strip() or "Failed to create issue",
+                )
+
+            # Parse URL from output
+            url = result.stdout.strip()
+            number = None
+            if url and "/issues/" in url:
+                try:
+                    number = int(url.split("/issues/")[-1])
+                except ValueError:
+                    pass
+
+            return IssueLogResult(
+                success=True,
+                number=number,
+                url=url,
+                context_attached=context_attached,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueLogResult(
+                success=False,
+                number=None,
+                url=None,
+                context_attached=context_attached,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_issue_list",
+        annotations=ToolAnnotations(
+            title="SBS Issue List",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_list(
+        ctx: Context,
+        state: Annotated[
+            Optional[str],
+            Field(description="Issue state filter: open, closed, or all (default: open)"),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="Filter by label"),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description="Maximum issues to return", ge=1),
+        ] = 20,
+    ) -> IssueListResult:
+        """List GitHub issues from the SBS repository.
+
+        Lists issues from e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sls_issue_list()  # Open issues
+        - sls_issue_list(state="closed", limit=10)
+        - sls_issue_list(label="bug")
+        """
+        cmd = [
+            "gh", "issue", "list",
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,createdAt",
+            "--limit", str(limit),
+        ]
+
+        if state:
+            cmd.extend(["--state", state])
+        if label:
+            cmd.extend(["--label", label])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueListResult(
+                    issues=[],
+                    total=0,
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueListResult(
+                    issues=[],
+                    total=0,
+                )
+
+            issues = []
+            for item in data:
+                # Extract label names from label objects
+                label_names = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                issues.append(
+                    GitHubIssue(
+                        number=item.get("number", 0),
+                        title=item.get("title", ""),
+                        state=item.get("state", ""),
+                        labels=label_names,
+                        url=item.get("url", ""),
+                        body=item.get("body"),
+                        created_at=item.get("createdAt"),
+                    )
+                )
+
+            return IssueListResult(
+                issues=issues,
+                total=len(issues),
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueListResult(
+                issues=[],
+                total=0,
+            )
+        except Exception:
+            return IssueListResult(
+                issues=[],
+                total=0,
+            )
+
+    @mcp.tool(
+        "sls_issue_get",
+        annotations=ToolAnnotations(
+            title="SBS Issue Get",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_get(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="Issue number to fetch"),
+        ],
+    ) -> IssueGetResult:
+        """Get details of a specific GitHub issue.
+
+        Fetches a single issue from e-vergo/Side-By-Side-Blueprint by number.
+
+        Examples:
+        - sls_issue_get(number=123)
+        """
+        cmd = [
+            "gh", "issue", "view", str(number),
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,createdAt",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueGetResult(
+                    success=False,
+                    issue=None,
+                    error=result.stderr.strip() or f"Issue #{number} not found",
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueGetResult(
+                    success=False,
+                    issue=None,
+                    error="Failed to parse issue data",
+                )
+
+            # Extract label names from label objects
+            label_names = []
+            for lbl in data.get("labels", []):
+                if isinstance(lbl, dict):
+                    label_names.append(lbl.get("name", ""))
+                elif isinstance(lbl, str):
+                    label_names.append(lbl)
+
+            issue = GitHubIssue(
+                number=data.get("number", 0),
+                title=data.get("title", ""),
+                state=data.get("state", ""),
+                labels=label_names,
+                url=data.get("url", ""),
+                body=data.get("body"),
+                created_at=data.get("createdAt"),
+            )
+
+            return IssueGetResult(
+                success=True,
+                issue=issue,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueGetResult(
+                success=False,
+                issue=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueGetResult(
+                success=False,
+                issue=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_issue_close",
+        annotations=ToolAnnotations(
+            title="SBS Issue Close",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_close(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="Issue number to close"),
+        ],
+        comment: Annotated[
+            Optional[str],
+            Field(description="Optional comment when closing"),
+        ] = None,
+    ) -> IssueCloseResult:
+        """Close a GitHub issue in the SBS repository.
+
+        Closes an issue in e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sls_issue_close(number=123)
+        - sls_issue_close(number=123, comment="Fixed in PR #456")
+        """
+        cmd = ["gh", "issue", "close", str(number), "--repo", GITHUB_REPO]
+
+        if comment:
+            cmd.extend(["--comment", comment])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueCloseResult(
+                    success=False,
+                    error=result.stderr.strip() or f"Failed to close issue #{number}",
+                )
+
+            return IssueCloseResult(
+                success=True,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueCloseResult(
+                success=False,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueCloseResult(
+                success=False,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_issue_summary",
+        annotations=ToolAnnotations(
+            title="SBS Issue Summary",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sls_issue_summary(
+        ctx: Context,
+    ) -> IssueSummaryResult:
+        """Get aggregate statistics for all open GitHub issues.
+
+        Returns summary statistics useful for prioritization:
+        - Total entries and date range
+        - Issues grouped by type (bug/feature/idea)
+        - Issues grouped by area (sbs/devtools/misc)
+        - Full listing sorted by age
+
+        Examples:
+        - sls_issue_summary()
+        """
+        cmd = [
+            "gh", "issue", "list",
+            "--repo", GITHUB_REPO,
+            "--state", "open",
+            "--json", "number,title,labels,url,createdAt",
+            "--limit", "100",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return IssueSummaryResult(
+                    total_open=0,
+                    error=result.stderr.strip() or "Failed to fetch issues",
+                )
+
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return IssueSummaryResult(
+                    total_open=0,
+                    error="Failed to parse GitHub CLI output",
+                )
+
+            now = datetime.utcnow()
+            type_labels = {"bug", "feature", "idea"}
+            area_prefix = "area:"
+
+            # Dimension prefixes for taxonomy grouping.
+            # Order matters: longer prefixes checked first so "area:sbs:"
+            # matches before "area:". Standalone labels map to their dimension.
+            _DIM_PREFIXES = [
+                ("area:sbs:", "area_sbs"),
+                ("area:devtools:", "area_devtools"),
+                ("area:lean:", "area_lean"),
+                ("origin:", "origin"),
+                ("bug:", "type"),
+                ("feature:", "type"),
+                ("idea:", "type"),
+                ("housekeeping:", "type"),
+                ("loop:", "loop"),
+                ("impact:", "impact"),
+                ("scope:", "scope"),
+                ("pillar:", "pillar"),
+                ("project:", "project"),
+                ("friction:", "friction"),
+            ]
+            _STANDALONE_DIMS = {
+                "behavior": "type",
+                "investigation": "type",
+            }
+
+            by_type: Dict[str, List[int]] = {}
+            by_area: Dict[str, List[int]] = {}
+            by_dimension: Dict[str, Dict[str, List[int]]] = {}
+            items: List[IssueSummaryItem] = []
+
+            for item in data:
+                number = item.get("number", 0)
+                title = item.get("title", "")
+                url = item.get("url", "")
+                created_at = item.get("createdAt", "")
+
+                # Parse label names
+                label_names: List[str] = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                # Compute age
+                age_days = 0
+                if created_at:
+                    try:
+                        # GitHub returns ISO format like "2025-01-15T10:30:00Z"
+                        created = datetime.fromisoformat(
+                            created_at.replace("Z", "+00:00")
+                        )
+                        age_days = (now - created.replace(tzinfo=None)).days
+                    except (ValueError, TypeError):
+                        pass
+
+                items.append(
+                    IssueSummaryItem(
+                        number=number,
+                        title=title,
+                        labels=label_names,
+                        age_days=age_days,
+                        url=url,
+                    )
+                )
+
+                # Group by type (legacy)
+                found_type = False
+                for lbl in label_names:
+                    if lbl in type_labels:
+                        by_type.setdefault(lbl, []).append(number)
+                        found_type = True
+                if not found_type:
+                    by_type.setdefault("unlabeled", []).append(number)
+
+                # Group by area (legacy)
+                found_area = False
+                for lbl in label_names:
+                    if lbl.startswith(area_prefix):
+                        area_name = lbl[len(area_prefix):]
+                        by_area.setdefault(area_name, []).append(number)
+                        found_area = True
+                if not found_area:
+                    by_area.setdefault("unlabeled", []).append(number)
+
+                # Group by taxonomy dimension
+                for lbl in label_names:
+                    dimension = None
+                    # Check standalone labels first
+                    if lbl in _STANDALONE_DIMS:
+                        dimension = _STANDALONE_DIMS[lbl]
+                    else:
+                        # Check prefix-based dimensions
+                        for prefix, dim in _DIM_PREFIXES:
+                            if lbl.startswith(prefix):
+                                dimension = dim
+                                break
+                    if dimension:
+                        by_dimension.setdefault(dimension, {}).setdefault(
+                            lbl, []
+                        ).append(number)
+
+            # Sort by age descending (oldest first)
+            items.sort(key=lambda x: x.age_days, reverse=True)
+
+            oldest = items[0].age_days if items else None
+            newest = items[-1].age_days if items else None
+
+            return IssueSummaryResult(
+                total_open=len(items),
+                by_type=by_type,
+                by_area=by_area,
+                by_dimension=by_dimension,
+                issues=items,
+                oldest_age_days=oldest,
+                newest_age_days=newest,
+            )
+
+        except subprocess.TimeoutExpired:
+            return IssueSummaryResult(
+                total_open=0,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return IssueSummaryResult(
+                total_open=0,
+                error=str(e),
+            )
+
+    # =========================================================================
+    # GitHub Pull Request Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_pr_create",
+        annotations=ToolAnnotations(
+            title="SBS PR Create",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sls_pr_create(
+        ctx: Context,
+        title: Annotated[
+            str,
+            Field(description="PR title"),
+        ],
+        body: Annotated[
+            Optional[str],
+            Field(description="PR body/description"),
+        ] = None,
+        base: Annotated[
+            str,
+            Field(description="Base branch (default: main)"),
+        ] = "main",
+        draft: Annotated[
+            bool,
+            Field(description="Create as draft PR"),
+        ] = False,
+    ) -> PRCreateResult:
+        """Create a new GitHub pull request in the SBS repository.
+
+        Creates a PR in e-vergo/Side-By-Side-Blueprint from the current branch.
+
+        Examples:
+        - sls_pr_create(title="Add feature X")
+        - sls_pr_create(title="Fix bug", body="Details here", draft=True)
+        """
+        # Attribution footer for AI transparency
+        attribution = "\n\n---\n🤖 Generated with [Claude Code](https://claude.ai/code)"
+        full_body = (body or "") + attribution
+
+        cmd = [
+            "gh", "pr", "create",
+            "--repo", GITHUB_REPO,
+            "--title", title,
+            "--body", full_body,
+            "--base", base,
+            "--label", "ai-authored",
+        ]
+
+        if draft:
+            cmd.append("--draft")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRCreateResult(
+                    success=False,
+                    number=None,
+                    url=None,
+                    error=result.stderr.strip() or "Failed to create PR",
+                )
+
+            # Parse URL from output (e.g., "https://github.com/e-vergo/Side-By-Side-Blueprint/pull/123")
+            url = result.stdout.strip()
+            number = None
+            if url and "/pull/" in url:
+                try:
+                    number = int(url.split("/pull/")[-1])
+                except ValueError:
+                    pass
+
+            return PRCreateResult(
+                success=True,
+                number=number,
+                url=url,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRCreateResult(
+                success=False,
+                number=None,
+                url=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_pr_list",
+        annotations=ToolAnnotations(
+            title="SBS PR List",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sls_pr_list(
+        ctx: Context,
+        state: Annotated[
+            Optional[str],
+            Field(description="PR state filter: open, closed, merged, or all (default: open)"),
+        ] = None,
+        label: Annotated[
+            Optional[str],
+            Field(description="Filter by label"),
+        ] = None,
+        limit: Annotated[
+            int,
+            Field(description="Maximum PRs to return", ge=1),
+        ] = 20,
+    ) -> PRListResult:
+        """List GitHub pull requests from the SBS repository.
+
+        Lists PRs from e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sls_pr_list()  # Open PRs
+        - sls_pr_list(state="closed", limit=10)
+        - sls_pr_list(label="ai-authored")
+        """
+        cmd = [
+            "gh", "pr", "list",
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,baseRefName,headRefName,isDraft,createdAt",
+            "--limit", str(limit),
+        ]
+
+        if state:
+            cmd.extend(["--state", state])
+        if label:
+            cmd.extend(["--label", label])
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRListResult(
+                    pull_requests=[],
+                    total=0,
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return PRListResult(
+                    pull_requests=[],
+                    total=0,
+                )
+
+            pull_requests = []
+            for item in data:
+                # Extract label names from label objects
+                label_names = []
+                for lbl in item.get("labels", []):
+                    if isinstance(lbl, dict):
+                        label_names.append(lbl.get("name", ""))
+                    elif isinstance(lbl, str):
+                        label_names.append(lbl)
+
+                pull_requests.append(
+                    GitHubPullRequest(
+                        number=item.get("number", 0),
+                        title=item.get("title", ""),
+                        state=item.get("state", ""),
+                        labels=label_names,
+                        url=item.get("url", ""),
+                        body=item.get("body"),
+                        base_branch=item.get("baseRefName", ""),
+                        head_branch=item.get("headRefName", ""),
+                        draft=item.get("isDraft", False),
+                        mergeable=None,  # Not available in list view
+                        created_at=item.get("createdAt"),
+                    )
+                )
+
+            return PRListResult(
+                pull_requests=pull_requests,
+                total=len(pull_requests),
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRListResult(
+                pull_requests=[],
+                total=0,
+            )
+        except Exception:
+            return PRListResult(
+                pull_requests=[],
+                total=0,
+            )
+
+    @mcp.tool(
+        "sls_pr_get",
+        annotations=ToolAnnotations(
+            title="SBS PR Get",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    def sls_pr_get(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="PR number to fetch"),
+        ],
+    ) -> PRGetResult:
+        """Get details of a specific GitHub pull request.
+
+        Fetches a single PR from e-vergo/Side-By-Side-Blueprint by number.
+
+        Examples:
+        - sls_pr_get(number=123)
+        """
+        cmd = [
+            "gh", "pr", "view", str(number),
+            "--repo", GITHUB_REPO,
+            "--json", "number,title,state,labels,url,body,baseRefName,headRefName,isDraft,mergeable,createdAt",
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRGetResult(
+                    success=False,
+                    pull_request=None,
+                    error=result.stderr.strip() or f"PR #{number} not found",
+                )
+
+            # Parse JSON output
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                return PRGetResult(
+                    success=False,
+                    pull_request=None,
+                    error="Failed to parse PR data",
+                )
+
+            # Extract label names from label objects
+            label_names = []
+            for lbl in data.get("labels", []):
+                if isinstance(lbl, dict):
+                    label_names.append(lbl.get("name", ""))
+                elif isinstance(lbl, str):
+                    label_names.append(lbl)
+
+            # Handle mergeable - can be null, "MERGEABLE", "CONFLICTING", etc.
+            mergeable_raw = data.get("mergeable")
+            mergeable = None
+            if mergeable_raw == "MERGEABLE":
+                mergeable = True
+            elif mergeable_raw == "CONFLICTING":
+                mergeable = False
+            # Leave as None for UNKNOWN or null
+
+            pull_request = GitHubPullRequest(
+                number=data.get("number", 0),
+                title=data.get("title", ""),
+                state=data.get("state", ""),
+                labels=label_names,
+                url=data.get("url", ""),
+                body=data.get("body"),
+                base_branch=data.get("baseRefName", ""),
+                head_branch=data.get("headRefName", ""),
+                draft=data.get("isDraft", False),
+                mergeable=mergeable,
+                created_at=data.get("createdAt"),
+            )
+
+            return PRGetResult(
+                success=True,
+                pull_request=pull_request,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRGetResult(
+                success=False,
+                pull_request=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRGetResult(
+                success=False,
+                pull_request=None,
+                error=str(e),
+            )
+
+    @mcp.tool(
+        "sls_pr_merge",
+        annotations=ToolAnnotations(
+            title="SBS PR Merge",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    def sls_pr_merge(
+        ctx: Context,
+        number: Annotated[
+            int,
+            Field(description="PR number to merge"),
+        ],
+        strategy: Annotated[
+            str,
+            Field(description="Merge strategy: squash, rebase, or merge (default: squash)"),
+        ] = "squash",
+        delete_branch: Annotated[
+            bool,
+            Field(description="Delete branch after merge"),
+        ] = True,
+    ) -> PRMergeResult:
+        """Merge a GitHub pull request in the SBS repository.
+
+        Merges a PR in e-vergo/Side-By-Side-Blueprint.
+
+        Examples:
+        - sls_pr_merge(number=123)
+        - sls_pr_merge(number=123, strategy="rebase", delete_branch=False)
+        """
+        cmd = ["gh", "pr", "merge", str(number), "--repo", GITHUB_REPO]
+
+        # Add merge strategy flag
+        if strategy == "squash":
+            cmd.append("--squash")
+        elif strategy == "rebase":
+            cmd.append("--rebase")
+        elif strategy == "merge":
+            cmd.append("--merge")
+        else:
+            # Default to squash for unknown strategies
+            cmd.append("--squash")
+
+        if delete_branch:
+            cmd.append("--delete-branch")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                return PRMergeResult(
+                    success=False,
+                    sha=None,
+                    error=result.stderr.strip() or f"Failed to merge PR #{number}",
+                )
+
+            # Try to extract merge commit SHA from output
+            # Output might contain something like "Merged pull request #123"
+            # or include the commit SHA
+            output = result.stdout.strip()
+            sha = None
+
+            # Look for SHA pattern (40 hex characters)
+            import re
+            sha_match = re.search(r'\b([0-9a-f]{40})\b', output)
+            if sha_match:
+                sha = sha_match.group(1)
+
+            return PRMergeResult(
+                success=True,
+                sha=sha,
+                error=None,
+            )
+
+        except subprocess.TimeoutExpired:
+            return PRMergeResult(
+                success=False,
+                sha=None,
+                error="Command timed out after 30 seconds",
+            )
+        except Exception as e:
+            return PRMergeResult(
+                success=False,
+                sha=None,
+                error=str(e),
+            )
+
+    # =========================================================================
+    # Self-Improve Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_analysis_summary",
+        annotations=ToolAnnotations(
+            title="SBS Analysis Summary",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_analysis_summary(ctx: Context) -> AnalysisSummary:
+        """Get aggregate statistics for archive analysis.
+
+        Returns summary statistics useful for self-improvement:
+        - Total entries and date range
+        - Entries by trigger type
+        - Quality metrics aggregates
+        - Most common tags
+        - Projects summary
+        - Basic improvement findings
+        """
+        db = _get_db(ctx)
+        return db.analysis_summary()
+
+    @mcp.tool(
+        "sls_entries_since_self_improve",
+        annotations=ToolAnnotations(
+            title="SBS Entries Since Self-Improve",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_entries_since_self_improve(ctx: Context) -> SelfImproveEntries:
+        """Get all entries since the last self-improve invocation.
+
+        Finds the most recent archive entry where global_state.skill == "self-improve"
+        and returns all entries created after that point. Useful for determining
+        what happened since the last self-improvement cycle.
+        """
+        db = _get_db(ctx)
+        return db.entries_since_self_improve()
+
+    @mcp.tool(
+        "sls_successful_sessions",
+        annotations=ToolAnnotations(
+            title="SBS Successful Sessions",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_successful_sessions(ctx: Context) -> str:
+        """Mine successful interaction patterns from archive data.
+
+        Identifies sessions with completed tasks, clean execution (few auto-tags),
+        and high quality scores. Use during self-improve discovery for Pillar 1 & 2.
+        """
+        db = _get_db(ctx)
+        result = db.successful_sessions()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_comparative_analysis",
+        annotations=ToolAnnotations(
+            title="SBS Comparative Analysis",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_comparative_analysis(ctx: Context) -> str:
+        """Compare approved vs rejected plans from archive data.
+
+        Groups planning phase entries by outcome (reached execution or not),
+        identifies discriminating features. Use during self-improve for Pillar 3.
+        """
+        db = _get_db(ctx)
+        result = db.comparative_analysis()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_system_health",
+        annotations=ToolAnnotations(
+            title="SBS System Health",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_system_health(ctx: Context) -> str:
+        """Analyze system engineering health from archive data.
+
+        Reports build metrics, quality score coverage, auto-tag noise levels,
+        and archive friction. Use during self-improve for Pillar 4.
+        """
+        db = _get_db(ctx)
+        result = db.system_health()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_user_patterns",
+        annotations=ToolAnnotations(
+            title="SBS User Patterns",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_user_patterns(ctx: Context) -> str:
+        """Analyze user communication patterns from archive data.
+
+        Examines alignment efficiency, issue-driven vs freeform task patterns,
+        and communication effectiveness. Use during self-improve for Pillar 1.
+        """
+        db = _get_db(ctx)
+        result = db.user_patterns()
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_skill_stats",
+        annotations=ToolAnnotations(
+            title="SBS Skill Stats",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_stats(ctx: Context, as_findings: bool = False) -> str:
+        """Get per-skill lifecycle metrics.
+
+        Returns invocation count, completion rate, duration, and failure modes
+        for each skill type. Use during self-improve for Pillar 2.
+        """
+        db = _get_db(ctx)
+        result = db.skill_stats(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_phase_transition_health",
+        annotations=ToolAnnotations(
+            title="SBS Phase Transition Health",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_phase_transition_health(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze phase transition patterns.
+
+        Detects backward transitions, skipped phases, and time-in-phase
+        distribution. Use during self-improve for Pillar 2 and 3.
+        """
+        db = _get_db(ctx)
+        result = db.phase_transition_health(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_interruption_analysis",
+        annotations=ToolAnnotations(
+            title="SBS Interruption Analysis",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_interruption_analysis(ctx: Context, as_findings: bool = False) -> str:
+        """Detect user corrections and redirections.
+
+        Identifies backward transitions, retries, and correction keywords
+        in session data. Use during self-improve for Pillar 1 and 3.
+        """
+        db = _get_db(ctx)
+        result = db.interruption_analysis(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_gate_failures",
+        annotations=ToolAnnotations(
+            title="SBS Gate Failures",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_gate_failures(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze gate validation failures.
+
+        Reports failure rates, override patterns, and common failure types.
+        Use during self-improve for Pillar 4.
+        """
+        db = _get_db(ctx)
+        result = db.gate_failures(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_tag_effectiveness",
+        annotations=ToolAnnotations(
+            title="SBS Tag Effectiveness",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_tag_effectiveness(ctx: Context, as_findings: bool = False) -> str:
+        """Analyze auto-tag signal-to-noise ratio.
+
+        Identifies noisy tags and tags correlated with actual problems.
+        Use during self-improve for Pillar 4.
+        """
+        db = _get_db(ctx)
+        result = db.tag_effectiveness(as_findings=as_findings)
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_question_analysis",
+        annotations=ToolAnnotations(
+            title="Analyze AskUserQuestion interactions",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_question_analysis(
+        ctx: Context,
+        since: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter from")] = None,
+        until: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter until")] = None,
+        skill: Annotated[Optional[str], Field(description="Filter by active skill type")] = None,
+        limit: Annotated[int, Field(description="Maximum interactions to return")] = 50,
+    ) -> str:
+        """Extract and analyze AskUserQuestion interactions from Claude Code sessions.
+
+        Searches JSONL session files for AskUserQuestion tool calls,
+        links them with user answers, and correlates with archive state.
+        Use during self-improve for Pillar 1 (user effectiveness).
+        """
+        db = _get_db(ctx)
+        result = db.question_analysis(
+            since=since, until=until, skill=skill, limit=limit
+        )
+        return result.model_dump_json(indent=2)
+
+    @mcp.tool(
+        "sls_question_stats",
+        annotations=ToolAnnotations(
+            title="AskUserQuestion usage statistics",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_question_stats(
+        ctx: Context,
+        since: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter from")] = None,
+        until: Annotated[Optional[str], Field(description="Entry ID or ISO timestamp to filter until")] = None,
+    ) -> str:
+        """Aggregate statistics about AskUserQuestion usage patterns.
+
+        Returns question counts by skill, header, and most common options
+        selected. Use during self-improve for Pillar 1 (user effectiveness).
+        """
+        db = _get_db(ctx)
+        result = db.question_stats(since=since, until=until)
+        return result.model_dump_json(indent=2)
+
+    # =========================================================================
+    # Skill Management Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_skill_status",
+        annotations=ToolAnnotations(
+            title="SBS Skill Status",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_status(ctx: Context) -> SkillStatusResult:
+        """Query current skill state from the archive.
+
+        Returns whether a skill is active, which phase it's in, and whether
+        a new skill can be started. Use this before starting a skill to check
+        for conflicts.
+
+        Returns:
+            SkillStatusResult with active_skill, substate, can_start_new, etc.
+        """
+        db = _get_db(ctx)
+        skill, substate = db.get_global_state()
+
+        entries_in_phase = 0
+        phase_started_at = None
+
+        if skill:
+            # Count entries since the most recent phase_start for this skill
+            recent = db.get_entries(limit=100)
+            for e in recent:
+                gs = e.get("global_state") or {}
+                if gs.get("skill") == skill:
+                    entries_in_phase += 1
+                else:
+                    break
+
+        can_start_new = skill is None
+
+        return SkillStatusResult(
+            active_skill=skill,
+            substate=substate,
+            can_start_new=can_start_new,
+            entries_in_phase=entries_in_phase,
+            phase_started_at=phase_started_at,
+        )
+
+    @mcp.tool(
+        "sls_skill_start",
+        annotations=ToolAnnotations(
+            title="SBS Skill Start",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_start(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name: task, self-improve, update-and-archive, log"),
+        ],
+        initial_substate: Annotated[
+            str,
+            Field(description="Initial phase/substate for the skill"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers this skill relates to"),
+        ] = None,
+    ) -> SkillStartResult:
+        """Start a skill session, claiming the global state.
+
+        Checks for conflicts (another skill already active), then updates the
+        archive with the new skill state. Use sls_skill_status first to check
+        if starting is allowed.
+
+        Args:
+            skill: Name of the skill to start (task, self-improve, etc.)
+            initial_substate: Initial phase within the skill (e.g., "alignment", "execution")
+            issue_refs: Optional list of GitHub issue numbers related to this skill
+
+        Returns:
+            SkillStartResult with success, error, archive_entry_id, and new global_state
+        """
+        # Check current state first
+        db = _get_db(ctx)
+        current_skill, _ = db.get_global_state()
+        if current_skill:
+            return SkillStartResult(
+                success=False,
+                error=f"Cannot start '{skill}': skill '{current_skill}' is already active. "
+                      f"Use sls_skill_end to finish the current skill first.",
+                archive_entry_id=None,
+                global_state={"skill": current_skill, "substate": _},
+            )
+
+        # Prepare global state
+        new_state = {
+            "skill": skill,
+            "substate": initial_substate,
+        }
+
+        # Run archive upload with phase_start
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=new_state,
+            state_transition="phase_start",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillStartResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+                global_state=None,
+            )
+
+        # Invalidate to pick up the new state
+        db.invalidate()
+
+        return SkillStartResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+            global_state=new_state,
+        )
+
+    @mcp.tool(
+        "sls_skill_transition",
+        annotations=ToolAnnotations(
+            title="SBS Skill Transition",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_transition(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        to_phase: Annotated[
+            str,
+            Field(description="New phase/substate to transition to"),
+        ],
+        is_final: Annotated[
+            bool,
+            Field(description="If true, clears the global state after transition"),
+        ] = False,
+    ) -> SkillTransitionResult:
+        """Transition to a new phase within the current skill.
+
+        Verifies that the specified skill owns the current state, then updates
+        the substate. If is_final=True, also clears the global state.
+
+        Args:
+            skill: Name of the skill (must match current active skill)
+            to_phase: New phase to transition to
+            is_final: If True, clear global state after recording the transition
+
+        Returns:
+            SkillTransitionResult with success, from_phase, to_phase, and archive_entry_id
+        """
+        # Check current state
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
+
+        if current_skill != skill:
+            return SkillTransitionResult(
+                success=False,
+                error=f"Cannot transition '{skill}': current active skill is '{current_skill or 'none'}'",
+                from_phase=current_substate,
+                to_phase=to_phase,
+                archive_entry_id=None,
+            )
+
+        # Phase ordering enforcement
+        VALID_TRANSITIONS: Dict[str, Dict[str, set]] = {
+            "task": {
+                "alignment": {"planning"},
+                "planning": {"execution"},
+                "execution": {"finalization"},
+            },
+            "update-and-archive": {
+                "retrospective": {"porcelain"},
+                "porcelain": {"archive-upload"},
+            },
+        }
+
+        skill_phases = VALID_TRANSITIONS.get(skill, {})
+        if skill_phases and current_substate in skill_phases:
+            allowed = skill_phases[current_substate]
+            if to_phase not in allowed:
+                return SkillTransitionResult(
+                    success=False,
+                    error=f"Invalid transition: {current_substate} -> {to_phase}. "
+                          f"Allowed: {sorted(allowed)}",
+                    from_phase=current_substate,
+                    to_phase=to_phase,
+                    archive_entry_id=None,
+                )
+
+        # Prepare new state
+        new_state = {
+            "skill": skill,
+            "substate": to_phase,
+        }
+
+        # Determine state transition type
+        state_transition = "phase_end" if is_final else None
+
+        # Run archive upload
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None if is_final else new_state,  # Clear state if final
+            state_transition=state_transition,
+            issue_refs=None,
+        )
+
+        if not success:
+            return SkillTransitionResult(
+                success=False,
+                error=error or "Archive upload failed",
+                from_phase=current_substate,
+                to_phase=to_phase,
+                archive_entry_id=None,
+            )
+
+        db.invalidate()
+
+        return SkillTransitionResult(
+            success=True,
+            error=None,
+            from_phase=current_substate,
+            to_phase=to_phase,
+            archive_entry_id=entry_id,
+        )
+
+    @mcp.tool(
+        "sls_skill_end",
+        annotations=ToolAnnotations(
+            title="SBS Skill End",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_end(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers to close with this skill"),
+        ] = None,
+    ) -> SkillEndResult:
+        """End a skill session, releasing the global state.
+
+        Verifies that the specified skill owns the current state, then clears
+        the global state. Optionally associates issue references for closing.
+
+        Args:
+            skill: Name of the skill to end (must match current active skill)
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillEndResult with success, error, and archive_entry_id
+        """
+        # Check current state
+        db = _get_db(ctx)
+        current_skill, _ = db.get_global_state()
+
+        if current_skill != skill:
+            return SkillEndResult(
+                success=False,
+                error=f"Cannot end '{skill}': current active skill is '{current_skill or 'none'}'",
+                archive_entry_id=None,
+            )
+
+        # Run archive upload with phase_end to clear state
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None,  # Clear the state
+            state_transition="phase_end",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillEndResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+            )
+
+        db.invalidate()
+
+        return SkillEndResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+        )
+
+    @mcp.tool(
+        "sls_skill_fail",
+        annotations=ToolAnnotations(
+            title="Record Skill Failure",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_fail(
+        ctx: Context,
+        skill: Annotated[
+            str,
+            Field(description="Skill name that should own the state"),
+        ],
+        reason: Annotated[
+            str,
+            Field(description="Why the skill failed"),
+        ],
+        work_preserved: Annotated[
+            Optional[Dict[str, Any]],
+            Field(description="What partial work was preserved (e.g., branch, commits)"),
+        ] = None,
+        recovery_hint: Annotated[
+            Optional[str],
+            Field(description="Suggested recovery action"),
+        ] = None,
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers to associate"),
+        ] = None,
+    ) -> SkillFailResult:
+        """Record a skill failure and release the global state.
+
+        Similar to sls_skill_end but records the failure reason and uses
+        phase_fail state_transition instead of phase_end.
+
+        Args:
+            skill: Name of the skill (must match current active skill)
+            reason: Why the skill failed
+            work_preserved: Optional dict describing preserved partial work
+            recovery_hint: Optional suggestion for recovery
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillFailResult with success, reason, and failed_phase
+        """
+        # Check current state
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
+
+        if current_skill != skill:
+            return SkillFailResult(
+                success=False,
+                error=f"Cannot fail '{skill}': current active skill is '{current_skill or 'none'}'",
+                archive_entry_id=None,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+        # Run archive upload with phase_fail to clear state
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=None,  # Clear the state
+            state_transition="phase_fail",
+            issue_refs=issue_refs,
+        )
+
+        if not success:
+            return SkillFailResult(
+                success=False,
+                error=error or "Archive upload failed",
+                archive_entry_id=None,
+                reason=reason,
+                failed_phase=current_substate,
+            )
+
+        db.invalidate()
+
+        return SkillFailResult(
+            success=True,
+            error=None,
+            archive_entry_id=entry_id,
+            reason=reason,
+            failed_phase=current_substate,
+        )
+
+    @mcp.tool(
+        "sls_skill_handoff",
+        annotations=ToolAnnotations(
+            title="Handoff between skills",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_skill_handoff(
+        ctx: Context,
+        from_skill: Annotated[
+            str,
+            Field(description="Skill to end (must match current active skill)"),
+        ],
+        to_skill: Annotated[
+            str,
+            Field(description="New skill to start"),
+        ],
+        to_substate: Annotated[
+            str,
+            Field(description="Initial substate for new skill"),
+        ],
+        issue_refs: Annotated[
+            Optional[List[int]],
+            Field(description="GitHub issue numbers"),
+        ] = None,
+    ) -> SkillHandoffResult:
+        """Atomically end one skill and start another.
+
+        Verifies that from_skill matches the current active skill, then creates
+        a single archive entry that simultaneously ends the outgoing skill and
+        starts the incoming skill. This prevents the 13% orphaned session rate
+        caused by separate phase_end + skill_start calls.
+
+        Args:
+            from_skill: Name of the skill to end (must match current active skill)
+            to_skill: Name of the new skill to start
+            to_substate: Initial phase/substate for the new skill
+            issue_refs: Optional list of GitHub issue numbers to associate
+
+        Returns:
+            SkillHandoffResult with success, from/to details, and archive_entry_id
+        """
+        # Check current state
+        db = _get_db(ctx)
+        current_skill, current_substate = db.get_global_state()
+
+        if current_skill != from_skill:
+            return SkillHandoffResult(
+                success=False,
+                error=f"Cannot handoff from '{from_skill}': current active skill is '{current_skill or 'none'}'",
+                from_skill=from_skill,
+                from_phase=current_substate or "",
+                to_skill=to_skill,
+                to_substate=to_substate,
+                archive_entry_id=None,
+            )
+
+        # Prepare handoff state
+        handoff_to = {
+            "skill": to_skill,
+            "substate": to_substate,
+        }
+
+        # Run archive upload with handoff transition
+        # global_state is set to the incoming skill so the index picks it up
+        success, entry_id, error = _run_archive_upload(
+            trigger="skill",
+            global_state=handoff_to,
+            state_transition="handoff",
+            issue_refs=issue_refs,
+            handoff_to=handoff_to,
+        )
+
+        if not success:
+            return SkillHandoffResult(
+                success=False,
+                error=error or "Archive upload failed during handoff",
+                from_skill=from_skill,
+                from_phase=current_substate or "",
+                to_skill=to_skill,
+                to_substate=to_substate,
+                archive_entry_id=None,
+            )
+
+        db.invalidate()
+
+        return SkillHandoffResult(
+            success=True,
+            error=None,
+            from_skill=from_skill,
+            from_phase=current_substate or "",
+            to_skill=to_skill,
+            to_substate=to_substate,
+            archive_entry_id=entry_id,
+        )
+
+    # =========================================================================
+    # Improvement Capture Tools
+    # =========================================================================
+
+    @mcp.tool(
+        "sls_improvement_capture",
+        annotations=ToolAnnotations(
+            title="Capture Improvement Opportunity",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=False,
+        ),
+    )
+    def sls_improvement_capture(
+        ctx: Context,
+        observation: Annotated[str, Field(description="The improvement idea or observation in the user's own words")],
+        category: Annotated[Optional[str], Field(description="Category: process, interaction, workflow, tooling, or other")] = None,
+    ) -> ImprovementCaptureResult:
+        """Capture an improvement opportunity mid-session as a lightweight archive entry.
+
+        Zero-friction capture of process/interaction improvement ideas. Creates a
+        lightweight archive entry (no claude data extraction, no iCloud sync, no
+        git push) tagged for later retrieval during /self-improve discovery.
+
+        Examples:
+        - sls_improvement_capture(observation="The alignment phase could auto-suggest success criteria based on issue labels")
+        - sls_improvement_capture(observation="Oracle queries should cache results within a session", category="tooling")
+        """
+        import time as _time
+        from datetime import datetime as _dt, timezone as _tz
+
+        # Validate category
+        valid_categories = {"process", "interaction", "workflow", "tooling", "other"}
+        cat = category or "other"
+        if cat not in valid_categories:
+            return ImprovementCaptureResult(
+                success=False, error=f"Invalid category '{cat}'. Must be one of: {', '.join(sorted(valid_categories))}"
+            )
+
+        try:
+            db = _get_db(ctx)
+            skill, substate = db.get_global_state()
+
+            # Build tags
+            entry_tags = [f"improvement:{cat}"]
+
+            # Build auto_tags from current state
+            auto_tags = ["trigger:improvement"]
+            if skill:
+                auto_tags.append(f"skill:{skill}")
+                if substate:
+                    auto_tags.append(f"phase:{substate}")
+            else:
+                auto_tags.append("skill:none")
+                auto_tags.append("phase:idle")
+
+            gs = {"skill": skill, "substate": substate} if skill else None
+
+            # Write directly to archive_index.json (lightweight, no subprocess)
+            archive_path = ARCHIVE_DIR / "archive_index.json"
+            now = _time.time()
+            entry_id = str(int(now))
+
+            # Read current index, add entry, save
+            data: Dict[str, Any] = {}
+            if archive_path.exists():
+                with open(archive_path) as f:
+                    data = json.load(f)
+
+            entries = data.setdefault("entries", {})
+            entries[entry_id] = {
+                "entry_id": entry_id,
+                "created_at": _dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
+                "project": "SBSMonorepo",
+                "trigger": "improvement",
+                "notes": observation,
+                "tags": entry_tags,
+                "auto_tags": auto_tags,
+                "global_state": gs,
+                "screenshots": [],
+                "build_run_id": None,
+                "quality_scores": {},
+                "quality_delta": None,
+                "state_transition": None,
+                "epoch_summary": None,
+                "gate_validation": None,
+                "issue_refs": [],
+                "pr_refs": [],
+                "repo_commits": {},
+                "rubric_id": None,
+                "synced_to_icloud": False,
+                "added_at": _dt.fromtimestamp(now, tz=_tz.utc).isoformat(),
+            }
+
+            with open(archive_path, "w") as f:
+                json.dump(data, f, indent=2)
+
+            # Invalidate DuckDB so next read picks up the new entry
+            db.invalidate()
+
+            all_tags = entry_tags + auto_tags
+            return ImprovementCaptureResult(
+                success=True, entry_id=entry_id, tags=all_tags
+            )
+        except Exception as e:
+            return ImprovementCaptureResult(
+                success=False, error=str(e)
+            )
+
+
+# =============================================================================
+# Helper Functions
+# =============================================================================
+
+
+def _run_archive_upload(
+    trigger: str = "skill",
+    global_state: Optional[Dict[str, Any]] = None,
+    state_transition: Optional[str] = None,
+    issue_refs: Optional[List[int]] = None,
+    handoff_to: Optional[Dict[str, Any]] = None,
+) -> tuple[bool, Optional[str], Optional[str]]:
+    """Run sbs archive upload and return (success, entry_id, error).
+
+    Args:
+        trigger: Trigger type for the archive entry
+        global_state: New global state to set (None to clear)
+        state_transition: Either "phase_start", "phase_end", "phase_fail", or "handoff"
+        issue_refs: List of GitHub issue numbers to associate
+        handoff_to: For handoff transitions, the incoming skill state
+
+    Returns:
+        Tuple of (success, entry_id, error_message)
+    """
+    scripts_dir = SBS_ROOT / "dev" / "scripts"
+
+    cmd = ["python3", "-m", "sbs", "archive", "upload", "--trigger", trigger]
+
+    if global_state:
+        cmd.extend(["--global-state", json.dumps(global_state)])
+    if state_transition:
+        cmd.extend(["--state-transition", state_transition])
+    if issue_refs:
+        cmd.extend(["--issue-refs", ",".join(str(i) for i in issue_refs)])
+    if handoff_to:
+        cmd.extend(["--handoff-to", json.dumps(handoff_to)])
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=str(scripts_dir),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        # Parse entry ID from output
+        entry_id = None
+        for line in result.stdout.split("\n"):
+            if "Entry ID:" in line:
+                entry_id = line.split("Entry ID:")[1].strip()
+                break
+            # Also check for "entry_id:" in JSON output
+            if '"entry_id":' in line:
+                import re
+                match = re.search(r'"entry_id":\s*"([^"]+)"', line)
+                if match:
+                    entry_id = match.group(1)
+                    break
+
+        if result.returncode != 0:
+            return False, None, result.stderr.strip() or "Archive upload failed"
+
+        return True, entry_id, None
+
+    except subprocess.TimeoutExpired:
+        return False, None, "Archive upload timed out after 60 seconds"
+    except Exception as e:
+        return False, None, str(e)
+
+
+def _entry_id_to_dir_format(entry_id: str) -> str:
+    """Convert entry_id (20260131102119) to directory format (2026-01-31_10-21-19).
+
+    Args:
+        entry_id: Entry ID in format YYYYMMDDHHmmss
+
+    Returns:
+        Directory name in format YYYY-MM-DD_HH-mm-ss
+    """
+    if len(entry_id) != 14:
+        return entry_id  # Return as-is if not expected format
+
+    year = entry_id[0:4]
+    month = entry_id[4:6]
+    day = entry_id[6:8]
+    hour = entry_id[8:10]
+    minute = entry_id[10:12]
+    second = entry_id[12:14]
+
+    return f"{year}-{month}-{day}_{hour}-{minute}-{second}"
+
+
+def _dir_format_to_entry_id(dir_name: str) -> str:
+    """Convert directory format (2026-01-31_10-21-19) to entry_id (20260131102119).
+
+    Args:
+        dir_name: Directory name in format YYYY-MM-DD_HH-mm-ss
+
+    Returns:
+        Entry ID in format YYYYMMDDHHmmss
+    """
+    # Remove dashes, underscores
+    return dir_name.replace("-", "").replace("_", "")
+
+
+def _parse_pytest_output(output: str) -> tuple[int, int, int, int]:
+    """Parse pytest output to extract pass/fail/error/skip counts.
+
+    Returns: (passed, failed, errors, skipped)
+    """
+    import re
+
+    passed = 0
+    failed = 0
+    errors = 0
+    skipped = 0
+
+    # Look for summary line like: "5 passed, 2 failed, 1 error, 3 skipped"
+    # or "5 passed in 1.23s"
+    summary_pattern = r"(\d+)\s+(passed|failed|error|errors|skipped)"
+
+    for match in re.finditer(summary_pattern, output, re.IGNORECASE):
+        count = int(match.group(1))
+        status = match.group(2).lower()
+
+        if status == "passed":
+            passed = count
+        elif status == "failed":
+            failed = count
+        elif status in ("error", "errors"):
+            errors = count
+        elif status == "skipped":
+            skipped = count
+
+    return passed, failed, errors, skipped
+
+
+def _extract_failures(output: str) -> List[TestFailure]:
+    """Extract failure details from pytest output."""
+    failures = []
+    import re
+
+    # Look for FAILED lines
+    failed_pattern = r"FAILED\s+(\S+)::\s*(\S+)"
+    for match in re.finditer(failed_pattern, output):
+        file_path = match.group(1)
+        test_name = match.group(2)
+        failures.append(
+            TestFailure(
+                test_name=test_name,
+                message="Test failed",
+                file=file_path,
+                line=None,
+            )
+        )
+
+    # Look for error messages (AssertionError, etc.)
+    error_pattern = r"(AssertionError|Error|Exception):\s*(.+)"
+    for i, match in enumerate(re.finditer(error_pattern, output)):
+        if i < len(failures):
+            failures[i].message = match.group(2)[:200]  # Limit message length
+
+    return failures[:10]  # Limit to 10 failures
+
+
+def _parse_validation_output(
+    output: str, validator_ids: List[str]
+) -> tuple[dict, float, bool]:
+    """Parse validation output to extract scores.
+
+    Returns: (results dict, overall_score, passed)
+    """
+    import re
+
+    results = {}
+    overall_score = 0.0
+    all_passed = True
+
+    # Look for "Overall quality score: XX.XX%" pattern
+    overall_pattern = r"Overall quality score:\s*([\d.]+)%?"
+    match = re.search(overall_pattern, output)
+    if match:
+        overall_score = float(match.group(1))
+
+    # Look for individual metric scores like "t5-color-match: 100.0 (PASS)"
+    metric_pattern = r"(t\d+-[\w-]+):\s*([\d.]+)\s*\((\w+)\)"
+    for match in re.finditer(metric_pattern, output, re.IGNORECASE):
+        metric_id = match.group(1).lower()
+        value = float(match.group(2))
+        status = match.group(3).upper()
+        passed = status == "PASS"
+
+        # Check if this metric was requested
+        metric_num = metric_id.split("-")[0].upper()
+        if metric_num in validator_ids or metric_id in [v.lower() for v in validator_ids]:
+            results[metric_id] = ValidatorScore(
+                value=value,
+                passed=passed,
+                stale=status == "STALE",
+                findings=[],
+            )
+            if not passed:
+                all_passed = False
+
+    # If no results found, check for error conditions
+    if not results:
+        if "compliance: needs attention" in output.lower():
+            all_passed = False
+
+    return results, overall_score, all_passed
+
+
+def _extract_build_run_id(output: str) -> Optional[str]:
+    """Extract build_run_id from build output if present."""
+    import re
+
+    pattern = r"build_run_id[:\s]+([a-zA-Z0-9_-]+)"
+    match = re.search(pattern, output)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _is_process_running(pid: int) -> bool:
+    """Check if a process with given PID is running."""
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Process exists but we can't signal it
+        return True
