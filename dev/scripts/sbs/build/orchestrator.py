@@ -590,9 +590,9 @@ class BuildOrchestrator:
                 log.warning(f"{name}: Not found, skipping")
                 continue
 
-            # Check if Lean sources changed (skip if stable)
-            if not self.config.force_lake and not has_lean_changes(repo.path, self.config.cache_dir, name):
-                log.info(f"Skipping {name}: Lean sources unchanged")
+            # Skip if user explicitly requested --skip-lake
+            if self.config.skip_lake:
+                log.info(f"Skipping {name}: --skip-lake specified")
                 continue
 
             # Check cache
@@ -642,23 +642,10 @@ class BuildOrchestrator:
         log.success("Blueprint facet built")
 
     def _needs_project_build(self) -> bool:
-        """Check if the project needs a (re)build.
-
-        Returns True when any of:
-        - force_lake is set
-        - Lean sources changed since last build
-        - Per-declaration dressed artifacts are missing (e.g. after clean_artifacts)
-        """
-        if self.config.force_lake:
-            return True
-        if has_lean_changes(
-            self.config.project_root, self.config.cache_dir, self.config.project_name
-        ):
-            return True
-        if not has_dressed_artifacts(self.config.project_root):
-            log.info("Per-declaration dressed artifacts missing — forcing rebuild")
-            return True
-        return False
+        """Check if the project needs a (re)build."""
+        if self.config.skip_lake:
+            return False
+        return True
 
     def _lake_manifests_changed(self) -> bool:
         """Check if Lake manifests changed since last successful build.
@@ -818,7 +805,7 @@ class BuildOrchestrator:
     def _build_project_internal(self) -> None:
         """Build the Lean project (artifact writing is unconditional for @[blueprint] decls)."""
         if not self._needs_project_build():
-            log.info("Skipping project build: Lean sources unchanged")
+            log.info("Skipping project build: --skip-lake specified")
             return
 
         log.header("Building Lean project")
@@ -1034,7 +1021,7 @@ class BuildOrchestrator:
             # ================================================================
             # If only CSS changed (no Lean, no manifests), skip expensive phases
             if (not self.config.force_full_build
-                and not self.config.force_lake
+                and not self.config.skip_lake
                 and self._is_css_only_change()
                 and has_dressed_artifacts(self.config.project_root)):
 
@@ -1085,15 +1072,13 @@ class BuildOrchestrator:
                 # Return early - skip full build
                 return
 
-            # Update manifests only if Lean sources changed
-            if self.config.force_lake or has_lean_changes(
-                self.config.project_root, self.config.cache_dir, self.config.project_name
-            ):
+            # Update manifests unless --skip-lake
+            if not self.config.skip_lake:
                 self._start_phase("update_manifests")
                 self.update_manifests()
                 self._end_phase("update_manifests")
             else:
-                log.info("Skipping manifest update: Lean sources unchanged")
+                log.info("Skipping manifest update: --skip-lake specified")
 
             # Compliance checks
             self._start_phase("compliance_checks")
@@ -1125,7 +1110,7 @@ class BuildOrchestrator:
                 fetch_mathlib_cache(self.config.project_root, self.config.dry_run)
                 self._end_phase("fetch_mathlib_cache")
             else:
-                log.info("Skipping mathlib cache fetch: Lean sources unchanged")
+                log.info("Skipping mathlib cache fetch: --skip-lake specified")
 
             # Build project
             self._start_phase("build_project")
@@ -1138,7 +1123,7 @@ class BuildOrchestrator:
                 lake_build(self.config.project_root, ":blueprint", self.config.dry_run)
                 self._end_phase("build_blueprint")
             else:
-                log.info("Skipping blueprint build: Lean sources unchanged")
+                log.info("Skipping blueprint build: --skip-lake specified")
 
             # Generate Verso documents (paper_verso, blueprint_verso)
             self._start_phase("generate_verso")
@@ -1267,9 +1252,15 @@ Examples:
     )
 
     parser.add_argument(
+        "--skip-lake",
+        action="store_true",
+        help="Skip Lake builds (use cached artifacts from previous build)",
+    )
+
+    parser.add_argument(
         "--force-lake",
         action="store_true",
-        help="Force Lake builds even if Lean sources are unchanged",
+        help=argparse.SUPPRESS,  # Deprecated, hidden from help
     )
 
     parser.add_argument(
@@ -1298,6 +1289,11 @@ def main() -> int:
         # Detect project
         project_name, module_name = detect_project(project_root)
 
+        # Handle deprecated --force-lake flag
+        skip_lake = args.skip_lake
+        if hasattr(args, 'force_lake') and args.force_lake:
+            log.warning("--force-lake is deprecated and now a no-op (Lake always builds by default). Use --skip-lake to skip.")
+
         # Build config
         config = BuildConfig(
             project_root=project_root,
@@ -1309,7 +1305,7 @@ def main() -> int:
             verbose=args.verbose,
             capture=args.capture,
             capture_url=args.capture_url,
-            force_lake=args.force_lake,
+            skip_lake=skip_lake,
             force_clean=args.clean,
             force_full_build=args.force_full_build,
         )

@@ -108,9 +108,9 @@ cd /Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/SBS-Test
 python ../../dev/scripts/build.py
 ```
 
-Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--force-lake`
+Options: `--dry-run`, `--skip-cache`, `--verbose`, `--capture`, `--skip-lake`
 
-**Lean Source Skip:** By default, the build script detects whether `.lean` files have changed since the last successful build. If unchanged, Lake build phases are skipped entirely. Use `--force-lake` to force a full rebuild.
+**Always Build:** By default, all Lake build phases run on every invocation to prevent stale `.olean` artifacts. Use `--skip-lake` to explicitly skip Lake phases when you know artifacts are fresh.
 
 **Required:** `runway.json` must include `assetsDir` pointing to CSS/JS assets.
 
@@ -137,6 +137,15 @@ python3 -m sbs compliance --project SBSTest
 3. **Make changes** to CSS/JS/Lean/templates
 4. **Rebuild and re-capture**
 5. **Validate:** `python3 -m sbs compliance`
+
+### Cleaning Build Artifacts
+
+```bash
+sbs clean --project SBSTest --check   # Show what would be cleaned
+sbs clean --project SBSTest           # Clean project + toolchain deps
+sbs clean --all --force               # Clean everything
+sbs clean --all --full --force        # Also remove .lake/packages/
+```
 
 ---
 

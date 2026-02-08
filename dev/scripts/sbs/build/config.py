@@ -74,7 +74,7 @@ class BuildConfig:
     verbose: bool = False
     capture: bool = False
     capture_url: str = "http://localhost:8000"
-    force_lake: bool = False  # Force Lake builds even if Lean sources unchanged
+    skip_lake: bool = False  # Skip Lake builds (use cached artifacts from previous build)
     force_clean: bool = False  # Force full cleanup of build artifacts
     force_full_build: bool = False  # Force full build even if CSS-only change detected
 

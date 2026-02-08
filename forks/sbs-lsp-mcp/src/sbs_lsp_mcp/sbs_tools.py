@@ -878,7 +878,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
     ) -> ServeResult:
         """Start or check status of local dev server.
 
-        Serves the built site from the project's _site directory.
+        Serves the built site from the project's .lake/build/runway directory.
         Actions:
         - start: Start server on specified port
         - stop: Stop running server
@@ -886,14 +886,14 @@ def register_sbs_tools(mcp: FastMCP) -> None:
         """
         # Map project names to site paths
         site_paths = {
-            "SBSTest": SBS_ROOT / "toolchain" / "SBS-Test" / "_site",
-            "sbs-test": SBS_ROOT / "toolchain" / "SBS-Test" / "_site",
-            "GCR": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / "_site",
-            "gcr": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / "_site",
-            "General_Crystallographic_Restriction": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / "_site",
-            "PNT": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / "_site",
-            "pnt": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / "_site",
-            "PrimeNumberTheoremAnd": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / "_site",
+            "SBSTest": SBS_ROOT / "toolchain" / "SBS-Test" / ".lake" / "build" / "runway",
+            "sbs-test": SBS_ROOT / "toolchain" / "SBS-Test" / ".lake" / "build" / "runway",
+            "GCR": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "gcr": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "General_Crystallographic_Restriction": SBS_ROOT / "showcase" / "General_Crystallographic_Restriction" / ".lake" / "build" / "runway",
+            "PNT": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
+            "pnt": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
+            "PrimeNumberTheoremAnd": SBS_ROOT / "showcase" / "PrimeNumberTheoremAnd" / ".lake" / "build" / "runway",
         }
 
         site_path = site_paths.get(project)
@@ -997,7 +997,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                     url=None,
                     pid=None,
                     project=normalized_project,
-                    error=f"Site directory not found at {site_path}. Run 'sbs build' first.",
+                    error=f"No build output found at {site_path}. Run sbs_build_project first.",
                 )
 
             # Check if port is already in use
@@ -1021,7 +1021,7 @@ def register_sbs_tools(mcp: FastMCP) -> None:
             # Start server
             try:
                 process = subprocess.Popen(
-                    ["python", "-m", "http.server", str(port)],
+                    ["python3", "-m", "http.server", str(port)],
                     cwd=site_path,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
@@ -1041,11 +1041,21 @@ def register_sbs_tools(mcp: FastMCP) -> None:
                 time.sleep(0.5)
 
                 if _is_process_running(process.pid):
+                    # Freshness check on build artifacts
+                    warning = None
+                    project_root = site_path.parent.parent.parent  # .lake/build/runway -> project root
+                    manifest = project_root / ".lake" / "build" / "dressed" / "manifest.json"
+                    if manifest.exists():
+                        age_hours = (time.time() - manifest.stat().st_mtime) / 3600
+                        if age_hours > 24:
+                            warning = f"Build artifacts are {age_hours:.0f}h old. Consider running sbs_build_project."
+
                     return ServeResult(
                         running=True,
                         url=f"http://localhost:{port}",
                         pid=process.pid,
                         project=normalized_project,
+                        warning=warning,
                     )
                 else:
                     # Process died — try to capture stderr

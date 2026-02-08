@@ -131,8 +131,22 @@ def git_pull(repo_path: Path, dry_run: bool = False) -> None:
 # =============================================================================
 
 
-def clean_build_artifacts(repo_path: Path, dry_run: bool = False) -> None:
-    """Clean build artifacts for a repo."""
+def clean_build_artifacts(
+    repo_path: Path,
+    dry_run: bool = False,
+    include_lakefile_olean: bool = True,
+    cache_dir: Path | None = None,
+    repo_name: str | None = None,
+) -> None:
+    """Clean build artifacts for a repo.
+
+    Args:
+        repo_path: Path to the repo root.
+        dry_run: If True, only report what would be removed.
+        include_lakefile_olean: Also remove lakefile.olean (stale .olean fix).
+        cache_dir: If provided with repo_name, also remove cached lean_hash.
+        repo_name: Repo key for cache dir lookup. Required if cache_dir is set.
+    """
     build_dir = repo_path / ".lake" / "build"
 
     if build_dir.exists():
@@ -140,6 +154,25 @@ def clean_build_artifacts(repo_path: Path, dry_run: bool = False) -> None:
             log.info(f"[DRY-RUN] Would remove {build_dir}")
         else:
             shutil.rmtree(build_dir)
+            log.info(f"Removed {build_dir}")
+
+    if include_lakefile_olean:
+        lakefile_olean = repo_path / "lakefile.olean"
+        if lakefile_olean.exists():
+            if dry_run:
+                log.info(f"[DRY-RUN] Would remove {lakefile_olean}")
+            else:
+                lakefile_olean.unlink()
+                log.info(f"Removed {lakefile_olean}")
+
+    if cache_dir and repo_name:
+        lean_hash = cache_dir / repo_name / "lean_hash"
+        if lean_hash.exists():
+            if dry_run:
+                log.info(f"[DRY-RUN] Would remove {lean_hash}")
+            else:
+                lean_hash.unlink()
+                log.info(f"Removed {lean_hash}")
 
 
 def lake_build(repo_path: Path, target: Optional[str] = None, dry_run: bool = False) -> None:

@@ -49,6 +49,7 @@ Commands:
   oracle       Oracle management commands
   labels       Label taxonomy management
   test-catalog List all testable components (MCP tools, tests, CLI commands)
+  clean        Remove build artifacts and caches
 
 Examples:
   sbs capture                    # Capture screenshots from localhost:8000
@@ -65,6 +66,7 @@ Examples:
   sbs labels validate bug:visual # Validate label names
   sbs watch --project SBSTest    # Watch for changes and regenerate
   sbs dev --project SBSTest      # Dev server with live reload
+  sbs clean --project SBSTest    # Clean build artifacts for SBSTest
         """,
     )
 
@@ -736,6 +738,46 @@ Examples:
         help="Port for HTTP server (default: 8000). WebSocket uses port+1.",
     )
 
+    # --- clean ---
+    clean_parser = subparsers.add_parser(
+        "clean",
+        help="Remove build artifacts and caches",
+        description="Remove .lake/build, lakefile.olean, and cached hashes for repos.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  sbs clean --project SBSTest --check   # Show what would be cleaned
+  sbs clean --project SBSTest           # Clean SBSTest + toolchain deps
+  sbs clean --all --force               # Clean everything
+  sbs clean --all --full --force        # Clean everything including .lake/packages
+        """,
+    )
+    clean_parser.add_argument(
+        "--project",
+        choices=["SBSTest", "GCR", "PNT"],
+        help="Clean specific project and its toolchain dependencies",
+    )
+    clean_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Clean all toolchain repos and all projects",
+    )
+    clean_parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Also remove .lake/packages/ (requires re-download)",
+    )
+    clean_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Dry run: show what would be cleaned without deleting",
+    )
+    clean_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Required when using --all to confirm deletion",
+    )
+
     return parser
 
 
@@ -1074,6 +1116,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "dev":
             from sbs.commands.dev import cmd_dev
             return cmd_dev(args)
+
+        elif args.command == "clean":
+            from sbs.commands.clean import cmd_clean
+            return cmd_clean(args)
 
         else:
             log.error(f"Unknown command: {args.command}")
