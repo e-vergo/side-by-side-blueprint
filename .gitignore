@@ -8,22 +8,3 @@ lake-packages/
 # Temporary files
 *.tmp
 *~
-
-# Python virtual environments
-.venv/
-scripts/.venv/
-
-# Lean tooling (not part of monorepo)
-/theorem_proving_in_lean4
-/reference-manual
-
-# Legacy image directory (screenshots now in storage/)
-/images
-
-# Compliance runtime artifacts (generated during validation)
-scripts/compliance_ledger.json
-scripts/COMPLIANCE_STATUS.md
-scripts/manifests/
-scripts/stats/
-__pycache__/
-*.pyc
