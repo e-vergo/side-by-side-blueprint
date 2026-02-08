@@ -54,11 +54,11 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>Claude personality update:  - proactive about logging bugs/issues it encounters, should be able to do this autono\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EvcBCkYICxgCKkCBpoMm...",
-    "claude-opus-4-5-20251101",
     "signature:Ev0BCkYICxgCKkA3Y5kS...",
+    "signature:EsEECkYICxgCKkCMXkQ3...",
     "signature:EocMCkYICxgCKkDQviz7...",
-    "signature:EsEECkYICxgCKkCMXkQ3..."
+    "claude-opus-4-5-20251101",
+    "signature:EvcBCkYICxgCKkCBpoMm..."
   ],
   "thinking_blocks": [
     {

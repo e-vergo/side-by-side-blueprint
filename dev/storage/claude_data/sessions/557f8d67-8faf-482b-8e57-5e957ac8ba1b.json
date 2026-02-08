@@ -116,8 +116,8 @@
   ],
   "tools_used": [
     "Bash",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -129,16 +129,16 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>idea Ok, a new framework is emerging based on the tooling we have developed. This is almost exactly what we have\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EpkCCkYICxgCKkByKQlk...",
-    "signature:EsYFCkYICxgCKkDj1YtD...",
     "signature:Ev0BCkYICxgCKkA3Y5kS...",
-    "signature:Es0BCkYICxgCKkAq/6Zo...",
     "signature:EpQECkYICxgCKkCRhDB4...",
-    "signature:EskBCkYICxgCKkBNCB9D...",
     "signature:EtMBCkYICxgCKkCCgqR9...",
+    "signature:EskBCkYICxgCKkBNCB9D...",
     "signature:ErcCCkYICxgCKkDWCqqP...",
-    "signature:Eu4HCkYICxgCKkCApet5..."
+    "claude-opus-4-5-20251101",
+    "signature:Eu4HCkYICxgCKkCApet5...",
+    "signature:Es0BCkYICxgCKkAq/6Zo...",
+    "signature:EpkCCkYICxgCKkByKQlk...",
+    "signature:EsYFCkYICxgCKkDj1YtD..."
   ],
   "thinking_blocks": [
     {

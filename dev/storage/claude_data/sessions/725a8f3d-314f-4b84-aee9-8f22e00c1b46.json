@@ -208,22 +208,22 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_skill_start",
     "Read",
     "Write",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Glob",
     "mcp__sbs-lsp__sbs_skill_transition",
-    "Glob"
+    "mcp__sbs-lsp__sbs_skill_end"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770183546.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/l3-converge-gcr.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/l3-converge-sbstest.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770183546.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md"
   ],
   "files_written": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/meta-summaries/L3-1770231790.md"
@@ -236,16 +236,16 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EogECkYICxgCKkC2bChr...",
-    "signature:EokfCkYICxgCKkBrsMRo...",
-    "signature:ErYICkYICxgCKkAEzq9u...",
+    "signature:EvoHCkYICxgCKkBB4TLC...",
     "signature:EoMJCkYICxgCKkA/KP5n...",
+    "signature:ErECCkYICxgCKkBhi8gS...",
+    "signature:ErYICkYICxgCKkAEzq9u...",
     "signature:EqsJCkYICxgCKkDMgY6L...",
     "claude-sonnet-4-5-20250929",
-    "signature:EsoCCkYICxgCKkA1Aa0y...",
+    "signature:EokfCkYICxgCKkBrsMRo...",
     "signature:Es4DCkYICxgCKkD2pp44...",
-    "signature:EvoHCkYICxgCKkBB4TLC...",
-    "signature:ErECCkYICxgCKkBhi8gS..."
+    "signature:EsoCCkYICxgCKkA1Aa0y...",
+    "signature:EogECkYICxgCKkC2bChr..."
   ],
   "thinking_blocks": [
     {
