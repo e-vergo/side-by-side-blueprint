@@ -25,3 +25,6 @@
 [submodule "showcase/PrimeNumberTheoremAnd"]
 	path = showcase/PrimeNumberTheoremAnd
 	url = https://github.com/e-vergo/PrimeNumberTheoremAnd.git
+[submodule "forks/vscode-lean4"]
+	path = forks/vscode-lean4
+	url = https://github.com/e-vergo/vscode-lean4.git

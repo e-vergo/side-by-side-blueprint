@@ -1,2 +1,0 @@
-[console_scripts]
-sls = sls.cli:main
