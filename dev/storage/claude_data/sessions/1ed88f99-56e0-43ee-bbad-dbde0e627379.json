@@ -129,17 +129,17 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
     "Bash",
     "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_issue_create",
     "Task"
   ],
   "files_read": [],
   "files_written": [],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_014eRHyRGRXBC4eQG1nzFhhV",
     "toolu_01MEQWSJvCrRdz55BV7nJkCa",
+    "toolu_014eRHyRGRXBC4eQG1nzFhhV",
     "toolu_017joVK6eqmKEnMcQng9LhQ3"
   ],
   "plan_files": [],
@@ -150,8 +150,8 @@
   "model_versions": [
     "signature:EtcECkYICxgCKkAGwBos...",
     "signature:EqwLCkYICxgCKkBU/7mD...",
-    "signature:EoAGCkYICxgCKkDR/PQC...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EoAGCkYICxgCKkDR/PQC..."
   ],
   "thinking_blocks": [
     {

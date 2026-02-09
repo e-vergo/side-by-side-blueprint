@@ -83,8 +83,8 @@
     }
   ],
   "tools_used": [
-    "Read",
     "WebSearch",
+    "Read",
     "Write",
     "Task"
   ],
@@ -105,8 +105,8 @@
   "session_summary": null,
   "model_versions": [
     "signature:EuwICkYICxgCKkD3hMVU...",
-    "claude-opus-4-5-20251101",
     "signature:EoYPCkYICxgCKkCrBzFt...",
+    "claude-opus-4-5-20251101",
     "signature:EoYCCkYICxgCKkBlZMz5...",
     "signature:Er8VCkYICxgCKkD+mDwy..."
   ],

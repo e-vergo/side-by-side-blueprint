@@ -49,9 +49,9 @@
   "first_prompt": "No prompt",
   "session_summary": null,
   "model_versions": [
+    "signature:Et4DCkYICxgCKkA40Ypf...",
     "signature:Et0FCkYICxgCKkAXZkGe...",
     "signature:EokDCkYICxgCKkCMf17j...",
-    "signature:Et4DCkYICxgCKkA40Ypf...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [

@@ -97,8 +97,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErIDCkYICxgCKkBavsvP...",
     "signature:EqsCCkYICxgCKkAmRpGA...",
+    "signature:ErIDCkYICxgCKkBavsvP...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [

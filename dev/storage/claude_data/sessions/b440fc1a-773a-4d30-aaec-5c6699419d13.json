@@ -63,8 +63,8 @@
   "model_versions": [
     "signature:EqECCkYICxgCKkDzy+6U...",
     "signature:EuMBCkYICxgCKkASIF4W...",
-    "signature:EvYGCkYICxgCKkClstoG...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EvYGCkYICxgCKkClstoG..."
   ],
   "thinking_blocks": [
     {
