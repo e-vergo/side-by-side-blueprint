@@ -113,14 +113,14 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErAJCkYICxgCKkDPn8cX...",
-    "signature:EskGCkYICxgCKkAWiJP+...",
-    "signature:EpIGCkYICxgCKkBTUYXn...",
-    "signature:Es4CCkYICxgCKkCUGJer...",
     "claude-sonnet-4-5-20250929",
-    "signature:ErwCCkYICxgCKkCAw2Wq...",
     "signature:EqUCCkYICxgCKkDRhpzB...",
-    "signature:EtMDCkYICxgCKkDlitK8..."
+    "signature:EskGCkYICxgCKkAWiJP+...",
+    "signature:ErwCCkYICxgCKkCAw2Wq...",
+    "signature:Es4CCkYICxgCKkCUGJer...",
+    "signature:ErAJCkYICxgCKkDPn8cX...",
+    "signature:EtMDCkYICxgCKkDlitK8...",
+    "signature:EpIGCkYICxgCKkBTUYXn..."
   ],
   "thinking_blocks": [
     {

@@ -231,15 +231,15 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__browser_get_elements",
-    "mcp__sbs-lsp__browser_evaluate",
     "mcp__sbs-lsp__zulip_fetch_thread",
+    "Bash",
+    "mcp__sbs-lsp__browser_screenshot",
     "Read",
     "mcp__sbs-lsp__browser_navigate",
-    "Bash",
+    "mcp__sbs-lsp__zulip_search",
     "mcp__sbs-lsp__sbs_issue_get",
-    "mcp__sbs-lsp__browser_screenshot",
-    "mcp__sbs-lsp__zulip_search"
+    "mcp__sbs-lsp__browser_get_elements",
+    "mcp__sbs-lsp__browser_evaluate"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/zulip_sbs_thread.png"
@@ -254,15 +254,15 @@
   "session_summary": null,
   "model_versions": [
     "signature:Et8CCkYICxgCKkDiQ01L...",
+    "signature:EqICCkYICxgCKkCp03YU...",
+    "signature:EqICCkYICxgCKkBPrXUs...",
+    "signature:EtoPCkYICxgCKkC6z0O4...",
     "signature:Er8LCkYICxgCKkBrcXaY...",
     "signature:Et8CCkYICxgCKkCNsAEU...",
-    "signature:EpUFCkYICxgCKkCOw4dS...",
     "signature:EoEDCkYICxgCKkADSq36...",
-    "signature:EtoPCkYICxgCKkC6z0O4...",
-    "signature:EqICCkYICxgCKkBPrXUs...",
     "claude-opus-4-6",
-    "signature:Et4LCkYICxgCKkD6gTlC...",
-    "signature:EqICCkYICxgCKkCp03YU..."
+    "signature:EpUFCkYICxgCKkCOw4dS...",
+    "signature:Et4LCkYICxgCKkD6gTlC..."
   ],
   "thinking_blocks": [
     {

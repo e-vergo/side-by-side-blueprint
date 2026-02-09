@@ -1145,19 +1145,19 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
     "Task",
+    "mcp__sbs-lsp__sbs_issue_create",
     "mcp__sbs-lsp__ask_oracle",
-    "Read",
-    "mcp__sbs-lsp__sbs_improvement_capture",
     "mcp__sbs-lsp__sbs_update_and_archive",
-    "AskUserQuestion",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_get",
     "mcp__sbs-lsp__sbs_introspect",
-    "Glob",
+    "Read",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "mcp__sbs-lsp__sbs_improvement_capture",
     "mcp__sbs-lsp__sbs_skill_status",
-    "TodoWrite"
+    "TodoWrite",
+    "Glob",
+    "AskUserQuestion"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/living/REWRITE_PLAN.md"
@@ -1173,19 +1173,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Eq5MCkYICxgCKkBZ1ogu...",
     "signature:ErAmCkYICxgCKkDaPIn2...",
-    "signature:EvY2CkYICxgCKkABPHBv...",
-    "signature:ErY/CkYICxgCKkAl8MXk...",
-    "signature:EuMTCkYICxgCKkAPmwqH...",
-    "signature:EpMHCkYICxgCKkBCnRZA...",
-    "signature:EuwFCkYICxgCKkAx8w3V...",
-    "claude-opus-4-6",
+    "signature:Eq5MCkYICxgCKkBZ1ogu...",
     "signature:EpEGCkYICxgCKkBjenxM...",
-    "signature:EugWCkYICxgCKkDw8a1O...",
-    "signature:EqoGCkYICxgCKkBScFZ0...",
+    "signature:ErY/CkYICxgCKkAl8MXk...",
+    "signature:EpMHCkYICxgCKkBCnRZA...",
     "signature:EogECkYICxgCKkAll73n...",
-    "signature:EvEBCkYICxgCKkCyvWVr..."
+    "signature:EugWCkYICxgCKkDw8a1O...",
+    "signature:EuMTCkYICxgCKkAPmwqH...",
+    "claude-opus-4-6",
+    "signature:EvY2CkYICxgCKkABPHBv...",
+    "signature:EvEBCkYICxgCKkCyvWVr...",
+    "signature:EuwFCkYICxgCKkAx8w3V...",
+    "signature:EqoGCkYICxgCKkBScFZ0..."
   ],
   "thinking_blocks": [
     {

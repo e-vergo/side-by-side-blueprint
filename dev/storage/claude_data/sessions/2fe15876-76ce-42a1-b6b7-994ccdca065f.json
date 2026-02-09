@@ -150,8 +150,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
     "Task",
+    "mcp__sbs-lsp__sbs_issue_create",
     "AskUserQuestion"
   ],
   "files_read": [],
@@ -167,8 +167,8 @@
   "session_summary": null,
   "model_versions": [
     "signature:EsEHCkYICxgCKkDRjBUQ...",
-    "claude-opus-4-5-20251101",
     "signature:Eo8QCkYICxgCKkDnn0Z0...",
+    "claude-opus-4-5-20251101",
     "signature:EpAECkYICxgCKkA1xceY..."
   ],
   "thinking_blocks": [

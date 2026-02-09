@@ -42,8 +42,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -55,8 +55,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>sbs housekeeping - sidebar highlighting fix  make sure text in the sidebare highlighted item is the opposite colo\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EtsGCkYICxgCKkA1mVOf...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EtsGCkYICxgCKkA1mVOf..."
   ],
   "thinking_blocks": [
     {

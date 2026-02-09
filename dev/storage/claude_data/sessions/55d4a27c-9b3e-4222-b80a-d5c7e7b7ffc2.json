@@ -75,8 +75,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -88,8 +88,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>sbs housekeeping - expand interactive test suite  we made tooling to we could test interactive elements of our sy\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:Eq4cCkYICxgCKkAnBUSd..."
+    "signature:Eq4cCkYICxgCKkAnBUSd...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {
