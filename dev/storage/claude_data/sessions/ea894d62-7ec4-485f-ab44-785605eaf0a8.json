@@ -206,11 +206,11 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_start",
     "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_issue_get",
     "Task",
-    "AskUserQuestion"
+    "mcp__sbs-lsp__sbs_skill_start",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_issue_get"
   ],
   "files_read": [],
   "files_written": [],
@@ -224,12 +224,12 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EswXCkYICxgCKkAK0g3X...",
-    "signature:EroDCkYICxgCKkAU53Xq...",
-    "signature:Es4VCkYICxgCKkA/9P6m...",
-    "signature:Eo0GCkYICxgCKkBFfUzj...",
     "claude-opus-4-5-20251101",
-    "signature:EscFCkYICxgCKkAB7j0E..."
+    "signature:Es4VCkYICxgCKkA/9P6m...",
+    "signature:EswXCkYICxgCKkAK0g3X...",
+    "signature:EscFCkYICxgCKkAB7j0E...",
+    "signature:Eo0GCkYICxgCKkBFfUzj...",
+    "signature:EroDCkYICxgCKkAU53Xq..."
   ],
   "thinking_blocks": [
     {

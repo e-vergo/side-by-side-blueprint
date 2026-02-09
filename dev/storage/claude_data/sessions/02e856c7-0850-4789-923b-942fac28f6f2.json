@@ -45,8 +45,8 @@
   "first_prompt": "please update it to include language that we need to review all documentation that influences agent behavior to use the tool when appropriate. we should also auto populate with other easilly fetchable\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EuQGCkYICxgCKkCueQTl...",
     "signature:EsUCCkYICxgCKkBM9Gyn...",
+    "signature:EuQGCkYICxgCKkCueQTl...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
