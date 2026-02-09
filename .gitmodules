@@ -28,3 +28,6 @@
 [submodule "forks/vscode-lean4"]
 	path = forks/vscode-lean4
 	url = https://github.com/e-vergo/vscode-lean4.git
+[submodule "showcase/ReductiveGroups"]
+	path = showcase/ReductiveGroups
+	url = https://github.com/e-vergo/ReductiveGroups.git
