@@ -1,0 +1,27 @@
+{
+  "session_id": "94920868-e2ba-432f-a0a0-b60f9bec9c82",
+  "project_path": "",
+  "started_at": "2026-02-04T08:34:04.640Z",
+  "ended_at": "2026-02-04T08:34:04.646Z",
+  "message_count": 2,
+  "user_messages": 2,
+  "assistant_messages": 0,
+  "tool_calls": [],
+  "tools_used": [],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": null,
+  "session_summary": null,
+  "model_versions": [],
+  "thinking_blocks": [],
+  "message_usage": null,
+  "parent_uuid_chain": [
+    "58de98e0-cabf-4afb-8207-573c78547c75"
+  ],
+  "stop_reasons": []
+}

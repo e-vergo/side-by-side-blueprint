@@ -1,0 +1,66 @@
+{
+  "session_id": "716af4f7-d371-4e36-8394-94da3578c874",
+  "project_path": "/Users/eric/GitHub/Side-By-Side-Blueprint",
+  "started_at": "2026-01-31T01:53:28.394Z",
+  "ended_at": "2026-01-31T01:53:57.686Z",
+  "message_count": 8,
+  "user_messages": 6,
+  "assistant_messages": 2,
+  "tool_calls": [
+    {
+      "tool_name": "mcp__claude-in-chrome__tabs_context_mcp",
+      "timestamp": "2026-01-31T01:53:48.996Z",
+      "duration_ms": null,
+      "success": true,
+      "error": null,
+      "input_summary": "{\"createIfEmpty\": false}",
+      "input_full": {
+        "createIfEmpty": false
+      },
+      "result_content": "[{\"type\": \"text\", \"text\": \"Browser extension is not connected. Please ensure the Claude browser extension is installed and running (https://claude.ai/chrome). If this is your first time connecting to Chrome, you may need to restart Chrome for the installation to take effect. If you continue to experience issues, please report a bug: https://github.com/anthropics/claude-code/issues/new?labels=bug,claude-in-chrome\"}]",
+      "result_type": "text",
+      "tool_use_id": "toolu_017KsVpfxpE4pFn6WsqMMGiL"
+    }
+  ],
+  "tools_used": [
+    "mcp__claude-in-chrome__tabs_context_mcp"
+  ],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": "hey claude, can you read the current plan?",
+  "session_summary": "Claude Discusses Current Plan via Chrome Command",
+  "model_versions": [
+    "claude-opus-4-5-20251101",
+    "signature:EsYDCkYICxgCKkBhAORi..."
+  ],
+  "thinking_blocks": [
+    {
+      "content": "The user wants me to read the current plan. They mentioned \"/chrome\" which seems to be a command that was run. Let me check if there's a browser tab open that I should read from, or if there's a plan file somewhere.\n\nLet me first get the browser context to see what tabs are available.",
+      "signature": "EsYDCkYICxgCKkBhAORiXOLS/nxws2sFQxqAUI1R0OqGrP2lpiz2NpdSIlqlRHyfgjlDYDf59f4jJ81+I8fq8S7hdJYkwUEzT9RbEgyfLwB8sBR03Yp6fBYaDLUWGfH+BzdTK9sPyyIwv5/gozBfeupQ0arI5nh/cBqgacC1qRjPcz2gk18KHM1BTBy5UrQkHS1h7sg9hUK6Kq0CrojLZ1LNZ7R3qvSCdhxuW7WiMJQAmCRkLTiYkWqtHspy+HCbhAh3Fb4H3zkwyUUtiJMbER/cKziUpGTxm25kCaMDRfd5CYT8yASiAlT37OLdgSxRhSt92JJS0YdGAJBaQVF/CWGi15tK7OF/iu8ofdHpobNjUdiOn7/89kBOhgoPpHnVpZIcQwXLPEQfr8ZIuzljwMSDl7wvkW9htFA6TGSWPaztPPCwPn/Wyajoh2SkhU+8vtVU1/3lbuqF4mtI7moYNnKU9eER/87BrxvIYhlJSysQ2NOPceMh5px5vdO9vttsJssX5CCf95P3GpOQI6mWVtHS+ujDSt0wi/bTdr8D4qA8I1rZ+JkvLhecOUyMHFFjWm9feqJ1VZ/TjROu+UT82uUnRuoLkovtXxgB",
+      "timestamp": "2026-01-31T01:53:47.436Z"
+    }
+  ],
+  "message_usage": {
+    "input_tokens": 20,
+    "output_tokens": 6,
+    "cache_creation_input_tokens": 74062,
+    "cache_read_input_tokens": 0
+  },
+  "parent_uuid_chain": [
+    "02b32991-42ce-4f33-909d-8a638d307b62",
+    "cb89b013-d2c0-4434-ad88-d8369efef57c",
+    "1b0b2339-e0e1-4cdf-a082-5660b737c736",
+    "c48b55a1-54ad-491a-86b2-5e5e330122e2",
+    "1510e4a8-5e35-45cd-b754-3c3306b4412b",
+    "0046f661-1707-4e7b-a79c-de641217f70e",
+    "e8b71959-57d6-4576-9fd7-fb9a13aeed15",
+    "0046f661-1707-4e7b-a79c-de641217f70e",
+    "49aae416-ad07-4f09-9a88-e5ded63745f4"
+  ],
+  "stop_reasons": []
+}

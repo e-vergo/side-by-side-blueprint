@@ -1,0 +1,27 @@
+{
+  "session_id": "dcb6a1d1-3a12-494c-9e54-012180bb0f7f",
+  "project_path": "",
+  "started_at": "",
+  "ended_at": "",
+  "message_count": 0,
+  "user_messages": 0,
+  "assistant_messages": 0,
+  "tool_calls": [],
+  "tools_used": [],
+  "files_read": [],
+  "files_written": [],
+  "files_edited": [],
+  "subagent_ids": [],
+  "plan_files": [
+    "/Users/eric/.claude/plans/compiled-snuggling-sphinx.md"
+  ],
+  "analysis_findings": {},
+  "slug": null,
+  "first_prompt": null,
+  "session_summary": null,
+  "model_versions": [],
+  "thinking_blocks": [],
+  "message_usage": null,
+  "parent_uuid_chain": [],
+  "stop_reasons": []
+}
