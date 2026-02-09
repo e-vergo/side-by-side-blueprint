@@ -880,23 +880,23 @@
     }
   ],
   "tools_used": [
-    "EnterPlanMode",
-    "Bash",
     "mcp__sbs-lsp__sbs_issue_close",
-    "Task",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "Skill",
-    "Write",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_archive_state",
     "mcp__sbs-lsp__sbs_issue_get",
     "Read",
-    "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_run_tests",
     "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "ExitPlanMode",
     "AskUserQuestion",
-    "TodoWrite"
+    "Write",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "Task",
+    "TodoWrite",
+    "Skill",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Bash",
+    "EnterPlanMode"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md"
@@ -909,8 +909,8 @@
     "toolu_01HgyhjEWCAgguyEQSmZSAmM"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
-    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
+    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
+    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
   ],
   "analysis_findings": {},
   "slug": null,
@@ -918,13 +918,13 @@
   "session_summary": null,
   "model_versions": [
     "signature:ErwPCkYICxgCKkCWAD0c...",
-    "signature:ErYFCkYICxgCKkDqWJBT...",
+    "signature:Ev8CCkYICxgCKkCehsDo...",
     "signature:EtkICkYICxgCKkBy3Nnj...",
-    "claude-opus-4-5-20251101",
-    "signature:EuACCkYICxgCKkDQ7uPv...",
-    "signature:EoMDCkYICxgCKkCxJJ9k...",
     "signature:Et8GCkYICxgCKkDnKIvH...",
-    "signature:Ev8CCkYICxgCKkCehsDo..."
+    "claude-opus-4-5-20251101",
+    "signature:ErYFCkYICxgCKkDqWJBT...",
+    "signature:EuACCkYICxgCKkDQ7uPv...",
+    "signature:EoMDCkYICxgCKkCxJJ9k..."
   ],
   "thinking_blocks": [
     {

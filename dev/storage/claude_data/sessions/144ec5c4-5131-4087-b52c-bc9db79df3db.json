@@ -742,36 +742,36 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_end",
-    "Bash",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "TaskOutput",
-    "Task",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_build_project",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "Read",
-    "mcp__sbs-lsp__sbs_serve_project",
     "Glob",
-    "mcp__sbs-lsp__sbs_issue_create",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "Read",
     "AskUserQuestion",
+    "Task",
+    "mcp__sbs-lsp__sbs_build_project",
     "TodoWrite",
-    "mcp__sbs-lsp__sbs_skill_transition"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_serve_project",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "TaskOutput",
+    "Bash"
   ],
   "files_read": [
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/chapter2_baseline.png",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/compliance/criteria.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/SBSTest/qa_ledger.json",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/dep_graph_baseline.png",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/chapter2_baseline.png",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/dashboard_correct_baseline.png",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/compliance/criteria.py"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/qa/dashboard_correct_baseline.png"
   ],
   "files_written": [],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01JaJS3pynmrh1o7NNW1dPsD",
+    "toolu_01TyFT2GkhsxSpnWz6MXa35s",
     "toolu_01Q1Tusq157jKeQizC3iNYSY",
     "toolu_01FcTGE2j3X86oRxgnAuUQPH",
-    "toolu_01TyFT2GkhsxSpnWz6MXa35s"
+    "toolu_01JaJS3pynmrh1o7NNW1dPsD"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -779,18 +779,18 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Eo4CCkYICxgCKkBFVhfW...",
     "signature:EskCCkYICxgCKkB0PktW...",
+    "signature:EoMDCkYICxgCKkBWtVje...",
     "claude-opus-4-5-20251101",
+    "signature:EqIDCkYICxgCKkB3W0qT...",
+    "signature:EoQDCkYICxgCKkCTF/z/...",
     "signature:EuABCkYICxgCKkDTaJIG...",
     "signature:EusBCkYICxgCKkChtXv7...",
-    "signature:EqIDCkYICxgCKkB3W0qT...",
-    "signature:EtcECkYICxgCKkA0gUW7...",
-    "signature:EoQDCkYICxgCKkCTF/z/...",
-    "signature:EssCCkYICxgCKkBMeQHt...",
-    "signature:EoMDCkYICxgCKkBWtVje...",
     "signature:ErMDCkYICxgCKkCIgpvV...",
-    "signature:Eq0DCkYICxgCKkCjJ+Cx..."
+    "signature:Eo4CCkYICxgCKkBFVhfW...",
+    "signature:EssCCkYICxgCKkBMeQHt...",
+    "signature:Eq0DCkYICxgCKkCjJ+Cx...",
+    "signature:EtcECkYICxgCKkA0gUW7..."
   ],
   "thinking_blocks": [
     {

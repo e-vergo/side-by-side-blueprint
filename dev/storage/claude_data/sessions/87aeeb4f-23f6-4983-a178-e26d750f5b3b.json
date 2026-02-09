@@ -135,12 +135,12 @@
     }
   ],
   "tools_used": [
+    "Glob",
     "Bash",
-    "WebSearch",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "Edit",
     "Read",
-    "Glob"
+    "mcp__sbs-lsp__sbs_issue_log",
+    "WebSearch",
+    "Edit"
   ],
   "files_read": [
     "/Users/eric/Library/Application Support/Code/User/settings.json"
@@ -156,17 +156,17 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
+    "signature:Ep4JCkYICxgCKkDbCuWd...",
+    "signature:Er8CCkYICxgCKkCTZSec...",
+    "signature:EtECCkYICxgCKkDenRfp...",
     "claude-opus-4-5-20251101",
     "signature:EvEBCkYICxgCKkATaWR0...",
     "signature:EvsECkYICxgCKkBNHVbE...",
-    "signature:EtECCkYICxgCKkDenRfp...",
     "signature:EpwHCkYICxgCKkDwUkPV...",
-    "signature:Ep4ECkYICxgCKkACbibv...",
     "signature:EoADCkYICxgCKkDJonXi...",
-    "signature:Er8CCkYICxgCKkCTZSec...",
-    "signature:Ep4JCkYICxgCKkDbCuWd...",
-    "signature:EssDCkYICxgCKkBi8zJJ...",
-    "signature:EoUECkYICxgCKkDOe0C/..."
+    "signature:Ep4ECkYICxgCKkACbibv...",
+    "signature:EoUECkYICxgCKkDOe0C/...",
+    "signature:EssDCkYICxgCKkBi8zJJ..."
   ],
   "thinking_blocks": [
     {

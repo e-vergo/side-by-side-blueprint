@@ -135,12 +135,12 @@
     }
   ],
   "tools_used": [
-    "Bash",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "Task",
-    "Write",
     "Read",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "Write",
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png",
@@ -159,20 +159,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqMJCkYICxgCKkBOVgH2...",
-    "signature:EpoGCkYICxgCKkASVgxm...",
-    "signature:EtwGCkYICxgCKkCFFWZH...",
-    "signature:Eo4DCkYICxgCKkDE+kIx...",
-    "signature:Ep4FCkYICxgCKkCoD8u6...",
-    "signature:EqQCCkYICxgCKkAk/m8n...",
-    "signature:Et4ECkYICxgCKkCQslx0...",
-    "signature:Eo4JCkYICxgCKkBIgEV9...",
-    "signature:EtAJCkYICxgCKkB7tapo...",
-    "claude-sonnet-4-5-20250929",
     "signature:EqQFCkYICxgCKkCtOYkh...",
-    "signature:EroHCkYICxgCKkBms4C+...",
+    "signature:Ep4FCkYICxgCKkCoD8u6...",
+    "signature:EtAJCkYICxgCKkB7tapo...",
+    "signature:EqMJCkYICxgCKkBOVgH2...",
+    "signature:Eo4DCkYICxgCKkDE+kIx...",
+    "signature:EvcGCkYICxgCKkBRKN5g...",
+    "claude-sonnet-4-5-20250929",
+    "signature:EpoGCkYICxgCKkASVgxm...",
+    "signature:Et4ECkYICxgCKkCQslx0...",
+    "signature:EqQCCkYICxgCKkAk/m8n...",
+    "signature:Eo4JCkYICxgCKkBIgEV9...",
     "signature:EqIDCkYICxgCKkBAoOVq...",
-    "signature:EvcGCkYICxgCKkBRKN5g..."
+    "signature:EtwGCkYICxgCKkCFFWZH...",
+    "signature:EroHCkYICxgCKkBms4C+..."
   ],
   "thinking_blocks": [
     {
