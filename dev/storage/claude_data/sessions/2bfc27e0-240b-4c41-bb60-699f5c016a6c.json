@@ -84,9 +84,9 @@
   ],
   "tools_used": [
     "Write",
-    "Task",
+    "WebSearch",
     "Read",
-    "WebSearch"
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/permanent/SLS_PLANNING.md"
@@ -104,10 +104,10 @@
   "first_prompt": "hey claude,  I have a bit of a strange request for you: please do a websearch for 'moltbot' and 'moltbook'",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
     "signature:EoYCCkYICxgCKkBlZMz5...",
-    "signature:Er8VCkYICxgCKkD+mDwy...",
     "signature:EuwICkYICxgCKkD3hMVU...",
+    "claude-opus-4-5-20251101",
+    "signature:Er8VCkYICxgCKkD+mDwy...",
     "signature:EoYPCkYICxgCKkCrBzFt..."
   ],
   "thinking_blocks": [

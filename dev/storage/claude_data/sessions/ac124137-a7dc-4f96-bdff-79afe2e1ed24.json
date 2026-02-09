@@ -261,13 +261,13 @@
     }
   ],
   "tools_used": [
-    "mcp__claude-in-chrome__navigate",
+    "AskUserQuestion",
     "mcp__claude-in-chrome__tabs_context_mcp",
     "Read",
-    "Write",
-    "AskUserQuestion",
+    "mcp__claude-in-chrome__navigate",
     "ExitPlanMode",
-    "mcp__claude-in-chrome__computer"
+    "mcp__claude-in-chrome__computer",
+    "Write"
   ],
   "files_read": [
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
@@ -280,30 +280,30 @@
   "subagent_ids": [],
   "plan_files": [
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "File created successfully at: /Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
-    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
+    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "File created successfully at: /Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "hey claude, I just approved a maroe plan, but the chat did not have access to chrome as it occured in the VSCode extentions. please read the plan at /Users/eric/.claude/plans/mighty-exploring-sunrise.\u2026",
   "session_summary": "Multi-agent orchestration with Chrome MCP visual testing",
   "model_versions": [
-    "signature:Ep4ECkYICxgCKkC53HLp...",
-    "signature:Eo8FCkYICxgCKkA5pP/A...",
-    "signature:EqQECkYICxgCKkCA95LZ...",
-    "claude-opus-4-5-20251101",
-    "signature:Eo0CCkYICxgCKkAnSbH2...",
-    "signature:EpQCCkYICxgCKkCwDlCA...",
-    "signature:Ev8CCkYICxgCKkABA5SM...",
     "signature:ErEECkYICxgCKkBVbEAq...",
-    "signature:EtgCCkYICxgCKkDo2v/4...",
-    "signature:EtsCCkYICxgCKkAg7pmo...",
-    "signature:EswCCkYICxgCKkDK21xk...",
+    "signature:Ev8CCkYICxgCKkABA5SM...",
     "signature:EvgECkYICxgCKkDw2dSk...",
-    "signature:EsgBCkYICxgCKkDux/yy...",
-    "signature:EvkBCkYICxgCKkDPY9a4...",
+    "signature:Ep4ECkYICxgCKkC53HLp...",
+    "signature:Eo0CCkYICxgCKkAnSbH2...",
+    "signature:EswCCkYICxgCKkDK21xk...",
     "signature:EoMCCkYICxgCKkAnSazC...",
     "signature:EsADCkYICxgCKkCZoSyl...",
+    "signature:Eo8FCkYICxgCKkA5pP/A...",
+    "signature:EpQCCkYICxgCKkCwDlCA...",
+    "claude-opus-4-5-20251101",
+    "signature:EvkBCkYICxgCKkDPY9a4...",
+    "signature:EtsCCkYICxgCKkAg7pmo...",
+    "signature:EqQECkYICxgCKkCA95LZ...",
+    "signature:EtgCCkYICxgCKkDo2v/4...",
+    "signature:EsgBCkYICxgCKkDux/yy...",
     "signature:EogPCkYICxgCKkAiA7Ag..."
   ],
   "thinking_blocks": [

@@ -343,19 +343,19 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_question_stats",
     "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_question_analysis",
-    "mcp__sbs-lsp__sbs_improvement_capture",
+    "mcp__sbs-lsp__sbs_skill_stats",
     "mcp__sbs-lsp__sbs_interruption_analysis",
     "mcp__sbs-lsp__sbs_entries_since_self_improve",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_phase_transition_health",
     "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "mcp__sbs-lsp__sbs_user_patterns",
+    "mcp__sbs-lsp__sbs_question_stats",
     "mcp__sbs-lsp__sbs_introspect",
-    "mcp__sbs-lsp__sbs_skill_stats",
+    "mcp__sbs-lsp__sbs_question_analysis",
     "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_user_patterns"
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_phase_transition_health"
   ],
   "files_read": [],
   "files_written": [],
@@ -367,19 +367,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EoMCCkYICxgCKkBoUnwc...",
-    "signature:EpoCCkYICxgCKkCCGt7V...",
-    "signature:EscCCkYICxgCKkB/qfwJ...",
-    "claude-opus-4-5-20251101",
-    "signature:EuMKCkYICxgCKkD9fl8m...",
-    "signature:ErgCCkYICxgCKkDTltuS...",
-    "signature:EuQBCkYICxgCKkB8cj+z...",
-    "signature:ErMDCkYICxgCKkB/cHlL...",
-    "signature:EogKCkYICxgCKkCvq/Br...",
-    "signature:Eq8CCkYICxgCKkCFw3w5...",
     "signature:Es0LCkYICxgCKkBWuip/...",
+    "signature:Eq8CCkYICxgCKkCFw3w5...",
     "signature:EssHCkYICxgCKkDwp92F...",
-    "signature:EvcECkYICxgCKkCU3Kf/..."
+    "signature:EuMKCkYICxgCKkD9fl8m...",
+    "signature:EpoCCkYICxgCKkCCGt7V...",
+    "signature:ErgCCkYICxgCKkDTltuS...",
+    "claude-opus-4-5-20251101",
+    "signature:EuQBCkYICxgCKkB8cj+z...",
+    "signature:EoMCCkYICxgCKkBoUnwc...",
+    "signature:ErMDCkYICxgCKkB/cHlL...",
+    "signature:EscCCkYICxgCKkB/qfwJ...",
+    "signature:EvcECkYICxgCKkCU3Kf/...",
+    "signature:EogKCkYICxgCKkCvq/Br..."
   ],
   "thinking_blocks": [
     {
