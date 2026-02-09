@@ -57,11 +57,11 @@
   "session_summary": null,
   "model_versions": [
     "claude-sonnet-4-5-20250929",
-    "signature:EuUUCkYICxgCKkC+vSQm...",
     "signature:Ep8CCkYICxgCKkDwjuFn...",
-    "signature:EtsCCkYICxgCKkDCEcAg...",
     "signature:EoUGCkYICxgCKkDkdVQ7...",
-    "signature:EsMHCkYICxgCKkD0Kb0k..."
+    "signature:EsMHCkYICxgCKkD0Kb0k...",
+    "signature:EuUUCkYICxgCKkC+vSQm...",
+    "signature:EtsCCkYICxgCKkDCEcAg..."
   ],
   "thinking_blocks": [
     {

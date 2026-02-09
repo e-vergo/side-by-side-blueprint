@@ -282,12 +282,12 @@
     }
   ],
   "tools_used": [
-    "Task",
     "Read",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "Glob",
+    "mcp__sbs-lsp__sbs_issue_get",
     "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_get"
+    "Task",
+    "Glob",
+    "mcp__sbs-lsp__sbs_skill_status"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/living/REWRITE_PLAN.md"
@@ -303,14 +303,14 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
+    "signature:EqYCCkYICxgCKkD4V3SZ...",
     "signature:Ep8CCkYICxgCKkAO53iD...",
+    "claude-opus-4-6",
     "signature:EqYHCkYICxgCKkCPuiud...",
     "signature:EuQHCkYICxgCKkDvHhdL...",
-    "signature:EqYCCkYICxgCKkD4V3SZ...",
-    "signature:Eu4JCkYICxgCKkDRN3pu...",
-    "signature:EowMCkYICxgCKkDpRDys...",
     "signature:EqsCCkYICxgCKkCwYIpR...",
-    "claude-opus-4-6"
+    "signature:Eu4JCkYICxgCKkDRN3pu...",
+    "signature:EowMCkYICxgCKkDpRDys..."
   ],
   "thinking_blocks": [
     {

@@ -106,12 +106,12 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>housekeeping: we need to refactor our set of tests. everything seems to work as is, but there are some obvious op\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:Ev4BCkYICxgCKkDB0ZPQ...",
-    "claude-opus-4-5-20251101",
     "signature:EpAECkYICxgCKkDQTuTJ...",
-    "signature:EtYBCkYICxgCKkDKV3XI...",
     "signature:Ev8PCkYICxgCKkDiIgbK...",
-    "signature:EqQJCkYICxgCKkAkB5/W..."
+    "signature:EqQJCkYICxgCKkAkB5/W...",
+    "signature:EtYBCkYICxgCKkDKV3XI...",
+    "claude-opus-4-5-20251101",
+    "signature:Ev4BCkYICxgCKkDB0ZPQ..."
   ],
   "thinking_blocks": [
     {

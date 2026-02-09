@@ -133,10 +133,10 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
+    "signature:EsUCCkYICxgCKkBM9Gyn...",
     "claude-opus-4-5-20251101",
-    "signature:EpUCCkYICxgCKkAJUTE7...",
     "signature:ErMeCkYICxgCKkBp+KEF...",
-    "signature:EsUCCkYICxgCKkBM9Gyn..."
+    "signature:EpUCCkYICxgCKkAJUTE7..."
   ],
   "thinking_blocks": [
     {

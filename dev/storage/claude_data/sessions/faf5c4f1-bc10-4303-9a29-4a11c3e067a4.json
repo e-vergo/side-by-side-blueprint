@@ -61,8 +61,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-sonnet-4-5-20250929",
     "signature:Ep4WCkYICxgCKkAdbtUA...",
+    "claude-sonnet-4-5-20250929",
     "signature:EpkCCkYICxgCKkDYZkLW...",
     "signature:EuIKCkYICxgCKkB1ZuNk...",
     "signature:Es0ECkYICxgCKkCHjeCB..."

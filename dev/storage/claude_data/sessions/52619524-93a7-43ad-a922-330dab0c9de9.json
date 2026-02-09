@@ -55,8 +55,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>sbs housekeeping - new sidebar layout (dases represent horizontal lines)   {healthy gap}  Dashboard Dependency gr\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EskFCkYICxgCKkAPeBLs..."
+    "signature:EskFCkYICxgCKkAPeBLs...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

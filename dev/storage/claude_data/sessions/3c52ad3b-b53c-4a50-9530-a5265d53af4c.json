@@ -1276,31 +1276,31 @@
     }
   ],
   "tools_used": [
-    "Task",
     "EnterPlanMode",
     "Read",
-    "Write",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "ExitPlanMode",
-    "Grep",
     "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_issue_close",
     "mcp__sbs-lsp__sbs_archive_state",
-    "TodoWrite",
-    "AskUserQuestion",
-    "Edit",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_skill_handoff",
     "mcp__sbs-lsp__sbs_issue_get",
     "Bash",
-    "Skill"
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "Task",
+    "Skill",
+    "ExitPlanMode",
+    "Grep",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_skill_handoff",
+    "Edit",
+    "Write",
+    "mcp__sbs-lsp__sbs_pr_merge"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_utils.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/tagging/agent_state_taxonomy.yaml",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_models.py",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/entry.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/entry.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/pytest/test_agent_state_taxonomy.py"
   ],
   "files_written": [
@@ -1310,34 +1310,34 @@
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/pytest/test_agent_state_taxonomy.py"
   ],
   "subagent_ids": [
-    "toolu_01JNArbgpLZmwSnr2vzeAwRL",
-    "toolu_012JjA1hPvxAG75FC3Cwvwkf",
-    "toolu_01VgcQ9zA7B1ygU9uawVUJdw",
     "toolu_01MH1Kq7quyufDjUVRmyGsLt",
-    "toolu_011ADmYkkvWff8k1mLVs2eSo"
+    "toolu_01VgcQ9zA7B1ygU9uawVUJdw",
+    "toolu_01JNArbgpLZmwSnr2vzeAwRL",
+    "toolu_011ADmYkkvWff8k1mLVs2eSo",
+    "toolu_012JjA1hPvxAG75FC3Cwvwkf"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/radiant-frolicking-minsky.md",
-    "File created successfully at: /Users/eric/.claude/plans/radiant-frolicking-minsky.md"
+    "File created successfully at: /Users/eric/.claude/plans/radiant-frolicking-minsky.md",
+    "/Users/eric/.claude/plans/radiant-frolicking-minsky.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EvAKCkYICxgCKkBFJYGR...",
-    "signature:ErcGCkYICxgCKkCMqebg...",
-    "claude-opus-4-5-20251101",
     "signature:EuUCCkYICxgCKkCHFGoK...",
-    "signature:EqoCCkYICxgCKkA9WgUJ...",
-    "signature:EowCCkYICxgCKkCpbbe4...",
-    "signature:EuoFCkYICxgCKkCTP1vs...",
     "signature:EpYLCkYICxgCKkBxaZyg...",
-    "signature:EvAJCkYICxgCKkCf4ddn...",
-    "signature:EoMDCkYICxgCKkBAlyUF...",
-    "signature:Eu8DCkYICxgCKkA1+uLT...",
     "signature:EosCCkYICxgCKkByW5IV...",
+    "signature:EqoCCkYICxgCKkA9WgUJ...",
+    "signature:EvAKCkYICxgCKkBFJYGR...",
+    "signature:EoMDCkYICxgCKkBAlyUF...",
+    "signature:ErcGCkYICxgCKkCMqebg...",
+    "signature:EuoFCkYICxgCKkCTP1vs...",
     "signature:EukCCkYICxgCKkBqoW6E...",
+    "signature:EowCCkYICxgCKkCpbbe4...",
+    "claude-opus-4-5-20251101",
+    "signature:Eu8DCkYICxgCKkA1+uLT...",
+    "signature:EvAJCkYICxgCKkCf4ddn...",
     "signature:EtQHCkYICxgCKkARJkIg..."
   ],
   "thinking_blocks": [

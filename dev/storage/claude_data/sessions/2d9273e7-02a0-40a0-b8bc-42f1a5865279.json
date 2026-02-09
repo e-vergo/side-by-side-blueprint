@@ -124,8 +124,8 @@
   "session_summary": null,
   "model_versions": [
     "claude-opus-4-5-20251101",
-    "signature:EsgKCkYICxgCKkDbxKEX...",
-    "signature:EoMTCkYICxgCKkBrwljw..."
+    "signature:EoMTCkYICxgCKkBrwljw...",
+    "signature:EsgKCkYICxgCKkDbxKEX..."
   ],
   "thinking_blocks": [
     {
