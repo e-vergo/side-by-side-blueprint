@@ -261,17 +261,17 @@
     }
   ],
   "tools_used": [
-    "ExitPlanMode",
-    "mcp__claude-in-chrome__tabs_context_mcp",
-    "Read",
-    "AskUserQuestion",
     "mcp__claude-in-chrome__computer",
     "Write",
-    "mcp__claude-in-chrome__navigate"
+    "ExitPlanMode",
+    "Read",
+    "mcp__claude-in-chrome__navigate",
+    "AskUserQuestion",
+    "mcp__claude-in-chrome__tabs_context_mcp"
   ],
   "files_read": [
-    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
+    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
@@ -280,31 +280,31 @@
   "subagent_ids": [],
   "plan_files": [
     "File created successfully at: /Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
-    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
+    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "hey claude, I just approved a maroe plan, but the chat did not have access to chrome as it occured in the VSCode extentions. please read the plan at /Users/eric/.claude/plans/mighty-exploring-sunrise.\u2026",
   "session_summary": "Multi-agent orchestration with Chrome MCP visual testing",
   "model_versions": [
-    "signature:EqQECkYICxgCKkCA95LZ...",
-    "signature:Eo8FCkYICxgCKkA5pP/A...",
-    "signature:EoMCCkYICxgCKkAnSazC...",
-    "signature:EvgECkYICxgCKkDw2dSk...",
     "signature:EpQCCkYICxgCKkCwDlCA...",
-    "signature:EsgBCkYICxgCKkDux/yy...",
-    "signature:EtgCCkYICxgCKkDo2v/4...",
-    "signature:EogPCkYICxgCKkAiA7Ag...",
-    "signature:EvkBCkYICxgCKkDPY9a4...",
     "signature:EsADCkYICxgCKkCZoSyl...",
-    "signature:EswCCkYICxgCKkDK21xk...",
-    "signature:Eo0CCkYICxgCKkAnSbH2...",
-    "signature:EtsCCkYICxgCKkAg7pmo...",
-    "signature:ErEECkYICxgCKkBVbEAq...",
-    "signature:Ep4ECkYICxgCKkC53HLp...",
     "signature:Ev8CCkYICxgCKkABA5SM...",
-    "claude-opus-4-5-20251101"
+    "signature:EvgECkYICxgCKkDw2dSk...",
+    "signature:EvkBCkYICxgCKkDPY9a4...",
+    "signature:EogPCkYICxgCKkAiA7Ag...",
+    "signature:EtgCCkYICxgCKkDo2v/4...",
+    "claude-opus-4-5-20251101",
+    "signature:EoMCCkYICxgCKkAnSazC...",
+    "signature:EtsCCkYICxgCKkAg7pmo...",
+    "signature:Eo8FCkYICxgCKkA5pP/A...",
+    "signature:EqQECkYICxgCKkCA95LZ...",
+    "signature:EsgBCkYICxgCKkDux/yy...",
+    "signature:Eo0CCkYICxgCKkAnSbH2...",
+    "signature:EswCCkYICxgCKkDK21xk...",
+    "signature:Ep4ECkYICxgCKkC53HLp...",
+    "signature:ErEECkYICxgCKkBVbEAq..."
   ],
   "thinking_blocks": [
     {

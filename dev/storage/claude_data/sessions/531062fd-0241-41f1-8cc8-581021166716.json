@@ -821,23 +821,23 @@
     }
   ],
   "tools_used": [
+    "EnterPlanMode",
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "Task",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Skill",
+    "Write",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_archive_state",
     "mcp__sbs-lsp__sbs_issue_get",
     "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Skill",
     "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "Task",
-    "Grep",
     "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_skill_handoff",
+    "Grep",
     "TodoWrite",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "Bash",
-    "EnterPlanMode",
-    "Write",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_skill_handoff"
+    "mcp__sbs-lsp__sbs_skill_transition"
   ],
   "files_read": [],
   "files_written": [
@@ -845,9 +845,9 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01Lj42hghp1yxVrmVv6s4vYM",
+    "toolu_01MCcHzpQrAFVZaUJ9CUF53u",
     "toolu_012xTF29owYHMCzZ2qV671EA",
-    "toolu_01MCcHzpQrAFVZaUJ9CUF53u"
+    "toolu_01Lj42hghp1yxVrmVv6s4vYM"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/synthetic-spinning-coral.md",
@@ -859,11 +859,11 @@
   "session_summary": null,
   "model_versions": [
     "signature:Ev0DCkYICxgCKkB31OkY...",
-    "signature:EsgCCkYICxgCKkAx+Wb+...",
+    "claude-opus-4-5-20251101",
     "signature:EqECCkYICxgCKkCAyCEX...",
-    "signature:EuwCCkYICxgCKkBsN92F...",
     "signature:EowCCkYICxgCKkBDDb5O...",
-    "claude-opus-4-5-20251101"
+    "signature:EuwCCkYICxgCKkBsN92F...",
+    "signature:EsgCCkYICxgCKkAx+Wb+..."
   ],
   "thinking_blocks": [
     {

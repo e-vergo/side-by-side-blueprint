@@ -150,9 +150,9 @@
     }
   ],
   "tools_used": [
-    "AskUserQuestion",
+    "Task",
     "mcp__sbs-lsp__sbs_issue_create",
-    "Task"
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -166,10 +166,10 @@
   "first_prompt": "I was suprised to see claudes lack of understanding and suprise about hoe the agent should be directly tied to the skill as the intent is all of our skills are designed like this.   can you review all\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:Eo8QCkYICxgCKkDnn0Z0...",
     "signature:EpAECkYICxgCKkA1xceY...",
-    "signature:EsEHCkYICxgCKkDRjBUQ...",
-    "claude-opus-4-5-20251101"
+    "signature:Eo8QCkYICxgCKkDnn0Z0...",
+    "claude-opus-4-5-20251101",
+    "signature:EsEHCkYICxgCKkDRjBUQ..."
   ],
   "thinking_blocks": [
     {

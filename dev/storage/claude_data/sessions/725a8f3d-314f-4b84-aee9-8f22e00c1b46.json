@@ -210,20 +210,20 @@
   "tools_used": [
     "mcp__sbs-lsp__sbs_skill_end",
     "mcp__sbs-lsp__sbs_skill_start",
-    "Glob",
-    "Read",
-    "mcp__sbs-lsp__sbs_skill_transition",
     "Write",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Read",
+    "Glob",
+    "mcp__sbs-lsp__sbs_skill_transition"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/l3-converge-sbstest.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/l3-converge-gcr.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770183546.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/l3-converge-gcr.md"
   ],
   "files_written": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/meta-summaries/L3-1770231790.md"
@@ -236,16 +236,16 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EokfCkYICxgCKkBrsMRo...",
     "signature:ErECCkYICxgCKkBhi8gS...",
+    "signature:EoMJCkYICxgCKkA/KP5n...",
+    "claude-sonnet-4-5-20250929",
+    "signature:Es4DCkYICxgCKkD2pp44...",
     "signature:EogECkYICxgCKkC2bChr...",
     "signature:EvoHCkYICxgCKkBB4TLC...",
-    "signature:EoMJCkYICxgCKkA/KP5n...",
+    "signature:EokfCkYICxgCKkBrsMRo...",
+    "signature:EsoCCkYICxgCKkA1Aa0y...",
     "signature:ErYICkYICxgCKkAEzq9u...",
-    "signature:EqsJCkYICxgCKkDMgY6L...",
-    "signature:Es4DCkYICxgCKkD2pp44...",
-    "claude-sonnet-4-5-20250929",
-    "signature:EsoCCkYICxgCKkA1Aa0y..."
+    "signature:EqsJCkYICxgCKkDMgY6L..."
   ],
   "thinking_blocks": [
     {

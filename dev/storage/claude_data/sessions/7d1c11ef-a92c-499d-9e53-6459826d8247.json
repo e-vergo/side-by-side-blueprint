@@ -60,13 +60,13 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EuEECkYICxgCKkBJNWuA...",
     "signature:EvkFCkYICxgCKkBdzA48...",
-    "signature:EpMKCkYICxgCKkAv4dZG...",
-    "signature:Ev0KCkYICxgCKkAb2jTP...",
-    "signature:EuYDCkYICxgCKkCDHqtt...",
+    "signature:EuEECkYICxgCKkBJNWuA...",
+    "claude-sonnet-4-5-20250929",
     "signature:ErMCCkYICxgCKkDUDY35...",
-    "claude-sonnet-4-5-20250929"
+    "signature:EpMKCkYICxgCKkAv4dZG...",
+    "signature:EuYDCkYICxgCKkCDHqtt...",
+    "signature:Ev0KCkYICxgCKkAb2jTP..."
   ],
   "thinking_blocks": [
     {

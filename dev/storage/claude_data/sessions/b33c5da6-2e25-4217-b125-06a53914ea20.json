@@ -60,11 +60,11 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqECCkYICxgCKkDzy+6U...",
-    "signature:EuAQCkYICxgCKkCxxbaq...",
-    "signature:Eo4CCkYICxgCKkDjw/yo...",
     "signature:EocCCkYICxgCKkD6mVpe...",
-    "claude-opus-4-5-20251101"
+    "signature:EqECCkYICxgCKkDzy+6U...",
+    "signature:Eo4CCkYICxgCKkDjw/yo...",
+    "claude-opus-4-5-20251101",
+    "signature:EuAQCkYICxgCKkCxxbaq..."
   ],
   "thinking_blocks": [
     {

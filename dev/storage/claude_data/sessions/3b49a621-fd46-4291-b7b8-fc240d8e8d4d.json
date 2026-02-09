@@ -135,16 +135,16 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Task",
-    "Read",
-    "mcp__sbs-lsp__sbs_improvement_capture",
     "Bash",
-    "Write"
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "Task",
+    "Write",
+    "Read",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [
-    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png",
+    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
   ],
   "files_written": [
     "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
@@ -159,20 +159,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Eo4JCkYICxgCKkBIgEV9...",
-    "signature:Et4ECkYICxgCKkCQslx0...",
-    "signature:EvcGCkYICxgCKkBRKN5g...",
     "signature:EqMJCkYICxgCKkBOVgH2...",
-    "signature:EtAJCkYICxgCKkB7tapo...",
-    "signature:Ep4FCkYICxgCKkCoD8u6...",
-    "signature:EtwGCkYICxgCKkCFFWZH...",
     "signature:EpoGCkYICxgCKkASVgxm...",
+    "signature:EtwGCkYICxgCKkCFFWZH...",
     "signature:Eo4DCkYICxgCKkDE+kIx...",
-    "signature:EroHCkYICxgCKkBms4C+...",
-    "signature:EqQFCkYICxgCKkCtOYkh...",
-    "claude-sonnet-4-5-20250929",
+    "signature:Ep4FCkYICxgCKkCoD8u6...",
     "signature:EqQCCkYICxgCKkAk/m8n...",
-    "signature:EqIDCkYICxgCKkBAoOVq..."
+    "signature:Et4ECkYICxgCKkCQslx0...",
+    "signature:Eo4JCkYICxgCKkBIgEV9...",
+    "signature:EtAJCkYICxgCKkB7tapo...",
+    "claude-sonnet-4-5-20250929",
+    "signature:EqQFCkYICxgCKkCtOYkh...",
+    "signature:EroHCkYICxgCKkBms4C+...",
+    "signature:EqIDCkYICxgCKkBAoOVq...",
+    "signature:EvcGCkYICxgCKkBRKN5g..."
   ],
   "thinking_blocks": [
     {
