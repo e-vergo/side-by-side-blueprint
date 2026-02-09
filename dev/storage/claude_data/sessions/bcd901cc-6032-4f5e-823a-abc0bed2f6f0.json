@@ -42,8 +42,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -55,8 +55,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>dev housekeeping signigigantly enrich taging options, retroactively apply to enhance traceability/seach for self\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EtMFCkYICxgCKkALFuqk..."
+    "signature:EtMFCkYICxgCKkALFuqk...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

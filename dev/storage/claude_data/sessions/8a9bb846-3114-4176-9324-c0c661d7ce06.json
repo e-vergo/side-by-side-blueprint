@@ -74,8 +74,8 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_archive_state",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_list"
+    "mcp__sbs-lsp__sbs_issue_list",
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -87,9 +87,9 @@
   "first_prompt": "[Request interrupted by user for tool use]",
   "session_summary": null,
   "model_versions": [
+    "signature:ErcDCkYICxgCKkAgdadP...",
     "signature:EoEDCkYICxgCKkDhtA+7...",
-    "claude-opus-4-5-20251101",
-    "signature:ErcDCkYICxgCKkAgdadP..."
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

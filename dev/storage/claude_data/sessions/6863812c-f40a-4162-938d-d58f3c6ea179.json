@@ -41,8 +41,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -54,8 +54,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>sbs idea - we need to provide stronger visual differentiation between the .tex driven blueprint and the verso dri\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:Eo8FCkYICxgCKkAmkEaU..."
+    "signature:Eo8FCkYICxgCKkAmkEaU...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

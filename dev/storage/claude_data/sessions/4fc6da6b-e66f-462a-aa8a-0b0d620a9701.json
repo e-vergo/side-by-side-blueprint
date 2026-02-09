@@ -1063,34 +1063,34 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_skill_stats",
+    "mcp__sbs-lsp__sbs_question_stats",
     "Read",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_search_entries",
+    "mcp__sbs-lsp__sbs_interruption_analysis",
+    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_system_health",
+    "mcp__sbs-lsp__sbs_phase_transition_health",
     "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_gate_failures",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_user_patterns",
+    "mcp__sbs-lsp__sbs_successful_sessions",
     "Write",
     "AskUserQuestion",
     "Glob",
-    "mcp__sbs-lsp__sbs_tag_effectiveness",
-    "mcp__sbs-lsp__sbs_gate_failures",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_interruption_analysis",
-    "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_entries_since_self_improve",
-    "mcp__sbs-lsp__sbs_archive_state",
     "Task",
-    "mcp__sbs-lsp__sbs_user_patterns",
-    "TodoWrite",
     "mcp__sbs-lsp__sbs_comparative_analysis",
-    "mcp__sbs-lsp__sbs_phase_transition_health",
-    "mcp__sbs-lsp__sbs_successful_sessions",
-    "mcp__sbs-lsp__sbs_question_stats",
-    "mcp__sbs-lsp__sbs_search_entries",
-    "mcp__sbs-lsp__sbs_system_health"
+    "mcp__sbs-lsp__sbs_tag_effectiveness",
+    "mcp__sbs-lsp__sbs_entries_since_self_improve"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770163188.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770156860.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770161268.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770160373.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770165147.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770165147.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770156860.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770163188.md"
   ],
   "files_written": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md"
@@ -1105,15 +1105,15 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErICCkYICxgCKkDCj9M/...",
-    "signature:EswCCkYICxgCKkCDbluA...",
-    "signature:ErgCCkYICxgCKkBmaQCS...",
-    "signature:Es0ECkYICxgCKkB3ywRt...",
-    "signature:EsgCCkYICxgCKkBIOnCv...",
-    "signature:EtIgCkYICxgCKkCaO3Eo...",
     "signature:EusDCkYICxgCKkC2V7WQ...",
+    "signature:EswCCkYICxgCKkCDbluA...",
+    "claude-opus-4-5-20251101",
+    "signature:EtIgCkYICxgCKkCaO3Eo...",
+    "signature:EsgCCkYICxgCKkBIOnCv...",
+    "signature:ErICCkYICxgCKkDCj9M/...",
     "signature:ErwCCkYICxgCKkDeJt7D...",
-    "claude-opus-4-5-20251101"
+    "signature:ErgCCkYICxgCKkBmaQCS...",
+    "signature:Es0ECkYICxgCKkB3ywRt..."
   ],
   "thinking_blocks": [
     {

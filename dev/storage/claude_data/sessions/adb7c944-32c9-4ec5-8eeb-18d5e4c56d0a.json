@@ -62,8 +62,8 @@
     }
   ],
   "tools_used": [
-    "ToolSearch",
-    "mcp__sbs-lsp__sbs_issue_log"
+    "mcp__sbs-lsp__sbs_issue_log",
+    "ToolSearch"
   ],
   "files_read": [],
   "files_written": [],
@@ -75,8 +75,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-6",
-    "signature:Ev8CCkYICxgCKkCc3Mpy..."
+    "signature:Ev8CCkYICxgCKkCc3Mpy...",
+    "claude-opus-4-6"
   ],
   "thinking_blocks": [
     {

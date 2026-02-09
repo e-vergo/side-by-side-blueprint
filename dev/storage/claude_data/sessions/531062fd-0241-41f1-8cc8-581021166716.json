@@ -821,23 +821,23 @@
     }
   ],
   "tools_used": [
-    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_skill_handoff",
     "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_issue_close",
+    "Write",
     "mcp__sbs-lsp__sbs_archive_state",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "ExitPlanMode",
     "mcp__sbs-lsp__sbs_issue_get",
     "Bash",
+    "mcp__sbs-lsp__sbs_skill_start",
     "Skill",
-    "mcp__sbs-lsp__sbs_run_tests",
     "Task",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "ExitPlanMode",
     "Grep",
     "TodoWrite",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_skill_handoff",
-    "Write",
-    "mcp__sbs-lsp__sbs_pr_merge"
+    "mcp__sbs-lsp__sbs_run_tests"
   ],
   "files_read": [],
   "files_written": [
@@ -845,8 +845,8 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_012xTF29owYHMCzZ2qV671EA",
     "toolu_01Lj42hghp1yxVrmVv6s4vYM",
+    "toolu_012xTF29owYHMCzZ2qV671EA",
     "toolu_01MCcHzpQrAFVZaUJ9CUF53u"
   ],
   "plan_files": [
@@ -859,11 +859,11 @@
   "session_summary": null,
   "model_versions": [
     "signature:Ev0DCkYICxgCKkB31OkY...",
-    "signature:EsgCCkYICxgCKkAx+Wb+...",
+    "claude-opus-4-5-20251101",
+    "signature:EowCCkYICxgCKkBDDb5O...",
     "signature:EqECCkYICxgCKkCAyCEX...",
     "signature:EuwCCkYICxgCKkBsN92F...",
-    "claude-opus-4-5-20251101",
-    "signature:EowCCkYICxgCKkBDDb5O..."
+    "signature:EsgCCkYICxgCKkAx+Wb+..."
   ],
   "thinking_blocks": [
     {
