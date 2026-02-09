@@ -261,12 +261,12 @@
     }
   ],
   "tools_used": [
+    "ExitPlanMode",
     "Write",
     "mcp__claude-in-chrome__computer",
+    "Read",
     "mcp__claude-in-chrome__tabs_context_mcp",
     "mcp__claude-in-chrome__navigate",
-    "Read",
-    "ExitPlanMode",
     "AskUserQuestion"
   ],
   "files_read": [
@@ -288,23 +288,23 @@
   "first_prompt": "hey claude, I just approved a maroe plan, but the chat did not have access to chrome as it occured in the VSCode extentions. please read the plan at /Users/eric/.claude/plans/mighty-exploring-sunrise.\u2026",
   "session_summary": "Multi-agent orchestration with Chrome MCP visual testing",
   "model_versions": [
-    "signature:ErEECkYICxgCKkBVbEAq...",
     "signature:EpQCCkYICxgCKkCwDlCA...",
-    "signature:EswCCkYICxgCKkDK21xk...",
-    "signature:Eo0CCkYICxgCKkAnSbH2...",
-    "signature:EsgBCkYICxgCKkDux/yy...",
-    "signature:EogPCkYICxgCKkAiA7Ag...",
+    "signature:EtgCCkYICxgCKkDo2v/4...",
+    "signature:Eo8FCkYICxgCKkA5pP/A...",
+    "signature:EtsCCkYICxgCKkAg7pmo...",
     "signature:Ep4ECkYICxgCKkC53HLp...",
+    "signature:EogPCkYICxgCKkAiA7Ag...",
     "signature:Ev8CCkYICxgCKkABA5SM...",
     "signature:EvgECkYICxgCKkDw2dSk...",
-    "signature:EsADCkYICxgCKkCZoSyl...",
-    "signature:EtsCCkYICxgCKkAg7pmo...",
+    "signature:ErEECkYICxgCKkBVbEAq...",
     "claude-opus-4-5-20251101",
-    "signature:Eo8FCkYICxgCKkA5pP/A...",
+    "signature:EswCCkYICxgCKkDK21xk...",
     "signature:EoMCCkYICxgCKkAnSazC...",
+    "signature:EqQECkYICxgCKkCA95LZ...",
+    "signature:EsADCkYICxgCKkCZoSyl...",
+    "signature:Eo0CCkYICxgCKkAnSbH2...",
     "signature:EvkBCkYICxgCKkDPY9a4...",
-    "signature:EtgCCkYICxgCKkDo2v/4...",
-    "signature:EqQECkYICxgCKkCA95LZ..."
+    "signature:EsgBCkYICxgCKkDux/yy..."
   ],
   "thinking_blocks": [
     {

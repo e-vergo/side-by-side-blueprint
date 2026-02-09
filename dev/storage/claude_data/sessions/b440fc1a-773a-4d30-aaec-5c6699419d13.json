@@ -61,8 +61,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EuMBCkYICxgCKkASIF4W...",
     "signature:EqECCkYICxgCKkDzy+6U...",
+    "signature:EuMBCkYICxgCKkASIF4W...",
     "claude-opus-4-5-20251101",
     "signature:EvYGCkYICxgCKkClstoG..."
   ],

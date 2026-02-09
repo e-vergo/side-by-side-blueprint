@@ -1145,18 +1145,18 @@
     }
   ],
   "tools_used": [
+    "mcp__sbs-lsp__sbs_issue_get",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "Bash",
+    "mcp__sbs-lsp__sbs_improvement_capture",
     "Task",
     "mcp__sbs-lsp__sbs_issue_create",
-    "mcp__sbs-lsp__ask_oracle",
     "mcp__sbs-lsp__sbs_update_and_archive",
-    "Bash",
-    "mcp__sbs-lsp__sbs_introspect",
-    "Read",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "TodoWrite",
     "Glob",
+    "TodoWrite",
+    "Read",
+    "mcp__sbs-lsp__sbs_introspect",
+    "mcp__sbs-lsp__ask_oracle",
     "AskUserQuestion"
   ],
   "files_read": [
@@ -1173,19 +1173,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErAmCkYICxgCKkDaPIn2...",
-    "signature:Eq5MCkYICxgCKkBZ1ogu...",
-    "signature:EpEGCkYICxgCKkBjenxM...",
-    "signature:ErY/CkYICxgCKkAl8MXk...",
     "signature:EpMHCkYICxgCKkBCnRZA...",
-    "signature:EogECkYICxgCKkAll73n...",
     "signature:EugWCkYICxgCKkDw8a1O...",
-    "signature:EuMTCkYICxgCKkAPmwqH...",
+    "signature:Eq5MCkYICxgCKkBZ1ogu...",
     "claude-opus-4-6",
+    "signature:ErY/CkYICxgCKkAl8MXk...",
+    "signature:EogECkYICxgCKkAll73n...",
+    "signature:ErAmCkYICxgCKkDaPIn2...",
     "signature:EvY2CkYICxgCKkABPHBv...",
+    "signature:EqoGCkYICxgCKkBScFZ0...",
     "signature:EvEBCkYICxgCKkCyvWVr...",
+    "signature:EuMTCkYICxgCKkAPmwqH...",
     "signature:EuwFCkYICxgCKkAx8w3V...",
-    "signature:EqoGCkYICxgCKkBScFZ0..."
+    "signature:EpEGCkYICxgCKkBjenxM..."
   ],
   "thinking_blocks": [
     {

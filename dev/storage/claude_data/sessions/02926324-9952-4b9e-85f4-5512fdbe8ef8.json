@@ -703,20 +703,20 @@
     }
   ],
   "tools_used": [
-    "Task",
+    "mcp__sbs-lsp__sbs_skill_end",
     "Write",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_build_project",
     "mcp__sbs-lsp__sbs_skill_start",
     "Bash",
-    "mcp__sbs-lsp__sbs_serve_project",
-    "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_build_project",
     "mcp__sbs-lsp__sbs_archive_state",
-    "Read",
-    "mcp__sbs-lsp__sbs_skill_transition",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "TodoWrite",
+    "mcp__sbs-lsp__sbs_serve_project",
     "Glob",
-    "mcp__sbs-lsp__sbs_issue_log"
+    "TodoWrite",
+    "Read",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/compliance/criteria.py"
@@ -726,9 +726,9 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_016URkXCZEYzo5QC6qDLopvE",
     "toolu_01Y7LpeP1MzjBi2ipmmKjdtP",
-    "toolu_015y2P9XN2XUAK6mh5LenWfH"
+    "toolu_015y2P9XN2XUAK6mh5LenWfH",
+    "toolu_016URkXCZEYzo5QC6qDLopvE"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -736,12 +736,12 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqUDCkYICxgCKkD4iQrP...",
+    "signature:EvMCCkYICxgCKkC3598f...",
     "signature:EqcMCkYICxgCKkCiDtcf...",
     "signature:EtYJCkYICxgCKkAk1LEw...",
-    "signature:EvMCCkYICxgCKkC3598f...",
-    "signature:Ev0BCkYICxgCKkBgCUUL...",
-    "claude-opus-4-5-20251101"
+    "signature:EqUDCkYICxgCKkD4iQrP...",
+    "claude-opus-4-5-20251101",
+    "signature:Ev0BCkYICxgCKkBgCUUL..."
   ],
   "thinking_blocks": [
     {

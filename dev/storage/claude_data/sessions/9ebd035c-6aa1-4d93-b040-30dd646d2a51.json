@@ -60,8 +60,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>update 'update and archive' to include an agent that performs a self improvement analysis and writes a report. it\u2026",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EqIHCkYICxgCKkAt/7iH..."
+    "signature:EqIHCkYICxgCKkAt/7iH...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

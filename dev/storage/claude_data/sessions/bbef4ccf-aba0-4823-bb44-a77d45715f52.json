@@ -889,27 +889,27 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Task",
-    "Write",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "Bash",
     "ExitPlanMode",
-    "TodoWrite",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "Read",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "EnterPlanMode",
+    "Write",
     "Skill",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Bash",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_create",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "TodoWrite",
+    "Read",
+    "EnterPlanMode",
     "AskUserQuestion"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/update-and-archive/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md"
   ],
@@ -919,20 +919,20 @@
   "files_edited": [],
   "subagent_ids": [
     "toolu_01WrCCk7CiNyexd1twSMQEWw",
-    "toolu_01FkvGJzEachouFUQeam9gba",
-    "toolu_01UdM5jDLRcapvsRqySHYDuc"
+    "toolu_01UdM5jDLRcapvsRqySHYDuc",
+    "toolu_01FkvGJzEachouFUQeam9gba"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/kind-strolling-kazoo.md",
-    "File created successfully at: /Users/eric/.claude/plans/kind-strolling-kazoo.md"
+    "File created successfully at: /Users/eric/.claude/plans/kind-strolling-kazoo.md",
+    "/Users/eric/.claude/plans/kind-strolling-kazoo.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#51</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:Eq8CCkYICxgCKkAOcUJe...",
     "signature:EukGCkYICxgCKkCmk+4F...",
+    "signature:Eq8CCkYICxgCKkAOcUJe...",
     "claude-opus-4-5-20251101",
     "signature:EvMCCkYICxgCKkDaCXk4..."
   ],

@@ -135,16 +135,16 @@
     }
   ],
   "tools_used": [
-    "Task",
-    "mcp__sbs-lsp__sbs_issue_create",
     "Write",
     "Bash",
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "mcp__sbs-lsp__sbs_issue_create",
     "Read",
-    "mcp__sbs-lsp__sbs_improvement_capture"
+    "Task"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png",
-    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
+    "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png"
   ],
   "files_written": [
     "/private/tmp/claude-501/-Users-eric-GitHub-Side-By-Side-Blueprint/3b49a621-fd46-4291-b7b8-fc240d8e8d4d/scratchpad/sidebar-styling-comparison.svg"
@@ -159,20 +159,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-sonnet-4-5-20250929",
-    "signature:EqIDCkYICxgCKkBAoOVq...",
-    "signature:Et4ECkYICxgCKkCQslx0...",
-    "signature:EtAJCkYICxgCKkB7tapo...",
-    "signature:EqQCCkYICxgCKkAk/m8n...",
-    "signature:Ep4FCkYICxgCKkCoD8u6...",
-    "signature:EpoGCkYICxgCKkASVgxm...",
-    "signature:EroHCkYICxgCKkBms4C+...",
-    "signature:EtwGCkYICxgCKkCFFWZH...",
-    "signature:Eo4DCkYICxgCKkDE+kIx...",
     "signature:EqQFCkYICxgCKkCtOYkh...",
-    "signature:EvcGCkYICxgCKkBRKN5g...",
+    "signature:EpoGCkYICxgCKkASVgxm...",
+    "signature:Eo4DCkYICxgCKkDE+kIx...",
+    "signature:EqIDCkYICxgCKkBAoOVq...",
+    "signature:EtwGCkYICxgCKkCFFWZH...",
+    "signature:Et4ECkYICxgCKkCQslx0...",
+    "signature:EqMJCkYICxgCKkBOVgH2...",
+    "signature:Ep4FCkYICxgCKkCoD8u6...",
+    "signature:EroHCkYICxgCKkBms4C+...",
+    "claude-sonnet-4-5-20250929",
     "signature:Eo4JCkYICxgCKkBIgEV9...",
-    "signature:EqMJCkYICxgCKkBOVgH2..."
+    "signature:EqQCCkYICxgCKkAk/m8n...",
+    "signature:EvcGCkYICxgCKkBRKN5g...",
+    "signature:EtAJCkYICxgCKkB7tapo..."
   ],
   "thinking_blocks": [
     {

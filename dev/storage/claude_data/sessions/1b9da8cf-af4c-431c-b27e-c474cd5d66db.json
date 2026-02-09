@@ -134,16 +134,16 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "mcp__sbs-lsp__ask_oracle",
     "Bash",
-    "Grep",
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Glob",
     "Read",
-    "Glob"
+    "Grep",
+    "mcp__sbs-lsp__ask_oracle"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/browser_tools.py",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/README.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/README.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/browser_tools.py"
   ],
   "files_written": [],
   "files_edited": [],
@@ -154,17 +154,17 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
+    "signature:Et4CCkYICxgCKkAOllfN...",
+    "signature:EvMECkYICxgCKkDPjNKW...",
+    "signature:EqYFCkYICxgCKkBE4cct...",
+    "signature:EskCCkYICxgCKkAiz8Ei...",
+    "signature:EpkGCkYICxgCKkDmZvSK...",
+    "signature:EoAhCkYICxgCKkC7ovTb...",
+    "signature:EtENCkYICxgCKkCXXQyc...",
     "claude-sonnet-4-5-20250929",
     "signature:EskCCkYICxgCKkBXTYpg...",
-    "signature:EocCCkYICxgCKkAu1yZU...",
     "signature:EqgCCkYICxgCKkD97KjG...",
-    "signature:EpkGCkYICxgCKkDmZvSK...",
-    "signature:EvMECkYICxgCKkDPjNKW...",
-    "signature:EtENCkYICxgCKkCXXQyc...",
-    "signature:EqYFCkYICxgCKkBE4cct...",
-    "signature:EoAhCkYICxgCKkC7ovTb...",
-    "signature:Et4CCkYICxgCKkAOllfN...",
-    "signature:EskCCkYICxgCKkAiz8Ei..."
+    "signature:EocCCkYICxgCKkAu1yZU..."
   ],
   "thinking_blocks": [
     {

@@ -54,10 +54,10 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>bug color mismatch between sidebar highlighting color and background color in light mode. they are very close, bu\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EpsCCkYICxgCKkBIGLbE...",
+    "signature:EukICkYICxgCKkAbFwUI...",
     "claude-opus-4-5-20251101",
-    "signature:Ev8BCkYICxgCKkARoIe/...",
-    "signature:EukICkYICxgCKkAbFwUI..."
+    "signature:EpsCCkYICxgCKkBIGLbE...",
+    "signature:Ev8BCkYICxgCKkARoIe/..."
   ],
   "thinking_blocks": [
     {
