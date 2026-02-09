@@ -18,8 +18,8 @@
   "first_prompt": "No prompt",
   "session_summary": "Agent Direct User Questions Architecture",
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EpwOCkYICxgCKkBzPly0..."
+    "signature:EpwOCkYICxgCKkBzPly0...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

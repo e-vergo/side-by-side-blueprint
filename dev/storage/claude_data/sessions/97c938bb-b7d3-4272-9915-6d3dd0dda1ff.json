@@ -527,30 +527,30 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_successful_sessions",
+    "mcp__sbs-lsp__sbs_gate_failures",
     "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_system_health",
+    "mcp__sbs-lsp__sbs_entries_since_self_improve",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Read",
+    "Write",
     "mcp__sbs-lsp__sbs_skill_transition",
     "mcp__sbs-lsp__sbs_tag_effectiveness",
-    "mcp__sbs-lsp__sbs_comparative_analysis",
     "mcp__sbs-lsp__sbs_interruption_analysis",
-    "mcp__sbs-lsp__sbs_search_entries",
     "mcp__sbs-lsp__sbs_skill_stats",
-    "Read",
-    "mcp__sbs-lsp__sbs_entries_since_self_improve",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_phase_transition_health",
-    "mcp__sbs-lsp__sbs_gate_failures",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "Glob",
-    "Write",
+    "mcp__sbs-lsp__sbs_skill_end",
     "mcp__sbs-lsp__sbs_user_patterns",
-    "mcp__sbs-lsp__sbs_skill_start"
+    "mcp__sbs-lsp__sbs_phase_transition_health",
+    "mcp__sbs-lsp__sbs_system_health",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_comparative_analysis",
+    "Glob",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_search_entries"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770193776.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770192056.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/retrospectives/1770193776.md"
   ],
   "files_written": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md"
@@ -563,13 +563,13 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EslOCkYICxgCKkC0zZYI...",
-    "signature:EqMCCkYICxgCKkD4ePqn...",
-    "signature:Er0OCkYICxgCKkCu4xOj...",
-    "signature:EvUBCkYICxgCKkBZ/SNU...",
     "signature:Eq8DCkYICxgCKkCdNbim...",
+    "signature:EvUBCkYICxgCKkBZ/SNU...",
+    "signature:Er0OCkYICxgCKkCu4xOj...",
     "signature:EvMCCkYICxgCKkDONR1s...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EslOCkYICxgCKkC0zZYI...",
+    "signature:EqMCCkYICxgCKkD4ePqn..."
   ],
   "thinking_blocks": [
     {

@@ -163,12 +163,12 @@
     }
   ],
   "tools_used": [
-    "Edit",
-    "Task",
+    "mcp__sbs-lsp__sbs_issue_create",
     "AskUserQuestion",
-    "Bash",
     "Read",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "Edit",
+    "Bash",
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/log/SKILL.md"
@@ -187,10 +187,10 @@
   "session_summary": null,
   "model_versions": [
     "signature:Eo0pCkYICxgCKkBsbXe0...",
-    "signature:EvgKCkYICxgCKkDsbV1e...",
     "signature:EowICkYICxgCKkCXUoxU...",
     "signature:EvYBCkYICxgCKkAASYYe...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EvgKCkYICxgCKkDsbV1e..."
   ],
   "thinking_blocks": [
     {
