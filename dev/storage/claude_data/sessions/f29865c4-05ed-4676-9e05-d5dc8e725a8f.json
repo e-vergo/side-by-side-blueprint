@@ -1147,30 +1147,30 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_issue_summary",
-    "Bash",
+    "Read",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "Skill",
+    "EnterPlanMode",
+    "TodoWrite",
+    "AskUserQuestion",
+    "Task",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Grep",
     "mcp__sbs-lsp__sbs_skill_handoff",
     "mcp__sbs-lsp__sbs_run_tests",
-    "TodoWrite",
-    "Skill",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "EnterPlanMode",
-    "mcp__sbs-lsp__sbs_issue_close",
     "mcp__sbs-lsp__sbs_skill_transition",
-    "Read",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "Task",
-    "Grep",
-    "ExitPlanMode",
-    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_pr_merge",
     "Write",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_close"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/dress-blueprint-action/assets/blueprint.css",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_self_improve.py"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_self_improve.py",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/toolchain/dress-blueprint-action/assets/blueprint.css"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/inherited-jumping-hammock.md"
@@ -1179,13 +1179,13 @@
   "subagent_ids": [
     "toolu_01C4RTeY5cDRDU5PWyJHcApF",
     "toolu_01GUPiydFfyWLR9BNEQiLynD",
+    "toolu_01DToT1gZAca6yRuNSuDGriG",
+    "toolu_01KggANxmQmsgqXz2Q56Bmud",
     "toolu_01EjgzvW3xrhCrizDp6imN5v",
     "toolu_01KvwFuv3GrpiRR3qHb3k6Wr",
-    "toolu_01KggANxmQmsgqXz2Q56Bmud",
-    "toolu_012sN5wSDS7fjHAGA8KGb6D3",
-    "toolu_01DToT1gZAca6yRuNSuDGriG",
+    "toolu_017Gq2Z9tUYtehf9vUyJUkBP",
     "toolu_01Syu7x36moFjVUb2MPBRkE4",
-    "toolu_017Gq2Z9tUYtehf9vUyJUkBP"
+    "toolu_012sN5wSDS7fjHAGA8KGb6D3"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/inherited-jumping-hammock.md",
@@ -1196,19 +1196,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EpACCkYICxgCKkAJqLw1...",
-    "signature:EuQDCkYICxgCKkBbEV2y...",
     "signature:Eq8ECkYICxgCKkAXkyGq...",
-    "claude-opus-4-5-20251101",
-    "signature:EvsCCkYICxgCKkAJAHwT...",
-    "signature:Ev4BCkYICxgCKkAVe9ZQ...",
     "signature:EusVCkYICxgCKkAuvyFw...",
     "signature:ErEFCkYICxgCKkDXnwWd...",
-    "signature:EpgECkYICxgCKkAUICod...",
-    "signature:EtkCCkYICxgCKkAGia98...",
+    "signature:Ev4BCkYICxgCKkAVe9ZQ...",
+    "claude-opus-4-5-20251101",
+    "signature:EpwCCkYICxgCKkDrWDHj...",
     "signature:ErkFCkYICxgCKkA3dIiH...",
-    "signature:Er8DCkYICxgCKkDomuQD...",
-    "signature:EpwCCkYICxgCKkDrWDHj..."
+    "signature:EpgECkYICxgCKkAUICod...",
+    "signature:EpACCkYICxgCKkAJqLw1...",
+    "signature:EvsCCkYICxgCKkAJAHwT...",
+    "signature:EtkCCkYICxgCKkAGia98...",
+    "signature:EuQDCkYICxgCKkBbEV2y...",
+    "signature:Er8DCkYICxgCKkDomuQD..."
   ],
   "thinking_blocks": [
     {

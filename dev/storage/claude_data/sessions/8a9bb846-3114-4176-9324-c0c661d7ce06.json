@@ -87,9 +87,9 @@
   "first_prompt": "[Request interrupted by user for tool use]",
   "session_summary": null,
   "model_versions": [
-    "signature:EoEDCkYICxgCKkDhtA+7...",
+    "signature:ErcDCkYICxgCKkAgdadP...",
     "claude-opus-4-5-20251101",
-    "signature:ErcDCkYICxgCKkAgdadP..."
+    "signature:EoEDCkYICxgCKkDhtA+7..."
   ],
   "thinking_blocks": [
     {

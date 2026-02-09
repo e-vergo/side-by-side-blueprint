@@ -95,9 +95,9 @@
     }
   ],
   "tools_used": [
-    "Grep",
+    "mcp__sbs-lsp__sbs_issue_create",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "Grep"
   ],
   "files_read": [],
   "files_written": [],
@@ -111,8 +111,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
     "signature:Eo0CCkYICxgCKkAQybuM...",
+    "claude-opus-4-5-20251101",
     "signature:Es0JCkYICxgCKkAT8qxh..."
   ],
   "thinking_blocks": [

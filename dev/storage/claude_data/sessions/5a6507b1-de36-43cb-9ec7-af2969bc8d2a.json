@@ -196,9 +196,9 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "Task",
     "AskUserQuestion",
+    "Task",
+    "Bash",
     "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
@@ -216,9 +216,9 @@
     "signature:EtgGCkYICxgCKkBIlmWQ...",
     "signature:Eq8PCkYICxgCKkCtKL6+...",
     "claude-opus-4-5-20251101",
-    "signature:EtQMCkYICxgCKkCKIEyi...",
+    "signature:EscMCkYICxgCKkBSQw5P...",
     "signature:EsMCCkYICxgCKkAwtwTS...",
-    "signature:EscMCkYICxgCKkBSQw5P..."
+    "signature:EtQMCkYICxgCKkCKIEyi..."
   ],
   "thinking_blocks": [
     {
