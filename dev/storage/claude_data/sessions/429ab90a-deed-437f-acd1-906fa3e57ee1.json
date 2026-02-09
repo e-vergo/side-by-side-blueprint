@@ -1242,20 +1242,20 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "mcp__sbs-lsp__sbs_task",
-    "Glob",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "AskUserQuestion",
-    "Read",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "Task",
-    "Skill",
-    "Bash",
     "Write",
     "mcp__sbs-lsp__ask_oracle",
-    "TodoWrite"
+    "Read",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "Skill",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_task",
+    "mcp__sbs-lsp__sbs_issue_create",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "AskUserQuestion",
+    "Bash",
+    "Glob",
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/living/REWRITE_PLAN.md",
@@ -1266,11 +1266,11 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01PxC3DujMitXcurfamkEL6H",
     "toolu_01JrA967pf7oagDrZg6NWJ7r",
-    "toolu_019xcLkUJPDPfSicBGy2bDc7",
+    "toolu_01HqJMbYwo8YXDFGBNXV3Mkq",
+    "toolu_01PxC3DujMitXcurfamkEL6H",
     "toolu_01FEH62HreYJHCrApjX8ijz7",
-    "toolu_01HqJMbYwo8YXDFGBNXV3Mkq"
+    "toolu_019xcLkUJPDPfSicBGy2bDc7"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -1278,20 +1278,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Ep4HCkYICxgCKkAgHKxg...",
-    "signature:EogECkYICxgCKkAll73n...",
-    "signature:EqMCCkYICxgCKkDhnL38...",
     "signature:ErAmCkYICxgCKkDaPIn2...",
-    "signature:ErY/CkYICxgCKkAl8MXk...",
-    "signature:EugWCkYICxgCKkDw8a1O...",
-    "signature:Eq5MCkYICxgCKkBZ1ogu...",
-    "signature:EvY2CkYICxgCKkABPHBv...",
-    "signature:EpMHCkYICxgCKkBCnRZA...",
-    "signature:EpEGCkYICxgCKkBjenxM...",
-    "claude-opus-4-6",
-    "signature:EuMTCkYICxgCKkAPmwqH...",
     "signature:EuwFCkYICxgCKkAx8w3V...",
-    "signature:EqEGCkYICxgCKkCLvhLA..."
+    "signature:EogECkYICxgCKkAll73n...",
+    "signature:Eq5MCkYICxgCKkBZ1ogu...",
+    "claude-opus-4-6",
+    "signature:EvY2CkYICxgCKkABPHBv...",
+    "signature:EqMCCkYICxgCKkDhnL38...",
+    "signature:EugWCkYICxgCKkDw8a1O...",
+    "signature:EuMTCkYICxgCKkAPmwqH...",
+    "signature:ErY/CkYICxgCKkAl8MXk...",
+    "signature:EpMHCkYICxgCKkBCnRZA...",
+    "signature:Ep4HCkYICxgCKkAgHKxg...",
+    "signature:EqEGCkYICxgCKkCLvhLA...",
+    "signature:EpEGCkYICxgCKkBjenxM..."
   ],
   "thinking_blocks": [
     {

@@ -303,6 +303,56 @@
         "pre_save_total": 24.044
       },
       "added_at": "2026-02-09T00:11:07.916360+00:00"
+    },
+    "1770595935": {
+      "entry_id": "1770595935",
+      "created_at": "2026-02-08T19:12:15.498112",
+      "project": "SBSMonorepo",
+      "build_run_id": null,
+      "notes": "",
+      "tags": [],
+      "screenshots": [],
+      "repo_commits": {
+        "main": "ef3a3cbac0b6ba44e2f115a3edb5effd3fb8e25c",
+        "verso": "d95ac7c36c54c1d0655f6c96f1cf87c68c9158ed",
+        "subverso": "160bb35df182f4368b4235c8e1fbc24ec8f2de87",
+        "LeanArchitect": "4f8cbdfb427b7b27be762019d7328947b43e3080",
+        "Dress": "b30f8233b71b134042f3f9b14c1d866548c3ba9e",
+        "Runway": "c8a0f6046535022e8872720536c7466eaa50a761",
+        "SBS-Test": "99b4e26aa458b52f1ff61120d10e072c1f32a0b7",
+        "dress-blueprint-action": "e58060c617d843857f7a4ee4291c8f6b575bd3f7",
+        "GCR": "fece051ac16d2c2630e6fb6fc321e6c6f3c6c40e",
+        "PNT": "86f4387c999a52ca2c676ed48ae130775abbb684",
+        "storage": "ef3a3cbac0b6ba44e2f115a3edb5effd3fb8e25c"
+      },
+      "synced_to_icloud": false,
+      "sync_timestamp": null,
+      "sync_error": null,
+      "rubric_id": null,
+      "rubric_evaluation": null,
+      "auto_tags": [],
+      "trigger": "skill",
+      "quality_scores": null,
+      "quality_delta": null,
+      "global_state": null,
+      "state_transition": "phase_end",
+      "epoch_summary": {
+        "entries_in_epoch": 0,
+        "builds_in_epoch": 0,
+        "entry_ids": []
+      },
+      "gate_validation": null,
+      "issue_refs": [],
+      "pr_refs": [],
+      "archive_timings": {
+        "extraction": 21.426,
+        "quality_scores": 0.0,
+        "repo_commits": 0.288,
+        "tagging": 0.521,
+        "gate_validation": 0.0,
+        "pre_save_total": 22.235
+      },
+      "added_at": "2026-02-09T00:12:15.498133+00:00"
     }
   },
   "by_tag": {},
@@ -313,12 +363,13 @@
       "1770595157",
       "1770595178",
       "1770595565",
-      "1770595867"
+      "1770595867",
+      "1770595935"
     ]
   },
   "latest_by_project": {
-    "SBSMonorepo": "1770595867"
+    "SBSMonorepo": "1770595935"
   },
   "global_state": null,
-  "last_epoch_entry": "1770595867"
+  "last_epoch_entry": "1770595935"
 }

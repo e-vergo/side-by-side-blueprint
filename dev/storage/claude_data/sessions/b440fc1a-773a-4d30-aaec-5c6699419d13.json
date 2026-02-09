@@ -61,9 +61,9 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
     "signature:EvYGCkYICxgCKkClstoG...",
     "signature:EqECCkYICxgCKkDzy+6U...",
+    "claude-opus-4-5-20251101",
     "signature:EuMBCkYICxgCKkASIF4W..."
   ],
   "thinking_blocks": [

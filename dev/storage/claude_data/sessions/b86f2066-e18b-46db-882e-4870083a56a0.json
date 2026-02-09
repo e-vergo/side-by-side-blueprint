@@ -57,11 +57,11 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EsADCkYICxgCKkCdcMyc...",
     "signature:EtgCCkYICxgCKkCD2cBr...",
-    "claude-sonnet-4-5-20250929",
+    "signature:Euo6CkYICxgCKkB1jw97...",
+    "signature:EsADCkYICxgCKkCdcMyc...",
     "signature:Er4CCkYICxgCKkDMu8Fv...",
-    "signature:Euo6CkYICxgCKkB1jw97..."
+    "claude-sonnet-4-5-20250929"
   ],
   "thinking_blocks": [
     {
