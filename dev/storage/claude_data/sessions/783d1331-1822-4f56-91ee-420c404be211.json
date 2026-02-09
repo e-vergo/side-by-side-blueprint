@@ -135,8 +135,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EtkHCkYICxgCKkAp/Irs...",
     "claude-opus-4-6",
+    "signature:EtkHCkYICxgCKkAp/Irs...",
     "signature:Ep4CCkYICxgCKkDc9YbT...",
     "signature:EqgSCkYICxgCKkDNYNBF..."
   ],

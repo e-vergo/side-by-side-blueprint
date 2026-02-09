@@ -343,19 +343,19 @@
     }
   ],
   "tools_used": [
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_phase_transition_health",
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "AskUserQuestion",
     "mcp__sbs-lsp__sbs_interruption_analysis",
-    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_entries_since_self_improve",
+    "mcp__sbs-lsp__sbs_introspect",
+    "mcp__sbs-lsp__sbs_user_patterns",
+    "mcp__sbs-lsp__sbs_question_stats",
     "mcp__sbs-lsp__sbs_archive_state",
     "mcp__sbs-lsp__sbs_skill_stats",
-    "mcp__sbs-lsp__sbs_question_stats",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_phase_transition_health",
-    "mcp__sbs-lsp__sbs_question_analysis",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_user_patterns",
-    "mcp__sbs-lsp__sbs_introspect",
-    "mcp__sbs-lsp__sbs_entries_since_self_improve"
+    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_question_analysis"
   ],
   "files_read": [],
   "files_written": [],
@@ -368,18 +368,18 @@
   "session_summary": null,
   "model_versions": [
     "signature:ErMDCkYICxgCKkB/cHlL...",
-    "signature:EuMKCkYICxgCKkD9fl8m...",
-    "signature:Eq8CCkYICxgCKkCFw3w5...",
-    "claude-opus-4-5-20251101",
-    "signature:EpoCCkYICxgCKkCCGt7V...",
-    "signature:ErgCCkYICxgCKkDTltuS...",
     "signature:EscCCkYICxgCKkB/qfwJ...",
-    "signature:EogKCkYICxgCKkCvq/Br...",
-    "signature:EvcECkYICxgCKkCU3Kf/...",
-    "signature:Es0LCkYICxgCKkBWuip/...",
-    "signature:EuQBCkYICxgCKkB8cj+z...",
     "signature:EssHCkYICxgCKkDwp92F...",
-    "signature:EoMCCkYICxgCKkBoUnwc..."
+    "signature:Eq8CCkYICxgCKkCFw3w5...",
+    "signature:EogKCkYICxgCKkCvq/Br...",
+    "signature:EoMCCkYICxgCKkBoUnwc...",
+    "claude-opus-4-5-20251101",
+    "signature:Es0LCkYICxgCKkBWuip/...",
+    "signature:EvcECkYICxgCKkCU3Kf/...",
+    "signature:EuMKCkYICxgCKkD9fl8m...",
+    "signature:ErgCCkYICxgCKkDTltuS...",
+    "signature:EpoCCkYICxgCKkCCGt7V...",
+    "signature:EuQBCkYICxgCKkB8cj+z..."
   ],
   "thinking_blocks": [
     {

@@ -211,6 +211,52 @@
         "pre_save_total": 5.716
       },
       "added_at": "2026-02-09T03:29:32.596195+00:00"
+    },
+    "1770609005": {
+      "entry_id": "1770609005",
+      "created_at": "2026-02-08T22:50:05.192766",
+      "project": "SBSMonorepo",
+      "build_run_id": null,
+      "notes": "",
+      "tags": [],
+      "screenshots": [],
+      "repo_commits": {
+        "main": "1a5719372f8d51397701509dd8a67828c715a498",
+        "verso": "d95ac7c36c54c1d0655f6c96f1cf87c68c9158ed",
+        "subverso": "160bb35df182f4368b4235c8e1fbc24ec8f2de87",
+        "LeanArchitect": "30931d756efb4c3ee9b736d2c57a27a363f1ebef",
+        "Dress": "3a3def2e0e136d6c486e40fce1658fd1c9a12953",
+        "Runway": "e6e5dc04f2addd7f4a1ba4eb885b5b481e078f82",
+        "SBS-Test": "8164126a1b9b8fc4d7fb356ea0bd1ecb112501c6",
+        "dress-blueprint-action": "766dde3e0babe18b154116d0fd9a349772a75f19",
+        "GCR": "a43f34e245ee77e6146269c6cf9e454f645b3a75",
+        "PNT": "87ef99da6b2c5298a5edb7171eae4aa3e143a77b",
+        "storage": "1a5719372f8d51397701509dd8a67828c715a498"
+      },
+      "synced_to_icloud": false,
+      "sync_timestamp": null,
+      "sync_error": null,
+      "rubric_id": null,
+      "rubric_evaluation": null,
+      "auto_tags": [],
+      "trigger": "manual",
+      "quality_scores": null,
+      "quality_delta": null,
+      "global_state": null,
+      "state_transition": null,
+      "epoch_summary": null,
+      "gate_validation": null,
+      "issue_refs": [],
+      "pr_refs": [],
+      "archive_timings": {
+        "extraction": 6.833,
+        "quality_scores": 0.0,
+        "repo_commits": 0.101,
+        "tagging": 0.2,
+        "gate_validation": 0.0,
+        "pre_save_total": 7.134
+      },
+      "added_at": "2026-02-09T03:50:05.192781+00:00"
     }
   },
   "by_tag": {},
@@ -219,11 +265,12 @@
       "1770599821",
       "1770600259",
       "1770600317",
-      "1770607772"
+      "1770607772",
+      "1770609005"
     ]
   },
   "latest_by_project": {
-    "SBSMonorepo": "1770607772"
+    "SBSMonorepo": "1770609005"
   },
   "global_state": {
     "skill": "task",

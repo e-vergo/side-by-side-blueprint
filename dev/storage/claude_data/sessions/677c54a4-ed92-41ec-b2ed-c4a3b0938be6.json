@@ -1103,26 +1103,26 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_stats",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "Bash",
     "Read",
-    "Task",
-    "TodoWrite",
-    "mcp__sbs-lsp__sbs_oracle_query",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "EnterPlanMode",
-    "mcp__sbs-lsp__sbs_issue_create",
     "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_oracle_query",
+    "EnterPlanMode",
     "Write",
+    "mcp__sbs-lsp__sbs_issue_close",
     "AskUserQuestion",
-    "ExitPlanMode",
+    "Grep",
+    "mcp__sbs-lsp__sbs_issue_create",
     "mcp__sbs-lsp__sbs_pr_merge",
     "Skill",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Grep"
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_skill_stats",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "Bash"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_self_improve.py"
@@ -1136,26 +1136,26 @@
     "toolu_013BbsX1vdijumnzenCbgPYw"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/snappy-nibbling-badger.md",
-    "File created successfully at: /Users/eric/.claude/plans/snappy-nibbling-badger.md"
+    "File created successfully at: /Users/eric/.claude/plans/snappy-nibbling-badger.md",
+    "/Users/eric/.claude/plans/snappy-nibbling-badger.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#76</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:ErACCkYICxgCKkAy8kWw...",
-    "signature:Et0DCkYICxgCKkDawdC7...",
-    "signature:EuIBCkYICxgCKkBC4hZe...",
-    "claude-opus-4-5-20251101",
+    "signature:Et0eCkYICxgCKkA9g4x6...",
     "signature:EroDCkYICxgCKkCLm3XR...",
-    "signature:EuYJCkYICxgCKkD1SY2P...",
-    "signature:EpAECkYICxgCKkDFdhA5...",
     "signature:ErACCkYICxgCKkByWb9j...",
-    "signature:EtgCCkYICxgCKkCwFqis...",
     "signature:EqoGCkYICxgCKkAHE2mR...",
+    "signature:Et0DCkYICxgCKkDawdC7...",
+    "signature:ErACCkYICxgCKkAy8kWw...",
+    "claude-opus-4-5-20251101",
+    "signature:EtgCCkYICxgCKkCwFqis...",
+    "signature:EuIBCkYICxgCKkBC4hZe...",
     "signature:EpIDCkYICxgCKkBg6+OR...",
-    "signature:Et0eCkYICxgCKkA9g4x6..."
+    "signature:EuYJCkYICxgCKkD1SY2P...",
+    "signature:EpAECkYICxgCKkDFdhA5..."
   ],
   "thinking_blocks": [
     {

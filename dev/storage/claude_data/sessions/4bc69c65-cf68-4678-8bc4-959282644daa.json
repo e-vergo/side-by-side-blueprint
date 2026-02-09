@@ -1175,30 +1175,30 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "Bash",
     "Read",
-    "Task",
-    "TodoWrite",
     "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_run_tests",
     "mcp__sbs-lsp__sbs_archive_state",
     "EnterPlanMode",
-    "mcp__sbs-lsp__sbs_skill_handoff",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_pr_create",
     "Write",
+    "mcp__sbs-lsp__sbs_issue_close",
     "AskUserQuestion",
-    "ExitPlanMode",
+    "Grep",
     "mcp__sbs-lsp__sbs_pr_merge",
     "Skill",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Grep"
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_skill_handoff",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "Bash"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/qa/SKILL.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/qa/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/partitioned-humming-seahorse.md"
@@ -1206,41 +1206,41 @@
   "files_edited": [],
   "subagent_ids": [
     "toolu_016XLm47briVag384YfDGZng",
-    "toolu_01JEhHB5vc39UWvKHHE2zLZN",
     "toolu_012FJJX7iiy3WyrPH9kBRbdD",
-    "toolu_01S24bFQBigTZKUp1qPEVfk3",
+    "toolu_01XdotAqKjiVCxzVQqTMjzaf",
     "toolu_01Kx3uWC5DvCqiAVBgycsjGk",
+    "toolu_012wzqevbjsGsrdHXi13Mrkv",
+    "toolu_01YLd2u5aMnZWjVZL89YJWW3",
     "toolu_01F5fL7ATQJghBVuzPTkWL3v",
     "toolu_0197FQgz1gLZjRjobj8BZpn6",
-    "toolu_01XdotAqKjiVCxzVQqTMjzaf",
-    "toolu_01YLd2u5aMnZWjVZL89YJWW3",
-    "toolu_017ugU1RLNVcbfxBzWFm4yuu",
-    "toolu_012wzqevbjsGsrdHXi13Mrkv"
+    "toolu_01JEhHB5vc39UWvKHHE2zLZN",
+    "toolu_01S24bFQBigTZKUp1qPEVfk3",
+    "toolu_017ugU1RLNVcbfxBzWFm4yuu"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/partitioned-humming-seahorse.md",
-    "File created successfully at: /Users/eric/.claude/plans/partitioned-humming-seahorse.md"
+    "File created successfully at: /Users/eric/.claude/plans/partitioned-humming-seahorse.md",
+    "/Users/eric/.claude/plans/partitioned-humming-seahorse.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EtACCkYICxgCKkCdWvpK...",
-    "signature:EvYUCkYICxgCKkANNrIy...",
-    "signature:EuYDCkYICxgCKkCtFMSP...",
-    "claude-opus-4-5-20251101",
-    "signature:ErACCkYICxgCKkCbURj2...",
-    "signature:EqwGCkYICxgCKkAhwsvF...",
-    "signature:Ev4DCkYICxgCKkBOEJeT...",
-    "signature:EpAFCkYICxgCKkCAMms6...",
-    "signature:EoQDCkYICxgCKkA2o/J9...",
     "signature:EtkCCkYICxgCKkCbwyhY...",
-    "signature:EokCCkYICxgCKkDQVNe4...",
-    "signature:EqgCCkYICxgCKkAXSkcQ...",
+    "signature:EpAFCkYICxgCKkCAMms6...",
     "signature:EocCCkYICxgCKkBlEDbQ...",
+    "signature:EvYUCkYICxgCKkANNrIy...",
+    "signature:EtACCkYICxgCKkCdWvpK...",
+    "signature:Ev4DCkYICxgCKkBOEJeT...",
+    "signature:EqwGCkYICxgCKkAhwsvF...",
     "signature:ErszCkYICxgCKkDvhA4O...",
-    "signature:EsYxCkYICxgCKkAsyCle..."
+    "claude-opus-4-5-20251101",
+    "signature:EqgCCkYICxgCKkAXSkcQ...",
+    "signature:ErACCkYICxgCKkCbURj2...",
+    "signature:EsYxCkYICxgCKkAsyCle...",
+    "signature:EuYDCkYICxgCKkCtFMSP...",
+    "signature:EoQDCkYICxgCKkA2o/J9...",
+    "signature:EokCCkYICxgCKkDQVNe4..."
   ],
   "thinking_blocks": [
     {
