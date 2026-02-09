@@ -137,8 +137,8 @@
   "tools_used": [
     "Read",
     "Bash",
-    "Edit",
     "WebSearch",
+    "Edit",
     "Glob",
     "mcp__sbs-lsp__sbs_issue_log"
   ],
@@ -156,17 +156,17 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EoADCkYICxgCKkDJonXi...",
-    "signature:Er8CCkYICxgCKkCTZSec...",
-    "signature:EvEBCkYICxgCKkATaWR0...",
     "signature:Ep4ECkYICxgCKkACbibv...",
-    "signature:EtECCkYICxgCKkDenRfp...",
-    "claude-opus-4-5-20251101",
+    "signature:EvEBCkYICxgCKkATaWR0...",
     "signature:EvsECkYICxgCKkBNHVbE...",
     "signature:EpwHCkYICxgCKkDwUkPV...",
+    "claude-opus-4-5-20251101",
+    "signature:Er8CCkYICxgCKkCTZSec...",
+    "signature:EoADCkYICxgCKkDJonXi...",
     "signature:EoUECkYICxgCKkDOe0C/...",
+    "signature:EssDCkYICxgCKkBi8zJJ...",
     "signature:Ep4JCkYICxgCKkDbCuWd...",
-    "signature:EssDCkYICxgCKkBi8zJJ..."
+    "signature:EtECCkYICxgCKkDenRfp..."
   ],
   "thinking_blocks": [
     {

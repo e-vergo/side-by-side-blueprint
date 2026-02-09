@@ -41,8 +41,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],
@@ -54,9 +54,9 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>bug color mismatch between sidebar highlighting color and background color in light mode. they are very close, bu\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EukICkYICxgCKkAbFwUI...",
     "claude-opus-4-5-20251101",
     "signature:EpsCCkYICxgCKkBIGLbE...",
+    "signature:EukICkYICxgCKkAbFwUI...",
     "signature:Ev8BCkYICxgCKkARoIe/..."
   ],
   "thinking_blocks": [

@@ -962,43 +962,43 @@
     }
   ],
   "tools_used": [
-    "Read",
-    "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "EnterPlanMode",
-    "Skill",
-    "TodoWrite",
-    "AskUserQuestion",
-    "Task",
     "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_issue_list",
-    "mcp__sbs-lsp__sbs_skill_handoff",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "mcp__sbs-lsp__sbs_skill_transition",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "ExitPlanMode",
     "mcp__sbs-lsp__sbs_archive_state",
     "mcp__sbs-lsp__sbs_pr_merge",
+    "EnterPlanMode",
     "Write",
-    "Bash",
+    "mcp__sbs-lsp__sbs_run_tests",
     "mcp__sbs-lsp__sbs_issue_close",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "mcp__sbs-lsp__sbs_issue_get"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "Task",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_issue_list",
+    "Skill",
+    "Read",
+    "mcp__sbs-lsp__sbs_skill_handoff",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "TodoWrite"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/converge/SKILL.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/converge/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/sequential-prancing-unicorn.md"
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01PDBcdBxe9hKRfA4Zixomiw",
     "toolu_01DuJBNmFLjNxrpDP9m55RCr",
-    "toolu_01NGoyfPFMx4nUo7B2L5xYFY",
-    "toolu_01Ear3NcbrsRhj7F1dKGgMKz",
-    "toolu_014edxY6DLCTuSoUG8NgwSmX",
     "toolu_016UPDGcPed36EgTZF3vwQQr",
-    "toolu_01AxrQEaivjR56kegp2wEP9Q"
+    "toolu_01Ear3NcbrsRhj7F1dKGgMKz",
+    "toolu_01NGoyfPFMx4nUo7B2L5xYFY",
+    "toolu_01AxrQEaivjR56kegp2wEP9Q",
+    "toolu_01PDBcdBxe9hKRfA4Zixomiw",
+    "toolu_014edxY6DLCTuSoUG8NgwSmX"
   ],
   "plan_files": [
     "File created successfully at: /Users/eric/.claude/plans/sequential-prancing-unicorn.md",
@@ -1009,20 +1009,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EoMFCkYICxgCKkAuyv8S...",
-    "signature:Eu47CkYICxgCKkDHxtjp...",
     "signature:EooCCkYICxgCKkC0pIOa...",
-    "claude-opus-4-5-20251101",
-    "signature:EpADCkYICxgCKkAnM3lc...",
-    "signature:Eu8CCkYICxgCKkBw0Yjt...",
-    "signature:EpYRCkYICxgCKkB7AC4O...",
-    "signature:ErQGCkYICxgCKkAPScKv...",
     "signature:Eo4CCkYICxgCKkCoviY4...",
+    "signature:EpYRCkYICxgCKkB7AC4O...",
     "signature:EroDCkYICxgCKkCB+/yG...",
-    "signature:EtQDCkYICxgCKkD3JUDD...",
-    "signature:Ev0BCkYICxgCKkBWrEW+...",
+    "signature:EoMFCkYICxgCKkAuyv8S...",
+    "claude-opus-4-5-20251101",
     "signature:Ep0MCkYICxgCKkDtMQl0...",
-    "signature:EsYDCkYICxgCKkBkylfA..."
+    "signature:EpADCkYICxgCKkAnM3lc...",
+    "signature:EsYDCkYICxgCKkBkylfA...",
+    "signature:EtQDCkYICxgCKkD3JUDD...",
+    "signature:Eu47CkYICxgCKkDHxtjp...",
+    "signature:ErQGCkYICxgCKkAPScKv...",
+    "signature:Ev0BCkYICxgCKkBWrEW+...",
+    "signature:Eu8CCkYICxgCKkBw0Yjt..."
   ],
   "thinking_blocks": [
     {

@@ -35,8 +35,8 @@
   "first_prompt": "hey claude, can you read the current plan?",
   "session_summary": "Claude Discusses Current Plan via Chrome Command",
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EsYDCkYICxgCKkBhAORi..."
+    "signature:EsYDCkYICxgCKkBhAORi...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {
