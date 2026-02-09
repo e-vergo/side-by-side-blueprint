@@ -620,24 +620,24 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_summary",
+    "mcp__sbs-lsp__sbs_successful_sessions",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_analysis_summary",
+    "mcp__sbs-lsp__sbs_comparative_analysis",
+    "mcp__sbs-lsp__sbs_skill_status",
     "mcp__sbs-lsp__sbs_search_entries",
     "Task",
-    "mcp__sbs-lsp__sbs_comparative_analysis",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_entries_since_self_improve",
-    "mcp__sbs-lsp__sbs_system_health",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "mcp__sbs-lsp__sbs_user_patterns",
-    "mcp__sbs-lsp__sbs_analysis_summary",
-    "mcp__sbs-lsp__sbs_issue_create",
     "TodoWrite",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_successful_sessions",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_issue_summary",
     "mcp__sbs-lsp__sbs_skill_end",
-    "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_system_health",
+    "mcp__sbs-lsp__sbs_issue_create",
     "mcp__sbs-lsp__sbs_epoch_summary",
-    "mcp__sbs-lsp__sbs_skill_start"
+    "mcp__sbs-lsp__sbs_user_patterns",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_entries_since_self_improve"
   ],
   "files_read": [],
   "files_written": [],
@@ -651,12 +651,12 @@
   "first_prompt": "<command-message>self-improve</command-message> <command-name>/self-improve</command-name> <command-args>this is the first self improvement cycle since you got some new self analysis tools. be sure to\u2026",
   "session_summary": null,
   "model_versions": [
+    "signature:EuQDCkYICxgCKkCj8VNV...",
     "signature:EqsCCkYICxgCKkAo+mL0...",
-    "signature:EogCCkYICxgCKkBRdyl1...",
     "signature:Ev4LCkYICxgCKkD07N+9...",
-    "claude-opus-4-5-20251101",
+    "signature:EogCCkYICxgCKkBRdyl1...",
     "signature:Er8eCkYICxgCKkBqmlhO...",
-    "signature:EuQDCkYICxgCKkCj8VNV..."
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

@@ -37,8 +37,8 @@
     }
   ],
   "tools_used": [
-    "Task",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Task"
   ],
   "files_read": [],
   "files_written": [],
@@ -52,10 +52,10 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EvEKCkYICxgCKkC27GiB...",
-    "signature:EoMDCkYICxgCKkAV+e27...",
+    "signature:EocCCkYICxgCKkCu2P7Z...",
     "claude-opus-4-5-20251101",
-    "signature:EocCCkYICxgCKkCu2P7Z..."
+    "signature:EvEKCkYICxgCKkC27GiB...",
+    "signature:EoMDCkYICxgCKkAV+e27..."
   ],
   "thinking_blocks": [
     {

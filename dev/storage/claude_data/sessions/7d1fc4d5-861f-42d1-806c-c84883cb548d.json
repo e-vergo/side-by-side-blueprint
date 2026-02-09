@@ -62,9 +62,9 @@
     }
   ],
   "tools_used": [
-    "Skill",
+    "mcp__sbs-lsp__sbs_issue_create",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "Skill"
   ],
   "files_read": [],
   "files_written": [],
@@ -76,10 +76,10 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
     "signature:Eu8BCkYICxgCKkDNU4ls...",
-    "signature:ErIHCkYICxgCKkD5xWOF...",
-    "signature:EtIBCkYICxgCKkDNY6hL..."
+    "claude-opus-4-5-20251101",
+    "signature:EtIBCkYICxgCKkDNY6hL...",
+    "signature:ErIHCkYICxgCKkD5xWOF..."
   ],
   "thinking_blocks": [
     {
