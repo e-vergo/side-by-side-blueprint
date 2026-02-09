@@ -83,9 +83,9 @@
     }
   ],
   "tools_used": [
+    "Task",
     "Read",
     "Write",
-    "Task",
     "WebSearch"
   ],
   "files_read": [
@@ -105,10 +105,10 @@
   "session_summary": null,
   "model_versions": [
     "signature:Er8VCkYICxgCKkD+mDwy...",
-    "signature:EuwICkYICxgCKkD3hMVU...",
     "claude-opus-4-5-20251101",
-    "signature:EoYPCkYICxgCKkCrBzFt...",
-    "signature:EoYCCkYICxgCKkBlZMz5..."
+    "signature:EoYCCkYICxgCKkBlZMz5...",
+    "signature:EuwICkYICxgCKkD3hMVU...",
+    "signature:EoYPCkYICxgCKkCrBzFt..."
   ],
   "thinking_blocks": [
     {

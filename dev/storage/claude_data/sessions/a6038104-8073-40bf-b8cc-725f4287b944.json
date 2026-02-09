@@ -1382,22 +1382,22 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_log",
-    "Write",
-    "Grep",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_update_and_archive",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "TodoWrite",
-    "ToolSearch",
-    "EnterPlanMode",
-    "Skill",
-    "mcp__sbs-lsp__sbs_task",
     "Task",
-    "Bash",
-    "AskUserQuestion",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_skill_end",
+    "Write",
     "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_skill_end"
+    "Grep",
+    "mcp__sbs-lsp__sbs_update_and_archive",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "ToolSearch",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_task",
+    "TodoWrite",
+    "Bash",
+    "Skill"
   ],
   "files_read": [],
   "files_written": [
@@ -1405,17 +1405,17 @@
   ],
   "files_edited": [],
   "subagent_ids": [
+    "toolu_01EVi2VdQg21fFa8zdVHHnn5",
+    "toolu_01CKW8DC8yHuK1VdmGscpu9e",
+    "toolu_017JDc2659Ku34xUFXq1aUC5",
     "toolu_017ihgNsYEAhfR8nfhMS9cNC",
-    "toolu_01DDuXEejVDBCAsSy1kLiFph",
-    "toolu_01LSatyd4rnTjhLnRQU2sUQ6",
-    "toolu_019YwnXeXHjGL5vG5cyrpr8e",
     "toolu_01FgyUaBK9Fq9gQyGhq4JTvq",
     "toolu_01QZ9uaUJiWGpiyz5dSkNhYG",
-    "toolu_017JDc2659Ku34xUFXq1aUC5",
-    "toolu_01CKW8DC8yHuK1VdmGscpu9e",
-    "toolu_01XBSdnhCLj4CvzgHXYKaX4f",
+    "toolu_019YwnXeXHjGL5vG5cyrpr8e",
+    "toolu_01DDuXEejVDBCAsSy1kLiFph",
     "toolu_01WJZFbj3p9G61WsATbqCMbC",
-    "toolu_01EVi2VdQg21fFa8zdVHHnn5"
+    "toolu_01XBSdnhCLj4CvzgHXYKaX4f",
+    "toolu_01LSatyd4rnTjhLnRQU2sUQ6"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/buzzing-yawning-stallman.md",
@@ -1427,14 +1427,14 @@
   "session_summary": null,
   "model_versions": [
     "signature:Eu8DCkYICxgCKkA9XQxc...",
-    "signature:EucTCkYICxgCKkCiVDbe...",
+    "signature:EskCCkYICxgCKkCqYY6M...",
+    "signature:Es8QCkYICxgCKkDYJEAL...",
+    "signature:EuEGCkYICxgCKkCVRM6C...",
+    "signature:EqkKCkYICxgCKkAtLtHP...",
     "signature:EvkGCkYICxgCKkAT3eEJ...",
     "signature:EuYFCkYICxgCKkBYhAAE...",
-    "signature:Es8QCkYICxgCKkDYJEAL...",
-    "claude-opus-4-6",
-    "signature:EskCCkYICxgCKkCqYY6M...",
-    "signature:EuEGCkYICxgCKkCVRM6C...",
-    "signature:EqkKCkYICxgCKkAtLtHP..."
+    "signature:EucTCkYICxgCKkCiVDbe...",
+    "claude-opus-4-6"
   ],
   "thinking_blocks": [
     {

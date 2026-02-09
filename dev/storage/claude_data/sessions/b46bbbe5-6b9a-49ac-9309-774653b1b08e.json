@@ -82,8 +82,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_status",
     "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_skill_status",
     "mcp__sbs-lsp__sbs_skill_start",
     "mcp__sbs-lsp__sbs_archive_state"
   ],
@@ -97,9 +97,9 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErIDCkYICxgCKkBavsvP...",
     "claude-opus-4-5-20251101",
-    "signature:EqsCCkYICxgCKkAmRpGA..."
+    "signature:EqsCCkYICxgCKkAmRpGA...",
+    "signature:ErIDCkYICxgCKkBavsvP..."
   ],
   "thinking_blocks": [
     {

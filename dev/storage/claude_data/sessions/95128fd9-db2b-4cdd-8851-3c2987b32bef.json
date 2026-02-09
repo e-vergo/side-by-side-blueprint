@@ -42,8 +42,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],
@@ -55,8 +55,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>sbs housekeeping - evaluate test coverage of requirements defined in /Users/eric/GitHub/Side-By-Side-Blueprint/de\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EogVCkYICxgCKkCvHuxe...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EogVCkYICxgCKkCvHuxe..."
   ],
   "thinking_blocks": [
     {

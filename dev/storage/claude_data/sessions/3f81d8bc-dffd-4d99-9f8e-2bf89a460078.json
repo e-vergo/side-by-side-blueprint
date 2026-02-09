@@ -52,10 +52,10 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EoMDCkYICxgCKkAV+e27...",
+    "claude-opus-4-5-20251101",
     "signature:EocCCkYICxgCKkCu2P7Z...",
-    "signature:EvEKCkYICxgCKkC27GiB...",
-    "claude-opus-4-5-20251101"
+    "signature:EoMDCkYICxgCKkAV+e27...",
+    "signature:EvEKCkYICxgCKkC27GiB..."
   ],
   "thinking_blocks": [
     {

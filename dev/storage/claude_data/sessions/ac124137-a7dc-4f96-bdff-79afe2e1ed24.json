@@ -261,13 +261,13 @@
     }
   ],
   "tools_used": [
+    "Read",
     "Write",
     "mcp__claude-in-chrome__tabs_context_mcp",
-    "mcp__claude-in-chrome__computer",
-    "mcp__claude-in-chrome__navigate",
-    "Read",
+    "ExitPlanMode",
     "AskUserQuestion",
-    "ExitPlanMode"
+    "mcp__claude-in-chrome__computer",
+    "mcp__claude-in-chrome__navigate"
   ],
   "files_read": [
     "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
@@ -288,23 +288,23 @@
   "first_prompt": "hey claude, I just approved a maroe plan, but the chat did not have access to chrome as it occured in the VSCode extentions. please read the plan at /Users/eric/.claude/plans/mighty-exploring-sunrise.\u2026",
   "session_summary": "Multi-agent orchestration with Chrome MCP visual testing",
   "model_versions": [
+    "signature:EswCCkYICxgCKkDK21xk...",
+    "signature:EqQECkYICxgCKkCA95LZ...",
     "signature:EsADCkYICxgCKkCZoSyl...",
-    "signature:ErEECkYICxgCKkBVbEAq...",
-    "signature:Ev8CCkYICxgCKkABA5SM...",
-    "signature:Eo0CCkYICxgCKkAnSbH2...",
     "claude-opus-4-5-20251101",
-    "signature:EvgECkYICxgCKkDw2dSk...",
-    "signature:EoMCCkYICxgCKkAnSazC...",
     "signature:EpQCCkYICxgCKkCwDlCA...",
+    "signature:EtgCCkYICxgCKkDo2v/4...",
+    "signature:Ep4ECkYICxgCKkC53HLp...",
+    "signature:ErEECkYICxgCKkBVbEAq...",
+    "signature:EtsCCkYICxgCKkAg7pmo...",
+    "signature:Ev8CCkYICxgCKkABA5SM...",
     "signature:EsgBCkYICxgCKkDux/yy...",
     "signature:EvkBCkYICxgCKkDPY9a4...",
-    "signature:EogPCkYICxgCKkAiA7Ag...",
-    "signature:EtgCCkYICxgCKkDo2v/4...",
+    "signature:EoMCCkYICxgCKkAnSazC...",
     "signature:Eo8FCkYICxgCKkA5pP/A...",
-    "signature:EqQECkYICxgCKkCA95LZ...",
-    "signature:Ep4ECkYICxgCKkC53HLp...",
-    "signature:EtsCCkYICxgCKkAg7pmo...",
-    "signature:EswCCkYICxgCKkDK21xk..."
+    "signature:Eo0CCkYICxgCKkAnSbH2...",
+    "signature:EvgECkYICxgCKkDw2dSk...",
+    "signature:EogPCkYICxgCKkAiA7Ag..."
   ],
   "thinking_blocks": [
     {
