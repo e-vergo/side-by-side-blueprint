@@ -110,8 +110,8 @@
   ],
   "tools_used": [
     "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],

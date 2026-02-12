@@ -319,48 +319,48 @@
     }
   ],
   "tools_used": [
-    "Task",
     "ExitPlanMode",
-    "Read",
+    "TaskOutput",
     "Bash",
     "Edit",
-    "TaskOutput"
+    "Read",
+    "Task"
   ],
   "files_read": [
-    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/scripts/build.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/CLAUDE.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md",
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/scripts/build.py"
+    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
   ],
   "files_written": [],
   "files_edited": [
     "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "subagent_ids": [
-    "toolu_01Lku8D6XxvwErckoZ19gsMY",
-    "toolu_01QpZxmePtB83d6fnCVRPR83"
+    "toolu_01QpZxmePtB83d6fnCVRPR83",
+    "toolu_01Lku8D6XxvwErckoZ19gsMY"
   ],
   "plan_files": [
-    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
+    "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "Implement the following plan:  # Plan: Add Orchestration Details to Release Plan  ## Task Add an \"Orchestration Model\" section to `/Users/eric/.claude/plans/mighty-exploring-sunrise.md` that details:\u2026",
   "session_summary": "Add Orchestration to Release Plan",
   "model_versions": [
-    "signature:ErUECkYICxgCKkAw58ZC...",
-    "signature:EqoCCkYICxgCKkCIND8L...",
-    "signature:EvcDCkYICxgCKkDYUOSP...",
-    "signature:Eq0CCkYICxgCKkB2wQ/X...",
-    "signature:EtkDCkYICxgCKkDK07YV...",
-    "signature:EuACCkYICxgCKkB44FLc...",
-    "signature:Et0ICkYICxgCKkC78RBy...",
-    "signature:ErwFCkYICxgCKkC/OZUI...",
     "signature:ErgECkYICxgCKkC40Pvn...",
     "signature:EqYDCkYICxgCKkAv+fVY...",
+    "signature:Et0ICkYICxgCKkC78RBy...",
     "claude-opus-4-5-20251101",
+    "signature:ErUECkYICxgCKkAw58ZC...",
+    "signature:ErwFCkYICxgCKkC/OZUI...",
+    "signature:EtkDCkYICxgCKkDK07YV...",
+    "signature:Eq0CCkYICxgCKkB2wQ/X...",
+    "signature:EuACCkYICxgCKkB44FLc...",
+    "signature:EqoCCkYICxgCKkCIND8L...",
+    "signature:EvcDCkYICxgCKkDYUOSP...",
     "signature:EpcFCkYICxgCKkAXjg15...",
     "signature:ErQGCkYICxgCKkCV/UZH..."
   ],

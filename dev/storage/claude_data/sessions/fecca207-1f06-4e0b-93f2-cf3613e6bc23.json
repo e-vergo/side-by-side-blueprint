@@ -103,8 +103,8 @@
   ],
   "tools_used": [
     "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],
@@ -116,8 +116,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EvcBCkYICxgCKkBlYYIG...",
     "signature:EqsFCkYICxgCKkA9mTgC...",
+    "signature:EvcBCkYICxgCKkBlYYIG...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [

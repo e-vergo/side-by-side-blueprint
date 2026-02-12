@@ -254,21 +254,21 @@
   ],
   "tools_used": [
     "mcp__sbs-lsp__sbs_archive_state",
-    "Read",
-    "TodoWrite",
     "mcp__sbs-lsp__sbs_skill_start",
-    "Glob",
-    "mcp__sbs-lsp__sbs_skill_fail",
     "mcp__sbs-lsp__sbs_skill_transition",
-    "mcp__sbs-lsp__sbs_skill_end"
+    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_skill_fail",
+    "Read",
+    "Glob",
+    "TodoWrite"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/meta-summaries/L3-1770195056.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770174872.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770183546.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770188864.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770168330.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/archive/summaries/1770194370.md"
   ],
   "files_written": [],
   "files_edited": [],
@@ -279,12 +279,12 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EvEDCkYICxgCKkCtmYQz...",
     "signature:EugGCkYICxgCKkDLIEM7...",
-    "signature:ErUCCkYICxgCKkAeCeGk...",
-    "signature:EqAGCkYICxgCKkDY+CbD...",
     "claude-opus-4-5-20251101",
-    "signature:EvMGCkYICxgCKkCYQVr4..."
+    "signature:ErUCCkYICxgCKkAeCeGk...",
+    "signature:EvEDCkYICxgCKkCtmYQz...",
+    "signature:EvMGCkYICxgCKkCYQVr4...",
+    "signature:EqAGCkYICxgCKkDY+CbD..."
   ],
   "thinking_blocks": [
     {
