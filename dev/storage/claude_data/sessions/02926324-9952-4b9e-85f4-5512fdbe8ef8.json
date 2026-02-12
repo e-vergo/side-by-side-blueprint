@@ -703,20 +703,20 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_archive_state",
-    "Read",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "TodoWrite",
-    "Task",
-    "mcp__sbs-lsp__sbs_skill_end",
-    "Write",
-    "mcp__sbs-lsp__sbs_serve_project",
-    "mcp__sbs-lsp__sbs_build_project",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_improvement_capture",
+    "Task",
+    "mcp__sbs-lsp__sbs_serve_project",
     "Glob",
-    "mcp__sbs-lsp__sbs_skill_start"
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "Write",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_skill_end",
+    "mcp__sbs-lsp__sbs_build_project",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "Read",
+    "TodoWrite"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/tests/compliance/criteria.py"
@@ -727,8 +727,8 @@
   "files_edited": [],
   "subagent_ids": [
     "toolu_01Y7LpeP1MzjBi2ipmmKjdtP",
-    "toolu_016URkXCZEYzo5QC6qDLopvE",
-    "toolu_015y2P9XN2XUAK6mh5LenWfH"
+    "toolu_015y2P9XN2XUAK6mh5LenWfH",
+    "toolu_016URkXCZEYzo5QC6qDLopvE"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -740,8 +740,8 @@
     "signature:EqUDCkYICxgCKkD4iQrP...",
     "signature:Ev0BCkYICxgCKkBgCUUL...",
     "claude-opus-4-5-20251101",
-    "signature:EtYJCkYICxgCKkAk1LEw...",
-    "signature:EvMCCkYICxgCKkC3598f..."
+    "signature:EvMCCkYICxgCKkC3598f...",
+    "signature:EtYJCkYICxgCKkAk1LEw..."
   ],
   "thinking_blocks": [
     {

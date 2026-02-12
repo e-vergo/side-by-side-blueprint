@@ -79,9 +79,9 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
+    "AskUserQuestion",
     "Skill",
-    "AskUserQuestion"
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],
@@ -93,8 +93,8 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqwCCkYICxgCKkArNLmu...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EqwCCkYICxgCKkArNLmu..."
   ],
   "thinking_blocks": [
     {

@@ -55,9 +55,9 @@
     }
   ],
   "tools_used": [
+    "Bash",
     "mcp__sbs-lsp__sbs_issue_create",
-    "Skill",
-    "Bash"
+    "Skill"
   ],
   "files_read": [],
   "files_written": [],

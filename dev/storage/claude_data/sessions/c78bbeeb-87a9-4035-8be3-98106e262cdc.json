@@ -42,8 +42,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [],
   "files_written": [],
@@ -55,8 +55,8 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>dev idea -- dedicated mcp self improvement tools  - interruption analysis (script generates report of user interr\u2026",
   "session_summary": null,
   "model_versions": [
-    "signature:EqAECkYICxgCKkBnFTqX...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EqAECkYICxgCKkBnFTqX..."
   ],
   "thinking_blocks": [
     {

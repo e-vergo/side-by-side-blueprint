@@ -102,11 +102,11 @@
   "model_versions": [
     "signature:EpACCkYICxgCKkBI0nB8...",
     "signature:Et4CCkYICxgCKkBdsq+p...",
-    "signature:ErMHCkYICxgCKkBoVpLR...",
-    "signature:EqICCkYICxgCKkB/zl0S...",
-    "signature:EucHCkYICxgCKkDG6ReW...",
     "claude-sonnet-4-5-20250929",
-    "signature:Ep0KCkYICxgCKkD8zUTs..."
+    "signature:EucHCkYICxgCKkDG6ReW...",
+    "signature:EqICCkYICxgCKkB/zl0S...",
+    "signature:Ep0KCkYICxgCKkD8zUTs...",
+    "signature:ErMHCkYICxgCKkBoVpLR..."
   ],
   "thinking_blocks": [
     {

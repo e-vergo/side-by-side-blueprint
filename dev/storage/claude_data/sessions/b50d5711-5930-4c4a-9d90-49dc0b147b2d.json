@@ -880,23 +880,23 @@
     }
   ],
   "tools_used": [
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "Bash",
+    "AskUserQuestion",
+    "EnterPlanMode",
+    "Task",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "Write",
+    "Skill",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_issue_close",
     "mcp__sbs-lsp__sbs_archive_state",
     "mcp__sbs-lsp__sbs_run_tests",
     "Read",
-    "ExitPlanMode",
-    "TodoWrite",
-    "AskUserQuestion",
-    "Task",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Write",
-    "Bash",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "Skill",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "EnterPlanMode",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_issue_get"
+    "TodoWrite"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md"
@@ -909,22 +909,22 @@
     "toolu_01HgyhjEWCAgguyEQSmZSAmM"
   ],
   "plan_files": [
-    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
-    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
+    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
+    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#48</command-args>",
   "session_summary": null,
   "model_versions": [
+    "signature:ErwPCkYICxgCKkCWAD0c...",
     "signature:EuACCkYICxgCKkDQ7uPv...",
-    "signature:EoMDCkYICxgCKkCxJJ9k...",
     "signature:EtkICkYICxgCKkBy3Nnj...",
-    "claude-opus-4-5-20251101",
+    "signature:EoMDCkYICxgCKkCxJJ9k...",
     "signature:Ev8CCkYICxgCKkCehsDo...",
     "signature:Et8GCkYICxgCKkDnKIvH...",
-    "signature:ErYFCkYICxgCKkDqWJBT...",
-    "signature:ErwPCkYICxgCKkCWAD0c..."
+    "claude-opus-4-5-20251101",
+    "signature:ErYFCkYICxgCKkDqWJBT..."
   ],
   "thinking_blocks": [
     {
