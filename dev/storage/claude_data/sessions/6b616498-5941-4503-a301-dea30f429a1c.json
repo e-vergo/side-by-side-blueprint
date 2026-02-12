@@ -325,10 +325,10 @@
   ],
   "tools_used": [
     "Bash",
+    "mcp__sbs-lsp__sbs_issue_get",
     "EnterPlanMode",
     "mcp__sbs-lsp__sbs_archive_state",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_get"
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -340,16 +340,16 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:ErgECkYICxgCKkCezMq8...",
-    "signature:Er4KCkYICxgCKkD1iquW...",
-    "signature:EqsCCkYICxgCKkBfYuNU...",
-    "signature:EvkGCkYICxgCKkBV9jpG...",
     "signature:EsUICkYICxgCKkDYTf7i...",
-    "claude-sonnet-4-5-20250929",
-    "signature:EuQECkYICxgCKkA18GPB...",
-    "signature:EoIGCkYICxgCKkBnM0aB...",
     "signature:EqwICkYICxgCKkDktMwF...",
-    "signature:Er0JCkYICxgCKkALWlGo..."
+    "signature:EqsCCkYICxgCKkBfYuNU...",
+    "signature:EoIGCkYICxgCKkBnM0aB...",
+    "signature:EuQECkYICxgCKkA18GPB...",
+    "signature:Er4KCkYICxgCKkD1iquW...",
+    "claude-sonnet-4-5-20250929",
+    "signature:Er0JCkYICxgCKkALWlGo...",
+    "signature:EvkGCkYICxgCKkBV9jpG...",
+    "signature:ErgECkYICxgCKkCezMq8..."
   ],
   "thinking_blocks": [
     {

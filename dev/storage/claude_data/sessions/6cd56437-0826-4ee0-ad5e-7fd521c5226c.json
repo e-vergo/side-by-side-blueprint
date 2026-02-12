@@ -1529,42 +1529,42 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "EnterPlanMode",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "Write",
-    "Task",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "TodoWrite",
-    "mcp__sbs-lsp__sbs_validate_project",
-    "Skill",
+    "mcp__sbs-lsp__sbs_issue_list",
     "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_pr_merge",
+    "Bash",
+    "Write",
     "ExitPlanMode",
-    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "Skill",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "TodoWrite",
     "mcp__sbs-lsp__sbs_issue_close",
     "Read",
-    "mcp__sbs-lsp__sbs_issue_list",
-    "mcp__sbs-lsp__sbs_skill_status"
+    "Task",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_validate_project"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/TEST_CATALOG.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/living/MVP.md"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/markdowns/living/MVP.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/TEST_CATALOG.md"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/mellow-knitting-sky.md"
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01B8VtKRdMPHFarbodbSHhp3",
-    "toolu_01QuRsvEKBHLwYswLJqYZig9",
-    "toolu_011JZur1E7d1Z6oynJfdfY8X",
-    "toolu_01GCdpcAqndVRdYnRf2LTvbp",
-    "toolu_012Ff2ATq6HQFDUeneNxL748",
     "toolu_01QatRGD7kXb6U7VLjxygy74",
     "toolu_01Rqj6puWprowQVUcPPbXbaQ",
-    "toolu_01YaKCfqnbRTV3KUxjLs88oU"
+    "toolu_01QuRsvEKBHLwYswLJqYZig9",
+    "toolu_01GCdpcAqndVRdYnRf2LTvbp",
+    "toolu_01YaKCfqnbRTV3KUxjLs88oU",
+    "toolu_01B8VtKRdMPHFarbodbSHhp3",
+    "toolu_011JZur1E7d1Z6oynJfdfY8X",
+    "toolu_012Ff2ATq6HQFDUeneNxL748"
   ],
   "plan_files": [
     "File created successfully at: /Users/eric/.claude/plans/mellow-knitting-sky.md",
@@ -1575,21 +1575,21 @@
   "first_prompt": "hey claude please ull up a list of all our open issues",
   "session_summary": null,
   "model_versions": [
-    "signature:EtUBCkYICxgCKkBwX+rS...",
     "signature:EqwFCkYICxgCKkCs9NhG...",
-    "signature:EvsCCkYICxgCKkBPec1u...",
-    "signature:EtoVCkYICxgCKkDQEfq1...",
-    "signature:EsMCCkYICxgCKkDUogu3...",
-    "signature:EusJCkYICxgCKkCm8DXl...",
-    "signature:EpcFCkYICxgCKkBoTq1O...",
-    "signature:EoYCCkYICxgCKkBP05u1...",
-    "signature:ErgCCkYICxgCKkA29yNf...",
-    "claude-opus-4-5-20251101",
-    "signature:EsUPCkYICxgCKkCgG3dN...",
     "signature:EsMJCkYICxgCKkDFclV5...",
     "signature:Ep4ECkYICxgCKkDzzC/Z...",
+    "signature:EtoVCkYICxgCKkDQEfq1...",
     "signature:EsUJCkYICxgCKkAbJd93...",
-    "signature:EpoGCkYICxgCKkCp0XmV..."
+    "signature:EoYCCkYICxgCKkBP05u1...",
+    "signature:EsUPCkYICxgCKkCgG3dN...",
+    "signature:EpoGCkYICxgCKkCp0XmV...",
+    "signature:EusJCkYICxgCKkCm8DXl...",
+    "signature:EsMCCkYICxgCKkDUogu3...",
+    "signature:EpcFCkYICxgCKkBoTq1O...",
+    "claude-opus-4-5-20251101",
+    "signature:ErgCCkYICxgCKkA29yNf...",
+    "signature:EvsCCkYICxgCKkBPec1u...",
+    "signature:EtUBCkYICxgCKkBwX+rS..."
   ],
   "thinking_blocks": [
     {

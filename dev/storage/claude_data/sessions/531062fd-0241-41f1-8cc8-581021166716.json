@@ -821,23 +821,23 @@
     }
   ],
   "tools_used": [
-    "EnterPlanMode",
     "Bash",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "Grep",
-    "Write",
-    "Task",
-    "mcp__sbs-lsp__sbs_skill_handoff",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "TodoWrite",
-    "Skill",
     "mcp__sbs-lsp__sbs_skill_start",
+    "Skill",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "mcp__sbs-lsp__sbs_skill_handoff",
     "mcp__sbs-lsp__sbs_pr_merge",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_skill_transition",
     "mcp__sbs-lsp__sbs_issue_close",
+    "Grep",
     "mcp__sbs-lsp__sbs_issue_get",
-    "ExitPlanMode"
+    "Task",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "Write"
   ],
   "files_read": [],
   "files_written": [
@@ -858,12 +858,12 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqECCkYICxgCKkCAyCEX...",
+    "signature:EsgCCkYICxgCKkAx+Wb+...",
     "signature:EuwCCkYICxgCKkBsN92F...",
+    "signature:EqECCkYICxgCKkCAyCEX...",
     "signature:Ev0DCkYICxgCKkB31OkY...",
     "signature:EowCCkYICxgCKkBDDb5O...",
-    "claude-opus-4-5-20251101",
-    "signature:EsgCCkYICxgCKkAx+Wb+..."
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

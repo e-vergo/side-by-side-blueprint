@@ -136,11 +136,11 @@
   ],
   "tools_used": [
     "Bash",
-    "Write",
-    "Task",
-    "mcp__sbs-lsp__sbs_improvement_capture",
     "mcp__sbs-lsp__sbs_issue_create",
-    "Read"
+    "mcp__sbs-lsp__sbs_improvement_capture",
+    "Read",
+    "Task",
+    "Write"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/Screenshot 2026-02-04 at 6.10.24 PM.png",
@@ -159,19 +159,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Et4ECkYICxgCKkCQslx0...",
-    "signature:EtwGCkYICxgCKkCFFWZH...",
     "signature:EqIDCkYICxgCKkBAoOVq...",
+    "signature:EpoGCkYICxgCKkASVgxm...",
+    "signature:EqQFCkYICxgCKkCtOYkh...",
     "signature:EqMJCkYICxgCKkBOVgH2...",
+    "signature:EqQCCkYICxgCKkAk/m8n...",
     "signature:Eo4JCkYICxgCKkBIgEV9...",
     "signature:Eo4DCkYICxgCKkDE+kIx...",
-    "signature:EqQFCkYICxgCKkCtOYkh...",
-    "signature:EpoGCkYICxgCKkASVgxm...",
-    "claude-sonnet-4-5-20250929",
-    "signature:EqQCCkYICxgCKkAk/m8n...",
     "signature:EroHCkYICxgCKkBms4C+...",
-    "signature:EvcGCkYICxgCKkBRKN5g...",
     "signature:EtAJCkYICxgCKkB7tapo...",
+    "signature:Et4ECkYICxgCKkCQslx0...",
+    "signature:EtwGCkYICxgCKkCFFWZH...",
+    "claude-sonnet-4-5-20250929",
+    "signature:EvcGCkYICxgCKkBRKN5g...",
     "signature:Ep4FCkYICxgCKkCoD8u6..."
   ],
   "thinking_blocks": [

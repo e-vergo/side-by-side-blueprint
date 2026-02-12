@@ -35,8 +35,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_get",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_issue_get"
   ],
   "files_read": [],
   "files_written": [],
@@ -48,9 +48,9 @@
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#60</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:EqYDCkYICxgCKkB8IllG...",
     "signature:ErACCkYICxgCKkBPZmkN...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EqYDCkYICxgCKkB8IllG..."
   ],
   "thinking_blocks": [
     {

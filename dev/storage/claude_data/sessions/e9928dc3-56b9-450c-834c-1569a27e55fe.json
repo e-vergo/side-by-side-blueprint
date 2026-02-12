@@ -61,8 +61,8 @@
   "session_summary": null,
   "model_versions": [
     "signature:EtQBCkYICxgCKkAHJrZy...",
-    "signature:EvQSCkYICxgCKkDt6IuV...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EvQSCkYICxgCKkDt6IuV..."
   ],
   "thinking_blocks": [
     {

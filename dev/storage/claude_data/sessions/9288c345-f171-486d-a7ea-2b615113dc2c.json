@@ -343,19 +343,19 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_log",
-    "mcp__sbs-lsp__sbs_entries_since_self_improve",
-    "mcp__sbs-lsp__sbs_question_stats",
-    "mcp__sbs-lsp__sbs_question_analysis",
-    "mcp__sbs-lsp__sbs_skill_end",
     "mcp__sbs-lsp__sbs_user_patterns",
-    "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_interruption_analysis",
-    "mcp__sbs-lsp__sbs_introspect",
-    "mcp__sbs-lsp__sbs_phase_transition_health",
-    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_question_stats",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_question_analysis",
+    "mcp__sbs-lsp__sbs_entries_since_self_improve",
+    "mcp__sbs-lsp__sbs_skill_end",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_skill_stats"
+    "mcp__sbs-lsp__sbs_introspect",
+    "mcp__sbs-lsp__sbs_interruption_analysis",
+    "mcp__sbs-lsp__sbs_skill_stats",
+    "mcp__sbs-lsp__sbs_phase_transition_health",
+    "mcp__sbs-lsp__sbs_archive_state",
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -367,19 +367,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:Eq8CCkYICxgCKkCFw3w5...",
-    "signature:EogKCkYICxgCKkCvq/Br...",
+    "signature:EuQBCkYICxgCKkB8cj+z...",
+    "signature:EuMKCkYICxgCKkD9fl8m...",
     "signature:EoMCCkYICxgCKkBoUnwc...",
     "signature:EssHCkYICxgCKkDwp92F...",
     "signature:Es0LCkYICxgCKkBWuip/...",
-    "claude-opus-4-5-20251101",
     "signature:ErgCCkYICxgCKkDTltuS...",
-    "signature:EuMKCkYICxgCKkD9fl8m...",
     "signature:EvcECkYICxgCKkCU3Kf/...",
-    "signature:EpoCCkYICxgCKkCCGt7V...",
+    "signature:EogKCkYICxgCKkCvq/Br...",
     "signature:EscCCkYICxgCKkB/qfwJ...",
     "signature:ErMDCkYICxgCKkB/cHlL...",
-    "signature:EuQBCkYICxgCKkB8cj+z..."
+    "signature:EpoCCkYICxgCKkCCGt7V...",
+    "signature:Eq8CCkYICxgCKkCFw3w5...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

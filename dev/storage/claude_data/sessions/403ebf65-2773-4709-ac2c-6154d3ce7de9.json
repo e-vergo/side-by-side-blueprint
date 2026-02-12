@@ -739,29 +739,29 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_run_tests",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_summary",
-    "Grep",
-    "Glob",
-    "Task",
-    "Read",
-    "TodoWrite",
+    "mcp__sbs-lsp__sbs_run_tests",
     "AskUserQuestion",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_issue_summary",
     "mcp__sbs-lsp__sbs_issue_close",
-    "mcp__sbs-lsp__sbs_issue_get"
+    "Grep",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "Task",
+    "Glob",
+    "Read"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/taxonomy.yaml",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/upload.py"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/upload.py",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/storage/taxonomy.yaml"
   ],
   "files_written": [],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_018bUFgNmZmW62SM59wnzjGT",
+    "toolu_015FX2uor5ag5DmPNrNsdkUT",
     "toolu_01QTnq1giWxFrk21PS6seZJo",
     "toolu_019UVPmeRNh8yP1NkKvpmz9k",
-    "toolu_015FX2uor5ag5DmPNrNsdkUT"
+    "toolu_018bUFgNmZmW62SM59wnzjGT"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -769,26 +769,26 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EtoJCkYICxgCKkBKHnHI...",
-    "signature:EskFCkYICxgCKkCxnUD8...",
-    "signature:EokMCkYICxgCKkBFhjsg...",
-    "signature:EpEOCkYICxgCKkDWmOUi...",
     "signature:EtQCCkYICxgCKkCY3/G+...",
-    "signature:EsQFCkYICxgCKkATZL+D...",
-    "signature:Es0LCkYICxgCKkCf2WgY...",
-    "signature:EpUCCkYICxgCKkC9QzMv...",
-    "signature:ErsCCkYICxgCKkBve4c9...",
-    "signature:EqIECkYICxgCKkCwsLP6...",
-    "signature:EtsBCkYICxgCKkACqyj9...",
-    "signature:EvYDCkYICxgCKkAau1Q+...",
+    "signature:EtQCCkYICxgCKkDub6S3...",
     "signature:EoYGCkYICxgCKkDzBaZq...",
+    "claude-opus-4-5-20251101",
     "signature:EvwBCkYICxgCKkC1MCN8...",
     "signature:EowCCkYICxgCKkCdwjxM...",
-    "claude-opus-4-5-20251101",
-    "signature:EtQCCkYICxgCKkDub6S3...",
+    "signature:ErcHCkYICxgCKkDItoBf...",
+    "signature:EsQFCkYICxgCKkATZL+D...",
+    "signature:EtoJCkYICxgCKkBKHnHI...",
+    "signature:EqIECkYICxgCKkCwsLP6...",
+    "signature:EpUCCkYICxgCKkC9QzMv...",
     "signature:Eo8DCkYICxgCKkAg46G8...",
+    "signature:EtsBCkYICxgCKkACqyj9...",
+    "signature:ErsCCkYICxgCKkBve4c9...",
+    "signature:EskFCkYICxgCKkCxnUD8...",
+    "signature:EvYDCkYICxgCKkAau1Q+...",
     "signature:EucKCkYICxgCKkCrSG3u...",
-    "signature:ErcHCkYICxgCKkDItoBf..."
+    "signature:EpEOCkYICxgCKkDWmOUi...",
+    "signature:Es0LCkYICxgCKkCf2WgY...",
+    "signature:EokMCkYICxgCKkBFhjsg..."
   ],
   "thinking_blocks": [
     {

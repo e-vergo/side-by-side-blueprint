@@ -63,9 +63,9 @@
   "first_prompt": "hey claude, can you read the current plan?",
   "session_summary": "Reading Current Plan",
   "model_versions": [
-    "signature:Ep4CCkYICxgCKkBrMyuL...",
+    "signature:ErECCkYICxgCKkDt3n/O...",
     "claude-opus-4-5-20251101",
-    "signature:ErECCkYICxgCKkDt3n/O..."
+    "signature:Ep4CCkYICxgCKkBrMyuL..."
   ],
   "thinking_blocks": [
     {
