@@ -122,8 +122,8 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_log",
-    "AskUserQuestion"
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_issue_log"
   ],
   "files_read": [],
   "files_written": [],

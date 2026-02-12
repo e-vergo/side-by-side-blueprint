@@ -387,16 +387,16 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_issue_list",
-    "WebSearch",
-    "WebFetch",
     "Bash",
-    "Task\" subagent_type=\"Explore",
-    "Edit",
-    "Glob",
-    "Read",
     "mcp__sbs-lsp__sbs_issue_log",
-    "AskUserQuestion"
+    "Glob",
+    "WebSearch",
+    "Edit",
+    "AskUserQuestion",
+    "Read",
+    "mcp__sbs-lsp__sbs_issue_list",
+    "Task\" subagent_type=\"Explore",
+    "WebFetch"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.mcp.json"

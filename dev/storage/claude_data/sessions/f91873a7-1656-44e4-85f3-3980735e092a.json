@@ -95,9 +95,9 @@
     }
   ],
   "tools_used": [
-    "Grep",
+    "Bash",
     "mcp__sbs-lsp__sbs_issue_create",
-    "Bash"
+    "Grep"
   ],
   "files_read": [],
   "files_written": [],
