@@ -67,9 +67,9 @@
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#61</command-args>",
   "session_summary": null,
   "model_versions": [
+    "signature:Eq4CCkYICxgCKkDfZWiF...",
     "signature:ErACCkYICxgCKkA6n5zL...",
-    "claude-opus-4-5-20251101",
-    "signature:Eq4CCkYICxgCKkDfZWiF..."
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

@@ -880,23 +880,23 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "Write",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_pr_create",
-    "mcp__sbs-lsp__sbs_skill_status",
-    "Skill",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "TodoWrite",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "Read",
-    "mcp__sbs-lsp__sbs_issue_get",
     "Task",
-    "EnterPlanMode",
     "mcp__sbs-lsp__sbs_archive_state",
-    "AskUserQuestion"
+    "Read",
+    "Bash",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_issue_get",
+    "TodoWrite",
+    "Skill",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "Write",
+    "mcp__sbs-lsp__sbs_skill_status",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_pr_merge"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/agents/sbs-developer.md"
@@ -909,22 +909,22 @@
     "toolu_01HgyhjEWCAgguyEQSmZSAmM"
   ],
   "plan_files": [
-    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
-    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
+    "/Users/eric/.claude/plans/gentle-noodling-mccarthy.md",
+    "File created successfully at: /Users/eric/.claude/plans/gentle-noodling-mccarthy.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#48</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:Ev8CCkYICxgCKkCehsDo...",
-    "signature:EtkICkYICxgCKkBy3Nnj...",
-    "signature:ErwPCkYICxgCKkCWAD0c...",
     "signature:ErYFCkYICxgCKkDqWJBT...",
     "signature:Et8GCkYICxgCKkDnKIvH...",
-    "signature:EoMDCkYICxgCKkCxJJ9k...",
+    "signature:ErwPCkYICxgCKkCWAD0c...",
+    "signature:Ev8CCkYICxgCKkCehsDo...",
     "signature:EuACCkYICxgCKkDQ7uPv...",
-    "claude-opus-4-5-20251101"
+    "claude-opus-4-5-20251101",
+    "signature:EtkICkYICxgCKkBy3Nnj...",
+    "signature:EoMDCkYICxgCKkCxJJ9k..."
   ],
   "thinking_blocks": [
     {

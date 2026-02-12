@@ -175,12 +175,12 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__zulip_fetch_thread",
-    "mcp__sbs-lsp__sbs_issue_log",
+    "Task",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_issue_close",
     "mcp__sbs-lsp__sbs_issue_get",
-    "Task"
+    "mcp__sbs-lsp__sbs_issue_log",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "mcp__sbs-lsp__zulip_fetch_thread"
   ],
   "files_read": [],
   "files_written": [],
@@ -194,21 +194,21 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EsgICkYICxgCKkCHeeyO...",
-    "signature:EsoCCkYICxgCKkD21K+a...",
-    "signature:EvAFCkYICxgCKkCpqOHL...",
-    "signature:EoQCCkYICxgCKkAZMGZM...",
+    "signature:Et8BCkYICxgCKkBkmLP2...",
     "signature:EvwBCkYICxgCKkBG4fKb...",
+    "signature:EoQCCkYICxgCKkAZMGZM...",
+    "signature:ErcCCkYICxgCKkCsAuvM...",
+    "signature:EvgFCkYICxgCKkA/lx7Q...",
     "signature:EqUDCkYICxgCKkDKu2Xs...",
     "signature:EocCCkYICxgCKkDMUH8L...",
-    "signature:ErcCCkYICxgCKkCsAuvM...",
+    "signature:EvAFCkYICxgCKkCpqOHL...",
     "signature:EugLCkYICxgCKkDmMkDg...",
-    "signature:Et8BCkYICxgCKkBkmLP2...",
-    "signature:EtcfCkYICxgCKkCsr9kj...",
-    "signature:EuQCCkYICxgCKkDdDXNZ...",
+    "signature:EsgICkYICxgCKkCHeeyO...",
     "claude-opus-4-5-20251101",
+    "signature:EuQCCkYICxgCKkDdDXNZ...",
+    "signature:EsoCCkYICxgCKkD21K+a...",
     "signature:EvUECkYICxgCKkDR6qxO...",
-    "signature:EvgFCkYICxgCKkA/lx7Q..."
+    "signature:EtcfCkYICxgCKkCsr9kj..."
   ],
   "thinking_blocks": [
     {

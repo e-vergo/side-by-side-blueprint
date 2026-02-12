@@ -48,8 +48,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -62,10 +62,10 @@
   "session_summary": null,
   "model_versions": [
     "signature:Es0ECkYICxgCKkCHjeCB...",
-    "signature:EpkCCkYICxgCKkDYZkLW...",
-    "signature:Ep4WCkYICxgCKkAdbtUA...",
+    "signature:EuIKCkYICxgCKkB1ZuNk...",
     "claude-sonnet-4-5-20250929",
-    "signature:EuIKCkYICxgCKkB1ZuNk..."
+    "signature:Ep4WCkYICxgCKkAdbtUA...",
+    "signature:EpkCCkYICxgCKkDYZkLW..."
   ],
   "thinking_blocks": [
     {

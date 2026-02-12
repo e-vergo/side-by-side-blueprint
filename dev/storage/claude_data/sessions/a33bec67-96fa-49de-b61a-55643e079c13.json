@@ -112,8 +112,8 @@
   "tools_used": [
     "Bash",
     "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_search_entries",
-    "Glob"
+    "Glob",
+    "mcp__sbs-lsp__sbs_search_entries"
   ],
   "files_read": [],
   "files_written": [],
@@ -128,11 +128,11 @@
     "signature:EqMDCkYICxgCKkB+WcZ5...",
     "signature:EqMECkYICxgCKkDl/aeT...",
     "signature:EuICCkYICxgCKkAys0Sg...",
-    "signature:EvMBCkYICxgCKkDipoQd...",
     "signature:Eq4ICkYICxgCKkAkJb2i...",
+    "signature:EoADCkYICxgCKkBqsw8a...",
+    "signature:EvMBCkYICxgCKkDipoQd...",
     "claude-opus-4-5-20251101",
-    "signature:EqICCkYICxgCKkDQCUPX...",
-    "signature:EoADCkYICxgCKkBqsw8a..."
+    "signature:EqICCkYICxgCKkDQCUPX..."
   ],
   "thinking_blocks": [
     {

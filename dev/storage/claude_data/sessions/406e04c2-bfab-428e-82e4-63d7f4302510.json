@@ -324,8 +324,8 @@
     }
   ],
   "tools_used": [
-    "WebSearch",
     "Bash",
+    "WebSearch",
     "mcp__sbs-lsp__sbs_search_entries",
     "mcp__sbs-lsp__sbs_issue_get"
   ],
@@ -339,19 +339,19 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqwCCkYICxgCKkD5lVJC...",
     "signature:EowJCkYICxgCKkDkFPl9...",
-    "signature:Er0DCkYICxgCKkCwDn/g...",
-    "signature:ErcICkYICxgCKkDUaZOe...",
+    "signature:EqwCCkYICxgCKkD5lVJC...",
     "signature:ErUDCkYICxgCKkDRjyPC...",
-    "signature:EtMDCkYICxgCKkCziDrz...",
-    "signature:EokJCkYICxgCKkBghoMb...",
-    "signature:EsMDCkYICxgCKkD3erCo...",
     "claude-sonnet-4-5-20250929",
-    "signature:EqkECkYICxgCKkDJ4325...",
+    "signature:EokJCkYICxgCKkBghoMb...",
+    "signature:Et8DCkYICxgCKkB2jY4I...",
+    "signature:EsMDCkYICxgCKkD3erCo...",
+    "signature:EtMDCkYICxgCKkCziDrz...",
     "signature:ErMHCkYICxgCKkDx7CIp...",
-    "signature:Ev0ECkYICxgCKkCgYtJ/...",
-    "signature:Et8DCkYICxgCKkB2jY4I..."
+    "signature:Er0DCkYICxgCKkCwDn/g...",
+    "signature:EqkECkYICxgCKkDJ4325...",
+    "signature:ErcICkYICxgCKkDUaZOe...",
+    "signature:Ev0ECkYICxgCKkCgYtJ/..."
   ],
   "thinking_blocks": [
     {
