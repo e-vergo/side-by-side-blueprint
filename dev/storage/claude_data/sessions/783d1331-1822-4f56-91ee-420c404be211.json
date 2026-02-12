@@ -135,10 +135,10 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EqgSCkYICxgCKkDNYNBF...",
-    "signature:EtkHCkYICxgCKkAp/Irs...",
     "claude-opus-4-6",
-    "signature:Ep4CCkYICxgCKkDc9YbT..."
+    "signature:Ep4CCkYICxgCKkDc9YbT...",
+    "signature:EtkHCkYICxgCKkAp/Irs...",
+    "signature:EqgSCkYICxgCKkDNYNBF..."
   ],
   "thinking_blocks": [
     {

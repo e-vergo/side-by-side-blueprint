@@ -739,17 +739,17 @@
     }
   ],
   "tools_used": [
-    "Task",
-    "Read",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "TodoWrite",
-    "Bash",
     "mcp__sbs-lsp__sbs_issue_get",
+    "AskUserQuestion",
     "mcp__sbs-lsp__sbs_issue_summary",
+    "Grep",
+    "Bash",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_run_tests",
     "Glob",
-    "Grep"
+    "mcp__sbs-lsp__sbs_issue_close",
+    "Read",
+    "Task"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/upload.py",
@@ -758,8 +758,8 @@
   "files_written": [],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_019UVPmeRNh8yP1NkKvpmz9k",
     "toolu_015FX2uor5ag5DmPNrNsdkUT",
+    "toolu_019UVPmeRNh8yP1NkKvpmz9k",
     "toolu_01QTnq1giWxFrk21PS6seZJo",
     "toolu_018bUFgNmZmW62SM59wnzjGT"
   ],
@@ -769,26 +769,26 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EsQFCkYICxgCKkATZL+D...",
-    "signature:EowCCkYICxgCKkCdwjxM...",
-    "signature:ErcHCkYICxgCKkDItoBf...",
-    "signature:EokMCkYICxgCKkBFhjsg...",
-    "claude-opus-4-5-20251101",
-    "signature:EqIECkYICxgCKkCwsLP6...",
-    "signature:EtQCCkYICxgCKkCY3/G+...",
-    "signature:EvwBCkYICxgCKkC1MCN8...",
-    "signature:EoYGCkYICxgCKkDzBaZq...",
-    "signature:Es0LCkYICxgCKkCf2WgY...",
-    "signature:EskFCkYICxgCKkCxnUD8...",
-    "signature:EtoJCkYICxgCKkBKHnHI...",
-    "signature:EpUCCkYICxgCKkC9QzMv...",
     "signature:EucKCkYICxgCKkCrSG3u...",
     "signature:ErsCCkYICxgCKkBve4c9...",
-    "signature:EvYDCkYICxgCKkAau1Q+...",
     "signature:EpEOCkYICxgCKkDWmOUi...",
+    "signature:Es0LCkYICxgCKkCf2WgY...",
+    "signature:EpUCCkYICxgCKkC9QzMv...",
+    "signature:EtoJCkYICxgCKkBKHnHI...",
+    "signature:EtsBCkYICxgCKkACqyj9...",
+    "signature:EoYGCkYICxgCKkDzBaZq...",
+    "signature:EqIECkYICxgCKkCwsLP6...",
+    "signature:ErcHCkYICxgCKkDItoBf...",
+    "signature:EowCCkYICxgCKkCdwjxM...",
+    "signature:EsQFCkYICxgCKkATZL+D...",
+    "signature:EtQCCkYICxgCKkCY3/G+...",
+    "signature:EvYDCkYICxgCKkAau1Q+...",
+    "signature:EvwBCkYICxgCKkC1MCN8...",
+    "signature:EskFCkYICxgCKkCxnUD8...",
     "signature:EtQCCkYICxgCKkDub6S3...",
-    "signature:Eo8DCkYICxgCKkAg46G8...",
-    "signature:EtsBCkYICxgCKkACqyj9..."
+    "claude-opus-4-5-20251101",
+    "signature:EokMCkYICxgCKkBFhjsg...",
+    "signature:Eo8DCkYICxgCKkAg46G8..."
   ],
   "thinking_blocks": [
     {

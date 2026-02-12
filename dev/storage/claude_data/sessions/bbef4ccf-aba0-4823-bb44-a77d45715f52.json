@@ -889,23 +889,23 @@
     }
   ],
   "tools_used": [
-    "Task",
-    "Read",
+    "ExitPlanMode",
+    "mcp__sbs-lsp__sbs_issue_get",
     "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "mcp__sbs-lsp__sbs_run_tests",
-    "TodoWrite",
     "mcp__sbs-lsp__sbs_pr_create",
-    "EnterPlanMode",
+    "TodoWrite",
     "Skill",
     "Bash",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "Write",
-    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "Read",
+    "mcp__sbs-lsp__sbs_skill_start",
     "mcp__sbs-lsp__sbs_archive_state",
-    "ExitPlanMode",
-    "mcp__sbs-lsp__sbs_issue_create",
-    "mcp__sbs-lsp__sbs_skill_start"
+    "Task",
+    "Write",
+    "EnterPlanMode",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
@@ -918,9 +918,9 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01WrCCk7CiNyexd1twSMQEWw",
+    "toolu_01FkvGJzEachouFUQeam9gba",
     "toolu_01UdM5jDLRcapvsRqySHYDuc",
-    "toolu_01FkvGJzEachouFUQeam9gba"
+    "toolu_01WrCCk7CiNyexd1twSMQEWw"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/kind-strolling-kazoo.md",
@@ -931,9 +931,9 @@
   "first_prompt": "<command-message>task</command-message> <command-name>/task</command-name> <command-args>#51</command-args>",
   "session_summary": null,
   "model_versions": [
+    "signature:Eq8CCkYICxgCKkAOcUJe...",
     "signature:EukGCkYICxgCKkCmk+4F...",
     "signature:EvMCCkYICxgCKkDaCXk4...",
-    "signature:Eq8CCkYICxgCKkAOcUJe...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [

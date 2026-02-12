@@ -1242,19 +1242,19 @@
     }
   ],
   "tools_used": [
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "Task",
-    "Read",
-    "AskUserQuestion",
     "mcp__sbs-lsp__ask_oracle",
-    "TodoWrite",
-    "Write",
-    "Bash",
     "mcp__sbs-lsp__sbs_issue_get",
-    "Skill",
+    "AskUserQuestion",
     "mcp__sbs-lsp__sbs_improvement_capture",
-    "mcp__sbs-lsp__sbs_task",
+    "TodoWrite",
+    "Bash",
+    "Skill",
     "Glob",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "Read",
+    "Write",
+    "Task",
+    "mcp__sbs-lsp__sbs_task",
     "mcp__sbs-lsp__sbs_issue_create"
   ],
   "files_read": [
@@ -1266,11 +1266,11 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01PxC3DujMitXcurfamkEL6H",
-    "toolu_01HqJMbYwo8YXDFGBNXV3Mkq",
     "toolu_01FEH62HreYJHCrApjX8ijz7",
     "toolu_019xcLkUJPDPfSicBGy2bDc7",
-    "toolu_01JrA967pf7oagDrZg6NWJ7r"
+    "toolu_01HqJMbYwo8YXDFGBNXV3Mkq",
+    "toolu_01JrA967pf7oagDrZg6NWJ7r",
+    "toolu_01PxC3DujMitXcurfamkEL6H"
   ],
   "plan_files": [],
   "analysis_findings": {},
@@ -1278,20 +1278,20 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EuMTCkYICxgCKkAPmwqH...",
-    "signature:Ep4HCkYICxgCKkAgHKxg...",
-    "signature:ErY/CkYICxgCKkAl8MXk...",
-    "signature:EpMHCkYICxgCKkBCnRZA...",
-    "signature:EqEGCkYICxgCKkCLvhLA...",
-    "signature:EqMCCkYICxgCKkDhnL38...",
-    "signature:EvY2CkYICxgCKkABPHBv...",
+    "claude-opus-4-6",
     "signature:EpEGCkYICxgCKkBjenxM...",
-    "signature:EugWCkYICxgCKkDw8a1O...",
-    "signature:ErAmCkYICxgCKkDaPIn2...",
-    "signature:EuwFCkYICxgCKkAx8w3V...",
+    "signature:ErY/CkYICxgCKkAl8MXk...",
+    "signature:EqEGCkYICxgCKkCLvhLA...",
     "signature:EogECkYICxgCKkAll73n...",
+    "signature:EuwFCkYICxgCKkAx8w3V...",
+    "signature:EvY2CkYICxgCKkABPHBv...",
+    "signature:EpMHCkYICxgCKkBCnRZA...",
+    "signature:ErAmCkYICxgCKkDaPIn2...",
+    "signature:EuMTCkYICxgCKkAPmwqH...",
+    "signature:EugWCkYICxgCKkDw8a1O...",
     "signature:Eq5MCkYICxgCKkBZ1ogu...",
-    "claude-opus-4-6"
+    "signature:EqMCCkYICxgCKkDhnL38...",
+    "signature:Ep4HCkYICxgCKkAgHKxg..."
   ],
   "thinking_blocks": [
     {

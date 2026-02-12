@@ -187,10 +187,10 @@
   "first_prompt": "No prompt",
   "session_summary": null,
   "model_versions": [
-    "claude-opus-4-5-20251101",
-    "signature:EvQCCkYICxgCKkDMp90F...",
-    "signature:EqoCCkYICxgCKkCJ7+dQ...",
     "signature:EpUCCkYICxgCKkDtfdax...",
+    "signature:EqoCCkYICxgCKkCJ7+dQ...",
+    "signature:EvQCCkYICxgCKkDMp90F...",
+    "claude-opus-4-5-20251101",
     "signature:EpUCCkYICxgCKkAWsLz+..."
   ],
   "thinking_blocks": [
