@@ -93,8 +93,8 @@
   ],
   "tools_used": [
     "Bash",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -107,11 +107,11 @@
   "session_summary": null,
   "model_versions": [
     "signature:EtYBCkYICxgCKkDKV3XI...",
-    "signature:Ev8PCkYICxgCKkDiIgbK...",
+    "signature:Ev4BCkYICxgCKkDB0ZPQ...",
     "claude-opus-4-5-20251101",
-    "signature:EpAECkYICxgCKkDQTuTJ...",
     "signature:EqQJCkYICxgCKkAkB5/W...",
-    "signature:Ev4BCkYICxgCKkDB0ZPQ..."
+    "signature:Ev8PCkYICxgCKkDiIgbK...",
+    "signature:EpAECkYICxgCKkDQTuTJ..."
   ],
   "thinking_blocks": [
     {

@@ -85,8 +85,8 @@
     }
   ],
   "tools_used": [
-    "Read",
-    "mcp__sbs-lsp__sbs_issue_log"
+    "mcp__sbs-lsp__sbs_issue_log",
+    "Read"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-by-Side-Blueprint/dev/.refs/motivation2.txt"
@@ -100,13 +100,13 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EpACCkYICxgCKkBI0nB8...",
-    "signature:Et4CCkYICxgCKkBdsq+p...",
-    "claude-sonnet-4-5-20250929",
     "signature:EucHCkYICxgCKkDG6ReW...",
+    "signature:ErMHCkYICxgCKkBoVpLR...",
+    "signature:Et4CCkYICxgCKkBdsq+p...",
     "signature:EqICCkYICxgCKkB/zl0S...",
-    "signature:Ep0KCkYICxgCKkD8zUTs...",
-    "signature:ErMHCkYICxgCKkBoVpLR..."
+    "claude-sonnet-4-5-20250929",
+    "signature:EpACCkYICxgCKkBI0nB8...",
+    "signature:Ep0KCkYICxgCKkD8zUTs..."
   ],
   "thinking_blocks": [
     {

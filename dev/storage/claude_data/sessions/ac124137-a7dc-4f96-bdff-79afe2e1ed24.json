@@ -261,12 +261,12 @@
     }
   ],
   "tools_used": [
+    "Read",
     "AskUserQuestion",
     "Write",
-    "ExitPlanMode",
-    "mcp__claude-in-chrome__computer",
     "mcp__claude-in-chrome__navigate",
-    "Read",
+    "mcp__claude-in-chrome__computer",
+    "ExitPlanMode",
     "mcp__claude-in-chrome__tabs_context_mcp"
   ],
   "files_read": [
@@ -280,31 +280,31 @@
   "subagent_ids": [],
   "plan_files": [
     "/Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
-    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md",
-    "File created successfully at: /Users/eric/.claude/plans/parsed-conjuring-torvalds.md"
+    "File created successfully at: /Users/eric/.claude/plans/parsed-conjuring-torvalds.md",
+    "/Users/eric/.claude/plans/mighty-exploring-sunrise.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": "hey claude, I just approved a maroe plan, but the chat did not have access to chrome as it occured in the VSCode extentions. please read the plan at /Users/eric/.claude/plans/mighty-exploring-sunrise.\u2026",
   "session_summary": "Multi-agent orchestration with Chrome MCP visual testing",
   "model_versions": [
-    "signature:Eo8FCkYICxgCKkA5pP/A...",
-    "signature:EqQECkYICxgCKkCA95LZ...",
-    "signature:EtsCCkYICxgCKkAg7pmo...",
-    "signature:Ev8CCkYICxgCKkABA5SM...",
-    "signature:ErEECkYICxgCKkBVbEAq...",
-    "signature:EogPCkYICxgCKkAiA7Ag...",
-    "signature:EsgBCkYICxgCKkDux/yy...",
     "signature:EpQCCkYICxgCKkCwDlCA...",
-    "signature:Ep4ECkYICxgCKkC53HLp...",
-    "signature:EsADCkYICxgCKkCZoSyl...",
-    "signature:Eo0CCkYICxgCKkAnSbH2...",
+    "signature:EvkBCkYICxgCKkDPY9a4...",
     "claude-opus-4-5-20251101",
-    "signature:EoMCCkYICxgCKkAnSazC...",
-    "signature:EvgECkYICxgCKkDw2dSk...",
+    "signature:Ev8CCkYICxgCKkABA5SM...",
     "signature:EtgCCkYICxgCKkDo2v/4...",
+    "signature:EtsCCkYICxgCKkAg7pmo...",
+    "signature:EvgECkYICxgCKkDw2dSk...",
+    "signature:Eo8FCkYICxgCKkA5pP/A...",
+    "signature:EogPCkYICxgCKkAiA7Ag...",
+    "signature:EsADCkYICxgCKkCZoSyl...",
+    "signature:Ep4ECkYICxgCKkC53HLp...",
+    "signature:Eo0CCkYICxgCKkAnSbH2...",
     "signature:EswCCkYICxgCKkDK21xk...",
-    "signature:EvkBCkYICxgCKkDPY9a4..."
+    "signature:ErEECkYICxgCKkBVbEAq...",
+    "signature:EqQECkYICxgCKkCA95LZ...",
+    "signature:EoMCCkYICxgCKkAnSazC...",
+    "signature:EsgBCkYICxgCKkDux/yy..."
   ],
   "thinking_blocks": [
     {

@@ -198,8 +198,8 @@
   "tools_used": [
     "Bash",
     "Task",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "AskUserQuestion"
   ],
   "files_read": [],
   "files_written": [],
@@ -213,11 +213,11 @@
   "first_prompt": "hey claude, I had an idea about the dev architecture and wanted to get your opinion on it. Its a big change and I was hoping to do a tradeoff analysis.",
   "session_summary": null,
   "model_versions": [
-    "signature:EtQMCkYICxgCKkCKIEyi...",
-    "signature:EtgGCkYICxgCKkBIlmWQ...",
-    "signature:Eq8PCkYICxgCKkCtKL6+...",
     "signature:EsMCCkYICxgCKkAwtwTS...",
+    "signature:Eq8PCkYICxgCKkCtKL6+...",
+    "signature:EtgGCkYICxgCKkBIlmWQ...",
     "claude-opus-4-5-20251101",
+    "signature:EtQMCkYICxgCKkCKIEyi...",
     "signature:EscMCkYICxgCKkBSQw5P..."
   ],
   "thinking_blocks": [

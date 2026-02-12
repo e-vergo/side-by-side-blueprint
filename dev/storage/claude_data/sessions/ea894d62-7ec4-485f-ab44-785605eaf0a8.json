@@ -209,8 +209,8 @@
     "Task",
     "AskUserQuestion",
     "mcp__sbs-lsp__sbs_issue_get",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_archive_state"
+    "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_skill_start"
   ],
   "files_read": [],
   "files_written": [],
@@ -225,11 +225,11 @@
   "session_summary": null,
   "model_versions": [
     "signature:Es4VCkYICxgCKkA/9P6m...",
-    "signature:EswXCkYICxgCKkAK0g3X...",
+    "signature:EscFCkYICxgCKkAB7j0E...",
     "signature:EroDCkYICxgCKkAU53Xq...",
-    "signature:Eo0GCkYICxgCKkBFfUzj...",
     "claude-opus-4-5-20251101",
-    "signature:EscFCkYICxgCKkAB7j0E..."
+    "signature:EswXCkYICxgCKkAK0g3X...",
+    "signature:Eo0GCkYICxgCKkBFfUzj..."
   ],
   "thinking_blocks": [
     {

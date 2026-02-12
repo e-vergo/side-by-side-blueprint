@@ -387,16 +387,16 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_log",
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_issue_list",
-    "Glob",
-    "WebFetch",
-    "Task\" subagent_type=\"Explore",
-    "WebSearch",
+    "Edit",
     "Read",
-    "Edit"
+    "AskUserQuestion",
+    "WebSearch",
+    "WebFetch",
+    "Bash",
+    "Task\" subagent_type=\"Explore",
+    "mcp__sbs-lsp__sbs_issue_list",
+    "mcp__sbs-lsp__sbs_issue_log",
+    "Glob"
   ],
   "files_read": [
     "/Users/eric/GitHub/Side-By-Side-Blueprint/.mcp.json"
@@ -412,9 +412,9 @@
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
+    "signature:EpMECkYICxgCKkAM6OOD...",
     "claude-opus-4-6",
-    "signature:EtcFCkYICxgCKkAUyLBc...",
-    "signature:EpMECkYICxgCKkAM6OOD..."
+    "signature:EtcFCkYICxgCKkAUyLBc..."
   ],
   "thinking_blocks": [
     {
