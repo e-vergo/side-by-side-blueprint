@@ -734,37 +734,37 @@
     }
   ],
   "tools_used": [
-    "AskUserQuestion",
-    "ExitPlanMode",
     "mcp__sbs-lsp__sbs_archive_state",
-    "Task",
-    "mcp__sbs-lsp__sbs_skill_start",
-    "EnterPlanMode",
-    "mcp__sbs-lsp__ask_oracle",
-    "Bash",
-    "Glob",
     "Read",
-    "mcp__sbs-lsp__sbs_issue_get",
+    "ExitPlanMode",
+    "Task",
+    "mcp__sbs-lsp__ask_oracle",
+    "AskUserQuestion",
     "Write",
-    "mcp__sbs-lsp__sbs_issue_summary"
+    "Bash",
+    "mcp__sbs-lsp__sbs_issue_summary",
+    "EnterPlanMode",
+    "Glob",
+    "mcp__sbs-lsp__sbs_skill_start",
+    "mcp__sbs-lsp__sbs_issue_get"
   ],
   "files_read": [
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/gates.py",
     "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/sbs_tools.py",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/server.py",
-    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/settings.json"
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/settings.json",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/dev/scripts/sbs/archive/gates.py",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/.claude/skills/task/SKILL.md",
+    "/Users/eric/GitHub/Side-By-Side-Blueprint/forks/sbs-lsp-mcp/src/sbs_lsp_mcp/server.py"
   ],
   "files_written": [
     "/Users/eric/.claude/plans/sunny-giggling-melody.md"
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01Q6KYCmJkSm6Uf2Y3h2961W",
     "toolu_01WrfN2Y3FiFnB1cyc1YAaTv",
-    "toolu_01JxT9Sr7Zkzdz5t83S5vt4X",
     "toolu_01YZi22fuTCZXvMVfKkHcEVP",
-    "toolu_01PvmTQVyFTE99c94jBYaaip"
+    "toolu_01PvmTQVyFTE99c94jBYaaip",
+    "toolu_01Q6KYCmJkSm6Uf2Y3h2961W",
+    "toolu_01JxT9Sr7Zkzdz5t83S5vt4X"
   ],
   "plan_files": [
     "/Users/eric/.claude/plans/sunny-giggling-melody.md",
@@ -776,29 +776,29 @@
   "session_summary": null,
   "model_versions": [
     "signature:Eq0FCkYICxgCKkDItv2X...",
-    "claude-sonnet-4-5-20250929",
     "signature:Ev4cCkYICxgCKkApDT55...",
-    "signature:EsQDCkYICxgCKkDKlfvS...",
-    "signature:EswFCkYICxgCKkC8u4AJ...",
-    "signature:Esw7CkYICxgCKkACzxf1...",
-    "signature:EtUDCkYICxgCKkCpO1yh...",
-    "signature:EqgHCkYICxgCKkACb5i9...",
-    "signature:Eo0GCkYICxgCKkAKJN+c...",
-    "signature:EqULCkYICxgCKkAzwZRH...",
-    "signature:Er4NCkYICxgCKkBr9DUX...",
-    "signature:Ep8LCkYICxgCKkAKGfz9...",
-    "signature:EtwMCkYICxgCKkAHfMUd...",
     "signature:EpcCCkYICxgCKkDG7KUF...",
     "signature:EuQECkYICxgCKkAI4yYX...",
-    "signature:EpICCkYICxgCKkBhBnvD...",
-    "signature:EqUHCkYICxgCKkCVYEv1...",
-    "signature:EpwCCkYICxgCKkCU9C92...",
-    "signature:EvoFCkYICxgCKkAx1KRU...",
-    "signature:EtQGCkYICxgCKkDPEu4u...",
     "signature:EpsGCkYICxgCKkBX/QWi...",
+    "signature:EtQGCkYICxgCKkDPEu4u...",
+    "claude-sonnet-4-5-20250929",
+    "signature:EsQDCkYICxgCKkDKlfvS...",
+    "signature:Er4NCkYICxgCKkBr9DUX...",
+    "signature:Esw7CkYICxgCKkACzxf1...",
     "signature:EsQHCkYICxgCKkDgPbS3...",
+    "signature:EpwCCkYICxgCKkCU9C92...",
+    "signature:EswFCkYICxgCKkC8u4AJ...",
+    "signature:EpICCkYICxgCKkBhBnvD...",
+    "signature:EvoFCkYICxgCKkAx1KRU...",
+    "signature:EqULCkYICxgCKkAzwZRH...",
+    "signature:EqgHCkYICxgCKkACb5i9...",
+    "signature:EtUDCkYICxgCKkCpO1yh...",
+    "signature:EqUHCkYICxgCKkCVYEv1...",
     "signature:Ev0JCkYICxgCKkCH0tLi...",
-    "signature:ErwKCkYICxgCKkC9koZA..."
+    "signature:EtwMCkYICxgCKkAHfMUd...",
+    "signature:ErwKCkYICxgCKkC9koZA...",
+    "signature:Ep8LCkYICxgCKkAKGfz9...",
+    "signature:Eo0GCkYICxgCKkAKJN+c..."
   ],
   "thinking_blocks": [
     {

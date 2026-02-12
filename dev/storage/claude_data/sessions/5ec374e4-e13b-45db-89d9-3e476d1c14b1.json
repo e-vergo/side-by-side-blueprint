@@ -53,8 +53,8 @@
   "first_prompt": "No prompt",
   "session_summary": "Launch GCR Blueprint Locally with Scripts",
   "model_versions": [
-    "signature:EpwECkYICxgCKkC3JfO7...",
     "signature:EsACCkYICxgCKkBGzcw7...",
+    "signature:EpwECkYICxgCKkC3JfO7...",
     "signature:EuYBCkYICxgCKkAg872v...",
     "claude-opus-4-5-20251101"
   ],

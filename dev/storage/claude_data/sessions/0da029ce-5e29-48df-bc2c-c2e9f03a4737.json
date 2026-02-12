@@ -55,9 +55,9 @@
     }
   ],
   "tools_used": [
-    "Bash",
     "mcp__sbs-lsp__sbs_issue_create",
-    "Skill"
+    "Skill",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -69,8 +69,8 @@
   "first_prompt": "\ud83d\udd25",
   "session_summary": null,
   "model_versions": [
-    "signature:EpECCkYICxgCKkA9cCQV...",
     "signature:Es0ECkYICxgCKkCXe6f+...",
+    "signature:EpECCkYICxgCKkA9cCQV...",
     "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [

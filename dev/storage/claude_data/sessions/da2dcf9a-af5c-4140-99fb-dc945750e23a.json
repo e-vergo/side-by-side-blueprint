@@ -73,8 +73,8 @@
     }
   ],
   "tools_used": [
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_create"
+    "mcp__sbs-lsp__sbs_issue_create",
+    "Bash"
   ],
   "files_read": [],
   "files_written": [],
@@ -86,13 +86,13 @@
   "first_prompt": "<command-message>log</command-message> <command-name>/log</command-name> <command-args>bug sidebar text layout is too tight, reduce text size slightly and increase vertical spacing</command-args>",
   "session_summary": null,
   "model_versions": [
-    "signature:Eq0CCkYICxgCKkAS3Rle...",
-    "signature:EpkHCkYICxgCKkDsfAFn...",
-    "claude-opus-4-5-20251101",
+    "signature:Ev0BCkYICxgCKkA3Y5kS...",
     "signature:EukBCkYICxgCKkBQJb/z...",
     "signature:EtABCkYICxgCKkCqcgSF...",
-    "signature:Ev0BCkYICxgCKkA3Y5kS...",
-    "signature:EooMCkYICxgCKkAiwroc..."
+    "signature:Eq0CCkYICxgCKkAS3Rle...",
+    "signature:EpkHCkYICxgCKkDsfAFn...",
+    "signature:EooMCkYICxgCKkAiwroc...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

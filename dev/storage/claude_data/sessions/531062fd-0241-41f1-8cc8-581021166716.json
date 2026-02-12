@@ -821,23 +821,23 @@
     }
   ],
   "tools_used": [
-    "ExitPlanMode",
-    "Skill",
     "mcp__sbs-lsp__sbs_archive_state",
-    "Task",
-    "mcp__sbs-lsp__sbs_pr_create",
     "mcp__sbs-lsp__sbs_run_tests",
+    "mcp__sbs-lsp__sbs_skill_handoff",
+    "mcp__sbs-lsp__sbs_skill_transition",
+    "ExitPlanMode",
+    "Task",
+    "TodoWrite",
+    "mcp__sbs-lsp__sbs_issue_close",
+    "Write",
+    "Bash",
+    "mcp__sbs-lsp__sbs_pr_create",
+    "Skill",
+    "mcp__sbs-lsp__sbs_pr_merge",
+    "EnterPlanMode",
     "Grep",
     "mcp__sbs-lsp__sbs_skill_start",
-    "mcp__sbs-lsp__sbs_skill_transition",
-    "TodoWrite",
-    "mcp__sbs-lsp__sbs_pr_merge",
-    "mcp__sbs-lsp__sbs_issue_close",
-    "EnterPlanMode",
-    "Bash",
-    "mcp__sbs-lsp__sbs_issue_get",
-    "Write",
-    "mcp__sbs-lsp__sbs_skill_handoff"
+    "mcp__sbs-lsp__sbs_issue_get"
   ],
   "files_read": [],
   "files_written": [
@@ -845,25 +845,25 @@
   ],
   "files_edited": [],
   "subagent_ids": [
-    "toolu_01Lj42hghp1yxVrmVv6s4vYM",
+    "toolu_01MCcHzpQrAFVZaUJ9CUF53u",
     "toolu_012xTF29owYHMCzZ2qV671EA",
-    "toolu_01MCcHzpQrAFVZaUJ9CUF53u"
+    "toolu_01Lj42hghp1yxVrmVv6s4vYM"
   ],
   "plan_files": [
-    "File created successfully at: /Users/eric/.claude/plans/synthetic-spinning-coral.md",
-    "/Users/eric/.claude/plans/synthetic-spinning-coral.md"
+    "/Users/eric/.claude/plans/synthetic-spinning-coral.md",
+    "File created successfully at: /Users/eric/.claude/plans/synthetic-spinning-coral.md"
   ],
   "analysis_findings": {},
   "slug": null,
   "first_prompt": null,
   "session_summary": null,
   "model_versions": [
-    "signature:EsgCCkYICxgCKkAx+Wb+...",
-    "signature:Ev0DCkYICxgCKkB31OkY...",
-    "claude-opus-4-5-20251101",
     "signature:EqECCkYICxgCKkCAyCEX...",
+    "signature:EuwCCkYICxgCKkBsN92F...",
     "signature:EowCCkYICxgCKkBDDb5O...",
-    "signature:EuwCCkYICxgCKkBsN92F..."
+    "signature:Ev0DCkYICxgCKkB31OkY...",
+    "signature:EsgCCkYICxgCKkAx+Wb+...",
+    "claude-opus-4-5-20251101"
   ],
   "thinking_blocks": [
     {

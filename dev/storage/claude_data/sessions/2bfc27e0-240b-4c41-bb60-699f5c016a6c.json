@@ -84,8 +84,8 @@
   ],
   "tools_used": [
     "Read",
-    "WebSearch",
     "Task",
+    "WebSearch",
     "Write"
   ],
   "files_read": [
@@ -104,11 +104,11 @@
   "first_prompt": "hey claude,  I have a bit of a strange request for you: please do a websearch for 'moltbot' and 'moltbook'",
   "session_summary": null,
   "model_versions": [
-    "signature:EuwICkYICxgCKkD3hMVU...",
-    "claude-opus-4-5-20251101",
+    "signature:EoYCCkYICxgCKkBlZMz5...",
     "signature:Er8VCkYICxgCKkD+mDwy...",
     "signature:EoYPCkYICxgCKkCrBzFt...",
-    "signature:EoYCCkYICxgCKkBlZMz5..."
+    "claude-opus-4-5-20251101",
+    "signature:EuwICkYICxgCKkD3hMVU..."
   ],
   "thinking_blocks": [
     {

@@ -110,10 +110,10 @@
     }
   ],
   "tools_used": [
-    "Glob",
     "mcp__sbs-lsp__sbs_archive_state",
+    "mcp__sbs-lsp__sbs_search_entries",
     "Bash",
-    "mcp__sbs-lsp__sbs_search_entries"
+    "Glob"
   ],
   "files_read": [],
   "files_written": [],
@@ -126,13 +126,13 @@
   "session_summary": null,
   "model_versions": [
     "signature:EqMECkYICxgCKkDl/aeT...",
-    "signature:EoADCkYICxgCKkBqsw8a...",
-    "signature:Eq4ICkYICxgCKkAkJb2i...",
     "claude-opus-4-5-20251101",
-    "signature:EvMBCkYICxgCKkDipoQd...",
-    "signature:EqMDCkYICxgCKkB+WcZ5...",
     "signature:EuICCkYICxgCKkAys0Sg...",
-    "signature:EqICCkYICxgCKkDQCUPX..."
+    "signature:Eq4ICkYICxgCKkAkJb2i...",
+    "signature:EqICCkYICxgCKkDQCUPX...",
+    "signature:EoADCkYICxgCKkBqsw8a...",
+    "signature:EqMDCkYICxgCKkB+WcZ5...",
+    "signature:EvMBCkYICxgCKkDipoQd..."
   ],
   "thinking_blocks": [
     {

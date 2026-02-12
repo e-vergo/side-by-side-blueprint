@@ -82,10 +82,10 @@
     }
   ],
   "tools_used": [
-    "AskUserQuestion",
-    "mcp__sbs-lsp__sbs_skill_start",
     "mcp__sbs-lsp__sbs_archive_state",
-    "mcp__sbs-lsp__sbs_skill_status"
+    "mcp__sbs-lsp__sbs_skill_status",
+    "AskUserQuestion",
+    "mcp__sbs-lsp__sbs_skill_start"
   ],
   "files_read": [],
   "files_written": [],
