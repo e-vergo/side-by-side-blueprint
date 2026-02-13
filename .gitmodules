@@ -31,3 +31,10 @@
 [submodule "showcase/ReductiveGroups"]
 	path = showcase/ReductiveGroups
 	url = https://github.com/e-vergo/ReductiveGroups.git
+[submodule "showcase/ChebyshevCircles"]
+	path = showcase/ChebyshevCircles
+	url = https://github.com/e-vergo/ChebyshevCircles.git
+[submodule "showcase/OSforGFF"]
+	path = showcase/OSforGFF
+	url = https://github.com/e-vergo/OSforGFF.git
+	branch = SBS
