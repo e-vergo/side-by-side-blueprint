@@ -1,0 +1,6 @@
+.lake/
+lake-packages/
+.DS_Store
+.vscode/
+*.olean
+docs/

@@ -1,0 +1,586 @@
+\documentclass[11pt]{article}
+
+\input{../../.lake/build/dressed/library/Quine.tex}
+
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+
+\theoremstyle{definition}
+
+\title{A Self-Verifying Quine in Lean~4\\[0.5em]
+\large Formal Proof of Quineness via Elaboration-Time Computation\\
+and the Side-by-Side Blueprint}
+\author{Eric Vergo \and Claude (Anthropic)}
+\date{2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a Lean~4 program that is simultaneously a quine (it outputs its own
+source code), a formal proof that the output equals the source (verified by the
+Lean kernel), and a self-referential artifact whose correctness proof is part of
+the quined output. The proof exploits Lean's elaboration-time computation to
+reduce string equality to definitional equality, allowing the kernel to verify
+the quine property via \texttt{rfl}. We further demonstrate that the program's
+blueprint annotations---the metadata that generates a Side-by-Side Blueprint
+dependency graph and this very paper---are themselves part of the quined source,
+closing a loop between formal verification, documentation, and self-reference.
+The compiled binary can also verify itself at runtime via a
+\texttt{-{}-verify} flag, closing the empirical loop alongside the
+compile-time proof.
+The entire construction lives in a single Lean file with no axioms, no
+\texttt{sorry}, and no \texttt{native\_decide}.
+\end{abstract}
+
+\section{Introduction}
+
+A \emph{quine} is a program that, when executed, produces a copy of its own
+source code as output. The existence of quines is guaranteed by Kleene's
+recursion theorem \cite{kleene1938}, which shows that any sufficiently
+expressive formal system admits self-referential constructions.
+
+The classical quine construction decomposes a program into two parts:
+\begin{itemize}
+\item A \emph{prefix} containing the reconstruction logic.
+\item A \emph{data string} $d$ encoding the suffix of the source.
+\end{itemize}
+The program reconstructs its source as
+$\mathrm{prefix} \mathbin\Vert \mathrm{quote}(d) \mathbin\Vert d$, where
+$\mathrm{quote}$ adds the syntactic delimiters and escaping needed to embed $d$
+as a literal within the source.
+
+Most quines are verified empirically: one runs the program and checks that the
+output matches the source. We ask a stronger question: \emph{can the program
+itself contain a machine-checked proof that its output equals its source?}
+
+In Lean~4, the answer is yes. We construct a single file that is:
+\begin{enumerate}
+\item A \textbf{quine}: compiling and running it produces an exact copy of the source.
+\item A \textbf{formal proof}: the Lean kernel verifies that the quine formula
+      equals the source content at type-checking time.
+\item \textbf{Self-referential}: the proof text is part of the quined output,
+      so the program proves a property about an artifact that includes the proof
+      itself.
+\item \textbf{Runtime-verifiable}: the compiled binary can check itself via
+      \texttt{-{}-verify}, confirming the quine property operationally.
+\end{enumerate}
+
+\subsection{Contribution}
+
+We make the following contributions:
+\begin{itemize}
+\item A Lean~4 quine with kernel-verified correctness, using only \texttt{rfl}
+      (definitional equality). No axioms, no \texttt{sorry}, no
+      \texttt{native\_decide}.
+\item Three custom elaborators (\texttt{include\_str!}, \texttt{quine\_formula!},
+      \texttt{file\_contains!}) that perform computation at elaboration time,
+      producing string literals that the kernel can compare.
+\item A demonstration that the program's Side-by-Side Blueprint annotations
+      are part of the quined output, closing a self-referential loop between
+      code, proof, and documentation.
+\end{itemize}
+
+\section{Background}
+
+\subsection{Kleene's Recursion Theorem}
+
+The key insight is the \emph{Kleene trick}: given any total computable
+function $f$, there exists a program $e$ such that the output of $e$ equals
+$f$ applied to $e$'s own source code. For a quine, $f$ is the identity
+function: the program outputs its source unchanged.
+
+The standard construction works as follows. Let $S$ denote the source code,
+decomposed as $S = P \cdot Q$ where $P$ is the prefix and $Q$ is the suffix.
+Define a data string $d$ whose value, when unescaped, equals $Q$. Then:
+\[
+  S = P \cdot \mathrm{quote}(d) \cdot d
+\]
+where $\mathrm{quote}(d)$ wraps $d$ in delimiters and escape characters so that
+$\mathrm{quote}(d)$ is the source-level representation of the string $d$.
+
+\subsection{Lean's Elaboration Pipeline}
+
+Lean~4 processes source files through an elaboration pipeline that resolves
+syntax, type-checks terms, and reduces definitions. Critically, Lean supports
+\emph{custom elaborators}: user-defined macros that execute arbitrary \texttt{IO}
+actions during elaboration and return typed terms.
+
+This means we can read files, compute string transformations, and inject the
+results as compile-time constants---all before the kernel sees the term. The
+kernel then compares these constants using definitional equality, which for
+string literals reduces to syntactic identity.
+
+\subsection{Side-by-Side Blueprint}
+
+The Side-by-Side Blueprint (SBS) is a toolchain for Lean~4 that generates
+interactive documentation from annotated source code. The \texttt{@[blueprint]}
+attribute marks declarations with metadata (title, statement, proof sketch,
+dependency edges), and the toolchain extracts this into a dependency graph,
+per-declaration HTML pages, and optionally a paper.
+
+A key property of SBS is that the annotations live \emph{in the source code
+itself}. They are Lean attributes processed at compile time. This means that
+for our quine, the blueprint annotations are part of the quined output. The
+documentation that describes the quine is itself described by the quine.
+
+\section{Construction}
+
+The entire construction lives in a single file, \texttt{Quine.lean}. We present
+each component with its Lean source code. The dressed declarations below include
+interactive syntax highlighting and type information from the Lean compiler.
+
+\subsection{Custom Elaborators}
+
+Three elaborators perform computation at elaboration time. These are not
+blueprint-annotated (they are infrastructure, not mathematical content), so
+we show them as plain listings.
+
+\paragraph{\texttt{include\_str!}} Reads a file at elaboration time and returns
+its content as a string literal:
+\begin{verbatim}
+open Lean Elab Term in
+elab "include_str!" path:str : term => do
+  let content <- IO.FS.readFile path.getString
+  return mkStrLit content
+\end{verbatim}
+After elaboration, \texttt{include\_str! "Quine.lean"} is indistinguishable
+from a string literal in the kernel's view.
+
+\paragraph{\texttt{quine\_formula!}} Computes the quine output from the data
+string $d$ alone:
+\begin{verbatim}
+open Lean Elab Term Meta in
+elab "quine_formula!" : term => do
+  let fileContent <- IO.FS.readFile "Quine.lean"
+  let marker := "def d := \""
+  let some idx := findSubstr fileContent marker
+    | throwError "marker not found"
+  let pfx := (fileContent.take
+    (idx + marker.length - 1)).toString
+  let defn <- getConstInfoDefn `Quine.d
+  let dVal <- whnf defn.value
+  let .lit (.strVal dStr) := dVal
+    | throwError "d is not a string literal"
+  return mkStrLit (pfx ++ dStr.quote ++ dStr)
+\end{verbatim}
+This elaborator extracts the prefix from the source, retrieves \texttt{d}'s
+value from the environment, computes \texttt{prefix ++ d.quote ++ d}, and
+returns the result as a string literal.
+
+\paragraph{\texttt{file\_contains!}} Checks whether a file contains a given
+substring at elaboration time:
+\begin{verbatim}
+open Lean Elab Term in
+elab "file_contains!" path:str ", " sub:str
+    : term => do
+  let content <- IO.FS.readFile path.getString
+  let needle := sub.getString
+  if (content.splitOn needle).length >= 2 then
+    return mkConst ``Bool.true []
+  else
+    return mkConst ``Bool.false []
+\end{verbatim}
+
+\subsection{Substring Helper}
+
+A utility function used by both the elaborators and the runtime reconstruction:
+
+\inputleannode{find_substr}
+
+\subsection{The Data String}
+
+The data string $d$ encodes the suffix of the source file---everything after
+\texttt{def d := "}\ldots\texttt{"}. In the actual source, $d$ is a
+string literal of approximately 4{,}000 escaped characters. It is the Kleene
+payload: the program's representation of its own tail.
+
+\inputleannode{quine_data}
+
+\subsection{The Quine Executable}
+
+The main function serves dual roles. When invoked without arguments, it
+reconstructs the source without reading any files at runtime---the call to
+\texttt{include\_str!} is resolved at compile time, so \texttt{file} is simply
+a string constant baked into the binary. When invoked with \texttt{-{}-verify},
+it runs the verification harness (see Section~5) and reports whether the
+quine output matches the source.
+
+\inputleannode{quine_main}
+
+In default mode, the output is
+$\mathrm{prefix} \mathbin\Vert \mathrm{quote}(d) \mathbin\Vert d$,
+which equals the original source. The function signature
+\texttt{(args : List String) : IO UInt32} allows it to accept command-line
+arguments and return an exit code.
+
+\subsection{Bootstrapping}
+
+The data string $d$ must be computed before the file can compile, since the
+suffix---which $d$ encodes---includes the text after $d$'s definition. This is
+resolved by a bootstrapping script that:
+\begin{enumerate}
+\item Writes the file with a placeholder for $d$.
+\item Extracts the suffix (everything after the placeholder's closing quote).
+\item Lean-escapes the suffix.
+\item Rewrites the file with the escaped suffix as $d$'s value.
+\end{enumerate}
+The result is a fixed point: the suffix that $d$ encodes is exactly the suffix
+that follows $d$ in the file.
+
+\section{Proofs}
+
+\subsection{Quine Correctness}
+
+The central theorem states that the quine formula equals the source:
+
+\inputleannode{quine_correct}
+
+Both sides are elaborated to string literals before the kernel sees them.
+\texttt{quine\_formula!} computes the quine reconstruction from $d$;
+\texttt{include\_str!} reads the actual file. Since the bootstrapping
+establishes the fixed-point property, both literals are identical, and the
+kernel accepts \texttt{rfl}.
+
+This is a genuine kernel-level proof. The elaborators perform the computation,
+but the kernel independently verifies that the two terms are definitionally
+equal. No axioms are invoked.
+
+\subsection{Why Not \texttt{decide}?}
+
+One might expect to prove string equality using \texttt{decide}, which asks the
+kernel to evaluate a decidable proposition. For our quine, this fails for two
+reasons:
+\begin{enumerate}
+\item \textbf{Kernel limitations on \texttt{partial} functions.} Lean's
+      \texttt{String.splitOn} is marked \texttt{partial}, making it opaque to
+      the kernel. Any proof strategy that requires the kernel to reduce
+      \texttt{splitOn} will fail.
+\item \textbf{Stack overflow on large terms.} Converting a ${\sim}7{,}000$-character
+      string to \texttt{List Char} and recursing over it exhausts the process
+      stack, even with generous recursion limits.
+\end{enumerate}
+
+The elaboration-time approach sidesteps both issues: compiled code (not the
+kernel) performs the string operations, and the kernel only sees the final
+string literals.
+
+\subsection{Self-Reference}
+
+The quine output contains the text of its own correctness theorem:
+
+\inputleannode{self_ref}
+
+And the quine output contains its own blueprint annotations:
+
+\inputleannode{annotations_ref}
+
+Both proofs use the same trust model as \texttt{include\_str!}: the elaborator
+performs the substring check using compiled code, returns \texttt{Bool.true}, and
+the kernel verifies \texttt{true = true} via \texttt{rfl}.
+
+\subsection{Post-Elaboration Verification}
+
+As a defense-in-depth measure, an \texttt{initialize} block runs after all
+declarations are elaborated and performs the full quine reconstruction check
+at load time:
+\begin{verbatim}
+initialize do
+  let fileContent <- IO.FS.readFile "Quine.lean"
+  let marker := "def d := \""
+  let pfx := (fileContent.take
+    ((findSubstr fileContent marker).get!
+      + marker.length - 1)).toString
+  let reconstructed := pfx ++ d.quote ++ d
+  unless reconstructed == fileContent do
+    throw <| IO.userError
+      "Post-elaboration quine verification failed"
+\end{verbatim}
+
+This catches any scenario where the file was modified after bootstrapping
+but before the proofs were checked---a consistency safeguard.
+
+\section{Runtime Verification}
+
+Beyond compile-time proofs, the quine can verify itself empirically at runtime.
+The compiled binary executes, captures its own output, and checks that it matches
+the source file.
+
+\subsection{The Verification Harness}
+
+\inputleannode{verify_quine}
+
+The \texttt{verifyQuine} function runs the compiled quine binary via
+\texttt{IO.Process.output} and compares the captured standard output against
+the source file read from disk. This closes the empirical loop: the kernel
+proves the quine property symbolically, and the runtime check confirms it
+operationally.
+
+\subsection{Verification Self-Reference}
+
+The verification harness is itself part of the quined source, closing another
+layer of self-reference: the code that checks the quine is included in the
+quine's output.
+
+\inputleannode{verify_self_ref}
+
+\section{The SBS Loop}
+
+The Side-by-Side Blueprint annotations in this file serve a dual purpose.
+Pragmatically, they generate the dependency graph and documentation pages.
+Logically, they are part of the quined output, creating a loop:
+
+\begin{enumerate}
+\item The \textbf{source code} contains \texttt{@[blueprint]} attributes.
+\item The \textbf{quine output} reproduces the source, including those attributes.
+\item The \textbf{blueprint toolchain} reads those attributes and generates
+      a dependency graph and this paper.
+\item The \textbf{paper} (this document) describes the quine, including
+      its blueprint annotations.
+\item The source \textbf{proves} that its output contains those annotations
+      (\texttt{annotations\_self\_referential}).
+\end{enumerate}
+
+This is not circular in a logical sense---the proof is checked by the kernel
+independently of the documentation pipeline. But it is self-referential in a
+meaningful way: the artifact that the quine produces includes the metadata that
+describes the artifact.
+
+The dependency graph captures this structure precisely:
+\begin{center}
+\texttt{find\_substr} $\to$ \texttt{quine\_data} $\to$ \texttt{quine\_main}\\[0.3em]
+\texttt{quine\_data} $\to$ \texttt{quine\_correct} $\to$ \texttt{self\_ref} $\to$ \texttt{annotations\_ref}\\[0.3em]
+\texttt{quine\_correct} $\to$ \texttt{verify\_quine} $\to$ \texttt{verify\_self\_ref}\\[0.3em]
+\texttt{verify\_quine} $\to$ \texttt{quine\_main}
+\end{center}
+
+All eight nodes are \emph{fully proven} (no \texttt{sorry}, no unverified
+dependencies), and the graph is connected with no cycles.
+
+\section{Trust Model}
+
+The proof rests on the following trust assumptions:
+\begin{itemize}
+\item \textbf{Lean's kernel} correctly checks definitional equality of string
+      literals. This is the core trust assumption of any Lean formalization.
+\item \textbf{Elaboration-time file reads} return the actual file content.
+      The elaborators use \texttt{IO.FS.readFile}, which is trusted in the
+      same way that \texttt{\#eval} trusts \texttt{IO} actions. This is the
+      same trust model as Lean's built-in \texttt{include\_str} (which we
+      reimplemented for pedagogical clarity).
+\item \textbf{The bootstrapping script} correctly computes the fixed point.
+      This is a one-time offline computation, and its correctness is
+      independently verified by the \texttt{initialize} block at load time.
+\end{itemize}
+
+Notably absent from the trust base:
+\begin{itemize}
+\item \texttt{native\_decide}: We do not use native code evaluation for proofs.
+      All kernel-level reasoning uses \texttt{rfl}.
+\item \texttt{sorry}: There are no admitted propositions.
+\item \texttt{Decidable} instances for string operations: We bypass the kernel's
+      inability to reduce \texttt{partial} functions by performing computation
+      at elaboration time instead.
+\end{itemize}
+
+\section{Conclusion}
+
+We have shown that Lean~4's elaboration pipeline is expressive enough to
+construct a quine with a kernel-verified correctness proof, where the proof
+itself is part of the quined output. The key technique---reducing string
+computation to elaboration-time evaluation and presenting the kernel with
+pre-computed literals---is broadly applicable to any scenario where the kernel
+must reason about large concrete data.
+
+The interaction with the Side-by-Side Blueprint adds a layer of self-reference
+that, while not logically necessary, demonstrates the composability of Lean's
+metaprogramming facilities: the same file can be an executable program, a
+formal proof, and a documented blueprint, with all three aspects entangled
+through the quine property.
+
+\appendix
+\section{Full Source Listing}
+
+The complete \texttt{Quine.lean} is reproduced below. The data string $d$ is
+abbreviated; its full content is the Lean-escaped form of everything from the
+closing quote onward.
+
+\begin{verbatim}
+import Lean
+import Dress
+
+namespace Quine
+
+-- Section 1: Utilities
+
+open Lean Elab Term in
+elab "include_str!" path:str : term => do
+  let content <- IO.FS.readFile path.getString
+  return mkStrLit content
+
+@[blueprint "find_substr"
+  (title := "Substring Finder")
+  (statement := /-- Finds the byte offset of a
+  substring within a string. Returns the position
+  of the first character of the match. -/)]
+def findSubstr (s sub : String) : Option Nat := do
+  let parts := s.splitOn sub
+  if parts.length >= 2 then
+    some parts.head!.length
+  else
+    none
+
+open Lean Elab Term Meta in
+elab "quine_formula!" : term => do
+  let fileContent <- IO.FS.readFile "Quine.lean"
+  let marker := "def d := \""
+  let some idx := findSubstr fileContent marker
+    | throwError "marker not found"
+  let pfx := (fileContent.take
+    (idx + marker.length - 1)).toString
+  let defn <- getConstInfoDefn `Quine.d
+  let dVal <- whnf defn.value
+  let .lit (.strVal dStr) := dVal
+    | throwError "d is not a string literal"
+  return mkStrLit (pfx ++ dStr.quote ++ dStr)
+
+open Lean Elab Term in
+elab "file_contains!" path:str ", " sub:str
+    : term => do
+  let content <- IO.FS.readFile path.getString
+  let needle := sub.getString
+  if (content.splitOn needle).length >= 2 then
+    return mkConst ``Bool.true []
+  else
+    return mkConst ``Bool.false []
+
+-- Section 2: The Quine Data
+
+@[blueprint "quine_data"
+  (title := "Quine Data String")
+  (statement := /-- The data string encodes the
+  suffix of this source file, including all proofs
+  and annotations. This is the Kleene payload. -/)
+  (uses := ["find_substr"])]
+def d := "<... ~4000 chars of escaped suffix ...>"
+
+-- Section 3: Verification Harness
+
+@[blueprint "verify_quine"
+  (title := "Runtime Verification")
+  (statement := /-- Executes the quine binary and
+  verifies its output matches the source. -/)
+  (uses := ["quine_correct"])]
+def verifyQuine : IO Bool := do
+  let output <- IO.Process.output
+    { cmd := ".lake/build/bin/quine" }
+  let source <- IO.FS.readFile "Quine.lean"
+  return output.stdout == source
+
+-- Section 4: The Quine Executable
+
+@[blueprint "quine_main"
+  (title := "Quine Entry Point")
+  (statement := /-- Outputs the source code by
+  reconstructing it from embedded data. In verify
+  mode, runs the binary and checks its output. -/)
+  (uses := ["quine_data", "verify_quine"])]
+def _root_.main (args : List String)
+    : IO UInt32 := do
+  if args.contains "--verify" then
+    let passed <- Quine.verifyQuine
+    if passed then
+      IO.println "Quine output matches source"
+      return 0
+    else
+      IO.println "Quine output does NOT match"
+      return 1
+  else
+    let file := include_str! "Quine.lean"
+    let marker := "def d := \""
+    let pfx := (file.take
+      ((findSubstr file marker).get!
+        + marker.length - 1)).toString
+    IO.print pfx
+    IO.print d.quote
+    IO.print d
+    return 0
+
+-- Section 5: Proofs
+
+@[blueprint "quine_correct"
+  (title := "Quine Correctness")
+  (keyDeclaration := true)
+  (statement := /-- The quine formula equals the
+  source file. Both sides elaborate to identical
+  string literals at compile time. -/)
+  (proof := /-- By definitional equality: rfl. -/)
+  (uses := ["quine_data"])]
+theorem quine_correct :
+    quine_formula! = include_str! "Quine.lean"
+    := rfl
+
+@[blueprint "self_ref"
+  (title := "Self-Reference")
+  (statement := /-- The quine output contains the
+  text of its own correctness theorem. -/)
+  (proof := /-- Elaboration-time check + rfl. -/)
+  (uses := ["quine_correct"])]
+theorem self_referential :
+    (file_contains! "Quine.lean",
+      "theorem quine_correct") = true := rfl
+
+@[blueprint "annotations_ref"
+  (title := "Blueprint Self-Reference")
+  (statement := /-- The quine output contains its
+  own blueprint annotations. -/)
+  (proof := /-- Elaboration-time check + rfl. -/)
+  (uses := ["self_ref"])]
+theorem annotations_self_referential :
+    (file_contains! "Quine.lean",
+      "@[blueprint") = true := rfl
+
+-- Section 6: Verification Proofs
+
+@[blueprint "verify_self_ref"
+  (title := "Verification Self-Reference")
+  (statement := /-- The source file contains its
+  own runtime verification code. -/)
+  (proof := /-- Elaboration-time check + rfl. -/)
+  (uses := ["verify_quine"])]
+theorem verify_self_referential :
+    (file_contains! "Quine.lean",
+      "def verifyQuine") = true := rfl
+
+-- Section 7: Post-Elaboration Verification
+
+initialize do
+  let fileContent <- IO.FS.readFile "Quine.lean"
+  let marker := "def d := \""
+  let pfx := (fileContent.take
+    ((findSubstr fileContent marker).get!
+      + marker.length - 1)).toString
+  let reconstructed := pfx ++ d.quote ++ d
+  unless reconstructed == fileContent do
+    throw <| IO.userError
+      "Post-elaboration quine verification failed"
+
+end Quine
+\end{verbatim}
+
+\begin{thebibliography}{9}
+\bibitem{kleene1938}
+S.~C. Kleene, ``On notation for ordinal numbers,''
+\emph{Journal of Symbolic Logic}, vol.~3, no.~4, pp.~150--155, 1938.
+
+\bibitem{lean4}
+L.~de~Moura and S.~Ullrich, ``The Lean~4 theorem prover and programming
+language,'' in \emph{CADE-28}, 2021, pp.~625--635.
+
+\bibitem{quine1966}
+W.~V.~O. Quine, ``The ways of paradox,'' in \emph{The Ways of Paradox and
+Other Essays}, Random House, 1966, pp.~1--21.
+\end{thebibliography}
+
+\end{document}

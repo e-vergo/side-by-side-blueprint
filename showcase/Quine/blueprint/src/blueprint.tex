@@ -1,0 +1,90 @@
+\documentclass{book}
+
+\input{../../.lake/build/dressed/library/Quine.tex}
+
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{hyperref}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+
+\title{A Self-Verifying Quine in Lean 4}
+\author{Eric Vergo, Claude (Anthropic)}
+
+\begin{document}
+\maketitle
+
+\chapter{Introduction}
+
+A \emph{quine} is a program that, when executed, produces its own source code as output.
+The classical construction, rooted in Kleene's recursion theorem, decomposes the program
+into a \emph{prefix} (the reconstruction logic) and a \emph{data string} (encoding the suffix).
+The program reconstructs itself as $\text{prefix} \mathbin\Vert \text{quote}(d) \mathbin\Vert d$,
+where $d$ is the data string and $\text{quote}$ adds the necessary escaping.
+
+This project formalizes a quine in Lean~4 and proves, within Lean's type theory, that the
+quine's output equals its source code. The proof itself is part of the source code that gets
+quined---making the construction genuinely self-referential at multiple levels.
+
+\chapter{Infrastructure}
+
+We define a helper function used by the quine mechanism.
+
+\inputleannode{find_substr}
+
+\chapter{The Quine}
+
+\section{Data String}
+
+The data string $d$ encodes the suffix of the source file---everything after the line
+\texttt{def d := "..."}. This is the classic Kleene payload.
+
+\inputleannode{quine_data}
+
+\section{Executable}
+
+The main function reconstructs the source from the embedded data, without reading any
+external files at runtime. The prefix is computed at compile time via \texttt{include\_str!},
+and the output is $\text{prefix} \mathbin\Vert \text{quote}(d) \mathbin\Vert d$.
+
+\inputleannode{quine_main}
+
+\chapter{Correctness}
+
+The central theorem: the quine formula (computed from $d$ alone) equals the actual source
+file content (read at elaboration time). Both sides elaborate to identical string literals,
+so the proof is by definitional equality (\texttt{rfl}).
+
+\inputleannode{quine_correct}
+
+\section{Self-Reference}
+
+The quine output contains the text of its own correctness proof. This is the self-referential
+property that distinguishes a \emph{verified} quine from a merely \emph{correct} one.
+
+\inputleannode{self_ref}
+
+The quine output also contains its own blueprint annotations---the formal metadata used by the
+Side-by-Side Blueprint toolchain to generate this very document.
+
+\inputleannode{annotations_ref}
+
+\chapter{Verification}
+
+The quine is not merely proven correct at compile time---it can verify itself at runtime.
+The compiled binary executes, captures its output, and checks that it matches the source file.
+
+\section{Runtime Verification}
+
+\inputleannode{verify_quine}
+
+\section{Verification Self-Reference}
+
+The verification harness is itself part of the quined source. This closes the self-referential
+loop: the code that checks the quine is included in the quine's output.
+
+\inputleannode{verify_self_ref}
+
+\end{document}

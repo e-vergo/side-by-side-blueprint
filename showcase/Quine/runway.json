@@ -1,0 +1,9 @@
+{
+  "title": "Quine: A Self-Verifying Quine in Lean 4",
+  "projectName": "Quine",
+  "githubUrl": "https://github.com/e-vergo/Quine",
+  "baseUrl": "/Quine/",
+  "blueprintTexPath": "blueprint/src/blueprint.tex",
+  "paperTexPath": "blueprint/src/paper.tex",
+  "assetsDir": "../../toolchain/dress-blueprint-action/assets"
+}
