@@ -38,3 +38,6 @@
 	path = showcase/OSforGFF
 	url = https://github.com/e-vergo/OSforGFF.git
 	branch = main
+[submodule "showcase/Quine"]
+	path = showcase/Quine
+	url = https://github.com/e-vergo/Lean_quine.git

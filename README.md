@@ -30,6 +30,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 | **SBS-Test** | `toolchain/SBS-Test/` | 49 nodes | Minimal test project, exercises all 6 status colors |
 | **GCR** | `showcase/General_Crystallographic_Restriction/` | 128 nodes | Production example with full paper generation |
 | **PNT** | `showcase/PrimeNumberTheoremAnd/` | 591 annotations | Large-scale integration |
+| **Quine** | `showcase/Quine/` | 8 nodes | Self-verifying quine in Lean 4 ([live site](https://e-vergo.github.io/Lean_quine/)) |
 
 ## Getting Started
 
