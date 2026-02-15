@@ -1,5 +1,4 @@
 name = "Quine"
-version = "0.1.0"
 defaultTargets = ["Quine"]
 
 [leanOptions]
