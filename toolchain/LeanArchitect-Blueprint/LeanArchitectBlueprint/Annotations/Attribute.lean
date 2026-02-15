@@ -1,4 +1,5 @@
 import Architect
+import Dress
 
 open Architect
 
@@ -220,3 +221,5 @@ attribute [blueprint "la:mk-node"
   Architect.mkNode
 
 end LeanArchitectBlueprint.Annotations
+
+#dressNodes

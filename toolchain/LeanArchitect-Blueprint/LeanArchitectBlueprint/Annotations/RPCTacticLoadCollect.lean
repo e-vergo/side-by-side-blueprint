@@ -1,4 +1,5 @@
 import Architect
+import Dress
 
 open Architect
 
@@ -263,3 +264,5 @@ attribute [blueprint "la:collect-used"
   Architect.collectUsed
 
 end LeanArchitectBlueprint.Annotations
+
+#dressNodes

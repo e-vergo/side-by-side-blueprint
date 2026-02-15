@@ -1,4 +1,5 @@
 import Architect
+import Dress
 import LeanArchitectBlueprint.Annotations.Attribute
 import LeanArchitectBlueprint.Annotations.BasicContentCommand
 import LeanArchitectBlueprint.Annotations.CrossRefValidationOutput
@@ -96,3 +97,5 @@ attribute [blueprint "la:validate-statement"
   collecting all diagnostics. -/)
   (uses := ["la:validation-diag"])]
   validateStatement
+
+#dressNodes

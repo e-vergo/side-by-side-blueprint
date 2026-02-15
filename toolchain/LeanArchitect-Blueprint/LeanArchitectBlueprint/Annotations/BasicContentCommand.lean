@@ -1,4 +1,5 @@
 import Architect
+import Dress
 
 open Architect
 
@@ -341,3 +342,5 @@ attribute [blueprint "la:get-module-blueprint-doc"
   Architect.getModuleBlueprintDoc?
 
 end LeanArchitectBlueprint.Annotations
+
+#dressNodes
