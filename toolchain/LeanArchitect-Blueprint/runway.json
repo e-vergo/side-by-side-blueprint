@@ -1,0 +1,9 @@
+{
+  "title": "LeanArchitect: Blueprint Metadata Framework",
+  "projectName": "LeanArchitectBlueprint",
+  "githubUrl": "https://github.com/e-vergo/LeanArchitect",
+  "baseUrl": "/LeanArchitect/",
+  "docgen4Url": null,
+  "runwayDir": "runway",
+  "assetsDir": "../dress-blueprint-action/assets"
+}

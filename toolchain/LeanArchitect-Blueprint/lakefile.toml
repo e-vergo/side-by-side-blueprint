@@ -1,0 +1,27 @@
+name = "LeanArchitectBlueprint"
+defaultTargets = ["LeanArchitectBlueprint"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "LeanArchitect"
+path = "../../forks/LeanArchitect"
+
+[[require]]
+name = "Dress"
+path = "../Dress"
+
+[[require]]
+name = "verso"
+git = "https://github.com/e-vergo/verso.git"
+rev = "main"
+
+[[lean_lib]]
+name = "LeanArchitectBlueprint"
+
+[[lean_exe]]
+name = "generate-blueprint-verso"
+root = "GenerateBlueprint"
