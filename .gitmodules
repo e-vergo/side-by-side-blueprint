@@ -41,3 +41,6 @@
 [submodule "showcase/Quine"]
 	path = showcase/Quine
 	url = https://github.com/e-vergo/Lean_quine.git
+[submodule "showcase/TDCSG"]
+	path = showcase/TDCSG
+	url = https://github.com/e-vergo/TDCSG.git
