@@ -44,3 +44,6 @@
 [submodule "showcase/TDCSG"]
 	path = showcase/TDCSG
 	url = https://github.com/e-vergo/TDCSG.git
+[submodule "showcase/FLT"]
+	path = showcase/FLT
+	url = https://github.com/e-vergo/FLT.git
