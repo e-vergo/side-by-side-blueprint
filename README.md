@@ -10,7 +10,7 @@ A Lean 4 formalization documentation toolchain that generates rich, interactive 
 |-----------|----------|---------|
 | **SubVerso** | `forks/subverso/` | Syntax highlighting extraction from Lean info trees with O(1) indexed lookups |
 | **Verso** | `forks/verso/` | Document framework with SBSBlueprint and VersoPaper genres |
-| **LeanArchitect** | `forks/LeanArchitect/` | `@[blueprint]` attribute with 8 metadata options + 3 manual status flags |
+| **LeanArchitect** | `forks/LeanArchitect/` | `@[blueprint]` attribute with 8 metadata options + 2 manual status flags |
 | **Dress** | `toolchain/Dress/` | Artifact generation, dependency graph layout (Sugiyama algorithm), validation |
 | **Runway** | `toolchain/Runway/` | Site generator with dashboard, side-by-side displays, paper/PDF generation |
 | **dress-blueprint-action** | `toolchain/dress-blueprint-action/` | GitHub Action for CI/CD + CSS/JS assets |
@@ -27,7 +27,7 @@ SubVerso -> LeanArchitect -> Dress -> Runway
 
 | Project | Location | Scale | Notes |
 |---------|----------|-------|-------|
-| **SBS-Test** | `toolchain/SBS-Test/` | 49 nodes | Minimal test project, exercises all 6 status colors |
+| **SBS-Test** | `toolchain/SBS-Test/` | 49 nodes | Minimal test project, exercises all 7 status colors |
 | **GCR** | `showcase/General_Crystallographic_Restriction/` | 128 nodes | Production example with full paper generation |
 | **PNT** | `showcase/PrimeNumberTheoremAnd/` | 591 annotations | Large-scale integration |
 | **Quine** | `showcase/Quine/` | 8 nodes | Self-verifying quine in Lean 4 ([live site](https://e-vergo.github.io/Lean_quine/)) |
@@ -43,15 +43,32 @@ git = "https://github.com/e-vergo/Dress"
 rev = "main"
 ```
 
-Annotate declarations with the `@[blueprint]` attribute:
+### Quickstart (Recommended)
+
+Scaffold your project automatically after adding the dependency:
+
+```bash
+lake exe extract_blueprint quickstart
+```
+
+This generates `runway.json` (with `assetsDir` auto-discovered), `blueprint.tex` with chapters mirroring your directory structure, a GitHub Actions workflow, and injects `import Dress` into `.lean` files with declarations. Safe to re-run (skips existing files). See the [Dress README](toolchain/Dress/README.md#quickstart) for flags.
+
+To bootstrap `@[blueprint]` annotations on existing declarations:
+
+```bash
+lake build
+lake exe extract_blueprint auto-tag MyLib
+```
+
+### Manual Setup
+
+Alternatively, annotate declarations with the `@[blueprint]` attribute:
 
 ```lean
 @[blueprint "thm:main" (keyDeclaration := true, message := "Main result")]
 theorem main_thm : P := by
   ...
 ```
-
-### Configuration
 
 Create a `runway.json` in your project root:
 
@@ -75,7 +92,7 @@ Build with `BLUEPRINT_DRESS=1` to enable artifact capture during elaboration:
 ```bash
 BLUEPRINT_DRESS=1 lake build
 lake build +:blueprint
-lake exe dress extract_blueprint graph
+lake exe extract_blueprint graph
 lake exe runway build runway.json
 ```
 
@@ -98,24 +115,24 @@ lake exe runway build runway.json
 
 | Option | Sets Status To |
 |--------|----------------|
-| `notReady` | notReady (sandy brown) |
-| `ready` | ready (light sea green) |
-| `mathlibReady` | mathlibReady (light blue) |
+| `wip` | wip (deep teal) |
+| `mathlibReady` | mathlibReady (vivid blue) |
 
-## 6-Status Color Model
+## 7-Status Color Model
 
-Six status colors track formalization progress:
+Seven status colors track formalization progress:
 
 | Status | Color | Hex | Source |
 |--------|-------|-----|--------|
-| `notReady` | Sandy Brown | #F4A460 | Default or manual: `(notReady := true)` |
-| `ready` | Light Sea Green | #20B2AA | Manual: `(ready := true)` |
-| `sorry` | Dark Red | #8B0000 | Auto-detected: proof contains `sorryAx` |
-| `proven` | Light Green | #90EE90 | Auto-detected: complete proof |
-| `fullyProven` | Forest Green | #228B22 | Auto-computed: proven and all ancestors proven |
-| `mathlibReady` | Light Blue | #87CEEB | Manual: `(mathlibReady := true)` |
+| `notReady` | Vivid Orange | #E8820C | Default -- no Lean proof exists |
+| `wip` | Deep Teal | #0097A7 | Manual: `(wip := true)` |
+| `sorry` | Vivid Red | #C62828 | Auto-detected: proof contains `sorryAx` |
+| `proven` | Medium Green | #66BB6A | Auto-detected: complete proof |
+| `fullyProven` | Deep Forest Green | #1B5E20 | Auto-computed: proven and all ancestors proven |
+| `axiom` | Vivid Purple | #7E57C2 | Structural: Lean `axiom` declaration (intentionally unproven) |
+| `mathlibReady` | Vivid Blue | #42A5F5 | Manual: `(mathlibReady := true)` |
 
-**Priority** (manual always wins): mathlibReady > ready > notReady (explicit) > fullyProven > sorry > proven > notReady (default)
+**Priority** (manual always wins): mathlibReady > wip > notReady (explicit) > fullyProven > axiom > sorry > proven > notReady (default)
 
 **Color source of truth**: Lean code in `Dress/Graph/Svg.lean` defines canonical hex values.
 
